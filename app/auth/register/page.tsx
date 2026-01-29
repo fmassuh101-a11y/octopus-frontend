@@ -1,11 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ftvqoudlmojdxwjxljzr.supabase.co'
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -14,6 +14,15 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+
+  // Check if already logged in
+  useEffect(() => {
+    const token = localStorage.getItem('sb-access-token')
+    const user = localStorage.getItem('sb-user')
+    if (token && user) {
+      window.location.href = '/auth/select-type'
+    }
+  }, [])
 
   const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -41,7 +50,7 @@ export default function RegisterPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'apikey': SUPABASE_ANON_KEY || ''
+          'apikey': SUPABASE_ANON_KEY
         },
         body: JSON.stringify({
           email,
@@ -62,7 +71,7 @@ export default function RegisterPage() {
         return
       }
 
-      // Store tokens directly in localStorage - NO supabase client
+      // Store tokens directly in localStorage
       if (data.access_token) {
         localStorage.setItem('sb-access-token', data.access_token)
         localStorage.setItem('sb-refresh-token', data.refresh_token || '')
@@ -70,17 +79,18 @@ export default function RegisterPage() {
 
         // Redirect immediately
         window.location.href = '/auth/select-type'
-      } else if (data.user) {
-        setError('Cuenta creada. Revisa tu email para confirmar.')
+      } else if (data.user && !data.access_token) {
+        // Email confirmation required
+        setError('Cuenta creada. Revisa tu email para confirmar tu cuenta.')
         setLoading(false)
       } else {
-        setError('Error inesperado')
+        setError('Error inesperado. Intenta de nuevo.')
         setLoading(false)
       }
 
     } catch (err: any) {
       console.error('Registration error:', err)
-      setError('Error de conexión. Intenta de nuevo.')
+      setError('Error de conexión. Verifica tu internet e intenta de nuevo.')
       setLoading(false)
     }
   }

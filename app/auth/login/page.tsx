@@ -1,11 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ftvqoudlmojdxwjxljzr.supabase.co'
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -13,6 +13,49 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+
+  // Check if already logged in
+  useEffect(() => {
+    const checkExistingSession = async () => {
+      const token = localStorage.getItem('sb-access-token')
+      const userStr = localStorage.getItem('sb-user')
+
+      if (token && userStr) {
+        try {
+          const user = JSON.parse(userStr)
+          // Check if user has profile
+          const profileResponse = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=user_type`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'apikey': SUPABASE_ANON_KEY
+            }
+          })
+
+          if (profileResponse.ok) {
+            const profiles = await profileResponse.json()
+            if (profiles && profiles.length > 0) {
+              const userType = profiles[0].user_type
+              if (userType === 'creator') {
+                window.location.href = '/creator/dashboard'
+                return
+              } else if (userType === 'company') {
+                window.location.href = '/company/dashboard'
+                return
+              }
+            }
+          }
+          // Has token but no profile, go to select-type
+          window.location.href = '/auth/select-type'
+        } catch (err) {
+          // Invalid session, clear it
+          localStorage.removeItem('sb-access-token')
+          localStorage.removeItem('sb-refresh-token')
+          localStorage.removeItem('sb-user')
+        }
+      }
+    }
+    checkExistingSession()
+  }, [])
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -30,7 +73,7 @@ export default function LoginPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'apikey': SUPABASE_ANON_KEY || ''
+          'apikey': SUPABASE_ANON_KEY
         },
         body: JSON.stringify({
           email,
@@ -41,8 +84,10 @@ export default function LoginPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        if (data.error_description?.includes('Invalid login')) {
+        if (data.error_description?.includes('Invalid login') || data.error === 'invalid_grant') {
           setError('Email o contraseña incorrectos')
+        } else if (data.error_description?.includes('Email not confirmed')) {
+          setError('Debes confirmar tu email antes de iniciar sesión')
         } else {
           setError(data.error_description || data.msg || 'Error al iniciar sesión')
         }
@@ -50,7 +95,7 @@ export default function LoginPage() {
         return
       }
 
-      // Store tokens directly - NO supabase client
+      // Store tokens directly
       if (data.access_token) {
         localStorage.setItem('sb-access-token', data.access_token)
         localStorage.setItem('sb-refresh-token', data.refresh_token || '')
@@ -61,21 +106,16 @@ export default function LoginPage() {
           const profileResponse = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${data.user.id}&select=*`, {
             headers: {
               'Authorization': `Bearer ${data.access_token}`,
-              'apikey': SUPABASE_ANON_KEY || ''
+              'apikey': SUPABASE_ANON_KEY
             }
           })
 
-          console.log('Profile check response status:', profileResponse.status)
-
           if (profileResponse.ok) {
             const profiles = await profileResponse.json()
-            console.log('Profiles found:', profiles)
 
             if (profiles && profiles.length > 0) {
               const profile = profiles[0]
               const userType = profile.user_type
-
-              console.log('User type found:', userType)
 
               // User has profile, redirect to appropriate dashboard
               if (userType === 'creator') {
@@ -86,8 +126,6 @@ export default function LoginPage() {
                 return
               }
             }
-          } else {
-            console.error('Profile check failed:', await profileResponse.text())
           }
         } catch (err) {
           console.error('Error checking profile:', err)
@@ -102,7 +140,7 @@ export default function LoginPage() {
 
     } catch (err: any) {
       console.error('Login error:', err)
-      setError('Error de conexión. Intenta de nuevo.')
+      setError('Error de conexión. Verifica tu internet e intenta de nuevo.')
       setLoading(false)
     }
   }
