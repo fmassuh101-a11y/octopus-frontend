@@ -12,6 +12,7 @@
     "tunnel": "npx ngrok http 3000 --subdomain=octopus-dev"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.89.0",
     "@types/node": "20.9.0",
     "@types/react": "18.2.37",

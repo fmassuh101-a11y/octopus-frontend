@@ -1,0 +1,305 @@
+'use client'
+
+import { useState, useEffect, useRef } from 'react'
+import Link from 'next/link'
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+export default function CompanyLogoPage() {
+  const [logo, setLogo] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [formData, setFormData] = useState<any>({})
+  const [user, setUser] = useState<any>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const token = localStorage.getItem('sb-access-token')
+    const userStr = localStorage.getItem('sb-user')
+    if (!token || !userStr) {
+      window.location.href = '/auth/login'
+      return
+    }
+
+    setUser(JSON.parse(userStr))
+    const existing = JSON.parse(localStorage.getItem('companyOnboarding') || '{}')
+    setFormData(existing)
+  }, [])
+
+  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setLogo(e.target?.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleSubmit = async () => {
+    if (!user) return
+
+    setLoading(true)
+    setError('')
+
+    try {
+      const token = localStorage.getItem('sb-access-token')
+
+      // Store ALL data in bio as JSON (only use columns that exist in Supabase)
+      const allData = {
+        userType: 'company',
+        companyName: formData.companyName || null,
+        website: formData.website || null,
+        businessType: formData.businessType || null,
+        orgType: formData.orgType || null,
+        niche: formData.niche || null,
+        role: formData.role || null,
+        phoneNumber: formData.phoneNumber ? `${formData.countryCode || '+1'}${formData.phoneNumber}` : null,
+        tiktok: formData.tiktok || null,
+        instagram: formData.instagram || null,
+        linkedin: formData.linkedin || null,
+        appStoreUrl: formData.appStoreUrl || null,
+        hiringRange: formData.hiringRange || null,
+        marketingStrategy: formData.marketingStrategy || null
+      }
+
+      // Only send basic columns that exist in Supabase profiles table
+      const profileData: any = {
+        user_id: user.id,
+        user_type: 'company',
+        full_name: formData.companyName || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Empresa',
+        bio: JSON.stringify(allData),
+        updated_at: new Date().toISOString()
+      }
+
+      // Check if profile exists
+      const checkResponse = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=id`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'apikey': SUPABASE_ANON_KEY || ''
+        }
+      })
+
+      if (!checkResponse.ok) {
+        throw new Error('Error verificando perfil')
+      }
+
+      const profiles = await checkResponse.json()
+
+      let saveResponse
+      if (profiles.length > 0) {
+        saveResponse = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'apikey': SUPABASE_ANON_KEY || '',
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify(profileData)
+        })
+      } else {
+        saveResponse = await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'apikey': SUPABASE_ANON_KEY || '',
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify(profileData)
+        })
+      }
+
+      if (!saveResponse.ok) {
+        const errorText = await saveResponse.text()
+        console.error('Save error:', errorText)
+        throw new Error(`Error: ${errorText}`)
+      }
+
+      localStorage.removeItem('companyOnboarding')
+      window.location.href = '/company/dashboard'
+
+    } catch (err: any) {
+      console.error('Error:', err)
+      setError(err.message || 'Error guardando. Intenta de nuevo.')
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-50 flex">
+      {/* Left Section */}
+      <div className="flex-1 p-8 max-w-2xl">
+        {/* Logo */}
+        <div className="mb-8">
+          <div className="flex items-center space-x-2">
+            <div className="w-10 h-10 bg-gradient-to-r from-slate-700 to-slate-900 rounded-xl flex items-center justify-center shadow-lg">
+              <span className="text-xl text-white">🐙</span>
+            </div>
+            <span className="text-xl font-bold bg-gradient-to-r from-slate-700 to-slate-900 bg-clip-text text-transparent">Octopus</span>
+          </div>
+        </div>
+
+        {/* Step indicator */}
+        <div className="inline-block px-4 py-1.5 bg-slate-100 rounded-full text-sm text-slate-700 font-medium mb-6">
+          Paso 6 de 7
+        </div>
+
+        {/* Progress dots */}
+        <div className="flex space-x-2 mb-8">
+          {[1,2,3,4,5].map(i => (
+            <div key={i} className="w-2.5 h-2.5 bg-slate-300 rounded-full"></div>
+          ))}
+          <div className="w-10 h-2.5 bg-gradient-to-r from-slate-600 to-slate-800 rounded-full"></div>
+          <div className="w-2.5 h-2.5 bg-gray-200 rounded-full"></div>
+        </div>
+
+        {/* Title */}
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Logo de tu Empresa</h1>
+        <p className="text-gray-500 mb-8">Sube el logo de tu empresa para que los creadores te reconozcan</p>
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+            <p className="text-red-600 text-sm">{error}</p>
+          </div>
+        )}
+
+        <div className="flex flex-col items-center py-8">
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            className="w-36 h-36 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-100 border-3 border-dashed border-slate-300 flex items-center justify-center cursor-pointer hover:from-slate-200 hover:to-slate-200 transition-all hover:scale-105 overflow-hidden shadow-lg"
+          >
+            {logo ? (
+              <img src={logo} alt="Logo" className="w-full h-full object-cover" />
+            ) : (
+              <div className="text-center">
+                <svg className="w-12 h-12 text-slate-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <p className="text-sm text-slate-500 font-medium">Subir logo</p>
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="mt-6 px-8 py-3 bg-white border-2 border-slate-200 text-slate-600 rounded-xl font-semibold hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm"
+          >
+            {logo ? 'Cambiar Foto' : 'Seleccionar Archivo'}
+          </button>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handlePhotoUpload}
+            className="hidden"
+          />
+
+          <p className="text-sm text-gray-400 mt-4">PNG, JPG o GIF (máx. 5MB)</p>
+        </div>
+
+        {/* Buttons */}
+        <div className="flex items-center justify-between mt-8">
+          <Link href="/onboarding/company/terms" className="flex items-center text-gray-500 hover:text-gray-700 font-medium">
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Atrás
+          </Link>
+
+          <button
+            onClick={handleSubmit}
+            disabled={loading}
+            className="px-10 py-3 bg-gradient-to-r from-slate-700 to-slate-900 text-white rounded-xl font-semibold hover:from-slate-600 hover:to-slate-700 disabled:opacity-50 transition-all shadow-lg hover:shadow-xl"
+          >
+            {loading ? 'Guardando...' : 'Finalizar'}
+          </button>
+        </div>
+      </div>
+
+      {/* Right Section - Summary Card */}
+      <div className="hidden lg:block w-96 bg-white/50 backdrop-blur-sm p-8 overflow-y-auto border-l border-slate-100">
+        <div className="bg-white rounded-3xl p-6 shadow-xl border border-slate-100">
+          <div className="w-14 h-14 bg-gradient-to-br from-slate-700 to-slate-900 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
+            <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+          </div>
+
+          <h3 className="font-bold text-gray-900 text-lg">Tu Empresa</h3>
+          <p className="text-sm text-gray-500 mb-6">Resumen de tu información</p>
+
+          <div className="border-t border-gray-100 pt-4 space-y-4 text-sm">
+            {formData.companyName && (
+              <div className="flex items-start space-x-3">
+                <span className="text-lg">🏢</span>
+                <div>
+                  <p className="text-xs text-gray-400">Nombre de empresa</p>
+                  <p className="font-medium text-gray-800">{formData.companyName}</p>
+                </div>
+              </div>
+            )}
+            {formData.website && (
+              <div className="flex items-start space-x-3">
+                <span className="text-lg">🌐</span>
+                <div>
+                  <p className="text-xs text-gray-400">Sitio web</p>
+                  <p className="font-medium text-gray-800">{formData.website}</p>
+                </div>
+              </div>
+            )}
+            {formData.phoneNumber && (
+              <div className="flex items-start space-x-3">
+                <span className="text-lg">📞</span>
+                <div>
+                  <p className="text-xs text-gray-400">Teléfono</p>
+                  <p className="font-medium text-gray-800">{formData.countryCode}{formData.phoneNumber}</p>
+                </div>
+              </div>
+            )}
+            {formData.orgType && (
+              <div className="flex items-start space-x-3">
+                <span className="text-lg">🏛️</span>
+                <div>
+                  <p className="text-xs text-gray-400">Tipo de organización</p>
+                  <p className="font-medium text-gray-800">{formData.orgType}</p>
+                </div>
+              </div>
+            )}
+            {formData.niche && (
+              <div className="flex items-start space-x-3">
+                <span className="text-lg">🎯</span>
+                <div>
+                  <p className="text-xs text-gray-400">Industria</p>
+                  <p className="font-medium text-gray-800">{formData.niche}</p>
+                </div>
+              </div>
+            )}
+            {formData.tiktok && (
+              <div className="flex items-start space-x-3">
+                <span className="text-lg">🎵</span>
+                <div>
+                  <p className="text-xs text-gray-400">TikTok</p>
+                  <p className="font-medium text-gray-800">@{formData.tiktok}</p>
+                </div>
+              </div>
+            )}
+            {formData.instagram && (
+              <div className="flex items-start space-x-3">
+                <span className="text-lg">📸</span>
+                <div>
+                  <p className="text-xs text-gray-400">Instagram</p>
+                  <p className="font-medium text-gray-800">@{formData.instagram}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
