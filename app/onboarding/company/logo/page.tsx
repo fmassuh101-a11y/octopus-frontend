@@ -12,19 +12,29 @@ export default function CompanyLogoPage() {
   const [error, setError] = useState('')
   const [formData, setFormData] = useState<any>({})
   const [user, setUser] = useState<any>(null)
+  const [needsLogin, setNeedsLogin] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    const token = localStorage.getItem('sb-access-token')
-    const userStr = localStorage.getItem('sb-user')
-    if (!token || !userStr) {
-      window.location.href = '/auth/login'
-      return
+    // Try to get user from localStorage
+    try {
+      const userStr = localStorage.getItem('sb-user')
+      const token = localStorage.getItem('sb-access-token')
+
+      if (userStr && token) {
+        setUser(JSON.parse(userStr))
+      } else {
+        setNeedsLogin(true)
+      }
+    } catch (err) {
+      console.error('Error loading user:', err)
+      setNeedsLogin(true)
     }
 
-    setUser(JSON.parse(userStr))
+    // Load existing company onboarding data
     const existing = JSON.parse(localStorage.getItem('companyOnboarding') || '{}')
     setFormData(existing)
+    if (existing.logo) setLogo(existing.logo)
   }, [])
 
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -32,21 +42,52 @@ export default function CompanyLogoPage() {
     if (file) {
       const reader = new FileReader()
       reader.onload = (e) => {
-        setLogo(e.target?.result as string)
+        const result = e.target?.result as string
+        setLogo(result)
+        // Save to localStorage
+        const existing = JSON.parse(localStorage.getItem('companyOnboarding') || '{}')
+        existing.logo = result
+        localStorage.setItem('companyOnboarding', JSON.stringify(existing))
       }
       reader.readAsDataURL(file)
     }
   }
 
-  const handleSubmit = async () => {
-    if (!user) return
+  const handleLogin = () => {
+    // Save current progress before redirecting to login
+    const existing = JSON.parse(localStorage.getItem('companyOnboarding') || '{}')
+    existing.logo = logo
+    existing.pendingComplete = true
+    localStorage.setItem('companyOnboarding', JSON.stringify(existing))
+    window.location.href = '/auth/login'
+  }
 
+  const handleSubmit = async () => {
     setLoading(true)
     setError('')
 
-    try {
-      const token = localStorage.getItem('sb-access-token')
+    // Check for session
+    const token = localStorage.getItem('sb-access-token')
+    const userStr = localStorage.getItem('sb-user')
 
+    if (!token || !userStr) {
+      setError('Debes iniciar sesion para guardar tu perfil.')
+      setNeedsLogin(true)
+      setLoading(false)
+      return
+    }
+
+    let userData
+    try {
+      userData = JSON.parse(userStr)
+    } catch (err) {
+      setError('Error con tu sesion. Por favor inicia sesion nuevamente.')
+      setNeedsLogin(true)
+      setLoading(false)
+      return
+    }
+
+    try {
       // Store ALL data in bio as JSON (only use columns that exist in Supabase)
       const allData = {
         userType: 'company',
@@ -62,27 +103,34 @@ export default function CompanyLogoPage() {
         linkedin: formData.linkedin || null,
         appStoreUrl: formData.appStoreUrl || null,
         hiringRange: formData.hiringRange || null,
-        marketingStrategy: formData.marketingStrategy || null
+        marketingStrategy: formData.marketingStrategy || null,
+        logo: logo || null
       }
 
       // Only send basic columns that exist in Supabase profiles table
       const profileData: any = {
-        user_id: user.id,
+        user_id: userData.id,
         user_type: 'company',
-        full_name: formData.companyName || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Empresa',
+        full_name: formData.companyName || userData.user_metadata?.full_name || userData.email?.split('@')[0] || 'Empresa',
         bio: JSON.stringify(allData),
         updated_at: new Date().toISOString()
       }
 
       // Check if profile exists
-      const checkResponse = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=id`, {
+      const checkResponse = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=id`, {
         headers: {
           'Authorization': `Bearer ${token}`,
-          'apikey': SUPABASE_ANON_KEY || ''
+          'apikey': SUPABASE_ANON_KEY
         }
       })
 
       if (!checkResponse.ok) {
+        if (checkResponse.status === 401) {
+          setError('Tu sesion ha expirado. Por favor inicia sesion nuevamente.')
+          setNeedsLogin(true)
+          setLoading(false)
+          return
+        }
         throw new Error('Error verificando perfil')
       }
 
@@ -90,12 +138,12 @@ export default function CompanyLogoPage() {
 
       let saveResponse
       if (profiles.length > 0) {
-        saveResponse = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}`, {
+        saveResponse = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
-            'apikey': SUPABASE_ANON_KEY || '',
+            'apikey': SUPABASE_ANON_KEY,
             'Prefer': 'return=minimal'
           },
           body: JSON.stringify(profileData)
@@ -106,7 +154,7 @@ export default function CompanyLogoPage() {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
-            'apikey': SUPABASE_ANON_KEY || '',
+            'apikey': SUPABASE_ANON_KEY,
             'Prefer': 'return=minimal'
           },
           body: JSON.stringify(profileData)
@@ -116,6 +164,13 @@ export default function CompanyLogoPage() {
       if (!saveResponse.ok) {
         const errorText = await saveResponse.text()
         console.error('Save error:', errorText)
+
+        if (saveResponse.status === 401) {
+          setError('Tu sesion ha expirado. Por favor inicia sesion nuevamente.')
+          setNeedsLogin(true)
+          setLoading(false)
+          return
+        }
         throw new Error(`Error: ${errorText}`)
       }
 
@@ -164,6 +219,14 @@ export default function CompanyLogoPage() {
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
             <p className="text-red-600 text-sm">{error}</p>
+            {needsLogin && (
+              <button
+                onClick={handleLogin}
+                className="mt-3 w-full py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition"
+              >
+                Iniciar Sesion
+              </button>
+            )}
           </div>
         )}
 
@@ -199,7 +262,7 @@ export default function CompanyLogoPage() {
             className="hidden"
           />
 
-          <p className="text-sm text-gray-400 mt-4">PNG, JPG o GIF (máx. 5MB)</p>
+          <p className="text-sm text-gray-400 mt-4">PNG, JPG o GIF (max. 5MB)</p>
         </div>
 
         {/* Buttons */}
@@ -208,7 +271,7 @@ export default function CompanyLogoPage() {
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Atrás
+            Atras
           </Link>
 
           <button
@@ -231,7 +294,7 @@ export default function CompanyLogoPage() {
           </div>
 
           <h3 className="font-bold text-gray-900 text-lg">Tu Empresa</h3>
-          <p className="text-sm text-gray-500 mb-6">Resumen de tu información</p>
+          <p className="text-sm text-gray-500 mb-6">Resumen de tu informacion</p>
 
           <div className="border-t border-gray-100 pt-4 space-y-4 text-sm">
             {formData.companyName && (
@@ -256,7 +319,7 @@ export default function CompanyLogoPage() {
               <div className="flex items-start space-x-3">
                 <span className="text-lg">📞</span>
                 <div>
-                  <p className="text-xs text-gray-400">Teléfono</p>
+                  <p className="text-xs text-gray-400">Telefono</p>
                   <p className="font-medium text-gray-800">{formData.countryCode}{formData.phoneNumber}</p>
                 </div>
               </div>
@@ -265,7 +328,7 @@ export default function CompanyLogoPage() {
               <div className="flex items-start space-x-3">
                 <span className="text-lg">🏛️</span>
                 <div>
-                  <p className="text-xs text-gray-400">Tipo de organización</p>
+                  <p className="text-xs text-gray-400">Tipo de organizacion</p>
                   <p className="font-medium text-gray-800">{formData.orgType}</p>
                 </div>
               </div>

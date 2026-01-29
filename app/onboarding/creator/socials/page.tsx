@@ -15,25 +15,47 @@ export default function CreatorSocialsPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [user, setUser] = useState<any>(null)
+  const [needsLogin, setNeedsLogin] = useState(false)
 
   useEffect(() => {
-    const userStr = localStorage.getItem('sb-user')
-    const token = localStorage.getItem('sb-access-token')
+    // Try to get user from localStorage
+    try {
+      const userStr = localStorage.getItem('sb-user')
+      const token = localStorage.getItem('sb-access-token')
 
-    if (!userStr || !token) {
-      window.location.href = '/auth/login'
-      return
+      if (userStr && token) {
+        const userData = JSON.parse(userStr)
+        setUser(userData)
+      } else {
+        // No session - but don't redirect, let them fill the form
+        // We'll prompt login when they try to save
+        setNeedsLogin(true)
+      }
+    } catch (err) {
+      console.error('Error loading user:', err)
+      setNeedsLogin(true)
     }
 
-    setUser(JSON.parse(userStr))
+    // Load any saved social data
+    const existing = JSON.parse(localStorage.getItem('creatorOnboarding') || '{}')
+    if (existing.instagram) setInstagram(existing.instagram)
+    if (existing.tiktok) setTiktok(existing.tiktok)
+    if (existing.youtube) setYoutube(existing.youtube)
+    if (existing.profilePhoto) setProfilePhoto(existing.profilePhoto)
   }, [])
 
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
+      // Compress image if too large
       const reader = new FileReader()
       reader.onload = (e) => {
-        setProfilePhoto(e.target?.result as string)
+        const result = e.target?.result as string
+        setProfilePhoto(result)
+        // Save to localStorage to preserve on page refresh
+        const existing = JSON.parse(localStorage.getItem('creatorOnboarding') || '{}')
+        existing.profilePhoto = result
+        localStorage.setItem('creatorOnboarding', JSON.stringify(existing))
       }
       reader.readAsDataURL(file)
     }
@@ -41,6 +63,20 @@ export default function CreatorSocialsPage() {
 
   const handlePhotoClick = () => {
     fileInputRef.current?.click()
+  }
+
+  const handleLogin = () => {
+    // Save current progress before redirecting to login
+    const existing = JSON.parse(localStorage.getItem('creatorOnboarding') || '{}')
+    existing.instagram = instagram.trim()
+    existing.tiktok = tiktok.trim()
+    existing.youtube = youtube.trim()
+    existing.profilePhoto = profilePhoto
+    existing.pendingComplete = true // Flag to know they were trying to complete
+    localStorage.setItem('creatorOnboarding', JSON.stringify(existing))
+
+    // Redirect to login
+    window.location.href = '/auth/login'
   }
 
   const handleFinish = async () => {
@@ -53,14 +89,28 @@ export default function CreatorSocialsPage() {
       return
     }
 
-    if (!user) {
-      setError('No se encontró tu sesión.')
+    // Check for session again
+    const token = localStorage.getItem('sb-access-token')
+    const userStr = localStorage.getItem('sb-user')
+
+    if (!token || !userStr) {
+      setError('Debes iniciar sesion para guardar tu perfil.')
+      setNeedsLogin(true)
+      setLoading(false)
+      return
+    }
+
+    let userData
+    try {
+      userData = JSON.parse(userStr)
+    } catch (err) {
+      setError('Error con tu sesion. Por favor inicia sesion nuevamente.')
+      setNeedsLogin(true)
       setLoading(false)
       return
     }
 
     try {
-      const token = localStorage.getItem('sb-access-token')
       const existing = JSON.parse(localStorage.getItem('creatorOnboarding') || '{}')
 
       // Store ALL data in bio as JSON (only use columns that exist in Supabase)
@@ -81,22 +131,32 @@ export default function CreatorSocialsPage() {
 
       // Only send basic columns that exist in Supabase profiles table
       const profileData: any = {
-        user_id: user.id,
+        user_id: userData.id,
         user_type: 'creator',
-        full_name: `${existing.firstName || ''} ${existing.lastName || ''}`.trim() || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario',
+        full_name: `${existing.firstName || ''} ${existing.lastName || ''}`.trim() || userData.user_metadata?.full_name || userData.email?.split('@')[0] || 'Usuario',
         bio: JSON.stringify(allData),
         updated_at: new Date().toISOString()
       }
 
       // Check if profile exists
-      const checkResponse = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=id`, {
+      const checkResponse = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=id`, {
         headers: {
           'Authorization': `Bearer ${token}`,
-          'apikey': SUPABASE_ANON_KEY || ''
+          'apikey': SUPABASE_ANON_KEY
         }
       })
 
       if (!checkResponse.ok) {
+        const errorText = await checkResponse.text()
+        console.error('Profile check error:', errorText)
+
+        // Check if it's an auth error
+        if (checkResponse.status === 401) {
+          setError('Tu sesion ha expirado. Por favor inicia sesion nuevamente.')
+          setNeedsLogin(true)
+          setLoading(false)
+          return
+        }
         throw new Error('Error verificando perfil')
       }
 
@@ -105,12 +165,12 @@ export default function CreatorSocialsPage() {
       let saveResponse
       if (profiles.length > 0) {
         // Update existing profile
-        saveResponse = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}`, {
+        saveResponse = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
-            'apikey': SUPABASE_ANON_KEY || '',
+            'apikey': SUPABASE_ANON_KEY,
             'Prefer': 'return=minimal'
           },
           body: JSON.stringify(profileData)
@@ -122,7 +182,7 @@ export default function CreatorSocialsPage() {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
-            'apikey': SUPABASE_ANON_KEY || '',
+            'apikey': SUPABASE_ANON_KEY,
             'Prefer': 'return=minimal'
           },
           body: JSON.stringify(profileData)
@@ -132,10 +192,20 @@ export default function CreatorSocialsPage() {
       if (!saveResponse.ok) {
         const errorText = await saveResponse.text()
         console.error('Save error:', errorText)
-        throw new Error(`Error: ${errorText}`)
+
+        if (saveResponse.status === 401) {
+          setError('Tu sesion ha expirado. Por favor inicia sesion nuevamente.')
+          setNeedsLogin(true)
+          setLoading(false)
+          return
+        }
+        throw new Error(`Error guardando perfil: ${errorText}`)
       }
 
+      // Clear onboarding data
       localStorage.removeItem('creatorOnboarding')
+
+      // Redirect to dashboard
       window.location.href = '/creator/dashboard'
 
     } catch (error: any) {
@@ -150,6 +220,10 @@ export default function CreatorSocialsPage() {
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
+    // Also remove from localStorage
+    const existing = JSON.parse(localStorage.getItem('creatorOnboarding') || '{}')
+    delete existing.profilePhoto
+    localStorage.setItem('creatorOnboarding', JSON.stringify(existing))
   }
 
   return (
@@ -177,7 +251,7 @@ export default function CreatorSocialsPage() {
             <div key={i} className="h-1.5 bg-gradient-to-r from-slate-600 to-slate-800 rounded-full flex-1 shadow-sm"></div>
           ))}
         </div>
-        <p className="text-center text-sm text-gray-500 mt-2">Paso 8 de 8 - ¡Último paso!</p>
+        <p className="text-center text-sm text-gray-500 mt-2">Paso 8 de 8 - ¡Ultimo paso!</p>
       </div>
 
       <div className="px-6 pb-32">
@@ -191,6 +265,14 @@ export default function CreatorSocialsPage() {
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
             <p className="text-red-600 text-sm text-center">{error}</p>
+            {needsLogin && (
+              <button
+                onClick={handleLogin}
+                className="mt-3 w-full py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition"
+              >
+                Iniciar Sesion
+              </button>
+            )}
           </div>
         )}
 
