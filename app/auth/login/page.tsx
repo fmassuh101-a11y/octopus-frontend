@@ -14,6 +14,32 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
+  // Helper function to check for pending onboarding and redirect appropriately
+  const checkPendingOnboarding = (): boolean => {
+    const creatorOnboarding = localStorage.getItem('creatorOnboarding')
+    const companyOnboarding = localStorage.getItem('companyOnboarding')
+
+    if (creatorOnboarding) {
+      try {
+        const data = JSON.parse(creatorOnboarding)
+        if (data.pendingComplete) {
+          window.location.href = '/onboarding/creator/socials'
+          return true
+        }
+      } catch (e) {}
+    }
+    if (companyOnboarding) {
+      try {
+        const data = JSON.parse(companyOnboarding)
+        if (data.pendingComplete) {
+          window.location.href = '/onboarding/company/logo'
+          return true
+        }
+      } catch (e) {}
+    }
+    return false
+  }
+
   // Check if already logged in
   useEffect(() => {
     const checkExistingSession = async () => {
@@ -23,6 +49,12 @@ export default function LoginPage() {
       if (token && userStr) {
         try {
           const user = JSON.parse(userStr)
+
+          // First check for pending onboarding
+          if (checkPendingOnboarding()) {
+            return
+          }
+
           // Check if user has profile
           const profileResponse = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=user_type`, {
             headers: {
@@ -100,6 +132,11 @@ export default function LoginPage() {
         localStorage.setItem('sb-access-token', data.access_token)
         localStorage.setItem('sb-refresh-token', data.refresh_token || '')
         localStorage.setItem('sb-user', JSON.stringify(data.user))
+
+        // First check for pending onboarding
+        if (checkPendingOnboarding()) {
+          return
+        }
 
         // Check if user has a profile and redirect accordingly
         try {

@@ -13,8 +13,41 @@ export default function AuthCallback() {
     handleCallback()
   }, [])
 
+  // Helper to check for pending onboarding
+  const checkPendingOnboarding = (): boolean => {
+    const creatorOnboarding = localStorage.getItem('creatorOnboarding')
+    const companyOnboarding = localStorage.getItem('companyOnboarding')
+
+    if (creatorOnboarding) {
+      try {
+        const data = JSON.parse(creatorOnboarding)
+        if (data.pendingComplete) {
+          setStatus('Continuando con tu registro...')
+          setTimeout(() => { window.location.href = '/onboarding/creator/socials' }, 500)
+          return true
+        }
+      } catch (e) {}
+    }
+    if (companyOnboarding) {
+      try {
+        const data = JSON.parse(companyOnboarding)
+        if (data.pendingComplete) {
+          setStatus('Continuando con tu registro...')
+          setTimeout(() => { window.location.href = '/onboarding/company/logo' }, 500)
+          return true
+        }
+      } catch (e) {}
+    }
+    return false
+  }
+
   // Helper to check profile and redirect appropriately
   const checkProfileAndRedirect = async (accessToken: string, userId: string) => {
+    // First check for pending onboarding
+    if (checkPendingOnboarding()) {
+      return
+    }
+
     try {
       setStatus('Verificando perfil...')
       const profileResponse = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userId}&select=*`, {

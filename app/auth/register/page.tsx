@@ -20,9 +20,57 @@ export default function RegisterPage() {
     const token = localStorage.getItem('sb-access-token')
     const user = localStorage.getItem('sb-user')
     if (token && user) {
+      // Check if there's pending onboarding
+      const creatorOnboarding = localStorage.getItem('creatorOnboarding')
+      const companyOnboarding = localStorage.getItem('companyOnboarding')
+
+      if (creatorOnboarding) {
+        const data = JSON.parse(creatorOnboarding)
+        if (data.pendingComplete) {
+          window.location.href = '/onboarding/creator/socials'
+          return
+        }
+      }
+      if (companyOnboarding) {
+        const data = JSON.parse(companyOnboarding)
+        if (data.pendingComplete) {
+          window.location.href = '/onboarding/company/logo'
+          return
+        }
+      }
       window.location.href = '/auth/select-type'
     }
   }, [])
+
+  // Helper function to login after registration
+  const loginAfterSignup = async (userEmail: string, userPassword: string): Promise<boolean> => {
+    try {
+      const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON_KEY
+        },
+        body: JSON.stringify({
+          email: userEmail,
+          password: userPassword
+        })
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.access_token) {
+        localStorage.setItem('sb-access-token', data.access_token)
+        localStorage.setItem('sb-refresh-token', data.refresh_token || '')
+        localStorage.setItem('sb-user', JSON.stringify(data.user))
+        return true
+      }
+      return false
+    } catch (err) {
+      console.error('Auto-login error:', err)
+      return false
+    }
+  }
 
   const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -60,10 +108,11 @@ export default function RegisterPage() {
       })
 
       const data = await response.json()
+      console.log('Signup response:', data)
 
       if (!response.ok) {
         if (data.msg?.includes('already registered') || data.error_description?.includes('already registered')) {
-          setError('Este email ya está registrado. Intenta iniciar sesión.')
+          setError('Este email ya esta registrado. Intenta iniciar sesion.')
         } else {
           setError(data.msg || data.error_description || 'Error al crear cuenta')
         }
@@ -71,32 +120,45 @@ export default function RegisterPage() {
         return
       }
 
-      // Store tokens directly in localStorage
+      // Check if we got tokens directly from signup
       if (data.access_token) {
+        console.log('Got tokens from signup')
         localStorage.setItem('sb-access-token', data.access_token)
         localStorage.setItem('sb-refresh-token', data.refresh_token || '')
         localStorage.setItem('sb-user', JSON.stringify(data.user))
-
-        // Redirect immediately
         window.location.href = '/auth/select-type'
-      } else if (data.user && !data.access_token) {
-        // Email confirmation required
-        setError('Cuenta creada. Revisa tu email para confirmar tu cuenta.')
-        setLoading(false)
-      } else {
-        setError('Error inesperado. Intenta de nuevo.')
-        setLoading(false)
+        return
       }
+
+      // If signup succeeded but no tokens (email confirmation might be required)
+      // Try to login immediately with the same credentials
+      if (data.user) {
+        console.log('No tokens from signup, attempting auto-login...')
+        const loginSuccess = await loginAfterSignup(email, password)
+
+        if (loginSuccess) {
+          console.log('Auto-login successful')
+          window.location.href = '/auth/select-type'
+          return
+        } else {
+          // Email confirmation might be required
+          setError('Cuenta creada. Por favor revisa tu email para confirmar tu cuenta, luego inicia sesion.')
+          setLoading(false)
+          return
+        }
+      }
+
+      setError('Error inesperado. Intenta de nuevo.')
+      setLoading(false)
 
     } catch (err: any) {
       console.error('Registration error:', err)
-      setError('Error de conexión. Verifica tu internet e intenta de nuevo.')
+      setError('Error de conexion. Verifica tu internet e intenta de nuevo.')
       setLoading(false)
     }
   }
 
   const handleGoogleSignIn = async () => {
-    // Redirect directly to Google OAuth
     const redirectUrl = `${window.location.origin}/auth/callback`
     const googleAuthUrl = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectUrl)}`
     window.location.href = googleAuthUrl
@@ -141,7 +203,7 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-blue-100 mb-2">Contraseña</label>
+              <label className="block text-sm font-medium text-blue-100 mb-2">Contrasena</label>
               <input
                 type="password"
                 required
@@ -154,7 +216,7 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-blue-100 mb-2">Confirmar contraseña</label>
+              <label className="block text-sm font-medium text-blue-100 mb-2">Confirmar contrasena</label>
               <input
                 type="password"
                 required
@@ -201,9 +263,9 @@ export default function RegisterPage() {
 
           <div className="mt-8 text-center">
             <p className="text-blue-100 text-sm">
-              ¿Ya tienes una cuenta?{' '}
+              Ya tienes una cuenta?{' '}
               <Link href="/auth/login" className="font-medium text-white hover:text-blue-200">
-                Inicia sesión
+                Inicia sesion
               </Link>
             </p>
           </div>
