@@ -1,11 +1,11 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ftvqoudlmojdxwjxljzr.supabase.co'
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
+import { useAuth } from '@/lib/contexts/AuthContext'
+import { supabase } from '@/lib/supabase'
 
 export default function CreatorSocialsPage() {
+  const { user, isAuthenticated, loading: authLoading } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null)
@@ -14,32 +14,14 @@ export default function CreatorSocialsPage() {
   const [youtube, setYoutube] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [hasSession, setHasSession] = useState(false)
 
-  // Inline login form state
-  const [showLoginForm, setShowLoginForm] = useState(false)
-  const [loginEmail, setLoginEmail] = useState('')
-  const [loginPassword, setLoginPassword] = useState('')
-
+  // Load saved data on mount
   useEffect(() => {
-    // Check for existing session
-    const token = localStorage.getItem('sb-access-token')
-    const userStr = localStorage.getItem('sb-user')
-
-    if (token && userStr) {
-      setHasSession(true)
-    }
-
-    // Load any saved social data
     const existing = JSON.parse(localStorage.getItem('creatorOnboarding') || '{}')
     if (existing.instagram) setInstagram(existing.instagram)
     if (existing.tiktok) setTiktok(existing.tiktok)
     if (existing.youtube) setYoutube(existing.youtube)
     if (existing.profilePhoto) setProfilePhoto(existing.profilePhoto)
-
-    // Pre-fill email from temp storage
-    const tempEmail = localStorage.getItem('sb-temp-email')
-    if (tempEmail) setLoginEmail(tempEmail)
   }, [])
 
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -61,119 +43,6 @@ export default function CreatorSocialsPage() {
     fileInputRef.current?.click()
   }
 
-  // Login and save profile in one step
-  const loginAndSave = async (email: string, password: string) => {
-    // First, login
-    const loginResponse = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_ANON_KEY
-      },
-      body: JSON.stringify({ email, password })
-    })
-
-    const loginData = await loginResponse.json()
-
-    if (!loginResponse.ok) {
-      if (loginData.error_description?.includes('Email not confirmed')) {
-        throw new Error('Debes confirmar tu email antes de continuar. Revisa tu bandeja de entrada.')
-      } else if (loginData.error_description?.includes('Invalid login') || loginData.error === 'invalid_grant') {
-        throw new Error('Email o contraseña incorrectos')
-      }
-      throw new Error(loginData.error_description || 'Error al iniciar sesión')
-    }
-
-    if (!loginData.access_token) {
-      throw new Error('No se pudo obtener la sesión')
-    }
-
-    // Save tokens
-    localStorage.setItem('sb-access-token', loginData.access_token)
-    localStorage.setItem('sb-refresh-token', loginData.refresh_token || '')
-    localStorage.setItem('sb-user', JSON.stringify(loginData.user))
-
-    return { token: loginData.access_token, user: loginData.user }
-  }
-
-  // Save profile to Supabase
-  const saveProfile = async (token: string, userData: any) => {
-    const existing = JSON.parse(localStorage.getItem('creatorOnboarding') || '{}')
-
-    const allData = {
-      userType: 'creator',
-      firstName: existing.firstName || null,
-      lastName: existing.lastName || null,
-      location: existing.location || null,
-      phoneNumber: existing.phoneNumber ? `${existing.countryCode || '+56'}${existing.phoneNumber}` : null,
-      academicLevel: existing.academicLevel || null,
-      studies: existing.studies || null,
-      linkedInUrl: existing.linkedInUrl || null,
-      instagram: instagram.trim() || null,
-      tiktok: tiktok.trim() || null,
-      youtube: youtube.trim() || null,
-      profilePhoto: profilePhoto || null
-    }
-
-    const profileData = {
-      user_id: userData.id,
-      user_type: 'creator',
-      full_name: `${existing.firstName || ''} ${existing.lastName || ''}`.trim() || userData.user_metadata?.full_name || userData.email?.split('@')[0] || 'Usuario',
-      bio: JSON.stringify(allData),
-      updated_at: new Date().toISOString()
-    }
-
-    // Check if profile exists
-    const checkResponse = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=id`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'apikey': SUPABASE_ANON_KEY
-      }
-    })
-
-    if (!checkResponse.ok) {
-      if (checkResponse.status === 401) {
-        throw new Error('Sesión expirada')
-      }
-      throw new Error('Error verificando perfil')
-    }
-
-    const profiles = await checkResponse.json()
-
-    let saveResponse
-    if (profiles.length > 0) {
-      saveResponse = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'apikey': SUPABASE_ANON_KEY,
-          'Prefer': 'return=minimal'
-        },
-        body: JSON.stringify(profileData)
-      })
-    } else {
-      saveResponse = await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'apikey': SUPABASE_ANON_KEY,
-          'Prefer': 'return=minimal'
-        },
-        body: JSON.stringify(profileData)
-      })
-    }
-
-    if (!saveResponse.ok) {
-      const errorText = await saveResponse.text()
-      console.error('Save error:', errorText)
-      throw new Error('Error guardando perfil')
-    }
-
-    return true
-  }
-
   const handleFinish = async () => {
     setError('')
     setLoading(true)
@@ -184,109 +53,80 @@ export default function CreatorSocialsPage() {
       return
     }
 
-    // Check for existing session
-    let token = localStorage.getItem('sb-access-token')
-    let userStr = localStorage.getItem('sb-user')
+    // Check authentication
+    if (!isAuthenticated || !user) {
+      setError('Debes iniciar sesion para guardar tu perfil. Ve a /auth/login')
+      setLoading(false)
+      return
+    }
 
-    // If no session, show login form
-    if (!token || !userStr) {
-      // Try auto-login with stored credentials first
-      const tempEmail = localStorage.getItem('sb-temp-email')
-      const tempPass = localStorage.getItem('sb-temp-pass')
+    try {
+      const existing = JSON.parse(localStorage.getItem('creatorOnboarding') || '{}')
 
-      if (tempEmail && tempPass) {
-        try {
-          const result = await loginAndSave(tempEmail, atob(tempPass))
-          token = result.token
-          userStr = JSON.stringify(result.user)
-          setHasSession(true)
-        } catch (err: any) {
-          console.log('Auto-login failed, showing form:', err.message)
-          // Auto-login failed, show the form
-          setShowLoginForm(true)
-          setLoginEmail(tempEmail)
-          setError('Ingresa tu contraseña para completar el registro')
-          setLoading(false)
-          return
-        }
+      const allData = {
+        userType: 'creator',
+        firstName: existing.firstName || null,
+        lastName: existing.lastName || null,
+        location: existing.location || null,
+        phoneNumber: existing.phoneNumber ? `${existing.countryCode || '+56'}${existing.phoneNumber}` : null,
+        academicLevel: existing.academicLevel || null,
+        studies: existing.studies || null,
+        linkedInUrl: existing.linkedInUrl || null,
+        instagram: instagram.trim() || null,
+        tiktok: tiktok.trim() || null,
+        youtube: youtube.trim() || null,
+        profilePhoto: profilePhoto || null
+      }
+
+      const profileData = {
+        user_id: user.id,
+        user_type: 'creator',
+        full_name: `${existing.firstName || ''} ${existing.lastName || ''}`.trim() || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario',
+        bio: JSON.stringify(allData),
+        updated_at: new Date().toISOString()
+      }
+
+      // Check if profile exists
+      const { data: profiles, error: checkError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+
+      if (checkError) {
+        console.error('Profile check error:', checkError)
+        throw new Error('Error verificando perfil')
+      }
+
+      let saveError
+      if (profiles && profiles.length > 0) {
+        // Update existing profile
+        const { error } = await supabase
+          .from('profiles')
+          .update(profileData)
+          .eq('user_id', user.id)
+        saveError = error
       } else {
-        // No stored credentials, show form
-        setShowLoginForm(true)
-        setError('Ingresa tus datos para completar el registro')
-        setLoading(false)
-        return
+        // Insert new profile
+        const { error } = await supabase
+          .from('profiles')
+          .insert(profileData)
+        saveError = error
       }
-    }
 
-    // If we're showing login form and user submitted it
-    if (showLoginForm && loginEmail && loginPassword) {
-      try {
-        const result = await loginAndSave(loginEmail, loginPassword)
-        token = result.token
-        userStr = JSON.stringify(result.user)
-        setHasSession(true)
-        setShowLoginForm(false)
-      } catch (err: any) {
-        setError(err.message)
-        setLoading(false)
-        return
+      if (saveError) {
+        console.error('Save error:', saveError)
+        throw new Error('Error guardando perfil')
       }
-    }
-
-    // Now save the profile
-    if (!token || !userStr) {
-      setError('Error de sesión. Intenta de nuevo.')
-      setLoading(false)
-      return
-    }
-
-    try {
-      const userData = JSON.parse(userStr)
-      await saveProfile(token, userData)
-
-      // Clear onboarding data and temp credentials
-      localStorage.removeItem('creatorOnboarding')
-      localStorage.removeItem('sb-temp-email')
-      localStorage.removeItem('sb-temp-pass')
-
-      // Redirect to dashboard
-      window.location.href = '/creator/dashboard'
-    } catch (err: any) {
-      console.error('Error:', err)
-      setError(err.message || 'Error guardando perfil. Intenta de nuevo.')
-      setLoading(false)
-    }
-  }
-
-  const handleLoginSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (!loginEmail || !loginPassword) {
-      setError('Ingresa email y contraseña')
-      return
-    }
-
-    setLoading(true)
-    setError('')
-
-    try {
-      // Login
-      const result = await loginAndSave(loginEmail, loginPassword)
-      setHasSession(true)
-      setShowLoginForm(false)
-
-      // Now save profile
-      await saveProfile(result.token, result.user)
 
       // Clear onboarding data
       localStorage.removeItem('creatorOnboarding')
-      localStorage.removeItem('sb-temp-email')
-      localStorage.removeItem('sb-temp-pass')
 
       // Redirect to dashboard
       window.location.href = '/creator/dashboard'
-    } catch (err: any) {
-      setError(err.message)
+
+    } catch (error: any) {
+      console.error('Error:', error)
+      setError(error.message || 'Error guardando tu perfil. Intenta de nuevo.')
       setLoading(false)
     }
   }
@@ -299,6 +139,15 @@ export default function CreatorSocialsPage() {
     const existing = JSON.parse(localStorage.getItem('creatorOnboarding') || '{}')
     delete existing.profilePhoto
     localStorage.setItem('creatorOnboarding', JSON.stringify(existing))
+  }
+
+  // Show loading while auth initializes
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-slate-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    )
   }
 
   return (
@@ -337,43 +186,19 @@ export default function CreatorSocialsPage() {
           Las marcas quieren conocerte mejor
         </p>
 
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
-            <p className="text-red-600 text-sm text-center">{error}</p>
+        {/* Auth status */}
+        {!isAuthenticated && (
+          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
+            <p className="text-yellow-800 text-sm text-center">
+              No hay sesion activa.{' '}
+              <a href="/auth/login" className="font-bold underline">Inicia sesion</a> para guardar tu perfil.
+            </p>
           </div>
         )}
 
-        {/* Inline Login Form - Shows when no session */}
-        {showLoginForm && (
-          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-            <p className="text-blue-800 text-sm text-center mb-4 font-medium">
-              Inicia sesión para guardar tu perfil
-            </p>
-            <form onSubmit={handleLoginSubmit} className="space-y-3">
-              <input
-                type="email"
-                value={loginEmail}
-                onChange={(e) => setLoginEmail(e.target.value)}
-                placeholder="tu@email.com"
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800"
-                disabled={loading}
-              />
-              <input
-                type="password"
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
-                placeholder="Contraseña"
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800"
-                disabled={loading}
-              />
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-50 transition"
-              >
-                {loading ? 'Procesando...' : 'Iniciar sesión y completar'}
-              </button>
-            </form>
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+            <p className="text-red-600 text-sm text-center">{error}</p>
           </div>
         )}
 
@@ -492,22 +317,20 @@ export default function CreatorSocialsPage() {
         </p>
       </div>
 
-      {/* Fixed Bottom Button - Only show if not showing login form */}
-      {!showLoginForm && (
-        <div className="fixed bottom-0 left-0 right-0 p-6 bg-white/90 backdrop-blur-md border-t border-gray-100">
-          <button
-            onClick={handleFinish}
-            disabled={loading}
-            className={`w-full py-4 rounded-2xl font-bold text-lg transition-all shadow-xl ${
-              loading
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-gradient-to-r from-slate-700 to-slate-900 hover:from-slate-600 hover:to-slate-700 hover:shadow-2xl hover:scale-[1.02]'
-            } text-white`}
-          >
-            {loading ? 'Guardando...' : '¡Completar Perfil!'}
-          </button>
-        </div>
-      )}
+      {/* Fixed Bottom Button */}
+      <div className="fixed bottom-0 left-0 right-0 p-6 bg-white/90 backdrop-blur-md border-t border-gray-100">
+        <button
+          onClick={handleFinish}
+          disabled={loading || !isAuthenticated}
+          className={`w-full py-4 rounded-2xl font-bold text-lg transition-all shadow-xl ${
+            loading || !isAuthenticated
+              ? 'bg-gray-400 cursor-not-allowed'
+              : 'bg-gradient-to-r from-slate-700 to-slate-900 hover:from-slate-600 hover:to-slate-700 hover:shadow-2xl hover:scale-[1.02]'
+          } text-white`}
+        >
+          {loading ? 'Guardando...' : !isAuthenticated ? 'Inicia sesion primero' : '¡Completar Perfil!'}
+        </button>
+      </div>
     </div>
   )
 }

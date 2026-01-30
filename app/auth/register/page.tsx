@@ -2,9 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-
-const SUPABASE_URL = 'https://ftvqoudlmojdxwjxljzr.supabase.co'
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
+import { supabase } from '@/lib/supabase'
 
 export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
@@ -35,80 +33,67 @@ export default function RegisterPage() {
     setError('')
 
     try {
-      // Step 1: Try to signup
-      console.log('1. Attempting signup...')
-      const signupResponse = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': SUPABASE_ANON_KEY
-        },
-        body: JSON.stringify({
-          email,
-          password,
+      console.log('1. Attempting signup with Supabase client...')
+
+      // Use Supabase client directly - it handles session storage automatically
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
           data: { full_name: email.split('@')[0] }
-        })
+        }
       })
 
-      const signupData = await signupResponse.json()
-      console.log('2. Signup response:', signupData)
+      console.log('2. Signup response:', {
+        user: data.user?.id,
+        session: !!data.session,
+        error: signUpError?.message
+      })
 
-      // Check for errors
-      if (!signupResponse.ok) {
-        if (signupData.msg?.includes('already registered') || signupData.error_description?.includes('already registered')) {
+      if (signUpError) {
+        if (signUpError.message?.includes('already registered')) {
           setError('Este email ya esta registrado. Intenta iniciar sesion.')
         } else {
-          setError(signupData.msg || signupData.error_description || 'Error al crear cuenta')
+          setError(signUpError.message || 'Error al crear cuenta')
         }
         setLoading(false)
         return
       }
 
-      // Step 2: If signup returned tokens, use them
-      if (signupData.access_token) {
-        console.log('3. Got tokens from signup, storing...')
-        localStorage.setItem('sb-access-token', signupData.access_token)
-        localStorage.setItem('sb-refresh-token', signupData.refresh_token || '')
-        localStorage.setItem('sb-user', JSON.stringify(signupData.user))
-        console.log('4. Tokens stored, redirecting...')
+      // If we got a session, we're good - Supabase client stored it automatically
+      if (data.session) {
+        console.log('3. Session created automatically, redirecting...')
         window.location.href = '/auth/select-type'
         return
       }
 
-      // Step 3: If no tokens but got user, try to login immediately
-      if (signupData.user || signupData.id) {
-        console.log('3. No tokens, attempting login...')
+      // If no session but we got a user, try to sign in immediately
+      if (data.user && !data.session) {
+        console.log('3. No session from signup, attempting signin...')
 
-        const loginResponse = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': SUPABASE_ANON_KEY
-          },
-          body: JSON.stringify({ email, password })
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password
         })
 
-        const loginData = await loginResponse.json()
-        console.log('4. Login response:', loginData)
+        console.log('4. Signin response:', {
+          session: !!signInData.session,
+          error: signInError?.message
+        })
 
-        if (loginResponse.ok && loginData.access_token) {
-          console.log('5. Login successful, storing tokens...')
-          localStorage.setItem('sb-access-token', loginData.access_token)
-          localStorage.setItem('sb-refresh-token', loginData.refresh_token || '')
-          localStorage.setItem('sb-user', JSON.stringify(loginData.user))
-          console.log('6. Tokens stored, redirecting...')
-          window.location.href = '/auth/select-type'
-          return
-        } else {
-          console.log('5. Login failed:', loginData)
-          setError('Cuenta creada pero no pudimos iniciar sesion automaticamente. Por favor ve a iniciar sesion.')
+        if (signInError) {
+          setError('Cuenta creada. Por favor ve a iniciar sesion.')
           setLoading(false)
+          return
+        }
+
+        if (signInData.session) {
+          console.log('5. Signin successful, redirecting...')
+          window.location.href = '/auth/select-type'
           return
         }
       }
 
-      // Step 4: Something unexpected
-      console.log('3. Unexpected response, no user or tokens')
       setError('Error inesperado. Intenta de nuevo.')
       setLoading(false)
 
@@ -119,10 +104,17 @@ export default function RegisterPage() {
     }
   }
 
-  const handleGoogleSignIn = () => {
-    const redirectUrl = `${window.location.origin}/auth/callback`
-    const googleAuthUrl = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectUrl)}`
-    window.location.href = googleAuthUrl
+  const handleGoogleSignIn = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`
+      }
+    })
+
+    if (error) {
+      setError(error.message)
+    }
   }
 
   return (
