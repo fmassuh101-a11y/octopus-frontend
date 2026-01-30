@@ -1,14 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ftvqoudlmojdxwjxljzr.supabase.co'
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
+import { supabase } from '@/lib/supabase'
 
 export default function LoginPage() {
-  const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [email, setEmail] = useState('')
@@ -40,15 +36,14 @@ export default function LoginPage() {
     return false
   }
 
-  // Check if already logged in
+  // Check if already logged in using Supabase client
   useEffect(() => {
     const checkExistingSession = async () => {
-      const token = localStorage.getItem('sb-access-token')
-      const userStr = localStorage.getItem('sb-user')
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
 
-      if (token && userStr) {
-        try {
-          const user = JSON.parse(userStr)
+        if (session?.user) {
+          console.log('[Login] Existing session found:', session.user.email)
 
           // First check for pending onboarding
           if (checkPendingOnboarding()) {
@@ -56,34 +51,26 @@ export default function LoginPage() {
           }
 
           // Check if user has profile
-          const profileResponse = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=user_type`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'apikey': SUPABASE_ANON_KEY
-            }
-          })
+          const { data: profiles, error: profileError } = await supabase
+            .from('profiles')
+            .select('user_type')
+            .eq('user_id', session.user.id)
 
-          if (profileResponse.ok) {
-            const profiles = await profileResponse.json()
-            if (profiles && profiles.length > 0) {
-              const userType = profiles[0].user_type
-              if (userType === 'creator') {
-                window.location.href = '/creator/dashboard'
-                return
-              } else if (userType === 'company') {
-                window.location.href = '/company/dashboard'
-                return
-              }
+          if (!profileError && profiles && profiles.length > 0) {
+            const userType = profiles[0].user_type
+            if (userType === 'creator') {
+              window.location.href = '/creator/dashboard'
+              return
+            } else if (userType === 'company') {
+              window.location.href = '/company/dashboard'
+              return
             }
           }
-          // Has token but no profile, go to select-type
+          // Has session but no profile, go to select-type
           window.location.href = '/auth/select-type'
-        } catch (err) {
-          // Invalid session, clear it
-          localStorage.removeItem('sb-access-token')
-          localStorage.removeItem('sb-refresh-token')
-          localStorage.removeItem('sb-user')
         }
+      } catch (err) {
+        console.error('[Login] Error checking session:', err)
       }
     }
     checkExistingSession()
@@ -101,91 +88,85 @@ export default function LoginPage() {
     setError('')
 
     try {
-      const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': SUPABASE_ANON_KEY
-        },
-        body: JSON.stringify({
-          email,
-          password
-        })
+      console.log('[Login] Attempting sign in with Supabase client...')
+
+      // Use Supabase client directly - this properly stores the session
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password
       })
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        if (data.error_description?.includes('Invalid login') || data.error === 'invalid_grant') {
+      if (signInError) {
+        console.error('[Login] Sign in error:', signInError)
+        if (signInError.message?.includes('Invalid login') || signInError.message?.includes('invalid_grant')) {
           setError('Email o contraseña incorrectos')
-        } else if (data.error_description?.includes('Email not confirmed')) {
+        } else if (signInError.message?.includes('Email not confirmed')) {
           setError('Debes confirmar tu email antes de iniciar sesión')
         } else {
-          setError(data.error_description || data.msg || 'Error al iniciar sesión')
+          setError(signInError.message || 'Error al iniciar sesión')
         }
         setLoading(false)
         return
       }
 
-      // Store tokens directly
-      if (data.access_token) {
-        localStorage.setItem('sb-access-token', data.access_token)
-        localStorage.setItem('sb-refresh-token', data.refresh_token || '')
-        localStorage.setItem('sb-user', JSON.stringify(data.user))
-
-        // First check for pending onboarding
-        if (checkPendingOnboarding()) {
-          return
-        }
-
-        // Check if user has a profile and redirect accordingly
-        try {
-          const profileResponse = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${data.user.id}&select=*`, {
-            headers: {
-              'Authorization': `Bearer ${data.access_token}`,
-              'apikey': SUPABASE_ANON_KEY
-            }
-          })
-
-          if (profileResponse.ok) {
-            const profiles = await profileResponse.json()
-
-            if (profiles && profiles.length > 0) {
-              const profile = profiles[0]
-              const userType = profile.user_type
-
-              // User has profile, redirect to appropriate dashboard
-              if (userType === 'creator') {
-                window.location.href = '/creator/dashboard'
-                return
-              } else if (userType === 'company') {
-                window.location.href = '/company/dashboard'
-                return
-              }
-            }
-          }
-        } catch (err) {
-          console.error('Error checking profile:', err)
-        }
-
-        // No profile found, go to select-type
-        window.location.href = '/auth/select-type'
-      } else {
-        setError('Error al iniciar sesión')
+      if (!data.session) {
+        setError('Error al iniciar sesión - no se pudo crear la sesión')
         setLoading(false)
+        return
       }
 
+      console.log('[Login] Sign in successful, session created:', data.session.user.email)
+
+      // First check for pending onboarding
+      if (checkPendingOnboarding()) {
+        return
+      }
+
+      // Check if user has a profile and redirect accordingly
+      try {
+        const { data: profiles, error: profileError } = await supabase
+          .from('profiles')
+          .select('user_type')
+          .eq('user_id', data.session.user.id)
+
+        if (!profileError && profiles && profiles.length > 0) {
+          const userType = profiles[0].user_type
+
+          // User has profile, redirect to appropriate dashboard
+          if (userType === 'creator') {
+            window.location.href = '/creator/dashboard'
+            return
+          } else if (userType === 'company') {
+            window.location.href = '/company/dashboard'
+            return
+          }
+        }
+      } catch (err) {
+        console.error('[Login] Error checking profile:', err)
+      }
+
+      // No profile found, go to select-type
+      window.location.href = '/auth/select-type'
+
     } catch (err: any) {
-      console.error('Login error:', err)
+      console.error('[Login] Login error:', err)
       setError('Error de conexión. Verifica tu internet e intenta de nuevo.')
       setLoading(false)
     }
   }
 
-  const handleGoogleSignIn = () => {
-    const redirectUrl = `${window.location.origin}/auth/callback`
-    const googleAuthUrl = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectUrl)}`
-    window.location.href = googleAuthUrl
+  const handleGoogleSignIn = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`
+      }
+    })
+
+    if (error) {
+      console.error('[Login] Google sign in error:', error)
+      setError(error.message)
+    }
   }
 
   return (

@@ -33,7 +33,7 @@ export default function RegisterPage() {
     setError('')
 
     try {
-      console.log('1. Attempting signup with Supabase client...')
+      console.log('[Register] 1. Attempting signup with Supabase client...')
 
       // Use Supabase client directly - it handles session storage automatically
       const { data, error: signUpError } = await supabase.auth.signUp({
@@ -44,7 +44,7 @@ export default function RegisterPage() {
         }
       })
 
-      console.log('2. Signup response:', {
+      console.log('[Register] 2. Signup response:', {
         user: data.user?.id,
         session: !!data.session,
         error: signUpError?.message
@@ -60,23 +60,34 @@ export default function RegisterPage() {
         return
       }
 
-      // If we got a session, we're good - Supabase client stored it automatically
+      // If we got a session, verify it's stored before redirecting
       if (data.session) {
-        console.log('3. Session created automatically, redirecting...')
-        window.location.href = '/auth/select-type'
-        return
+        console.log('[Register] 3. Session created, verifying persistence...')
+
+        // Wait a moment for persistence to complete
+        await new Promise(resolve => setTimeout(resolve, 100))
+
+        // Verify session is accessible
+        const { data: verifyData } = await supabase.auth.getSession()
+        if (verifyData.session) {
+          console.log('[Register] 4. Session verified, redirecting...')
+          window.location.href = '/auth/select-type'
+          return
+        } else {
+          console.log('[Register] 4. Session not found after verify, trying again...')
+        }
       }
 
       // If no session but we got a user, try to sign in immediately
       if (data.user && !data.session) {
-        console.log('3. No session from signup, attempting signin...')
+        console.log('[Register] 3. No session from signup, attempting signin...')
 
         const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password
         })
 
-        console.log('4. Signin response:', {
+        console.log('[Register] 4. Signin response:', {
           session: !!signInData.session,
           error: signInError?.message
         })
@@ -88,9 +99,18 @@ export default function RegisterPage() {
         }
 
         if (signInData.session) {
-          console.log('5. Signin successful, redirecting...')
-          window.location.href = '/auth/select-type'
-          return
+          console.log('[Register] 5. Signin successful, verifying persistence...')
+
+          // Wait a moment for persistence to complete
+          await new Promise(resolve => setTimeout(resolve, 100))
+
+          // Verify session is accessible
+          const { data: verifyData } = await supabase.auth.getSession()
+          if (verifyData.session) {
+            console.log('[Register] 6. Session verified, redirecting...')
+            window.location.href = '/auth/select-type'
+            return
+          }
         }
       }
 

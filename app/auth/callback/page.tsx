@@ -1,9 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ftvqoudlmojdxwjxljzr.supabase.co'
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
+import { supabase } from '@/lib/supabase'
 
 export default function AuthCallback() {
   const [status, setStatus] = useState('Procesando...')
@@ -42,7 +40,7 @@ export default function AuthCallback() {
   }
 
   // Helper to check profile and redirect appropriately
-  const checkProfileAndRedirect = async (accessToken: string, userId: string) => {
+  const checkProfileAndRedirect = async (userId: string) => {
     // First check for pending onboarding
     if (checkPendingOnboarding()) {
       return
@@ -50,34 +48,29 @@ export default function AuthCallback() {
 
     try {
       setStatus('Verificando perfil...')
-      const profileResponse = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userId}&select=*`, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'apikey': SUPABASE_ANON_KEY || ''
-        }
-      })
+      console.log('[Callback] Checking profile for user:', userId)
 
-      if (profileResponse.ok) {
-        const profiles = await profileResponse.json()
-        console.log('Profiles found:', profiles)
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('user_type')
+        .eq('user_id', userId)
 
-        if (profiles && profiles.length > 0) {
-          const userType = profiles[0].user_type
-          console.log('User type:', userType)
+      if (!profileError && profiles && profiles.length > 0) {
+        const userType = profiles[0].user_type
+        console.log('[Callback] User type:', userType)
 
-          if (userType === 'creator') {
-            setStatus('¡Bienvenido de vuelta! Redirigiendo...')
-            setTimeout(() => { window.location.href = '/creator/dashboard' }, 500)
-            return
-          } else if (userType === 'company') {
-            setStatus('¡Bienvenido de vuelta! Redirigiendo...')
-            setTimeout(() => { window.location.href = '/company/dashboard' }, 500)
-            return
-          }
+        if (userType === 'creator') {
+          setStatus('¡Bienvenido de vuelta! Redirigiendo...')
+          setTimeout(() => { window.location.href = '/creator/dashboard' }, 500)
+          return
+        } else if (userType === 'company') {
+          setStatus('¡Bienvenido de vuelta! Redirigiendo...')
+          setTimeout(() => { window.location.href = '/company/dashboard' }, 500)
+          return
         }
       }
     } catch (err) {
-      console.error('Error checking profile:', err)
+      console.error('[Callback] Error checking profile:', err)
     }
 
     // No profile found, go to select-type
@@ -87,7 +80,9 @@ export default function AuthCallback() {
 
   const handleCallback = async () => {
     try {
-      // Check for access_token in hash (implicit flow)
+      console.log('[Callback] Starting callback processing...')
+
+      // Check for access_token in hash (implicit flow from OAuth)
       const hash = window.location.hash.substring(1)
       const hashParams = new URLSearchParams(hash)
       const accessToken = hashParams.get('access_token')
@@ -95,30 +90,23 @@ export default function AuthCallback() {
 
       if (accessToken) {
         setStatus('Guardando sesión...')
+        console.log('[Callback] Found access token in hash, setting session with Supabase client...')
 
-        // Store tokens directly - NO supabase client
-        localStorage.setItem('sb-access-token', accessToken)
-        localStorage.setItem('sb-refresh-token', refreshToken || '')
+        // Use Supabase client to set session - this ensures proper persistence
+        const { data, error: sessionError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken || ''
+        })
 
-        // Get user info from token
-        let userId = ''
-        try {
-          const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-            headers: {
-              'Authorization': `Bearer ${accessToken}`,
-              'apikey': SUPABASE_ANON_KEY || ''
-            }
-          })
-          const user = await response.json()
-          localStorage.setItem('sb-user', JSON.stringify(user))
-          userId = user.id
-        } catch (e) {
-          console.log('Could not fetch user info')
+        if (sessionError) {
+          console.error('[Callback] Error setting session:', sessionError)
+          throw sessionError
         }
 
-        // Check profile and redirect
-        if (userId) {
-          await checkProfileAndRedirect(accessToken, userId)
+        console.log('[Callback] Session set successfully:', data.session?.user?.email)
+
+        if (data.session?.user) {
+          await checkProfileAndRedirect(data.session.user.id)
         } else {
           setStatus('¡Listo! Redirigiendo...')
           setTimeout(() => { window.location.href = '/auth/select-type' }, 500)
@@ -132,42 +120,39 @@ export default function AuthCallback() {
 
       if (code) {
         setStatus('Intercambiando código...')
+        console.log('[Callback] Found code in URL, exchanging...')
 
-        // Exchange code for session
-        const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=pkce`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': SUPABASE_ANON_KEY || ''
-          },
-          body: JSON.stringify({
-            auth_code: code,
-            code_verifier: localStorage.getItem('code_verifier') || ''
-          })
-        })
+        // Use Supabase client to exchange code
+        const { data, error: codeError } = await supabase.auth.exchangeCodeForSession(code)
 
-        if (response.ok) {
-          const data = await response.json()
-          localStorage.setItem('sb-access-token', data.access_token)
-          localStorage.setItem('sb-refresh-token', data.refresh_token || '')
-          localStorage.setItem('sb-user', JSON.stringify(data.user))
-
-          // Check profile and redirect
-          await checkProfileAndRedirect(data.access_token, data.user.id)
-          return
+        if (codeError) {
+          console.error('[Callback] Error exchanging code:', codeError)
+          throw codeError
         }
-      }
 
-      // Check if we already have a session
-      const existingToken = localStorage.getItem('sb-access-token')
-      const userStr = localStorage.getItem('sb-user')
-      if (existingToken && userStr) {
-        const user = JSON.parse(userStr)
-        await checkProfileAndRedirect(existingToken, user.id)
+        console.log('[Callback] Code exchanged successfully:', data.session?.user?.email)
+
+        if (data.session?.user) {
+          await checkProfileAndRedirect(data.session.user.id)
+        } else {
+          setStatus('¡Listo! Redirigiendo...')
+          setTimeout(() => { window.location.href = '/auth/select-type' }, 500)
+        }
         return
       }
 
-      // No tokens found
+      // Check if we already have a session via Supabase client
+      console.log('[Callback] No tokens in URL, checking existing session...')
+      const { data: { session } } = await supabase.auth.getSession()
+
+      if (session?.user) {
+        console.log('[Callback] Found existing session:', session.user.email)
+        await checkProfileAndRedirect(session.user.id)
+        return
+      }
+
+      // No session found
+      console.log('[Callback] No session found')
       setError(true)
       setStatus('No se encontró sesión')
       setTimeout(() => {
@@ -175,7 +160,7 @@ export default function AuthCallback() {
       }, 2000)
 
     } catch (err) {
-      console.error('Callback error:', err)
+      console.error('[Callback] Callback error:', err)
       setError(true)
       setStatus('Error de autenticación')
       setTimeout(() => {
