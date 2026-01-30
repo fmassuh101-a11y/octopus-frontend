@@ -3,9 +3,10 @@
 import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '@/lib/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
+import { User } from '@supabase/supabase-js'
 
 export default function CreatorSocialsPage() {
-  const { user, isAuthenticated, loading: authLoading } = useAuth()
+  const { user: authUser, isAuthenticated: authIsAuthenticated, loading: authLoading } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null)
@@ -15,13 +16,45 @@ export default function CreatorSocialsPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  // Load saved data on mount
+  // Fallback user state in case AuthContext doesn't detect session
+  const [fallbackUser, setFallbackUser] = useState<User | null>(null)
+  const [checkingSession, setCheckingSession] = useState(true)
+
+  // The actual user to use - prefer AuthContext, fallback to direct check
+  const user = authUser || fallbackUser
+  const isAuthenticated = authIsAuthenticated || !!fallbackUser
+
+  // Load saved data and check session directly on mount
   useEffect(() => {
     const existing = JSON.parse(localStorage.getItem('creatorOnboarding') || '{}')
     if (existing.instagram) setInstagram(existing.instagram)
     if (existing.tiktok) setTiktok(existing.tiktok)
     if (existing.youtube) setYoutube(existing.youtube)
     if (existing.profilePhoto) setProfilePhoto(existing.profilePhoto)
+
+    // Direct session check as fallback
+    const checkSessionDirectly = async () => {
+      try {
+        console.log('[Socials] Checking session directly...')
+        const { data: { session }, error } = await supabase.auth.getSession()
+
+        console.log('[Socials] Direct session check:', {
+          hasSession: !!session,
+          userEmail: session?.user?.email,
+          error: error?.message
+        })
+
+        if (session?.user) {
+          setFallbackUser(session.user)
+        }
+      } catch (err) {
+        console.error('[Socials] Error checking session:', err)
+      } finally {
+        setCheckingSession(false)
+      }
+    }
+
+    checkSessionDirectly()
   }, [])
 
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -142,10 +175,13 @@ export default function CreatorSocialsPage() {
   }
 
   // Show loading while auth initializes
-  if (authLoading) {
+  if (authLoading || checkingSession) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-slate-600 border-t-transparent rounded-full animate-spin"></div>
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-slate-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-500 text-sm">Verificando sesión...</p>
+        </div>
       </div>
     )
   }
@@ -190,8 +226,18 @@ export default function CreatorSocialsPage() {
         {!isAuthenticated && (
           <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
             <p className="text-yellow-800 text-sm text-center">
-              No hay sesion activa.{' '}
-              <a href="/auth/login" className="font-bold underline">Inicia sesion</a> para guardar tu perfil.
+              No hay sesión activa.{' '}
+              <a href="/auth/login" className="font-bold underline">Inicia sesión</a> para guardar tu perfil.
+            </p>
+            <p className="text-yellow-600 text-xs text-center mt-2">
+              Si acabas de registrarte, intenta <button onClick={() => window.location.reload()} className="underline">recargar la página</button>
+            </p>
+          </div>
+        )}
+        {isAuthenticated && user && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl">
+            <p className="text-green-800 text-sm text-center">
+              Sesión activa: {user.email}
             </p>
           </div>
         )}
