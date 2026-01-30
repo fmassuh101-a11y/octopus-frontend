@@ -2,40 +2,51 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ftvqoudlmojdxwjxljzr.supabase.co'
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
+import { supabase } from '@/lib/supabase'
+import { User } from '@supabase/supabase-js'
 
 export default function CompanyLogoPage() {
   const [logo, setLogo] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [formData, setFormData] = useState<any>({})
-  const [hasSession, setHasSession] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Inline login form state
-  const [showLoginForm, setShowLoginForm] = useState(false)
-  const [loginEmail, setLoginEmail] = useState('')
-  const [loginPassword, setLoginPassword] = useState('')
+  // Auth state
+  const [user, setUser] = useState<User | null>(null)
+  const [checkingSession, setCheckingSession] = useState(true)
+
+  const isAuthenticated = !!user
 
   useEffect(() => {
-    // Check for session
-    const token = localStorage.getItem('sb-access-token')
-    const userStr = localStorage.getItem('sb-user')
-
-    if (token && userStr) {
-      setHasSession(true)
-    }
-
     // Load existing company onboarding data
     const existing = JSON.parse(localStorage.getItem('companyOnboarding') || '{}')
     setFormData(existing)
     if (existing.logo) setLogo(existing.logo)
 
-    // Pre-fill email from temp storage
-    const tempEmail = localStorage.getItem('sb-temp-email')
-    if (tempEmail) setLoginEmail(tempEmail)
+    // Check session using Supabase client
+    const checkSession = async () => {
+      try {
+        console.log('[CompanyLogo] Checking session...')
+        const { data: { session }, error } = await supabase.auth.getSession()
+
+        console.log('[CompanyLogo] Session check:', {
+          hasSession: !!session,
+          userEmail: session?.user?.email,
+          error: error?.message
+        })
+
+        if (session?.user) {
+          setUser(session.user)
+        }
+      } catch (err) {
+        console.error('[CompanyLogo] Error checking session:', err)
+      } finally {
+        setCheckingSession(false)
+      }
+    }
+
+    checkSession()
   }, [])
 
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,208 +64,98 @@ export default function CompanyLogoPage() {
     }
   }
 
-  // Login and get session
-  const loginAndGetSession = async (email: string, password: string) => {
-    const loginResponse = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_ANON_KEY
-      },
-      body: JSON.stringify({ email, password })
-    })
-
-    const loginData = await loginResponse.json()
-
-    if (!loginResponse.ok) {
-      if (loginData.error_description?.includes('Email not confirmed')) {
-        throw new Error('Debes confirmar tu email antes de continuar. Revisa tu bandeja de entrada.')
-      } else if (loginData.error_description?.includes('Invalid login') || loginData.error === 'invalid_grant') {
-        throw new Error('Email o contraseña incorrectos')
-      }
-      throw new Error(loginData.error_description || 'Error al iniciar sesión')
-    }
-
-    if (!loginData.access_token) {
-      throw new Error('No se pudo obtener la sesión')
-    }
-
-    // Save tokens
-    localStorage.setItem('sb-access-token', loginData.access_token)
-    localStorage.setItem('sb-refresh-token', loginData.refresh_token || '')
-    localStorage.setItem('sb-user', JSON.stringify(loginData.user))
-
-    return { token: loginData.access_token, user: loginData.user }
-  }
-
-  // Save profile to Supabase
-  const saveProfile = async (token: string, userData: any) => {
-    const allData = {
-      userType: 'company',
-      companyName: formData.companyName || null,
-      website: formData.website || null,
-      businessType: formData.businessType || null,
-      orgType: formData.orgType || null,
-      niche: formData.niche || null,
-      role: formData.role || null,
-      phoneNumber: formData.phoneNumber ? `${formData.countryCode || '+1'}${formData.phoneNumber}` : null,
-      tiktok: formData.tiktok || null,
-      instagram: formData.instagram || null,
-      linkedin: formData.linkedin || null,
-      appStoreUrl: formData.appStoreUrl || null,
-      hiringRange: formData.hiringRange || null,
-      marketingStrategy: formData.marketingStrategy || null,
-      logo: logo || null
-    }
-
-    const profileData: any = {
-      user_id: userData.id,
-      user_type: 'company',
-      full_name: formData.companyName || userData.user_metadata?.full_name || userData.email?.split('@')[0] || 'Empresa',
-      bio: JSON.stringify(allData),
-      updated_at: new Date().toISOString()
-    }
-
-    // Check if profile exists
-    const checkResponse = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=id`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'apikey': SUPABASE_ANON_KEY
-      }
-    })
-
-    if (!checkResponse.ok) {
-      if (checkResponse.status === 401) {
-        throw new Error('Sesión expirada')
-      }
-      throw new Error('Error verificando perfil')
-    }
-
-    const profiles = await checkResponse.json()
-
-    let saveResponse
-    if (profiles.length > 0) {
-      saveResponse = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'apikey': SUPABASE_ANON_KEY,
-          'Prefer': 'return=minimal'
-        },
-        body: JSON.stringify(profileData)
-      })
-    } else {
-      saveResponse = await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'apikey': SUPABASE_ANON_KEY,
-          'Prefer': 'return=minimal'
-        },
-        body: JSON.stringify(profileData)
-      })
-    }
-
-    if (!saveResponse.ok) {
-      const errorText = await saveResponse.text()
-      console.error('Save error:', errorText)
-      throw new Error('Error guardando perfil')
-    }
-
-    return true
-  }
-
   const handleSubmit = async () => {
     setLoading(true)
     setError('')
 
-    // Check for existing session
-    let token = localStorage.getItem('sb-access-token')
-    let userStr = localStorage.getItem('sb-user')
-
-    // If no session, try auto-login or show form
-    if (!token || !userStr) {
-      const tempEmail = localStorage.getItem('sb-temp-email')
-      const tempPass = localStorage.getItem('sb-temp-pass')
-
-      if (tempEmail && tempPass) {
-        try {
-          const result = await loginAndGetSession(tempEmail, atob(tempPass))
-          token = result.token
-          userStr = JSON.stringify(result.user)
-          setHasSession(true)
-        } catch (err: any) {
-          console.log('Auto-login failed, showing form:', err.message)
-          setShowLoginForm(true)
-          setLoginEmail(tempEmail)
-          setError('Ingresa tu contraseña para completar el registro')
-          setLoading(false)
-          return
-        }
-      } else {
-        setShowLoginForm(true)
-        setError('Ingresa tus datos para completar el registro')
-        setLoading(false)
-        return
-      }
-    }
-
-    // Now save the profile
-    if (!token || !userStr) {
-      setError('Error de sesión. Intenta de nuevo.')
+    if (!user) {
+      setError('Debes iniciar sesión para guardar tu perfil')
       setLoading(false)
       return
     }
 
     try {
-      const userData = JSON.parse(userStr)
-      await saveProfile(token, userData)
+      const allData = {
+        userType: 'company',
+        companyName: formData.companyName || null,
+        website: formData.website || null,
+        businessType: formData.businessType || null,
+        orgType: formData.orgType || null,
+        niche: formData.niche || null,
+        role: formData.role || null,
+        phoneNumber: formData.phoneNumber ? `${formData.countryCode || '+1'}${formData.phoneNumber}` : null,
+        tiktok: formData.tiktok || null,
+        instagram: formData.instagram || null,
+        linkedin: formData.linkedin || null,
+        appStoreUrl: formData.appStoreUrl || null,
+        hiringRange: formData.hiringRange || null,
+        marketingStrategy: formData.marketingStrategy || null,
+        logo: logo || null
+      }
 
-      // Clear data
+      const profileData = {
+        user_id: user.id,
+        user_type: 'company',
+        full_name: formData.companyName || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Empresa',
+        bio: JSON.stringify(allData),
+        updated_at: new Date().toISOString()
+      }
+
+      // Check if profile exists
+      const { data: profiles, error: checkError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+
+      if (checkError) {
+        console.error('[CompanyLogo] Profile check error:', checkError)
+        throw new Error('Error verificando perfil')
+      }
+
+      let saveError
+      if (profiles && profiles.length > 0) {
+        // Update existing profile
+        const { error } = await supabase
+          .from('profiles')
+          .update(profileData)
+          .eq('user_id', user.id)
+        saveError = error
+      } else {
+        // Insert new profile
+        const { error } = await supabase
+          .from('profiles')
+          .insert(profileData)
+        saveError = error
+      }
+
+      if (saveError) {
+        console.error('[CompanyLogo] Save error:', saveError)
+        throw new Error('Error guardando perfil')
+      }
+
+      // Clear onboarding data
       localStorage.removeItem('companyOnboarding')
-      localStorage.removeItem('sb-temp-email')
-      localStorage.removeItem('sb-temp-pass')
 
+      // Redirect to dashboard
       window.location.href = '/company/dashboard'
+
     } catch (err: any) {
-      console.error('Error:', err)
+      console.error('[CompanyLogo] Error:', err)
       setError(err.message || 'Error guardando. Intenta de nuevo.')
       setLoading(false)
     }
   }
 
-  const handleLoginSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (!loginEmail || !loginPassword) {
-      setError('Ingresa email y contraseña')
-      return
-    }
-
-    setLoading(true)
-    setError('')
-
-    try {
-      // Login
-      const result = await loginAndGetSession(loginEmail, loginPassword)
-      setHasSession(true)
-      setShowLoginForm(false)
-
-      // Save profile
-      await saveProfile(result.token, result.user)
-
-      // Clear data
-      localStorage.removeItem('companyOnboarding')
-      localStorage.removeItem('sb-temp-email')
-      localStorage.removeItem('sb-temp-pass')
-
-      window.location.href = '/company/dashboard'
-    } catch (err: any) {
-      setError(err.message)
-      setLoading(false)
-    }
+  // Show loading while checking session
+  if (checkingSession) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-slate-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-500 text-sm">Verificando sesión...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -289,43 +190,29 @@ export default function CompanyLogoPage() {
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Logo de tu Empresa</h1>
         <p className="text-gray-500 mb-8">Sube el logo de tu empresa para que los creadores te reconozcan</p>
 
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
-            <p className="text-red-600 text-sm">{error}</p>
+        {/* Auth status */}
+        {!isAuthenticated && (
+          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
+            <p className="text-yellow-800 text-sm text-center">
+              No hay sesión activa.{' '}
+              <a href="/auth/login" className="font-bold underline">Inicia sesión</a> para guardar tu perfil.
+            </p>
+            <p className="text-yellow-600 text-xs text-center mt-2">
+              Si acabas de registrarte, intenta <button onClick={() => window.location.reload()} className="underline">recargar la página</button>
+            </p>
+          </div>
+        )}
+        {isAuthenticated && user && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl">
+            <p className="text-green-800 text-sm text-center">
+              Sesión activa: {user.email}
+            </p>
           </div>
         )}
 
-        {/* Inline Login Form */}
-        {showLoginForm && (
-          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-            <p className="text-blue-800 text-sm text-center mb-4 font-medium">
-              Inicia sesión para guardar tu perfil
-            </p>
-            <form onSubmit={handleLoginSubmit} className="space-y-3">
-              <input
-                type="email"
-                value={loginEmail}
-                onChange={(e) => setLoginEmail(e.target.value)}
-                placeholder="tu@email.com"
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800"
-                disabled={loading}
-              />
-              <input
-                type="password"
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
-                placeholder="Contraseña"
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800"
-                disabled={loading}
-              />
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-50 transition"
-              >
-                {loading ? 'Procesando...' : 'Iniciar sesión y completar'}
-              </button>
-            </form>
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+            <p className="text-red-600 text-sm">{error}</p>
           </div>
         )}
 
@@ -365,24 +252,26 @@ export default function CompanyLogoPage() {
         </div>
 
         {/* Buttons */}
-        {!showLoginForm && (
-          <div className="flex items-center justify-between mt-8">
-            <Link href="/onboarding/company/terms" className="flex items-center text-gray-500 hover:text-gray-700 font-medium">
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Atras
-            </Link>
+        <div className="flex items-center justify-between mt-8">
+          <Link href="/onboarding/company/terms" className="flex items-center text-gray-500 hover:text-gray-700 font-medium">
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Atras
+          </Link>
 
-            <button
-              onClick={handleSubmit}
-              disabled={loading}
-              className="px-10 py-3 bg-gradient-to-r from-slate-700 to-slate-900 text-white rounded-xl font-semibold hover:from-slate-600 hover:to-slate-700 disabled:opacity-50 transition-all shadow-lg hover:shadow-xl"
-            >
-              {loading ? 'Guardando...' : 'Finalizar'}
-            </button>
-          </div>
-        )}
+          <button
+            onClick={handleSubmit}
+            disabled={loading || !isAuthenticated}
+            className={`px-10 py-3 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl ${
+              loading || !isAuthenticated
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-gradient-to-r from-slate-700 to-slate-900 hover:from-slate-600 hover:to-slate-700'
+            } text-white`}
+          >
+            {loading ? 'Guardando...' : !isAuthenticated ? 'Inicia sesión primero' : 'Finalizar'}
+          </button>
+        </div>
       </div>
 
       {/* Right Section - Summary Card */}
