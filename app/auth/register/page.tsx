@@ -33,9 +33,8 @@ export default function RegisterPage() {
     setError('')
 
     try {
-      console.log('[Register] 1. Attempting signup with Supabase client...')
+      console.log('[Register] Starting signup...')
 
-      // Use Supabase client directly - it handles session storage automatically
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -44,15 +43,16 @@ export default function RegisterPage() {
         }
       })
 
-      console.log('[Register] 2. Signup response:', {
-        user: data.user?.id,
+      console.log('[Register] Signup response:', {
+        user: !!data.user,
         session: !!data.session,
         error: signUpError?.message
       })
 
       if (signUpError) {
+        console.error('[Register] Signup error:', signUpError)
         if (signUpError.message?.includes('already registered')) {
-          setError('Este email ya esta registrado. Intenta iniciar sesion.')
+          setError('Este email ya está registrado. Intenta iniciar sesión.')
         } else {
           setError(signUpError.message || 'Error al crear cuenta')
         }
@@ -60,57 +60,33 @@ export default function RegisterPage() {
         return
       }
 
-      // If we got a session, verify it's stored before redirecting
+      // If we got a session, redirect
       if (data.session) {
-        console.log('[Register] 3. Session created, verifying persistence...')
-
-        // Wait a moment for persistence to complete
-        await new Promise(resolve => setTimeout(resolve, 100))
-
-        // Verify session is accessible
-        const { data: verifyData } = await supabase.auth.getSession()
-        if (verifyData.session) {
-          console.log('[Register] 4. Session verified, redirecting...')
-          window.location.href = '/auth/select-type'
-          return
-        } else {
-          console.log('[Register] 4. Session not found after verify, trying again...')
-        }
+        console.log('[Register] Session created, redirecting...')
+        window.location.href = '/auth/select-type'
+        return
       }
 
-      // If no session but we got a user, try to sign in immediately
+      // If user created but no session, try to sign in
       if (data.user && !data.session) {
-        console.log('[Register] 3. No session from signup, attempting signin...')
+        console.log('[Register] User created but no session, trying to sign in...')
 
         const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password
         })
 
-        console.log('[Register] 4. Signin response:', {
-          session: !!signInData.session,
-          error: signInError?.message
-        })
-
         if (signInError) {
-          setError('Cuenta creada. Por favor ve a iniciar sesion.')
+          console.error('[Register] Sign in error:', signInError)
+          setError('Cuenta creada. Por favor ve a iniciar sesión.')
           setLoading(false)
           return
         }
 
         if (signInData.session) {
-          console.log('[Register] 5. Signin successful, verifying persistence...')
-
-          // Wait a moment for persistence to complete
-          await new Promise(resolve => setTimeout(resolve, 100))
-
-          // Verify session is accessible
-          const { data: verifyData } = await supabase.auth.getSession()
-          if (verifyData.session) {
-            console.log('[Register] 6. Session verified, redirecting...')
-            window.location.href = '/auth/select-type'
-            return
-          }
+          console.log('[Register] Sign in successful, redirecting...')
+          window.location.href = '/auth/select-type'
+          return
         }
       }
 
@@ -118,22 +94,31 @@ export default function RegisterPage() {
       setLoading(false)
 
     } catch (err: any) {
-      console.error('Registration error:', err)
-      setError('Error de conexion. Verifica tu internet e intenta de nuevo.')
+      console.error('[Register] Error:', err)
+      setError(err.message || 'Error de conexión. Verifica tu internet.')
       setLoading(false)
     }
   }
 
   const handleGoogleSignIn = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`
-      }
-    })
+    try {
+      console.log('[Register] Starting Google OAuth...')
 
-    if (error) {
-      setError(error.message)
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`
+        }
+      })
+
+      console.log('[Register] OAuth response:', { url: data?.url, error: error?.message })
+
+      if (error) {
+        setError(error.message)
+      }
+    } catch (err: any) {
+      console.error('[Register] Google OAuth error:', err)
+      setError(err.message || 'Error al iniciar con Google')
     }
   }
 
@@ -176,7 +161,7 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-blue-100 mb-2">Contrasena</label>
+              <label className="block text-sm font-medium text-blue-100 mb-2">Contraseña</label>
               <input
                 type="password"
                 required
@@ -189,7 +174,7 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-blue-100 mb-2">Confirmar contrasena</label>
+              <label className="block text-sm font-medium text-blue-100 mb-2">Confirmar contraseña</label>
               <input
                 type="password"
                 required
@@ -236,9 +221,9 @@ export default function RegisterPage() {
 
           <div className="mt-8 text-center">
             <p className="text-blue-100 text-sm">
-              Ya tienes una cuenta?{' '}
+              ¿Ya tienes una cuenta?{' '}
               <Link href="/auth/login" className="font-medium text-white hover:text-blue-200">
-                Inicia sesion
+                Inicia sesión
               </Link>
             </p>
           </div>

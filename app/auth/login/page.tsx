@@ -9,34 +9,9 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [checkingSession, setCheckingSession] = useState(true)
 
-  // Helper function to check for pending onboarding and redirect appropriately
-  const checkPendingOnboarding = (): boolean => {
-    const creatorOnboarding = localStorage.getItem('creatorOnboarding')
-    const companyOnboarding = localStorage.getItem('companyOnboarding')
-
-    if (creatorOnboarding) {
-      try {
-        const data = JSON.parse(creatorOnboarding)
-        if (data.pendingComplete) {
-          window.location.href = '/onboarding/creator/socials'
-          return true
-        }
-      } catch (e) {}
-    }
-    if (companyOnboarding) {
-      try {
-        const data = JSON.parse(companyOnboarding)
-        if (data.pendingComplete) {
-          window.location.href = '/onboarding/company/logo'
-          return true
-        }
-      } catch (e) {}
-    }
-    return false
-  }
-
-  // Check if already logged in using Supabase client
+  // Check if already logged in
   useEffect(() => {
     const checkExistingSession = async () => {
       try {
@@ -45,18 +20,36 @@ export default function LoginPage() {
         if (session?.user) {
           console.log('[Login] Existing session found:', session.user.email)
 
-          // First check for pending onboarding
-          if (checkPendingOnboarding()) {
-            return
+          // Check for pending onboarding
+          const creatorOnboarding = localStorage.getItem('creatorOnboarding')
+          const companyOnboarding = localStorage.getItem('companyOnboarding')
+
+          if (creatorOnboarding) {
+            try {
+              const data = JSON.parse(creatorOnboarding)
+              if (data.pendingComplete) {
+                window.location.href = '/onboarding/creator/socials'
+                return
+              }
+            } catch (e) {}
+          }
+          if (companyOnboarding) {
+            try {
+              const data = JSON.parse(companyOnboarding)
+              if (data.pendingComplete) {
+                window.location.href = '/onboarding/company/logo'
+                return
+              }
+            } catch (e) {}
           }
 
           // Check if user has profile
-          const { data: profiles, error: profileError } = await supabase
+          const { data: profiles } = await supabase
             .from('profiles')
             .select('user_type')
             .eq('user_id', session.user.id)
 
-          if (!profileError && profiles && profiles.length > 0) {
+          if (profiles && profiles.length > 0) {
             const userType = profiles[0].user_type
             if (userType === 'creator') {
               window.location.href = '/creator/dashboard'
@@ -66,11 +59,14 @@ export default function LoginPage() {
               return
             }
           }
+
           // Has session but no profile, go to select-type
           window.location.href = '/auth/select-type'
         }
       } catch (err) {
         console.error('[Login] Error checking session:', err)
+      } finally {
+        setCheckingSession(false)
       }
     }
     checkExistingSession()
@@ -88,9 +84,8 @@ export default function LoginPage() {
     setError('')
 
     try {
-      console.log('[Login] Attempting sign in with Supabase client...')
+      console.log('[Login] Attempting sign in...')
 
-      // Use Supabase client directly - this properly stores the session
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -115,58 +110,86 @@ export default function LoginPage() {
         return
       }
 
-      console.log('[Login] Sign in successful, session created:', data.session.user.email)
+      console.log('[Login] Sign in successful:', data.session.user.email)
 
-      // First check for pending onboarding
-      if (checkPendingOnboarding()) {
-        return
-      }
+      // Check for pending onboarding
+      const creatorOnboarding = localStorage.getItem('creatorOnboarding')
+      const companyOnboarding = localStorage.getItem('companyOnboarding')
 
-      // Check if user has a profile and redirect accordingly
-      try {
-        const { data: profiles, error: profileError } = await supabase
-          .from('profiles')
-          .select('user_type')
-          .eq('user_id', data.session.user.id)
-
-        if (!profileError && profiles && profiles.length > 0) {
-          const userType = profiles[0].user_type
-
-          // User has profile, redirect to appropriate dashboard
-          if (userType === 'creator') {
-            window.location.href = '/creator/dashboard'
-            return
-          } else if (userType === 'company') {
-            window.location.href = '/company/dashboard'
+      if (creatorOnboarding) {
+        try {
+          const onboardingData = JSON.parse(creatorOnboarding)
+          if (onboardingData.pendingComplete) {
+            window.location.href = '/onboarding/creator/socials'
             return
           }
+        } catch (e) {}
+      }
+      if (companyOnboarding) {
+        try {
+          const onboardingData = JSON.parse(companyOnboarding)
+          if (onboardingData.pendingComplete) {
+            window.location.href = '/onboarding/company/logo'
+            return
+          }
+        } catch (e) {}
+      }
+
+      // Check if user has a profile
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_type')
+        .eq('user_id', data.session.user.id)
+
+      if (profiles && profiles.length > 0) {
+        const userType = profiles[0].user_type
+        if (userType === 'creator') {
+          window.location.href = '/creator/dashboard'
+          return
+        } else if (userType === 'company') {
+          window.location.href = '/company/dashboard'
+          return
         }
-      } catch (err) {
-        console.error('[Login] Error checking profile:', err)
       }
 
       // No profile found, go to select-type
       window.location.href = '/auth/select-type'
 
     } catch (err: any) {
-      console.error('[Login] Login error:', err)
-      setError('Error de conexión. Verifica tu internet e intenta de nuevo.')
+      console.error('[Login] Error:', err)
+      setError(err.message || 'Error de conexión. Verifica tu internet.')
       setLoading(false)
     }
   }
 
   const handleGoogleSignIn = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`
-      }
-    })
+    try {
+      console.log('[Login] Starting Google OAuth...')
 
-    if (error) {
-      console.error('[Login] Google sign in error:', error)
-      setError(error.message)
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`
+        }
+      })
+
+      console.log('[Login] OAuth response:', { url: data?.url, error: error?.message })
+
+      if (error) {
+        setError(error.message)
+      }
+    } catch (err: any) {
+      console.error('[Login] Google OAuth error:', err)
+      setError(err.message || 'Error al iniciar con Google')
     }
+  }
+
+  if (checkingSession) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-blue-800 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    )
   }
 
   return (
