@@ -1,76 +1,17 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import Link from 'next/link'
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ftvqoudlmojdxwjxljzr.supabase.co'
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
+const SUPABASE_URL = 'https://ftvqoudlmojdxwjxljzr.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
 
 export default function RegisterPage() {
-  const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-
-  // Check if already logged in
-  useEffect(() => {
-    const token = localStorage.getItem('sb-access-token')
-    const user = localStorage.getItem('sb-user')
-    if (token && user) {
-      // Check if there's pending onboarding
-      const creatorOnboarding = localStorage.getItem('creatorOnboarding')
-      const companyOnboarding = localStorage.getItem('companyOnboarding')
-
-      if (creatorOnboarding) {
-        const data = JSON.parse(creatorOnboarding)
-        if (data.pendingComplete) {
-          window.location.href = '/onboarding/creator/socials'
-          return
-        }
-      }
-      if (companyOnboarding) {
-        const data = JSON.parse(companyOnboarding)
-        if (data.pendingComplete) {
-          window.location.href = '/onboarding/company/logo'
-          return
-        }
-      }
-      window.location.href = '/auth/select-type'
-    }
-  }, [])
-
-  // Helper function to login after registration
-  const loginAfterSignup = async (userEmail: string, userPassword: string): Promise<boolean> => {
-    try {
-      const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': SUPABASE_ANON_KEY
-        },
-        body: JSON.stringify({
-          email: userEmail,
-          password: userPassword
-        })
-      })
-
-      const data = await response.json()
-
-      if (response.ok && data.access_token) {
-        localStorage.setItem('sb-access-token', data.access_token)
-        localStorage.setItem('sb-refresh-token', data.refresh_token || '')
-        localStorage.setItem('sb-user', JSON.stringify(data.user))
-        return true
-      }
-      return false
-    } catch (err) {
-      console.error('Auto-login error:', err)
-      return false
-    }
-  }
 
   const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -94,7 +35,9 @@ export default function RegisterPage() {
     setError('')
 
     try {
-      const response = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+      // Step 1: Try to signup
+      console.log('1. Attempting signup...')
+      const signupResponse = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -107,57 +50,65 @@ export default function RegisterPage() {
         })
       })
 
-      const data = await response.json()
-      console.log('Signup response:', data)
+      const signupData = await signupResponse.json()
+      console.log('2. Signup response:', signupData)
 
-      if (!response.ok) {
-        if (data.msg?.includes('already registered') || data.error_description?.includes('already registered')) {
+      // Check for errors
+      if (!signupResponse.ok) {
+        if (signupData.msg?.includes('already registered') || signupData.error_description?.includes('already registered')) {
           setError('Este email ya esta registrado. Intenta iniciar sesion.')
         } else {
-          setError(data.msg || data.error_description || 'Error al crear cuenta')
+          setError(signupData.msg || signupData.error_description || 'Error al crear cuenta')
         }
         setLoading(false)
         return
       }
 
-      // Check if we got tokens directly from signup
-      if (data.access_token) {
-        console.log('Got tokens from signup')
-        localStorage.setItem('sb-access-token', data.access_token)
-        localStorage.setItem('sb-refresh-token', data.refresh_token || '')
-        localStorage.setItem('sb-user', JSON.stringify(data.user))
-        // Store credentials for potential re-login later
-        localStorage.setItem('sb-temp-email', email)
-        localStorage.setItem('sb-temp-pass', btoa(password))
+      // Step 2: If signup returned tokens, use them
+      if (signupData.access_token) {
+        console.log('3. Got tokens from signup, storing...')
+        localStorage.setItem('sb-access-token', signupData.access_token)
+        localStorage.setItem('sb-refresh-token', signupData.refresh_token || '')
+        localStorage.setItem('sb-user', JSON.stringify(signupData.user))
+        console.log('4. Tokens stored, redirecting...')
         window.location.href = '/auth/select-type'
         return
       }
 
-      // If signup succeeded but no tokens (email confirmation might be required)
-      // Try to login immediately with the same credentials
-      if (data.user) {
-        console.log('No tokens from signup, attempting auto-login...')
-        const loginSuccess = await loginAfterSignup(email, password)
+      // Step 3: If no tokens but got user, try to login immediately
+      if (signupData.user || signupData.id) {
+        console.log('3. No tokens, attempting login...')
 
-        if (loginSuccess) {
-          console.log('Auto-login successful')
-          // Store credentials for potential re-login later
-          localStorage.setItem('sb-temp-email', email)
-          localStorage.setItem('sb-temp-pass', btoa(password))
+        const loginResponse = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_ANON_KEY
+          },
+          body: JSON.stringify({ email, password })
+        })
+
+        const loginData = await loginResponse.json()
+        console.log('4. Login response:', loginData)
+
+        if (loginResponse.ok && loginData.access_token) {
+          console.log('5. Login successful, storing tokens...')
+          localStorage.setItem('sb-access-token', loginData.access_token)
+          localStorage.setItem('sb-refresh-token', loginData.refresh_token || '')
+          localStorage.setItem('sb-user', JSON.stringify(loginData.user))
+          console.log('6. Tokens stored, redirecting...')
           window.location.href = '/auth/select-type'
           return
         } else {
-          // Email confirmation might be required - but still let them proceed
-          // Store credentials so we can try again when saving
-          localStorage.setItem('sb-temp-email', email)
-          localStorage.setItem('sb-temp-pass', btoa(password))
-          console.log('Auto-login failed, storing credentials for later')
-          // Let them proceed to onboarding anyway
-          window.location.href = '/auth/select-type'
+          console.log('5. Login failed:', loginData)
+          setError('Cuenta creada pero no pudimos iniciar sesion automaticamente. Por favor ve a iniciar sesion.')
+          setLoading(false)
           return
         }
       }
 
+      // Step 4: Something unexpected
+      console.log('3. Unexpected response, no user or tokens')
       setError('Error inesperado. Intenta de nuevo.')
       setLoading(false)
 
@@ -168,7 +119,7 @@ export default function RegisterPage() {
     }
   }
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignIn = () => {
     const redirectUrl = `${window.location.origin}/auth/callback`
     const googleAuthUrl = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectUrl)}`
     window.location.href = googleAuthUrl
