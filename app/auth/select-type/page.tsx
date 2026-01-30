@@ -8,12 +8,7 @@ export default function SelectTypePage() {
 
   useEffect(() => {
     setMounted(true)
-
-    // Check if logged in
-    const token = localStorage.getItem('sb-access-token')
-    if (!token) {
-      window.location.href = '/auth/login'
-    }
+    // Allow users to proceed without session - we'll require login when saving profile
   }, [])
 
   const handleContinue = () => {

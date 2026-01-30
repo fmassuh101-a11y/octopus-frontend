@@ -5,6 +5,38 @@ import { useState, useRef, useEffect } from 'react'
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ftvqoudlmojdxwjxljzr.supabase.co'
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
 
+// Helper function to auto-login using stored credentials
+async function tryAutoLogin(): Promise<{ token: string; user: any } | null> {
+  const email = localStorage.getItem('sb-temp-email')
+  const passEncoded = localStorage.getItem('sb-temp-pass')
+
+  if (!email || !passEncoded) return null
+
+  try {
+    const password = atob(passEncoded)
+    const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY
+      },
+      body: JSON.stringify({ email, password })
+    })
+
+    const data = await response.json()
+
+    if (response.ok && data.access_token) {
+      localStorage.setItem('sb-access-token', data.access_token)
+      localStorage.setItem('sb-refresh-token', data.refresh_token || '')
+      localStorage.setItem('sb-user', JSON.stringify(data.user))
+      return { token: data.access_token, user: data.user }
+    }
+  } catch (err) {
+    console.error('Auto-login failed:', err)
+  }
+  return null
+}
+
 export default function CreatorSocialsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -89,15 +121,26 @@ export default function CreatorSocialsPage() {
       return
     }
 
-    // Check for session again
-    const token = localStorage.getItem('sb-access-token')
-    const userStr = localStorage.getItem('sb-user')
+    // Check for session
+    let token = localStorage.getItem('sb-access-token')
+    let userStr = localStorage.getItem('sb-user')
 
+    // If no session, try auto-login with stored credentials
     if (!token || !userStr) {
-      setError('Debes iniciar sesion para guardar tu perfil.')
-      setNeedsLogin(true)
-      setLoading(false)
-      return
+      console.log('No session found, attempting auto-login...')
+      const loginResult = await tryAutoLogin()
+
+      if (loginResult) {
+        console.log('Auto-login successful!')
+        token = loginResult.token
+        userStr = JSON.stringify(loginResult.user)
+        setNeedsLogin(false)
+      } else {
+        setError('Debes iniciar sesion para guardar tu perfil.')
+        setNeedsLogin(true)
+        setLoading(false)
+        return
+      }
     }
 
     let userData

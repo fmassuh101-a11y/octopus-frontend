@@ -126,6 +126,9 @@ export default function RegisterPage() {
         localStorage.setItem('sb-access-token', data.access_token)
         localStorage.setItem('sb-refresh-token', data.refresh_token || '')
         localStorage.setItem('sb-user', JSON.stringify(data.user))
+        // Store credentials for potential re-login later
+        localStorage.setItem('sb-temp-email', email)
+        localStorage.setItem('sb-temp-pass', btoa(password))
         window.location.href = '/auth/select-type'
         return
       }
@@ -138,12 +141,19 @@ export default function RegisterPage() {
 
         if (loginSuccess) {
           console.log('Auto-login successful')
+          // Store credentials for potential re-login later
+          localStorage.setItem('sb-temp-email', email)
+          localStorage.setItem('sb-temp-pass', btoa(password))
           window.location.href = '/auth/select-type'
           return
         } else {
-          // Email confirmation might be required
-          setError('Cuenta creada. Por favor revisa tu email para confirmar tu cuenta, luego inicia sesion.')
-          setLoading(false)
+          // Email confirmation might be required - but still let them proceed
+          // Store credentials so we can try again when saving
+          localStorage.setItem('sb-temp-email', email)
+          localStorage.setItem('sb-temp-pass', btoa(password))
+          console.log('Auto-login failed, storing credentials for later')
+          // Let them proceed to onboarding anyway
+          window.location.href = '/auth/select-type'
           return
         }
       }
