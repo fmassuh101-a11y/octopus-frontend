@@ -42,39 +42,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // Sign in with email/password - using direct fetch to avoid client hanging
+  // Sign in with email/password - using Supabase client
   const signInWithEmail = async (email: string, password: string) => {
     console.log('🔵 [AuthContext] Signing in with email:', email)
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-    const response = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': supabaseAnonKey || ''
-      },
-      body: JSON.stringify({
-        email,
-        password
-      })
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
     })
 
-    const data = await response.json()
-
-    if (!response.ok) {
-      console.error('❌ [AuthContext] Sign in error:', data)
-      throw new Error(data.error_description || data.msg || 'Error al iniciar sesión')
+    if (error) {
+      console.error('❌ [AuthContext] Sign in error:', error)
+      throw error
     }
 
-    if (data.access_token) {
-      console.log('✅ [AuthContext] Got access token, setting session...')
-      await supabase.auth.setSession({
-        access_token: data.access_token,
-        refresh_token: data.refresh_token || ''
-      })
-      console.log('✅ [AuthContext] Session set successfully')
+    if (data.session) {
+      console.log('✅ [AuthContext] Session created successfully')
     } else {
       throw new Error('No se pudo iniciar sesión')
     }
