@@ -41,20 +41,9 @@ export default function ProfilePage() {
 
       const userData = JSON.parse(userStr)
       setUser(userData)
+      console.log('[Profile] User loaded:', userData.email, userData.id)
 
-      // Try to load onboarding data from localStorage first
-      const onboardingStr = localStorage.getItem('creatorOnboarding')
-      if (onboardingStr) {
-        try {
-          const onboardingData = JSON.parse(onboardingStr)
-          setBioData(onboardingData)
-          console.log('[Profile] Loaded from onboarding:', onboardingData)
-        } catch (e) {
-          console.log('[Profile] Could not parse onboarding data')
-        }
-      }
-
-      // Fetch profile using REST API
+      // Fetch profile using REST API (same as dashboard)
       const response = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=*`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -62,32 +51,55 @@ export default function ProfilePage() {
         }
       })
 
+      console.log('[Profile] Profile fetch response:', response.status)
+
       if (response.ok) {
         const profiles = await response.json()
+        console.log('[Profile] Profiles found:', profiles.length)
 
         if (profiles.length > 0) {
           const profileData = profiles[0]
-          setProfile(profileData)
+          console.log('[Profile] Profile data:', profileData)
+          console.log('[Profile] Bio raw:', profileData.bio)
 
-          // Parse bio JSON to get all the data
+          // Parse bio data if it exists (same approach as dashboard)
           if (profileData.bio) {
             try {
-              const parsed = JSON.parse(profileData.bio)
-              setBioData((prev: any) => ({ ...prev, ...parsed }))
-              console.log('[Profile] Bio data loaded:', parsed)
+              const parsedBio = JSON.parse(profileData.bio)
+              console.log('[Profile] Parsed bio:', parsedBio)
+              // Merge bio data into profile (same as dashboard does)
+              setProfile({ ...profileData, ...parsedBio })
+              setBioData(parsedBio)
             } catch (e) {
-              console.log('[Profile] Bio is not JSON')
+              console.log('[Profile] Bio is not JSON, using as-is')
+              setProfile(profileData)
             }
+          } else {
+            setProfile(profileData)
           }
+        } else {
+          console.log('[Profile] No profile found')
         }
       } else {
-        console.log('[Profile] Failed to fetch profile, using local data')
+        const errorText = await response.text()
+        console.error('[Profile] Failed to fetch profile:', response.status, errorText)
+      }
+
+      // Try localStorage as fallback
+      const onboardingStr = localStorage.getItem('creatorOnboarding')
+      if (onboardingStr) {
+        try {
+          const onboardingData = JSON.parse(onboardingStr)
+          console.log('[Profile] Found onboarding localStorage:', onboardingData)
+          setBioData((prev: any) => ({ ...onboardingData, ...prev }))
+        } catch (e) {
+          console.log('[Profile] Could not parse onboarding data')
+        }
       }
 
       setLoading(false)
     } catch (error) {
       console.error('[Profile] Error:', error)
-      // Don't redirect, just show with available data
       setLoading(false)
     }
   }
@@ -101,7 +113,11 @@ export default function ProfilePage() {
   }
 
   // Account Information Section
-  const AccountSection = () => (
+  const AccountSection = () => {
+    // Use profile (with merged bio) or fallback to bioData
+    const data = { ...bioData, ...profile }
+
+    return (
     <div className="space-y-6">
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Informacion Personal</h3>
@@ -109,7 +125,7 @@ export default function ProfilePage() {
           <div className="flex justify-between items-center py-3 border-b border-gray-100">
             <span className="text-gray-600">Nombre Completo</span>
             <span className="font-medium text-gray-900">
-              {profile?.full_name || `${bioData.firstName || ''} ${bioData.lastName || ''}`.trim() || 'Sin configurar'}
+              {data.full_name || `${data.firstName || ''} ${data.lastName || ''}`.trim() || 'Sin configurar'}
             </span>
           </div>
           <div className="flex justify-between items-center py-3 border-b border-gray-100">
@@ -118,19 +134,19 @@ export default function ProfilePage() {
           </div>
           <div className="flex justify-between items-center py-3 border-b border-gray-100">
             <span className="text-gray-600">Telefono</span>
-            <span className="font-medium text-gray-900">{bioData.phoneNumber || 'Sin configurar'}</span>
+            <span className="font-medium text-gray-900">{data.phoneNumber || 'Sin configurar'}</span>
           </div>
           <div className="flex justify-between items-center py-3 border-b border-gray-100">
             <span className="text-gray-600">Ubicacion</span>
-            <span className="font-medium text-gray-900">{bioData.location || 'Sin configurar'}</span>
+            <span className="font-medium text-gray-900">{data.location || 'Sin configurar'}</span>
           </div>
           <div className="flex justify-between items-center py-3 border-b border-gray-100">
             <span className="text-gray-600">Nivel Academico</span>
-            <span className="font-medium text-gray-900">{bioData.academicLevel || 'Sin configurar'}</span>
+            <span className="font-medium text-gray-900">{data.academicLevel || 'Sin configurar'}</span>
           </div>
           <div className="flex justify-between items-center py-3">
             <span className="text-gray-600">Estudios</span>
-            <span className="font-medium text-gray-900">{bioData.studies || 'Sin configurar'}</span>
+            <span className="font-medium text-gray-900">{data.studies || 'Sin configurar'}</span>
           </div>
         </div>
         <button className="mt-6 w-full py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors">
@@ -151,7 +167,7 @@ export default function ProfilePage() {
               <span className="text-gray-600">Instagram</span>
             </div>
             <span className="font-medium text-gray-900">
-              {bioData.instagram ? `@${bioData.instagram}` : 'Sin configurar'}
+              {data.instagram ? `@${data.instagram}` : 'Sin configurar'}
             </span>
           </div>
           <div className="flex items-center justify-between py-3 border-b border-gray-100">
@@ -164,7 +180,7 @@ export default function ProfilePage() {
               <span className="text-gray-600">TikTok</span>
             </div>
             <span className="font-medium text-gray-900">
-              {bioData.tiktok ? `@${bioData.tiktok}` : 'Sin configurar'}
+              {data.tiktok ? `@${data.tiktok}` : 'Sin configurar'}
             </span>
           </div>
           <div className="flex items-center justify-between py-3 border-b border-gray-100">
@@ -177,7 +193,7 @@ export default function ProfilePage() {
               <span className="text-gray-600">YouTube</span>
             </div>
             <span className="font-medium text-gray-900">
-              {bioData.youtube ? `@${bioData.youtube}` : 'Sin configurar'}
+              {data.youtube ? `@${data.youtube}` : 'Sin configurar'}
             </span>
           </div>
           <div className="flex items-center justify-between py-3">
@@ -190,7 +206,7 @@ export default function ProfilePage() {
               <span className="text-gray-600">LinkedIn</span>
             </div>
             <span className="font-medium text-gray-900">
-              {bioData.linkedin ? bioData.linkedin : 'Sin configurar'}
+              {data.linkedInUrl || data.linkedin || 'Sin configurar'}
             </span>
           </div>
         </div>
@@ -202,22 +218,22 @@ export default function ProfilePage() {
         <div className="space-y-4">
           <div className="flex justify-between items-center py-3 border-b border-gray-100">
             <span className="text-gray-600">Nicho</span>
-            <span className="font-medium text-gray-900">{bioData.niche || 'Sin configurar'}</span>
+            <span className="font-medium text-gray-900">{data.niche || 'Sin configurar'}</span>
           </div>
           <div className="flex justify-between items-center py-3 border-b border-gray-100">
             <span className="text-gray-600">Nivel de Experiencia</span>
-            <span className="font-medium text-gray-900">{bioData.experienceLevel || 'Sin configurar'}</span>
+            <span className="font-medium text-gray-900">{data.experienceLevel || 'Sin configurar'}</span>
           </div>
           <div className="flex justify-between items-center py-3">
             <span className="text-gray-600">Testimonial</span>
             <span className="font-medium text-gray-900 text-right max-w-[200px] truncate">
-              {bioData.testimonial || 'Sin configurar'}
+              {data.testimonial || 'Sin configurar'}
             </span>
           </div>
         </div>
       </div>
     </div>
-  )
+  )}
 
   // Earnings Section
   const EarningsSection = () => (
@@ -393,7 +409,12 @@ export default function ProfilePage() {
     )
   }
 
-  const displayName = profile?.full_name || `${bioData.firstName || ''} ${bioData.lastName || ''}`.trim() || user?.email?.split('@')[0] || 'Usuario'
+  // Use profile data (which has bio merged) or fallback to bioData
+  const displayName = profile?.full_name ||
+    `${profile?.firstName || bioData.firstName || ''} ${profile?.lastName || bioData.lastName || ''}`.trim() ||
+    user?.email?.split('@')[0] || 'Usuario'
+
+  const profilePhoto = profile?.profilePhoto || bioData.profilePhoto
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -426,8 +447,8 @@ export default function ProfilePage() {
       <div className="bg-white px-4 py-6 border-b border-gray-200">
         <div className="flex items-center space-x-4">
           <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center overflow-hidden">
-            {bioData.profilePhoto ? (
-              <img src={bioData.profilePhoto} alt="Profile" className="w-full h-full rounded-full object-cover" />
+            {profilePhoto ? (
+              <img src={profilePhoto} alt="Profile" className="w-full h-full rounded-full object-cover" />
             ) : (
               <span className="text-white text-2xl font-bold">
                 {displayName.charAt(0).toUpperCase()}
@@ -437,8 +458,8 @@ export default function ProfilePage() {
           <div className="flex-1">
             <h2 className="text-xl font-bold text-gray-900">{displayName}</h2>
             <p className="text-gray-600">{user?.email || 'Sin email'}</p>
-            {bioData.location && (
-              <p className="text-sm text-gray-500 mt-1">📍 {bioData.location}</p>
+            {(profile?.location || bioData.location) && (
+              <p className="text-sm text-gray-500 mt-1">📍 {profile?.location || bioData.location}</p>
             )}
           </div>
         </div>
