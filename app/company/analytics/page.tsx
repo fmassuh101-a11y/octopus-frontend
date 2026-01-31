@@ -88,63 +88,12 @@ export default function CompanyAnalyticsPage() {
         return
       }
 
-      // Fetch all creator profiles that have TikTok connected
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_type=eq.creator&select=*`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'apikey': SUPABASE_ANON_KEY || ''
-        }
-      })
+      // Use API route to fetch creators (bypasses RLS)
+      const response = await fetch('/api/creators')
 
       if (response.ok) {
-        const profiles = await response.json()
-        const creatorsWithTikTok: Creator[] = []
-
-        for (const profile of profiles) {
-          try {
-            const bioData = profile.bio ? JSON.parse(profile.bio) : {}
-            const tiktokAccounts = bioData.tiktokAccounts || []
-
-            if (tiktokAccounts.length > 0) {
-              // Aggregate stats from all TikTok accounts
-              const totalFollowers = tiktokAccounts.reduce((sum: number, a: any) => sum + (a.followers || 0), 0)
-              const totalLikes = tiktokAccounts.reduce((sum: number, a: any) => sum + (a.likes || 0), 0)
-              const totalVideos = tiktokAccounts.reduce((sum: number, a: any) => sum + (a.videoCount || 0), 0)
-              const avgEngagement = tiktokAccounts.reduce((sum: number, a: any) => sum + (a.engagementRate || 0), 0) / tiktokAccounts.length
-              const avgViews = tiktokAccounts.reduce((sum: number, a: any) => sum + (a.avgViews || 0), 0) / tiktokAccounts.length
-
-              // Use the first account's details as primary
-              const primaryAccount = tiktokAccounts[0]
-
-              creatorsWithTikTok.push({
-                id: profile.id,
-                userId: profile.user_id,
-                username: primaryAccount.username || bioData.tiktok || 'creator',
-                displayName: bioData.firstName && bioData.lastName
-                  ? `${bioData.firstName} ${bioData.lastName}`
-                  : primaryAccount.displayName || profile.full_name || 'Creator',
-                avatarUrl: primaryAccount.avatarUrl || profile.avatar_url,
-                bio: primaryAccount.bio || bioData.about || '',
-                isVerified: primaryAccount.isVerified || false,
-                followers: totalFollowers,
-                following: tiktokAccounts.reduce((sum: number, a: any) => sum + (a.following || 0), 0),
-                likes: totalLikes,
-                videoCount: totalVideos,
-                avgViews: Math.round(avgViews),
-                avgLikes: Math.round(tiktokAccounts.reduce((sum: number, a: any) => sum + (a.avgLikes || 0), 0) / tiktokAccounts.length),
-                avgComments: Math.round(tiktokAccounts.reduce((sum: number, a: any) => sum + (a.avgComments || 0), 0) / tiktokAccounts.length),
-                engagementRate: parseFloat(avgEngagement.toFixed(2)),
-                recentVideos: tiktokAccounts.flatMap((a: any) => a.recentVideos || []).slice(0, 6),
-                niche: bioData.niche || bioData.categories?.[0] || null,
-                location: bioData.city && bioData.country ? `${bioData.city}, ${bioData.country}` : bioData.country || null,
-              })
-            }
-          } catch (e) {
-            // Skip profiles with invalid bio data
-          }
-        }
-
-        setCreators(creatorsWithTikTok)
+        const data = await response.json()
+        setCreators(data.creators || [])
       }
     } catch (err) {
       console.error('Error loading creators:', err)
