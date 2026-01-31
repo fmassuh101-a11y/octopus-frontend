@@ -85,6 +85,11 @@ export async function POST(request: NextRequest) {
     }
 
     const tokenData: TikTokTokenResponse = await tokenResponse.json()
+    console.log('TikTok token data:', {
+      hasAccessToken: !!tokenData.access_token,
+      openId: tokenData.open_id,
+      scope: tokenData.scope
+    })
 
     // Step 2: Fetch user info with stats
     const userFields = [
@@ -113,7 +118,12 @@ export async function POST(request: NextRequest) {
     let userData: TikTokUserInfo | null = null
     if (userResponse.ok) {
       const userResult = await userResponse.json()
+      console.log('TikTok user response:', JSON.stringify(userResult, null, 2))
       userData = userResult.data?.user || null
+      console.log('Parsed user data:', JSON.stringify(userData, null, 2))
+    } else {
+      const errorText = await userResponse.text()
+      console.error('TikTok user info error:', userResponse.status, errorText)
     }
 
     // Step 3: Fetch recent videos for engagement calculation
@@ -216,6 +226,14 @@ export async function POST(request: NextRequest) {
       connectedAt: new Date().toISOString(),
       lastUpdated: new Date().toISOString(),
     }
+
+    console.log('Final account data being returned:', {
+      username: accountData.username,
+      followers: accountData.followers,
+      following: accountData.following,
+      likes: accountData.likes,
+      videoCount: accountData.videoCount
+    })
 
     return NextResponse.json({ success: true, data: accountData })
 
