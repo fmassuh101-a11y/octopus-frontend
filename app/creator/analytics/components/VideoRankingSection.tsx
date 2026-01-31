@@ -72,11 +72,16 @@ function VideoCard({
 
 export function VideoRankingSection({ videos, onVideoClick }: VideoRankingSectionProps) {
   const topPerformers = getTopPerformers(videos, 5)
+  const topPerformerIds = new Set(topPerformers.map(v => v.id))
 
   // Get REAL underperformers - only videos classified as below_average or underperforming
+  // AND exclude videos already shown in Top Performers
   const analyzed = analyzeVideos(videos)
   const realUnderperformers = analyzed
-    .filter(v => v.classification === 'below_average' || v.classification === 'underperforming')
+    .filter(v =>
+      (v.classification === 'below_average' || v.classification === 'underperforming') &&
+      !topPerformerIds.has(v.id)
+    )
     .sort((a, b) => a.engagementRate - b.engagementRate)
     .slice(0, 3)
 
