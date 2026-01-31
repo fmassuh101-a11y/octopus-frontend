@@ -75,11 +75,27 @@ export default function TikTokCallbackPage() {
 
       let accountData: any
 
-      if (response.ok) {
-        const result = await response.json()
-        const data = result.data
+      console.log('API Response status:', response.status, response.statusText)
+      const responseText = await response.text()
+      console.log('API Response raw text:', responseText)
 
-        console.log('TikTok API returned:', JSON.stringify(data, null, 2))
+      if (response.ok) {
+        let result
+        try {
+          result = JSON.parse(responseText)
+        } catch (e) {
+          console.error('Failed to parse response:', e)
+          throw new Error('Respuesta inválida del servidor')
+        }
+        console.log('Full API response:', JSON.stringify(result, null, 2))
+
+        if (!result.success) {
+          console.error('API returned error:', result.error, result.details)
+          throw new Error(result.error || 'Error del servidor')
+        }
+
+        const data = result.data
+        console.log('TikTok data:', JSON.stringify(data, null, 2))
 
         // If we have a valid openId, use the real data from TikTok
         // Stats might be 0 in sandbox mode, but identity is real
@@ -121,9 +137,14 @@ export default function TikTokCallbackPage() {
         }
       } else {
         // API call failed completely - show error, don't use demo
-        const errorText = await response.text()
-        console.error('TikTok API error:', response.status, errorText)
-        throw new Error(`Error de TikTok: ${response.status}`)
+        console.error('TikTok API error:', response.status, responseText)
+        // Try to parse error details
+        try {
+          const errorData = JSON.parse(responseText)
+          throw new Error(errorData.error || errorData.details || `Error de TikTok: ${response.status}`)
+        } catch (e) {
+          throw new Error(`Error de TikTok: ${response.status}`)
+        }
       }
 
       setProgress(80)

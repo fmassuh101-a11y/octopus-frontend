@@ -63,6 +63,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 1: Exchange code for access token
+    console.log('=== TikTok Token Exchange ===')
+    console.log('Client Key:', clientKey)
+    console.log('Redirect URI:', redirect_uri)
+    console.log('Code (first 10 chars):', code?.substring(0, 10))
+
     const tokenResponse = await fetch(TIKTOK_TOKEN_URL, {
       method: 'POST',
       headers: {
@@ -78,13 +83,38 @@ export async function POST(request: NextRequest) {
       }),
     })
 
+    const tokenText = await tokenResponse.text()
+    console.log('TikTok token raw response:', tokenText)
+
     if (!tokenResponse.ok) {
-      const errorData = await tokenResponse.text()
-      console.error('TikTok token error:', errorData)
-      return NextResponse.json({ error: 'Failed to exchange code for token', details: errorData }, { status: 400 })
+      console.error('TikTok token error status:', tokenResponse.status)
+      return NextResponse.json({ error: 'Failed to exchange code for token', details: tokenText }, { status: 400 })
     }
 
-    const tokenData: TikTokTokenResponse = await tokenResponse.json()
+    let tokenData: TikTokTokenResponse
+    try {
+      tokenData = JSON.parse(tokenText)
+    } catch (e) {
+      console.error('Failed to parse token response:', e)
+      return NextResponse.json({ error: 'Invalid token response', details: tokenText }, { status: 500 })
+    }
+
+    // Check if TikTok returned an error in the response body
+    if ((tokenData as any).error) {
+      console.error('TikTok API error in token response:', tokenData)
+      return NextResponse.json({
+        error: 'TikTok API error',
+        details: (tokenData as any).error_description || (tokenData as any).error
+      }, { status: 400 })
+    }
+
+    if (!tokenData.access_token || !tokenData.open_id) {
+      console.error('Missing access_token or open_id:', tokenData)
+      return NextResponse.json({
+        error: 'Incomplete token response',
+        details: 'TikTok did not return access_token or open_id'
+      }, { status: 400 })
+    }
     console.log('TikTok token data:', {
       hasAccessToken: !!tokenData.access_token,
       openId: tokenData.open_id,
@@ -108,6 +138,11 @@ export async function POST(request: NextRequest) {
       'video_count'
     ].join(',')
 
+    console.log('=== TikTok User Info Request ===')
+    console.log('Access Token (first 20 chars):', tokenData.access_token?.substring(0, 20))
+    console.log('Open ID:', tokenData.open_id)
+    console.log('Scopes:', tokenData.scope)
+
     const userResponse = await fetch(`${TIKTOK_USER_INFO_URL}?fields=${userFields}`, {
       method: 'GET',
       headers: {
@@ -115,18 +150,31 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    const userText = await userResponse.text()
+    console.log('TikTok user raw response:', userText)
+
     let userData: TikTokUserInfo | null = null
     if (userResponse.ok) {
-      const userResult = await userResponse.json()
-      console.log('TikTok user response:', JSON.stringify(userResult, null, 2))
-      userData = userResult.data?.user || null
-      console.log('Parsed user data:', JSON.stringify(userData, null, 2))
+      try {
+        const userResult = JSON.parse(userText)
+        console.log('TikTok user parsed response:', JSON.stringify(userResult, null, 2))
+
+        // Check for API error in response body
+        if (userResult.error) {
+          console.error('TikTok user API error:', userResult.error)
+        }
+
+        userData = userResult.data?.user || null
+        console.log('Parsed user data:', JSON.stringify(userData, null, 2))
+      } catch (e) {
+        console.error('Failed to parse user response:', e)
+      }
     } else {
-      const errorText = await userResponse.text()
-      console.error('TikTok user info error:', userResponse.status, errorText)
+      console.error('TikTok user info error status:', userResponse.status, userText)
     }
 
     // Step 3: Fetch recent videos for engagement calculation
+    console.log('=== TikTok Video List Request ===')
     let videos: TikTokVideo[] = []
     try {
       const videoResponse = await fetch(`${TIKTOK_VIDEO_LIST_URL}?fields=id,title,video_description,duration,cover_image_url,share_url,create_time,like_count,comment_count,share_count,view_count`, {
@@ -140,9 +188,19 @@ export async function POST(request: NextRequest) {
         }),
       })
 
+      const videoText = await videoResponse.text()
+      console.log('TikTok video raw response:', videoText)
+
       if (videoResponse.ok) {
-        const videoResult = await videoResponse.json()
-        videos = videoResult.data?.videos || []
+        try {
+          const videoResult = JSON.parse(videoText)
+          videos = videoResult.data?.videos || []
+          console.log('Videos fetched:', videos.length)
+        } catch (e) {
+          console.error('Failed to parse video response:', e)
+        }
+      } else {
+        console.error('Video fetch failed with status:', videoResponse.status)
       }
     } catch (videoError) {
       console.error('Error fetching videos:', videoError)
