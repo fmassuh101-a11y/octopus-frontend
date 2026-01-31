@@ -54,11 +54,23 @@ export default function CreatorAnalyticsPage() {
 
   const handleConnectTikTok = () => {
     if (TIKTOK_CLIENT_KEY) {
-      const redirectUri = `${window.location.origin}/auth/tiktok/callback`
-      // Include user.info.stats scope for follower/following/likes counts
+      // IMPORTANT: redirect_uri must match EXACTLY what's in TikTok Developer Portal
+      const redirectUri = 'https://octopus-frontend-tau.vercel.app/auth/tiktok/callback'
+      // Scopes - comma separated, no spaces
       const scope = 'user.info.basic,user.info.stats,user.info.profile,video.list'
       const state = `octopus_${Date.now()}`
-      const tiktokAuthUrl = `https://www.tiktok.com/v2/auth/authorize/?client_key=${TIKTOK_CLIENT_KEY}&scope=${scope}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`
+
+      // Build URL with proper encoding
+      const params = new URLSearchParams({
+        client_key: TIKTOK_CLIENT_KEY,
+        scope: scope,
+        response_type: 'code',
+        redirect_uri: redirectUri,
+        state: state
+      })
+
+      const tiktokAuthUrl = `https://www.tiktok.com/v2/auth/authorize/?${params.toString()}`
+      console.log('TikTok Auth URL:', tiktokAuthUrl)
       window.location.href = tiktokAuthUrl
     } else {
       // Demo mode - simulate adding an account
