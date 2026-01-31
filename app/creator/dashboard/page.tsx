@@ -27,27 +27,36 @@ export default function CreatorDashboard() {
       const token = localStorage.getItem('sb-access-token')
       const userStr = localStorage.getItem('sb-user')
 
+      console.log('[Dashboard] Checking auth:', { hasToken: !!token, hasUser: !!userStr })
+
       if (!token || !userStr) {
+        console.log('[Dashboard] No token or user, redirecting to login')
         window.location.href = '/auth/login'
         return
       }
 
       const userData = JSON.parse(userStr)
       setUser(userData)
+      console.log('[Dashboard] User loaded:', userData.email, userData.id)
 
       // Fetch profile using REST API (not supabase client)
       const response = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=*`, {
         headers: {
           'Authorization': `Bearer ${token}`,
-          'apikey': SUPABASE_ANON_KEY || ''
+          'apikey': SUPABASE_ANON_KEY
         }
       })
 
+      console.log('[Dashboard] Profile fetch response:', response.status, response.statusText)
+
       if (response.ok) {
         const profiles = await response.json()
+        console.log('[Dashboard] Profiles found:', profiles.length)
+
         if (profiles.length > 0) {
           const profileData = profiles[0]
           setProfile(profileData)
+          console.log('[Dashboard] Profile loaded:', profileData.user_type)
 
           // Check if user is a creator
           if (profileData.user_type !== 'creator') {
@@ -70,17 +79,20 @@ export default function CreatorDashboard() {
           }
         } else {
           // No profile found
+          console.log('[Dashboard] No profile found, redirecting to select-type')
           window.location.href = '/auth/select-type'
           return
         }
       } else {
+        const errorText = await response.text()
+        console.error('[Dashboard] Profile fetch failed:', response.status, errorText)
         window.location.href = '/auth/login'
         return
       }
 
       setLoading(false)
     } catch (err) {
-      console.error('Auth check error:', err)
+      console.error('[Dashboard] Auth check error:', err)
       window.location.href = '/auth/login'
     }
   }
