@@ -32,48 +32,57 @@ export default function CompanyProfilePage() {
       const userData = JSON.parse(userStr)
       setUser(userData)
 
-      // Fetch profile using REST API
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=*`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'apikey': SUPABASE_ANON_KEY || ''
+      // Try to fetch profile using REST API
+      try {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=*`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'apikey': SUPABASE_ANON_KEY || ''
+          }
+        })
+
+        if (response.ok) {
+          const profiles = await response.json()
+
+          if (profiles.length > 0) {
+            const profileData = profiles[0]
+
+            // Check if user is a company
+            if (profileData.user_type !== 'company') {
+              window.location.href = '/creator/dashboard'
+              return
+            }
+
+            setProfile(profileData)
+
+            // Parse bio JSON to get all the data
+            if (profileData.bio) {
+              try {
+                const parsed = JSON.parse(profileData.bio)
+                setBioData(parsed)
+              } catch (e) {
+                console.log('Bio is not JSON')
+              }
+            }
+          } else {
+            // No profile found, create a minimal one
+            setProfile({ user_type: 'company', full_name: userData.email?.split('@')[0] || 'Empresa' })
+          }
+        } else {
+          // API failed, use fallback data from localStorage
+          console.log('API failed, using fallback')
+          setProfile({ user_type: 'company', full_name: userData.email?.split('@')[0] || 'Empresa' })
         }
-      })
-
-      if (!response.ok) {
-        window.location.href = '/auth/login'
-        return
-      }
-
-      const profiles = await response.json()
-
-      if (profiles.length === 0) {
-        window.location.href = '/auth/select-type'
-        return
-      }
-
-      const profileData = profiles[0]
-
-      if (profileData.user_type !== 'company') {
-        window.location.href = '/creator/dashboard'
-        return
-      }
-
-      setProfile(profileData)
-
-      // Parse bio JSON to get all the data
-      if (profileData.bio) {
-        try {
-          const parsed = JSON.parse(profileData.bio)
-          setBioData(parsed)
-        } catch (e) {
-          console.log('Bio is not JSON')
-        }
+      } catch (apiError) {
+        // API error, use fallback data
+        console.log('API error, using fallback:', apiError)
+        setProfile({ user_type: 'company', full_name: userData.email?.split('@')[0] || 'Empresa' })
       }
 
       setLoading(false)
     } catch (error) {
       console.error('Error loading profile:', error)
+      // Only redirect to login if we truly have no user data
       window.location.href = '/auth/login'
     }
   }
