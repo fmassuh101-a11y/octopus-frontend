@@ -42,6 +42,18 @@ export default function ProfilePage() {
       const userData = JSON.parse(userStr)
       setUser(userData)
 
+      // Try to load onboarding data from localStorage first
+      const onboardingStr = localStorage.getItem('creatorOnboarding')
+      if (onboardingStr) {
+        try {
+          const onboardingData = JSON.parse(onboardingStr)
+          setBioData(onboardingData)
+          console.log('[Profile] Loaded from onboarding:', onboardingData)
+        } catch (e) {
+          console.log('[Profile] Could not parse onboarding data')
+        }
+      }
+
       // Fetch profile using REST API
       const response = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=*`, {
         headers: {
@@ -50,38 +62,33 @@ export default function ProfilePage() {
         }
       })
 
-      if (!response.ok) {
-        console.log('[Profile] Failed to fetch profile')
-        window.location.href = '/auth/login'
-        return
-      }
+      if (response.ok) {
+        const profiles = await response.json()
 
-      const profiles = await response.json()
+        if (profiles.length > 0) {
+          const profileData = profiles[0]
+          setProfile(profileData)
 
-      if (profiles.length === 0) {
-        console.log('[Profile] No profile found')
-        window.location.href = '/auth/select-type'
-        return
-      }
-
-      const profileData = profiles[0]
-      setProfile(profileData)
-
-      // Parse bio JSON to get all the data
-      if (profileData.bio) {
-        try {
-          const parsed = JSON.parse(profileData.bio)
-          setBioData(parsed)
-          console.log('[Profile] Bio data loaded:', parsed)
-        } catch (e) {
-          console.log('[Profile] Bio is not JSON')
+          // Parse bio JSON to get all the data
+          if (profileData.bio) {
+            try {
+              const parsed = JSON.parse(profileData.bio)
+              setBioData((prev: any) => ({ ...prev, ...parsed }))
+              console.log('[Profile] Bio data loaded:', parsed)
+            } catch (e) {
+              console.log('[Profile] Bio is not JSON')
+            }
+          }
         }
+      } else {
+        console.log('[Profile] Failed to fetch profile, using local data')
       }
 
       setLoading(false)
     } catch (error) {
       console.error('[Profile] Error:', error)
-      window.location.href = '/auth/login'
+      // Don't redirect, just show with available data
+      setLoading(false)
     }
   }
 
@@ -460,8 +467,42 @@ export default function ProfilePage() {
       </div>
 
       {/* Content */}
-      <div className="px-4 py-6 pb-20">
+      <div className="px-4 py-6 pb-32">
         {sections.find(s => s.id === activeSection)?.component}
+      </div>
+
+      {/* Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200">
+        <div className="flex justify-around py-2">
+          <a href="/gigs" className="flex flex-col items-center py-2 px-4 text-gray-400 hover:text-gray-600">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            <span className="text-xs font-medium mt-1">Trabajos</span>
+          </a>
+
+          <a href="/creator/dashboard" className="flex flex-col items-center py-2 px-4 text-gray-400 hover:text-gray-600">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            <span className="text-xs font-medium mt-1">Panel</span>
+          </a>
+
+          <a href="/creator/applications" className="flex flex-col items-center py-2 px-4 text-gray-400 hover:text-gray-600">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span className="text-xs font-medium mt-1">Aplicaciones</span>
+          </a>
+
+          <div className="flex flex-col items-center py-2 px-4 text-blue-600">
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+            </svg>
+            <span className="text-xs font-medium mt-1">Perfil</span>
+          </div>
+        </div>
+        <div className="h-1 bg-gray-900 mx-auto w-32 rounded-full mb-2"></div>
       </div>
 
       {/* Logout Confirmation Modal */}

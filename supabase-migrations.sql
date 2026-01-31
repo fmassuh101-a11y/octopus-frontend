@@ -4,6 +4,7 @@
 
 -- 1. Agregar columnas faltantes a la tabla gigs
 -- =====================================================
+ALTER TABLE gigs ADD COLUMN IF NOT EXISTS company_id UUID REFERENCES auth.users(id);
 ALTER TABLE gigs ADD COLUMN IF NOT EXISTS company_name TEXT;
 ALTER TABLE gigs ADD COLUMN IF NOT EXISTS company_logo TEXT;
 ALTER TABLE gigs ADD COLUMN IF NOT EXISTS image_url TEXT;
