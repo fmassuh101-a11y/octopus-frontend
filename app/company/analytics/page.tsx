@@ -27,6 +27,19 @@ interface Creator {
   location?: string
 }
 
+interface TalentCreator {
+  id: string
+  handle: string
+  displayName: string
+  avatarUrl?: string
+  followers?: number
+  engagementRate?: number
+  addedAt: string
+  notes?: string
+  status: 'active' | 'completed' | 'pending'
+  gigsCount: number
+}
+
 export default function CompanyAnalyticsPage() {
   const [loading, setLoading] = useState(true)
   const [searching, setSearching] = useState(false)
@@ -40,9 +53,19 @@ export default function CompanyAnalyticsPage() {
   const [compareMode, setCompareMode] = useState(false)
   const [compareList, setCompareList] = useState<Creator[]>([])
 
+  // New states for "Mi Talento" feature
+  const [activeTab, setActiveTab] = useState<'discover' | 'talent'>('talent')
+  const [myTalent, setMyTalent] = useState<TalentCreator[]>([])
+  const [showAddTalentModal, setShowAddTalentModal] = useState(false)
+  const [newTalentHandle, setNewTalentHandle] = useState('')
+  const [newTalentName, setNewTalentName] = useState('')
+  const [newTalentNotes, setNewTalentNotes] = useState('')
+  const [addingTalent, setAddingTalent] = useState(false)
+
   useEffect(() => {
     loadCreators()
     loadSavedCreators()
+    loadMyTalent()
   }, [])
 
   useEffect(() => {
@@ -127,6 +150,69 @@ export default function CompanyAnalyticsPage() {
     if (saved) {
       setSavedCreators(JSON.parse(saved))
     }
+  }
+
+  const loadMyTalent = () => {
+    const talent = localStorage.getItem('octopus_my_talent')
+    if (talent) {
+      setMyTalent(JSON.parse(talent))
+    }
+  }
+
+  const saveMyTalent = (talent: TalentCreator[]) => {
+    localStorage.setItem('octopus_my_talent', JSON.stringify(talent))
+    setMyTalent(talent)
+  }
+
+  const handleAddTalent = () => {
+    if (!newTalentHandle.trim()) return
+
+    setAddingTalent(true)
+
+    // Clean handle (remove @ if present)
+    const cleanHandle = newTalentHandle.trim().replace(/^@/, '')
+
+    // Create new talent entry
+    const newTalent: TalentCreator = {
+      id: `talent_${Date.now()}`,
+      handle: cleanHandle,
+      displayName: newTalentName.trim() || cleanHandle,
+      addedAt: new Date().toISOString(),
+      notes: newTalentNotes.trim() || undefined,
+      status: 'active',
+      gigsCount: 0
+    }
+
+    // Check if already exists
+    if (myTalent.some(t => t.handle.toLowerCase() === cleanHandle.toLowerCase())) {
+      alert('Este creador ya esta en tu lista de talento')
+      setAddingTalent(false)
+      return
+    }
+
+    // Save
+    const updatedTalent = [newTalent, ...myTalent]
+    saveMyTalent(updatedTalent)
+
+    // Reset form
+    setNewTalentHandle('')
+    setNewTalentName('')
+    setNewTalentNotes('')
+    setShowAddTalentModal(false)
+    setAddingTalent(false)
+  }
+
+  const handleRemoveTalent = (talentId: string) => {
+    if (!confirm('Seguro que quieres eliminar este creador de tu lista?')) return
+    const updatedTalent = myTalent.filter(t => t.id !== talentId)
+    saveMyTalent(updatedTalent)
+  }
+
+  const handleUpdateTalentStatus = (talentId: string, status: TalentCreator['status']) => {
+    const updatedTalent = myTalent.map(t =>
+      t.id === talentId ? { ...t, status } : t
+    )
+    saveMyTalent(updatedTalent)
   }
 
   const filterAndSortCreators = () => {
@@ -223,29 +309,321 @@ export default function CompanyAnalyticsPage() {
                 </svg>
               </Link>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Descubrir Creadores</h1>
+                <h1 className="text-2xl font-bold text-gray-900">Creadores</h1>
                 <p className="text-sm text-gray-500">
-                  {creators.length} creadores con TikTok conectado
+                  Gestiona y descubre talento para tu marca
                 </p>
               </div>
             </div>
 
-            {compareList.length > 0 && (
-              <button
-                onClick={() => setCompareMode(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-                Comparar ({compareList.length})
-              </button>
-            )}
+            <div className="flex items-center gap-3">
+              {activeTab === 'talent' && (
+                <button
+                  onClick={() => setShowAddTalentModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Agregar Creador
+                </button>
+              )}
+              {compareList.length > 0 && activeTab === 'discover' && (
+                <button
+                  onClick={() => setCompareMode(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  Comparar ({compareList.length})
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex gap-1 mt-4 bg-gray-100 rounded-xl p-1 max-w-md">
+            <button
+              onClick={() => setActiveTab('talent')}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium transition ${
+                activeTab === 'talent'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Mi Talento
+              {myTalent.length > 0 && (
+                <span className="px-2 py-0.5 bg-blue-100 text-blue-600 text-xs font-bold rounded-full">
+                  {myTalent.length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('discover')}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium transition ${
+                activeTab === 'discover'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              Descubrir
+            </button>
           </div>
         </div>
       </div>
 
+      {/* Add Talent Modal */}
+      {showAddTalentModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowAddTalentModal(false)}>
+          <div className="bg-white rounded-3xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-gray-900">Agregar Creador</h2>
+              <button onClick={() => setShowAddTalentModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Handle de TikTok *
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">@</span>
+                  <input
+                    type="text"
+                    value={newTalentHandle}
+                    onChange={(e) => setNewTalentHandle(e.target.value)}
+                    placeholder="username"
+                    className="w-full pl-9 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nombre (opcional)
+                </label>
+                <input
+                  type="text"
+                  value={newTalentName}
+                  onChange={(e) => setNewTalentName(e.target.value)}
+                  placeholder="Nombre del creador"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Notas (opcional)
+                </label>
+                <textarea
+                  value={newTalentNotes}
+                  onChange={(e) => setNewTalentNotes(e.target.value)}
+                  placeholder="Ej: Campana de verano 2024, contrato firmado..."
+                  rows={3}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowAddTalentModal(false)}
+                className="flex-1 py-3 border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleAddTalent}
+                disabled={!newTalentHandle.trim() || addingTalent}
+                className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {addingTalent ? 'Agregando...' : 'Agregar Creador'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto px-4 py-6">
+        {/* Mi Talento Tab */}
+        {activeTab === 'talent' && (
+          <>
+            {/* Stats Summary */}
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className="bg-white rounded-2xl p-5 border border-gray-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-gray-900">{myTalent.length}</p>
+                    <p className="text-sm text-gray-500">Total Creadores</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-2xl p-5 border border-gray-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                    <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {myTalent.filter(t => t.status === 'active').length}
+                    </p>
+                    <p className="text-sm text-gray-500">Activos</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-2xl p-5 border border-gray-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                    <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {myTalent.reduce((sum, t) => sum + t.gigsCount, 0)}
+                    </p>
+                    <p className="text-sm text-gray-500">Gigs Totales</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Talent List */}
+            {myTalent.length > 0 ? (
+              <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+                <div className="p-4 border-b border-gray-100">
+                  <h3 className="font-semibold text-gray-900">Tu Equipo de Creadores</h3>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  {myTalent.map((talent) => (
+                    <div key={talent.id} className="p-4 hover:bg-gray-50 transition">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          {/* Avatar */}
+                          <div className="w-14 h-14 bg-gradient-to-br from-pink-500 to-purple-600 rounded-xl flex items-center justify-center text-white text-xl font-bold">
+                            {talent.displayName.charAt(0).toUpperCase()}
+                          </div>
+
+                          {/* Info */}
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-semibold text-gray-900">{talent.displayName}</h4>
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                talent.status === 'active' ? 'bg-green-100 text-green-700' :
+                                talent.status === 'completed' ? 'bg-gray-100 text-gray-700' :
+                                'bg-yellow-100 text-yellow-700'
+                              }`}>
+                                {talent.status === 'active' ? 'Activo' :
+                                 talent.status === 'completed' ? 'Completado' : 'Pendiente'}
+                              </span>
+                            </div>
+                            <a
+                              href={`https://tiktok.com/@${talent.handle}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+                            >
+                              @{talent.handle}
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                            </a>
+                            {talent.notes && (
+                              <p className="text-xs text-gray-500 mt-1">{talent.notes}</p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-2">
+                          {/* Status Dropdown */}
+                          <select
+                            value={talent.status}
+                            onChange={(e) => handleUpdateTalentStatus(talent.id, e.target.value as TalentCreator['status'])}
+                            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="active">Activo</option>
+                            <option value="pending">Pendiente</option>
+                            <option value="completed">Completado</option>
+                          </select>
+
+                          {/* View TikTok */}
+                          <a
+                            href={`https://tiktok.com/@${talent.handle}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-700 transition"
+                            title="Ver TikTok"
+                          >
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/>
+                            </svg>
+                          </a>
+
+                          {/* Delete */}
+                          <button
+                            onClick={() => handleRemoveTalent(talent.id)}
+                            className="p-2 hover:bg-red-50 rounded-lg text-gray-400 hover:text-red-600 transition"
+                            title="Eliminar"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl p-12 border border-gray-100 text-center">
+                <div className="w-20 h-20 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Aun no tienes creadores
+                </h3>
+                <p className="text-gray-500 max-w-md mx-auto mb-6">
+                  Agrega creadores por su @handle de TikTok para hacer seguimiento de tu equipo de talento.
+                </p>
+                <button
+                  onClick={() => setShowAddTalentModal(true)}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Agregar Primer Creador
+                </button>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Discover Tab */}
+        {activeTab === 'discover' && (
+          <>
         {/* Search and Filters */}
         <div className="bg-white rounded-2xl p-6 border border-gray-100 mb-6">
           <div className="flex flex-col md:flex-row gap-4">
@@ -626,6 +1004,8 @@ export default function CompanyAnalyticsPage() {
               }
             </p>
           </div>
+        )}
+          </>
         )}
       </div>
     </div>
