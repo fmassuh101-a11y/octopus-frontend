@@ -10,12 +10,12 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 const ACTION_ITEMS = [
   { id: 1, label: 'Publica tu primer trabajo', completed: false, link: '/company/jobs/new' },
-  { id: 2, label: 'Invita usuarios a tu equipo', completed: false, link: '#' },
-  { id: 3, label: 'Revisa aplicaciones de creadores', completed: false, link: '#' },
-  { id: 4, label: 'Configura método de pago', completed: false, link: '#' },
-  { id: 5, label: 'Completa el perfil de empresa', completed: true, link: '#' },
+  { id: 2, label: 'Invita usuarios a tu equipo', completed: false, link: '/company/settings' },
+  { id: 3, label: 'Revisa aplicaciones de creadores', completed: false, link: '/company/campaigns' },
+  { id: 4, label: 'Configura método de pago', completed: false, link: '/company/settings' },
+  { id: 5, label: 'Completa el perfil de empresa', completed: true, link: '/company/settings' },
   { id: 6, label: 'Explora el marketplace de creadores', completed: false, link: '/company/recruit' },
-  { id: 7, label: 'Crea tu primera campaña', completed: false, link: '#' },
+  { id: 7, label: 'Crea tu primera campaña', completed: false, link: '/company/jobs/new' },
 ]
 
 export default function CompanyDashboard() {
@@ -174,6 +174,19 @@ export default function CompanyDashboard() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                     <span>Recruit</span>
+                  </Link>
+                </div>
+              </div>
+
+              <div className="pt-4">
+                <p className="px-3 text-xs font-semibold text-gray-400 uppercase">Manage Creators</p>
+                <div className="mt-2 space-y-1">
+                  <Link href="/company/campaigns" onClick={() => setShowMobileMenu(false)} className="flex items-center space-x-3 px-3 py-3 rounded-lg text-gray-700 hover:bg-gray-50">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+                    </svg>
+                    <span>Campanas</span>
                   </Link>
                 </div>
               </div>
@@ -488,11 +501,12 @@ export default function CompanyDashboard() {
             </svg>
             <span className="text-xs mt-1">Inicio</span>
           </Link>
-          <Link href="/company/recruit" className="flex flex-col items-center p-2 text-gray-500">
+          <Link href="/company/campaigns" className="flex flex-col items-center p-2 text-gray-500">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
             </svg>
-            <span className="text-xs mt-1">Buscar</span>
+            <span className="text-xs mt-1">Campanas</span>
           </Link>
           <Link href="/company/analytics" className="flex flex-col items-center p-2 text-gray-500">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

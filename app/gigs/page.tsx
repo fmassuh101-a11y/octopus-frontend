@@ -174,7 +174,17 @@ export default function GigsPage() {
                 <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                   <div className="flex items-center gap-4">
                     <div>
-                      <p className="text-lg font-bold text-green-600">{gig.payment}</p>
+                      {gig.budget?.includes('CPM') ? (
+                        <span className="px-3 py-1.5 bg-gradient-to-r from-orange-100 to-pink-100 text-orange-700 font-bold rounded-full text-sm">
+                          {gig.budget}
+                        </span>
+                      ) : gig.budget?.includes('/hora') ? (
+                        <span className="px-3 py-1.5 bg-blue-100 text-blue-700 font-bold rounded-full text-sm">
+                          {gig.budget}
+                        </span>
+                      ) : (
+                        <p className="text-lg font-bold text-green-600">{gig.budget || gig.payment}</p>
+                      )}
                     </div>
                     {gig.deadline && (
                       <div className="text-sm text-gray-500">
@@ -182,9 +192,12 @@ export default function GigsPage() {
                       </div>
                     )}
                   </div>
-                  <button className="px-5 py-2 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors">
+                  <Link
+                    href={`/gigs/${gig.id}`}
+                    className="px-5 py-2 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors"
+                  >
                     Aplicar
-                  </button>
+                  </Link>
                 </div>
               </div>
             ))}
