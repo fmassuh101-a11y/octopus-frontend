@@ -1,7 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+
+// Hardcoded Supabase credentials to avoid any env var issues
+const SUPABASE_URL = 'https://ftvqoudlmojdxwjxljzr.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
 
 export default function AuthCallback() {
   const [status, setStatus] = useState('Procesando...')
@@ -13,140 +16,107 @@ export default function AuthCallback() {
 
   const handleCallback = async () => {
     try {
-      console.log('[Callback] Starting...')
-      console.log('[Callback] Full URL:', window.location.href)
-
-      // Extract tokens from URL hash (OAuth implicit flow)
+      // Extract tokens from URL hash
       const hash = window.location.hash.substring(1)
-      console.log('[Callback] Hash params present:', !!hash)
+      const hashParams = new URLSearchParams(hash)
+      const accessToken = hashParams.get('access_token')
+      const refreshToken = hashParams.get('refresh_token')
 
-      if (hash) {
-        const hashParams = new URLSearchParams(hash)
-        const accessToken = hashParams.get('access_token')
-        const refreshToken = hashParams.get('refresh_token')
-        const errorParam = hashParams.get('error')
-        const errorDescription = hashParams.get('error_description')
+      if (!accessToken) {
+        throw new Error('No access token found')
+      }
 
-        // Check for OAuth errors
-        if (errorParam) {
-          console.error('[Callback] OAuth error:', errorParam, errorDescription)
-          throw new Error(errorDescription || errorParam)
+      setStatus('Guardando sesión...')
+
+      // Get user info using the token
+      const userResponse = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'apikey': SUPABASE_ANON_KEY
         }
+      })
 
-        if (accessToken) {
-          console.log('[Callback] Found access token, setting session...')
-          setStatus('Guardando sesión...')
+      if (!userResponse.ok) {
+        throw new Error('Error getting user info')
+      }
 
-          // Set session manually
-          const { data, error: sessionError } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken || ''
-          })
+      const user = await userResponse.json()
 
-          if (sessionError) {
-            console.error('[Callback] Session error:', sessionError)
-            throw sessionError
+      // Store in localStorage for the app to use
+      localStorage.setItem('sb-access-token', accessToken)
+      localStorage.setItem('sb-refresh-token', refreshToken || '')
+      localStorage.setItem('sb-user', JSON.stringify(user))
+
+      // Also set in Supabase's expected format
+      const sessionData = {
+        access_token: accessToken,
+        refresh_token: refreshToken || '',
+        user: user,
+        expires_at: Math.floor(Date.now() / 1000) + 3600
+      }
+      localStorage.setItem(`sb-ftvqoudlmojdxwjxljzr-auth-token`, JSON.stringify(sessionData))
+
+      setStatus('¡Sesión guardada!')
+
+      // Check for pending onboarding
+      const creatorOnboarding = localStorage.getItem('creatorOnboarding')
+      const companyOnboarding = localStorage.getItem('companyOnboarding')
+
+      if (creatorOnboarding) {
+        try {
+          const data = JSON.parse(creatorOnboarding)
+          if (data.pendingComplete) {
+            window.location.href = '/onboarding/creator/socials'
+            return
           }
+        } catch (e) {}
+      }
 
-          if (data.session?.user) {
-            console.log('[Callback] Session set successfully:', data.session.user.email)
-            setStatus('¡Sesión creada!')
+      if (companyOnboarding) {
+        try {
+          const data = JSON.parse(companyOnboarding)
+          if (data.pendingComplete) {
+            window.location.href = '/onboarding/company/logo'
+            return
+          }
+        } catch (e) {}
+      }
 
-            // Check for pending onboarding
-            const creatorOnboarding = localStorage.getItem('creatorOnboarding')
-            const companyOnboarding = localStorage.getItem('companyOnboarding')
+      // Check if user has profile
+      const profileResponse = await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=user_type`,
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'apikey': SUPABASE_ANON_KEY
+          }
+        }
+      )
 
-            if (creatorOnboarding) {
-              try {
-                const onboardingData = JSON.parse(creatorOnboarding)
-                if (onboardingData.pendingComplete) {
-                  window.location.href = '/onboarding/creator/socials'
-                  return
-                }
-              } catch (e) {}
-            }
-            if (companyOnboarding) {
-              try {
-                const onboardingData = JSON.parse(companyOnboarding)
-                if (onboardingData.pendingComplete) {
-                  window.location.href = '/onboarding/company/logo'
-                  return
-                }
-              } catch (e) {}
-            }
-
-            // Check if user has profile
-            setStatus('Verificando perfil...')
-            const { data: profiles } = await supabase
-              .from('profiles')
-              .select('user_type')
-              .eq('user_id', data.session.user.id)
-
-            if (profiles && profiles.length > 0) {
-              const userType = profiles[0].user_type
-              if (userType === 'creator') {
-                window.location.href = '/creator/dashboard'
-                return
-              } else if (userType === 'company') {
-                window.location.href = '/company/dashboard'
-                return
-              }
-            }
-
-            // No profile, go to select-type
-            window.location.href = '/auth/select-type'
+      if (profileResponse.ok) {
+        const profiles = await profileResponse.json()
+        if (profiles && profiles.length > 0) {
+          const userType = profiles[0].user_type
+          if (userType === 'creator') {
+            window.location.href = '/creator/dashboard'
+            return
+          } else if (userType === 'company') {
+            window.location.href = '/company/dashboard'
             return
           }
         }
       }
 
-      // Check for PKCE code in URL params
-      const urlParams = new URLSearchParams(window.location.search)
-      const code = urlParams.get('code')
-
-      if (code) {
-        console.log('[Callback] Found PKCE code, exchanging...')
-        setStatus('Procesando código...')
-
-        const { data, error: codeError } = await supabase.auth.exchangeCodeForSession(code)
-
-        if (codeError) {
-          console.error('[Callback] Code exchange error:', codeError)
-          throw codeError
-        }
-
-        if (data.session?.user) {
-          setStatus('¡Sesión creada!')
-          window.location.href = '/auth/select-type'
-          return
-        }
-      }
-
-      // Check for existing session
-      console.log('[Callback] No tokens in URL, checking existing session...')
-      const { data: { session } } = await supabase.auth.getSession()
-
-      if (session?.user) {
-        console.log('[Callback] Found existing session:', session.user.email)
-        window.location.href = '/auth/select-type'
-        return
-      }
-
-      // No session found
-      console.log('[Callback] No session found')
-      setError(true)
-      setStatus('No se encontró sesión')
-      setTimeout(() => {
-        window.location.href = '/auth/login'
-      }, 2000)
+      // No profile, go to select-type
+      window.location.href = '/auth/select-type'
 
     } catch (err: any) {
-      console.error('[Callback] Error:', err)
+      console.error('Callback error:', err)
       setError(true)
       setStatus(err.message || 'Error de autenticación')
       setTimeout(() => {
         window.location.href = '/auth/login'
-      }, 3000)
+      }, 2000)
     }
   }
 
