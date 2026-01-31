@@ -54,24 +54,25 @@ export default function CreatorAnalyticsPage() {
 
   const handleConnectTikTok = () => {
     if (TIKTOK_CLIENT_KEY) {
-      // IMPORTANT: redirect_uri must match EXACTLY what's in TikTok Developer Portal
-      const redirectUri = 'https://octopus-frontend-tau.vercel.app/auth/tiktok/callback'
-      // Scopes - comma separated, no spaces
-      const scope = 'user.info.basic,user.info.stats,user.info.profile,video.list'
-      const state = `octopus_${Date.now()}`
+      // Use exact format from TikTok's official documentation
+      // https://developers.tiktok.com/doc/login-kit-web/
+      const csrfState = Math.random().toString(36).substring(2, 15)
 
-      // Build URL with proper encoding
-      const params = new URLSearchParams({
-        client_key: TIKTOK_CLIENT_KEY,
-        scope: scope,
-        response_type: 'code',
-        redirect_uri: redirectUri,
-        state: state
-      })
+      // Store state for verification later
+      localStorage.setItem('tiktok_csrf_state', csrfState)
 
-      const tiktokAuthUrl = `https://www.tiktok.com/v2/auth/authorize/?${params.toString()}`
-      console.log('TikTok Auth URL:', tiktokAuthUrl)
-      window.location.href = tiktokAuthUrl
+      // Build authorization URL exactly as TikTok specifies
+      // Note: redirect_uri must EXACTLY match what's registered in TikTok Developer Portal
+      let authUrl = 'https://www.tiktok.com/v2/auth/authorize/'
+      authUrl += `?client_key=${TIKTOK_CLIENT_KEY}`
+      authUrl += '&scope=user.info.basic,user.info.profile,user.info.stats,video.list'
+      authUrl += '&response_type=code'
+      authUrl += `&redirect_uri=${encodeURIComponent('https://octopus-frontend-tau.vercel.app/auth/tiktok/callback')}`
+      authUrl += `&state=${csrfState}`
+
+      console.log('TikTok Auth URL:', authUrl)
+      console.log('Client Key:', TIKTOK_CLIENT_KEY)
+      window.location.href = authUrl
     } else {
       // Demo mode - simulate adding an account
       const demoUsername = prompt('Ingresa tu username de TikTok (sin @):')
