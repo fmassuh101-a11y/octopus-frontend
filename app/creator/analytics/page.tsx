@@ -2,6 +2,16 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { TikTokVideo, TimePeriodValue } from '@/lib/types/analytics'
+import { filterVideosByPeriod, formatNumber } from '@/lib/utils/videoAnalytics'
+import {
+  TimePeriodFilter,
+  VideoDetailModal,
+  VideoRankingSection,
+  PerformanceChart,
+  PublishingInsights,
+  CampaignAnalyzer
+} from './components'
 
 // Hardcoded credentials
 const SUPABASE_URL = 'https://ftvqoudlmojdxwjxljzr.supabase.co'
@@ -14,6 +24,9 @@ export default function CreatorAnalyticsPage() {
   const [tiktokAccounts, setTiktokAccounts] = useState<any[]>([])
   const [selectedAccount, setSelectedAccount] = useState<string>('all')
   const [refreshing, setRefreshing] = useState(false)
+  const [selectedPeriod, setSelectedPeriod] = useState<TimePeriodValue>('all')
+  const [selectedVideo, setSelectedVideo] = useState<TikTokVideo | null>(null)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
   useEffect(() => {
     loadProfile()
@@ -43,6 +56,7 @@ export default function CreatorAnalyticsPage() {
           const bio = profiles[0].bio ? JSON.parse(profiles[0].bio) : {}
           setProfile({ ...profiles[0], ...bio })
           setTiktokAccounts(bio.tiktokAccounts || [])
+          setLastUpdated(new Date())
         }
       }
     } catch (err) {
@@ -54,15 +68,9 @@ export default function CreatorAnalyticsPage() {
 
   const handleConnectTikTok = () => {
     if (TIKTOK_CLIENT_KEY) {
-      // Use exact format from TikTok's official documentation
-      // https://developers.tiktok.com/doc/login-kit-web/
       const csrfState = Math.random().toString(36).substring(2, 15)
-
-      // Store state for verification later
       localStorage.setItem('tiktok_csrf_state', csrfState)
 
-      // Build authorization URL exactly as TikTok specifies
-      // Note: redirect_uri must EXACTLY match what's registered in TikTok Developer Portal
       let authUrl = 'https://www.tiktok.com/v2/auth/authorize/'
       authUrl += `?client_key=${TIKTOK_CLIENT_KEY}`
       authUrl += '&scope=user.info.basic,user.info.profile,user.info.stats,video.list'
@@ -70,11 +78,8 @@ export default function CreatorAnalyticsPage() {
       authUrl += `&redirect_uri=${encodeURIComponent('https://octopus-frontend-tau.vercel.app/auth/tiktok/callback')}`
       authUrl += `&state=${csrfState}`
 
-      console.log('TikTok Auth URL:', authUrl)
-      console.log('Client Key:', TIKTOK_CLIENT_KEY)
       window.location.href = authUrl
     } else {
-      // Demo mode - simulate adding an account
       const demoUsername = prompt('Ingresa tu username de TikTok (sin @):')
       if (demoUsername) {
         window.location.href = `/auth/tiktok/callback?code=demo_${Date.now()}&username=${demoUsername}&display_name=${demoUsername}`
@@ -83,7 +88,7 @@ export default function CreatorAnalyticsPage() {
   }
 
   const handleRemoveAccount = async (accountId: string) => {
-    if (!confirm('¿Seguro que quieres desconectar esta cuenta?')) return
+    if (!confirm('Seguro que quieres desconectar esta cuenta?')) return
 
     try {
       const token = localStorage.getItem('sb-access-token')
@@ -130,10 +135,25 @@ export default function CreatorAnalyticsPage() {
 
   const handleRefreshData = async () => {
     setRefreshing(true)
-    // In production, this would call TikTok API to refresh data
     await new Promise(resolve => setTimeout(resolve, 1500))
     await loadProfile()
     setRefreshing(false)
+  }
+
+  // Get all videos from selected account(s)
+  const getAllVideos = (): TikTokVideo[] => {
+    if (selectedAccount === 'all') {
+      return tiktokAccounts.flatMap(a => a.recentVideos || [])
+    } else {
+      const account = tiktokAccounts.find(a => a.id === selectedAccount)
+      return account?.recentVideos || []
+    }
+  }
+
+  // Get filtered videos by time period
+  const getFilteredVideos = (): TikTokVideo[] => {
+    const allVideos = getAllVideos()
+    return filterVideosByPeriod(allVideos, selectedPeriod)
   }
 
   // Get stats for selected account(s)
@@ -156,21 +176,16 @@ export default function CreatorAnalyticsPage() {
         engagementRate: tiktokAccounts.length > 0
           ? parseFloat((tiktokAccounts.reduce((sum, a) => sum + (a.engagementRate || 0), 0) / tiktokAccounts.length).toFixed(2))
           : 0,
-        recentVideos: tiktokAccounts.flatMap(a => a.recentVideos || []).slice(0, 6),
       }
     } else {
       const account = tiktokAccounts.find(a => a.id === selectedAccount)
-      return account || { followers: 0, following: 0, likes: 0, videoCount: 0, avgViews: 0, avgLikes: 0, avgComments: 0, engagementRate: 0, recentVideos: [] }
+      return account || { followers: 0, following: 0, likes: 0, videoCount: 0, avgViews: 0, avgLikes: 0, avgComments: 0, engagementRate: 0 }
     }
   }
 
   const stats = getStats()
-
-  const formatNumber = (num: number) => {
-    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
-    if (num >= 1000) return (num / 1000).toFixed(1) + 'K'
-    return num.toString()
-  }
+  const filteredVideos = getFilteredVideos()
+  const allVideos = getAllVideos()
 
   const getEngagementColor = (rate: number) => {
     if (rate >= 6) return 'text-green-600 bg-green-100'
@@ -208,8 +223,18 @@ export default function CreatorAnalyticsPage() {
                 </svg>
               </Link>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
-                <p className="text-sm text-gray-500">Rendimiento de tu contenido en TikTok</p>
+                <h1 className="text-2xl font-bold text-gray-900">Analytics Pro</h1>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm text-gray-500">Rendimiento de tu contenido</p>
+                  {lastUpdated && (
+                    <div className="flex items-center gap-1">
+                      <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                      <span className="text-xs text-gray-400">
+                        Actualizado hace {Math.round((Date.now() - lastUpdated.getTime()) / 60000)} min
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -314,7 +339,6 @@ export default function CreatorAnalyticsPage() {
         {/* No accounts connected - Hero CTA */}
         {tiktokAccounts.length === 0 && (
           <div className="bg-gradient-to-br from-black via-gray-900 to-gray-800 rounded-3xl p-10 mb-6 text-white text-center relative overflow-hidden">
-            {/* Decorative elements */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-pink-500/20 to-transparent rounded-full blur-3xl"></div>
             <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-cyan-500/20 to-transparent rounded-full blur-3xl"></div>
 
@@ -326,7 +350,7 @@ export default function CreatorAnalyticsPage() {
               </div>
               <h3 className="text-2xl font-bold mb-3">Conecta tu TikTok</h3>
               <p className="text-white/70 mb-8 max-w-md mx-auto">
-                Ve tus estadisticas reales, engagement rate, y el rendimiento de tus videos. Las empresas veran tu perfil completo cuando te busquen.
+                Accede a analytics profesionales: engagement rate, top performers, mejores horas para publicar, y mucho mas.
               </p>
               <button
                 onClick={handleConnectTikTok}
@@ -398,6 +422,56 @@ export default function CreatorAnalyticsPage() {
                 <p className="text-sm text-gray-500 mt-1">Engagement Rate</p>
               </div>
             </div>
+
+            {/* Campaign Analyzer */}
+            {allVideos.length > 0 && (
+              <div className="mb-6">
+                <CampaignAnalyzer
+                  videos={allVideos}
+                  onVideoClick={setSelectedVideo}
+                />
+              </div>
+            )}
+
+            {/* Time Period Filter */}
+            {allVideos.length > 0 && (
+              <div className="bg-white rounded-2xl p-4 border border-gray-100 mb-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-gray-900">Filtrar por Periodo</h3>
+                  <TimePeriodFilter
+                    selected={selectedPeriod}
+                    onChange={setSelectedPeriod}
+                  />
+                </div>
+                <p className="text-sm text-gray-500 mt-2">
+                  Mostrando {filteredVideos.length} de {allVideos.length} videos
+                </p>
+              </div>
+            )}
+
+            {/* Performance Chart */}
+            {filteredVideos.length > 0 && (
+              <div className="mb-6">
+                <PerformanceChart videos={filteredVideos} />
+              </div>
+            )}
+
+            {/* Video Ranking */}
+            {filteredVideos.length > 0 && (
+              <div className="mb-6">
+                <VideoRankingSection
+                  videos={filteredVideos}
+                  onVideoClick={setSelectedVideo}
+                />
+              </div>
+            )}
+
+            {/* Publishing Insights */}
+            {allVideos.length > 0 && (
+              <div className="mb-6">
+                <PublishingInsights videos={allVideos} />
+              </div>
+            )}
 
             {/* Performance Metrics */}
             <div className="grid md:grid-cols-2 gap-6 mb-6">
@@ -500,18 +574,25 @@ export default function CreatorAnalyticsPage() {
               </div>
             </div>
 
-            {/* Recent Videos */}
-            {stats.recentVideos && stats.recentVideos.length > 0 && (
+            {/* All Videos Grid */}
+            {filteredVideos.length > 0 && (
               <div className="bg-white rounded-2xl p-6 border border-gray-100 mb-6">
-                <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
-                  </svg>
-                  Videos Recientes
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {stats.recentVideos.map((video: any, index: number) => (
-                    <div key={video.id || index} className="group relative rounded-xl overflow-hidden bg-gray-100 aspect-[9/16]">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+                    </svg>
+                    Todos los Videos ({filteredVideos.length})
+                  </h3>
+                  <p className="text-sm text-gray-500">Haz clic en un video para analizarlo</p>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                  {filteredVideos.map((video: TikTokVideo, index: number) => (
+                    <button
+                      key={video.id || index}
+                      onClick={() => setSelectedVideo(video)}
+                      className="group relative rounded-xl overflow-hidden bg-gray-100 aspect-[9/16] hover:ring-2 hover:ring-blue-500 transition-all"
+                    >
                       {video.thumbnail ? (
                         <img src={video.thumbnail} alt={video.title} className="w-full h-full object-cover" />
                       ) : (
@@ -538,9 +619,19 @@ export default function CreatorAnalyticsPage() {
                               {formatNumber(video.likes)}
                             </span>
                           </div>
+                          <div className="mt-2 text-center">
+                            <span className="text-white text-xs font-medium">Ver analisis</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                      {/* Click indicator */}
+                      <div className="absolute top-2 right-2 w-6 h-6 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      </div>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -558,14 +649,8 @@ export default function CreatorAnalyticsPage() {
               <div>
                 <p className="text-sm text-amber-800 font-medium">Estadisticas Limitadas</p>
                 <p className="text-xs text-amber-600 mt-1">
-                  Para ver seguidores, likes y videos necesitas habilitar el scope <strong>user.info.stats</strong> en TikTok Developer Portal:
+                  Para ver seguidores, likes y videos necesitas habilitar el scope <strong>user.info.stats</strong> en TikTok Developer Portal.
                 </p>
-                <ol className="text-xs text-amber-600 mt-2 list-decimal list-inside space-y-1">
-                  <li>Ve a developers.tiktok.com</li>
-                  <li>Selecciona tu app → Products → Scopes</li>
-                  <li>Agrega "user.info.stats" y guarda</li>
-                  <li>Desconecta y vuelve a conectar tu TikTok</li>
-                </ol>
               </div>
             </div>
           </div>
@@ -581,13 +666,22 @@ export default function CreatorAnalyticsPage() {
               <div>
                 <p className="text-sm text-yellow-800 font-medium">Modo Demo Activado</p>
                 <p className="text-xs text-yellow-600 mt-1">
-                  Algunas cuentas muestran datos de demostracion. Para ver tus estadisticas reales, asegurate de tener tu cuenta de TikTok agregada como Target User en el Sandbox de TikTok Developer Portal.
+                  Algunas cuentas muestran datos de demostracion. Para ver tus estadisticas reales, asegurate de tener tu cuenta de TikTok agregada como Target User en el Sandbox.
                 </p>
               </div>
             </div>
           </div>
         )}
       </div>
+
+      {/* Video Detail Modal */}
+      {selectedVideo && (
+        <VideoDetailModal
+          video={selectedVideo}
+          allVideos={allVideos}
+          onClose={() => setSelectedVideo(null)}
+        />
+      )}
 
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 z-20">
