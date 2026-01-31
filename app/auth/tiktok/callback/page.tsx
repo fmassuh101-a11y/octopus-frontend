@@ -77,55 +77,88 @@ export default function TikTokCallbackPage() {
 
       if (response.ok) {
         const result = await response.json()
-        accountData = {
-          id: `tiktok_${result.data.openId || Date.now()}`,
-          openId: result.data.openId,
-          username: result.data.username,
-          displayName: result.data.displayName,
-          avatarUrl: result.data.avatarUrl,
-          bio: result.data.bio,
-          isVerified: result.data.isVerified,
-          followers: result.data.followers,
-          following: result.data.following,
-          likes: result.data.likes,
-          videoCount: result.data.videoCount,
-          avgViews: result.data.avgViews,
-          avgLikes: result.data.avgLikes,
-          avgComments: result.data.avgComments,
-          avgShares: result.data.avgShares,
-          engagementRate: result.data.engagementRate,
-          recentVideos: result.data.recentVideos || [],
-          accessToken: result.data.accessToken,
-          refreshToken: result.data.refreshToken,
-          connectedAt: result.data.connectedAt,
-          lastUpdated: result.data.lastUpdated,
+        const data = result.data
+
+        // Check if TikTok returned empty data (sandbox limitation)
+        const hasRealData = data.followers > 0 || data.likes > 0 || data.videoCount > 0
+
+        if (hasRealData) {
+          accountData = {
+            id: `tiktok_${data.openId || Date.now()}`,
+            openId: data.openId,
+            username: data.username,
+            displayName: data.displayName,
+            avatarUrl: data.avatarUrl,
+            bio: data.bio,
+            isVerified: data.isVerified,
+            followers: data.followers,
+            following: data.following,
+            likes: data.likes,
+            videoCount: data.videoCount,
+            avgViews: data.avgViews,
+            avgLikes: data.avgLikes,
+            avgComments: data.avgComments,
+            avgShares: data.avgShares,
+            engagementRate: data.engagementRate,
+            recentVideos: data.recentVideos || [],
+            accessToken: data.accessToken,
+            refreshToken: data.refreshToken,
+            connectedAt: data.connectedAt,
+            lastUpdated: data.lastUpdated,
+          }
+          setStatus('Datos obtenidos correctamente!')
+        } else {
+          // TikTok returned empty data (sandbox without target user)
+          console.warn('TikTok returned empty data, using demo mode')
+          setStatus('Modo demo (sandbox)...')
+
+          accountData = {
+            id: `tiktok_${data.openId || Date.now()}`,
+            openId: data.openId || `demo_${Date.now()}`,
+            username: data.username || data.displayName || 'mi_tiktok',
+            displayName: data.displayName || data.username || 'Mi TikTok',
+            avatarUrl: data.avatarUrl,
+            bio: data.bio || '',
+            isVerified: data.isVerified || false,
+            followers: Math.floor(Math.random() * 50000) + 5000,
+            following: Math.floor(Math.random() * 500) + 100,
+            likes: Math.floor(Math.random() * 500000) + 50000,
+            videoCount: Math.floor(Math.random() * 100) + 20,
+            avgViews: Math.floor(Math.random() * 50000) + 5000,
+            avgLikes: Math.floor(Math.random() * 2000) + 200,
+            avgComments: Math.floor(Math.random() * 100) + 10,
+            avgShares: Math.floor(Math.random() * 50) + 5,
+            engagementRate: parseFloat((Math.random() * 6 + 3).toFixed(2)),
+            recentVideos: [],
+            accessToken: data.accessToken,
+            refreshToken: data.refreshToken,
+            connectedAt: new Date().toISOString(),
+            lastUpdated: new Date().toISOString(),
+            isDemo: true,
+          }
         }
-        setStatus('Datos obtenidos correctamente!')
       } else {
-        // Fallback to demo mode if API fails (for sandbox testing)
+        // API call failed completely
         console.warn('TikTok API failed, using demo mode')
         setStatus('Modo demo activado...')
-
-        // Get username from URL params if available (demo mode)
-        const demoUsername = urlParams.get('username') || 'tiktok_user'
 
         accountData = {
           id: `tiktok_${Date.now()}`,
           openId: `demo_${Date.now()}`,
-          username: demoUsername,
-          displayName: urlParams.get('display_name') || demoUsername,
+          username: 'mi_tiktok',
+          displayName: 'Mi TikTok',
           avatarUrl: null,
           bio: '',
           isVerified: false,
-          followers: Math.floor(Math.random() * 50000) + 1000,
-          following: Math.floor(Math.random() * 500) + 50,
-          likes: Math.floor(Math.random() * 500000) + 10000,
-          videoCount: Math.floor(Math.random() * 200) + 10,
-          avgViews: Math.floor(Math.random() * 10000) + 1000,
-          avgLikes: Math.floor(Math.random() * 500) + 50,
-          avgComments: Math.floor(Math.random() * 50) + 5,
-          avgShares: Math.floor(Math.random() * 30) + 3,
-          engagementRate: parseFloat((Math.random() * 8 + 2).toFixed(2)),
+          followers: Math.floor(Math.random() * 50000) + 5000,
+          following: Math.floor(Math.random() * 500) + 100,
+          likes: Math.floor(Math.random() * 500000) + 50000,
+          videoCount: Math.floor(Math.random() * 100) + 20,
+          avgViews: Math.floor(Math.random() * 50000) + 5000,
+          avgLikes: Math.floor(Math.random() * 2000) + 200,
+          avgComments: Math.floor(Math.random() * 100) + 10,
+          avgShares: Math.floor(Math.random() * 50) + 5,
+          engagementRate: parseFloat((Math.random() * 6 + 3).toFixed(2)),
           recentVideos: [],
           accessToken: code,
           refreshToken: null,
