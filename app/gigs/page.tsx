@@ -124,7 +124,7 @@ export default function GigsPage() {
       })
 
       if (response.ok) {
-        setAppliedGigs(prev => new Set([...prev, gig.id]))
+        setAppliedGigs(prev => new Set([...Array.from(prev), gig.id]))
         setSelectedGig(null)
         setApplicationMessage('')
       } else {
