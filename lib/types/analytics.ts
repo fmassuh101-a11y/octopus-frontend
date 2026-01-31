@@ -13,6 +13,8 @@ export interface TikTokVideo {
   comments: number
   shares: number
   createdAt: string
+  duration?: number // Video duration in seconds (optional)
+  description?: string // Video description (optional)
 }
 
 export interface AnalyzedVideo extends TikTokVideo {

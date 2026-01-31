@@ -10,7 +10,8 @@ import {
   VideoRankingSection,
   PerformanceChart,
   PublishingInsights,
-  CampaignAnalyzer
+  CampaignAnalyzer,
+  AIContentTips
 } from './components'
 
 // Hardcoded credentials
@@ -470,6 +471,13 @@ export default function CreatorAnalyticsPage() {
             {allVideos.length > 0 && (
               <div className="mb-6">
                 <PublishingInsights videos={allVideos} />
+              </div>
+            )}
+
+            {/* AI Content Tips */}
+            {allVideos.length > 0 && (
+              <div className="mb-6">
+                <AIContentTips videos={allVideos} />
               </div>
             )}
 
