@@ -147,14 +147,42 @@ export default function NewJobPage() {
 
       const userData = JSON.parse(userStr)
 
-      const gigData = {
+      // Obtener el nombre de la empresa del perfil
+      let companyName = 'Empresa'
+      try {
+        const profileResponse = await fetch(
+          `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=company_name,full_name`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'apikey': SUPABASE_ANON_KEY
+            }
+          }
+        )
+        if (profileResponse.ok) {
+          const profiles = await profileResponse.json()
+          if (profiles.length > 0) {
+            companyName = profiles[0].company_name || profiles[0].full_name || 'Empresa'
+          }
+        }
+      } catch (e) {
+        console.log('Could not fetch company name:', e)
+      }
+
+      const gigData: any = {
         company_id: userData.id,
+        company_name: companyName,
         title: formData.title,
         description: formData.description,
         budget: getBudgetString(),
         category: formData.jobType,
         requirements: getRequirementsString(),
         status: 'active'
+      }
+
+      // Agregar imagen si existe
+      if (formData.jobImage) {
+        gigData.image_url = formData.jobImage
       }
 
       const response = await fetch(`${SUPABASE_URL}/rest/v1/gigs`, {

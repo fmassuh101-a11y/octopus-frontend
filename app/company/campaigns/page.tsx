@@ -142,9 +142,19 @@ export default function CampaignsPage() {
       <header className="sticky top-0 z-50 bg-white border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Campanas</h1>
-              <p className="text-sm text-gray-500">Gestiona y rastrea tus campanas de creadores</p>
+            <div className="flex items-center gap-4">
+              <Link
+                href="/company/dashboard"
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </Link>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Campanas</h1>
+                <p className="text-sm text-gray-500">Gestiona y rastrea tus campanas de creadores</p>
+              </div>
             </div>
 
             <div className="flex items-center gap-3">

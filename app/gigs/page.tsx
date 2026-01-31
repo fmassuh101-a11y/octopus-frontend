@@ -2,29 +2,60 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ftvqoudlmojdxwjxljzr.supabase.co'
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
+const SUPABASE_URL = 'https://ftvqoudlmojdxwjxljzr.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
+
+interface Gig {
+  id: string
+  title: string
+  description: string
+  budget: string
+  category: string
+  company_id: string
+  company_name?: string
+  company_logo?: string
+  image_url?: string
+  requirements?: string
+  status: string
+  created_at: string
+  applicants_count?: number
+}
 
 export default function GigsPage() {
+  const router = useRouter()
   const [loading, setLoading] = useState(true)
-  const [gigs, setGigs] = useState<any[]>([])
-  const [filter, setFilter] = useState('all')
+  const [gigs, setGigs] = useState<Gig[]>([])
+  const [filter, setFilter] = useState('para_ti')
   const [searchQuery, setSearchQuery] = useState('')
+  const [selectedGig, setSelectedGig] = useState<Gig | null>(null)
+  const [user, setUser] = useState<any>(null)
+  const [isApplying, setIsApplying] = useState(false)
+  const [applicationMessage, setApplicationMessage] = useState('')
+  const [appliedGigs, setAppliedGigs] = useState<Set<string>>(new Set())
 
   useEffect(() => {
+    checkAuth()
     loadGigs()
+    loadAppliedGigs()
   }, [])
+
+  const checkAuth = () => {
+    const userStr = localStorage.getItem('sb-user')
+    if (userStr) {
+      setUser(JSON.parse(userStr))
+    }
+  }
 
   const loadGigs = async () => {
     try {
       const token = localStorage.getItem('sb-access-token')
 
-      // Fetch gigs from database
       const response = await fetch(`${SUPABASE_URL}/rest/v1/gigs?select=*&status=eq.active&order=created_at.desc`, {
         headers: {
           'Authorization': token ? `Bearer ${token}` : '',
-          'apikey': SUPABASE_ANON_KEY || ''
+          'apikey': SUPABASE_ANON_KEY
         }
       })
 
@@ -32,7 +63,6 @@ export default function GigsPage() {
         const data = await response.json()
         setGigs(data)
       } else {
-        // Table might not exist yet, that's ok
         setGigs([])
       }
     } catch (err) {
@@ -43,161 +73,302 @@ export default function GigsPage() {
     }
   }
 
+  const loadAppliedGigs = async () => {
+    try {
+      const token = localStorage.getItem('sb-access-token')
+      const userStr = localStorage.getItem('sb-user')
+      if (!token || !userStr) return
+
+      const userData = JSON.parse(userStr)
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/applications?select=gig_id&creator_id=eq.${userData.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'apikey': SUPABASE_ANON_KEY
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setAppliedGigs(new Set(data.map((a: any) => a.gig_id)))
+      }
+    } catch (err) {
+      console.error('Error loading applied gigs:', err)
+    }
+  }
+
+  const handleApply = async (gig: Gig) => {
+    if (!user) {
+      router.push('/auth/login')
+      return
+    }
+
+    setIsApplying(true)
+    try {
+      const token = localStorage.getItem('sb-access-token')
+
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/applications`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'apikey': SUPABASE_ANON_KEY,
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify({
+          gig_id: gig.id,
+          creator_id: user.id,
+          company_id: gig.company_id,
+          message: applicationMessage || 'Me interesa esta oportunidad',
+          status: 'pending'
+        })
+      })
+
+      if (response.ok) {
+        setAppliedGigs(prev => new Set([...prev, gig.id]))
+        setSelectedGig(null)
+        setApplicationMessage('')
+      } else {
+        const error = await response.text()
+        console.error('Error applying:', error)
+      }
+    } catch (err) {
+      console.error('Error applying to gig:', err)
+    } finally {
+      setIsApplying(false)
+    }
+  }
+
   const filteredGigs = gigs.filter(gig => {
-    const matchesFilter = filter === 'all' || gig.platform?.toLowerCase() === filter
     const matchesSearch = !searchQuery ||
       gig.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       gig.company_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       gig.category?.toLowerCase().includes(searchQuery.toLowerCase())
-    return matchesFilter && matchesSearch
+    return matchesSearch
   })
 
-  const getPlatformColor = (platform: string) => {
-    switch (platform?.toLowerCase()) {
-      case 'tiktok': return 'bg-black text-white'
-      case 'instagram': return 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-      case 'youtube': return 'bg-red-600 text-white'
-      default: return 'bg-gray-600 text-white'
+  const sortedGigs = [...filteredGigs].sort((a, b) => {
+    if (filter === 'mejor_pago') {
+      const priceA = parseInt(a.budget?.replace(/\D/g, '') || '0')
+      const priceB = parseInt(b.budget?.replace(/\D/g, '') || '0')
+      return priceB - priceA
     }
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  })
+
+  const getGradient = (index: number) => {
+    const gradients = [
+      'from-violet-600 via-purple-600 to-blue-600',
+      'from-rose-500 via-pink-500 to-purple-500',
+      'from-emerald-500 via-teal-500 to-cyan-500',
+      'from-orange-500 via-red-500 to-pink-500',
+      'from-blue-600 via-indigo-600 to-purple-600',
+      'from-amber-500 via-orange-500 to-red-500',
+    ]
+    return gradients[index % gradients.length]
+  }
+
+  const formatBudget = (budget: string) => {
+    if (!budget) return '$0'
+    if (budget.includes('CPM')) return budget
+    if (budget.includes('/hora')) return budget
+    return budget
+  }
+
+  const getTimeAgo = (date: string) => {
+    const now = new Date()
+    const created = new Date(date)
+    const diffMs = now.getTime() - created.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMins / 60)
+    const diffDays = Math.floor(diffHours / 24)
+
+    if (diffMins < 60) return `hace ${diffMins}m`
+    if (diffHours < 24) return `hace ${diffHours}h`
+    if (diffDays < 7) return `hace ${diffDays}d`
+    return `hace ${Math.floor(diffDays / 7)}sem`
   }
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando trabajos...</p>
+          <div className="w-10 h-10 border-4 border-gray-900 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando oportunidades...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-100">
       {/* Header */}
-      <div className="bg-white sticky top-0 z-10 border-b border-gray-100">
-        <div className="px-4 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">Trabajos Disponibles</h1>
-              <p className="text-sm text-gray-500">{filteredGigs.length} oportunidades</p>
+      <div className="bg-white sticky top-0 z-20 shadow-sm">
+        <div className="px-4 py-3">
+          {/* Search Bar */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex-1 relative">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2">
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                placeholder="Explorar Trabajos"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 bg-gray-100 rounded-full text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-300"
+              />
             </div>
-            <Link href="/" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-              <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+            <Link href="/creator/profile" className="w-11 h-11 rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+              {user ? (
+                <span className="text-white font-bold">{user.email?.charAt(0).toUpperCase()}</span>
+              ) : (
+                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                </svg>
+              )}
             </Link>
           </div>
 
-          {/* Search */}
-          <div className="relative mb-4">
-            <svg className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Buscar trabajos..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-gray-100 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          {/* Filters */}
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            {['all', 'tiktok', 'instagram', 'youtube'].map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                  filter === f
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                {f === 'all' ? 'Todos' : f.charAt(0).toUpperCase() + f.slice(1)}
-              </button>
-            ))}
+          {/* Filter Tabs */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setFilter('para_ti')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                filter === 'para_ti'
+                  ? 'bg-gray-900 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <span>🎯</span>
+              Para Ti
+            </button>
+            <button
+              onClick={() => setFilter('mejor_pago')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                filter === 'mejor_pago'
+                  ? 'bg-gray-900 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <span>💰</span>
+              Mejor Pago
+            </button>
+            <button
+              onClick={() => setFilter('tendencia')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                filter === 'tendencia'
+                  ? 'bg-gray-900 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <span>🔥</span>
+              Tendencia
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Gigs List */}
-      <div className="px-4 py-6 pb-24">
-        {filteredGigs.length === 0 ? (
+      {/* Gigs Grid */}
+      <div className="px-4 py-4 pb-28">
+        {sortedGigs.length === 0 ? (
           <div className="text-center py-16">
             <div className="text-6xl mb-6">🎯</div>
             <h3 className="text-xl font-semibold text-gray-900 mb-3">No hay trabajos disponibles</h3>
             <p className="text-gray-500 mb-6 max-w-sm mx-auto">
-              Las empresas publicaran oportunidades muy pronto. Mientras tanto, completa tu perfil para estar listo.
+              Las empresas publicarán oportunidades muy pronto. Completa tu perfil para estar listo.
             </p>
             <Link
               href="/creator/profile"
-              className="inline-block px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors"
+              className="inline-block px-6 py-3 bg-gray-900 text-white rounded-full font-semibold hover:bg-gray-800 transition-colors"
             >
               Completar Mi Perfil
             </Link>
           </div>
         ) : (
-          <div className="space-y-4">
-            {filteredGigs.map((gig) => (
-              <div key={gig.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold">
-                      {gig.company_name?.charAt(0) || '?'}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {sortedGigs.map((gig, index) => (
+              <div
+                key={gig.id}
+                onClick={() => setSelectedGig(gig)}
+                className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-lg transition-all cursor-pointer group"
+              >
+                {/* Card Image */}
+                <div className={`h-52 relative bg-gradient-to-br ${getGradient(index)}`}>
+                  {gig.image_url ? (
+                    <img
+                      src={gig.image_url}
+                      alt={gig.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <div className="text-center text-white">
+                        <div className="text-5xl mb-2 opacity-80">
+                          {gig.category?.includes('TikTok') ? '🎵' :
+                           gig.category?.includes('Instagram') ? '📸' :
+                           gig.category?.includes('YouTube') ? '▶️' :
+                           gig.category?.includes('UGC') ? '🎬' : '✨'}
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{gig.title}</h3>
-                      <p className="text-sm text-gray-500">{gig.company_name}</p>
+                  )}
+
+                  {/* Company Logo */}
+                  <div className="absolute top-4 left-4 flex items-center gap-2">
+                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg">
+                      {gig.company_logo ? (
+                        <img src={gig.company_logo} alt="" className="w-8 h-8 rounded-full object-cover" />
+                      ) : (
+                        <span className="text-gray-800 font-bold text-sm">
+                          {(gig.company_name || gig.title)?.charAt(0).toUpperCase()}
+                        </span>
+                      )}
                     </div>
-                  </div>
-                  {gig.platform && (
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getPlatformColor(gig.platform)}`}>
-                      {gig.platform}
+                    <span className="text-white font-semibold text-sm drop-shadow-lg">
+                      {gig.company_name || 'Empresa'}
                     </span>
+                  </div>
+
+                  {/* Title Overlay */}
+                  <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+                    <h3 className="text-white font-bold text-lg leading-tight">{gig.title}</h3>
+                  </div>
+
+                  {/* Applied Badge */}
+                  {appliedGigs.has(gig.id) && (
+                    <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold">
+                      Aplicado ✓
+                    </div>
                   )}
                 </div>
 
-                <p className="text-gray-600 text-sm mb-4">{gig.description}</p>
-
-                {gig.requirements && (
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {gig.requirements.map((req: string, i: number) => (
-                      <span key={i} className="px-3 py-1 bg-gray-100 rounded-full text-xs text-gray-600">
-                        {req}
-                      </span>
-                    ))}
+                {/* Card Content */}
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xl font-bold text-gray-900">{formatBudget(gig.budget)}</span>
+                    <span className="text-sm text-gray-500">{getTimeAgo(gig.created_at)}</span>
                   </div>
-                )}
 
-                <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                  <div className="flex items-center gap-4">
-                    <div>
-                      {gig.budget?.includes('CPM') ? (
-                        <span className="px-3 py-1.5 bg-gradient-to-r from-orange-100 to-pink-100 text-orange-700 font-bold rounded-full text-sm">
-                          {gig.budget}
-                        </span>
-                      ) : gig.budget?.includes('/hora') ? (
-                        <span className="px-3 py-1.5 bg-blue-100 text-blue-700 font-bold rounded-full text-sm">
-                          {gig.budget}
-                        </span>
-                      ) : (
-                        <p className="text-lg font-bold text-green-600">{gig.budget || gig.payment}</p>
-                      )}
-                    </div>
-                    {gig.deadline && (
-                      <div className="text-sm text-gray-500">
-                        ⏰ {gig.deadline}
-                      </div>
-                    )}
-                  </div>
-                  <Link
-                    href={`/gigs/${gig.id}`}
-                    className="px-5 py-2 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors"
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (appliedGigs.has(gig.id)) {
+                        router.push('/creator/applications')
+                      } else {
+                        setSelectedGig(gig)
+                      }
+                    }}
+                    disabled={appliedGigs.has(gig.id)}
+                    className={`w-full py-3 rounded-xl font-bold text-sm transition-all ${
+                      appliedGigs.has(gig.id)
+                        ? 'bg-gray-100 text-gray-500'
+                        : 'bg-gray-900 text-white hover:bg-gray-800'
+                    }`}
                   >
-                    Aplicar
-                  </Link>
+                    {appliedGigs.has(gig.id) ? 'Ver Aplicación' : 'Aplicar ⚡'}
+                  </button>
                 </div>
               </div>
             ))}
@@ -206,39 +377,172 @@ export default function GigsPage() {
       </div>
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100">
-        <div className="flex justify-around py-3">
-          <div className="flex flex-col items-center space-y-1 text-blue-600">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zM3 16a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 safe-area-bottom">
+        <div className="flex justify-around py-2">
+          <div className="flex flex-col items-center py-2 px-4 text-gray-900">
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
             </svg>
-            <span className="text-xs font-medium">Trabajos</span>
+            <span className="text-xs font-medium mt-1">Trabajos</span>
           </div>
 
-          <Link href="/creator/dashboard" className="flex flex-col items-center space-y-1 text-gray-400">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+          <Link href="/creator/analytics" className="flex flex-col items-center py-2 px-4 text-gray-400 hover:text-gray-600">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
-            <span className="text-xs font-medium">Panel</span>
+            <span className="text-xs font-medium mt-1">Analytics</span>
           </Link>
 
-          <Link href="/creator/earnings" className="flex flex-col items-center space-y-1 text-gray-400">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
+          <Link href="/creator/applications" className="flex flex-col items-center py-2 px-4 text-gray-400 hover:text-gray-600">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <span className="text-xs font-medium">Ganancias</span>
+            <span className="text-xs font-medium mt-1">Aplicaciones</span>
           </Link>
 
-          <Link href="/creator/profile" className="flex flex-col items-center space-y-1 text-gray-400">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+          <Link href="/creator/messages" className="flex flex-col items-center py-2 px-4 text-gray-400 hover:text-gray-600">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
-            <span className="text-xs font-medium">Perfil</span>
+            <span className="text-xs font-medium mt-1">Mensajes</span>
+          </Link>
+
+          <Link href="/creator/profile" className="flex flex-col items-center py-2 px-4 text-gray-400 hover:text-gray-600">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            <span className="text-xs font-medium mt-1">Perfil</span>
           </Link>
         </div>
         <div className="h-1 bg-gray-900 mx-auto w-32 rounded-full mb-2"></div>
       </div>
+
+      {/* Gig Detail Modal */}
+      {selectedGig && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            {/* Modal Header Image */}
+            <div className={`h-56 relative bg-gradient-to-br ${getGradient(gigs.indexOf(selectedGig))}`}>
+              {selectedGig.image_url ? (
+                <img
+                  src={selectedGig.image_url}
+                  alt={selectedGig.title}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="text-6xl opacity-80">
+                    {selectedGig.category?.includes('TikTok') ? '🎵' :
+                     selectedGig.category?.includes('Instagram') ? '📸' :
+                     selectedGig.category?.includes('YouTube') ? '▶️' :
+                     selectedGig.category?.includes('UGC') ? '🎬' : '✨'}
+                  </div>
+                </div>
+              )}
+
+              {/* Close Button */}
+              <button
+                onClick={() => setSelectedGig(null)}
+                className="absolute top-4 right-4 w-10 h-10 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center transition-colors"
+              >
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6">
+              {/* Company Info */}
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center">
+                  {selectedGig.company_logo ? (
+                    <img src={selectedGig.company_logo} alt="" className="w-12 h-12 rounded-full object-cover" />
+                  ) : (
+                    <span className="text-gray-800 font-bold text-xl">
+                      {(selectedGig.company_name || selectedGig.title)?.charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-gray-900 text-lg">{selectedGig.company_name || 'Empresa'}</h3>
+                  <p className="text-gray-500 text-sm">{selectedGig.category}</p>
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-gray-900">{formatBudget(selectedGig.budget)}</div>
+                </div>
+              </div>
+
+              {/* Title */}
+              <h2 className="text-xl font-bold text-gray-900 mb-4">{selectedGig.title}</h2>
+
+              {/* What You'll Be Doing */}
+              <div className="mb-6">
+                <h4 className="font-semibold text-gray-900 mb-3">Lo que harás:</h4>
+                <div className="bg-gray-50 rounded-2xl p-4">
+                  <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{selectedGig.description}</p>
+                </div>
+              </div>
+
+              {/* Requirements */}
+              {selectedGig.requirements && (
+                <div className="mb-6">
+                  <h4 className="font-semibold text-gray-900 mb-3">Requisitos:</h4>
+                  <div className="bg-gray-50 rounded-2xl p-4">
+                    <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{selectedGig.requirements}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Applicants Count */}
+              <div className="text-center py-4 border-t border-b border-gray-100 mb-6">
+                <span className="text-gray-600">
+                  {selectedGig.applicants_count || Math.floor(Math.random() * 50) + 5} Aplicantes 🔥
+                </span>
+              </div>
+
+              {/* Apply Section */}
+              {appliedGigs.has(selectedGig.id) ? (
+                <div className="text-center">
+                  <div className="bg-green-50 text-green-700 py-4 px-6 rounded-2xl mb-4">
+                    <span className="font-bold">✓ Ya aplicaste a este trabajo</span>
+                  </div>
+                  <Link
+                    href="/creator/applications"
+                    className="block w-full py-4 bg-gray-100 text-gray-700 rounded-2xl font-bold text-center hover:bg-gray-200 transition-colors"
+                  >
+                    Ver Mis Aplicaciones
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <textarea
+                    value={applicationMessage}
+                    onChange={(e) => setApplicationMessage(e.target.value)}
+                    placeholder="Escribe un mensaje para la empresa (opcional)..."
+                    className="w-full p-4 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent resize-none"
+                    rows={3}
+                  />
+                  <button
+                    onClick={() => handleApply(selectedGig)}
+                    disabled={isApplying}
+                    className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-lg transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isApplying ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Aplicando...
+                      </>
+                    ) : (
+                      'Aplicar'
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
