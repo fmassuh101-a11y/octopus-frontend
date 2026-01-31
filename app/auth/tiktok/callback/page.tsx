@@ -79,93 +79,51 @@ export default function TikTokCallbackPage() {
         const result = await response.json()
         const data = result.data
 
-        // Check if TikTok returned empty data (sandbox limitation)
-        const hasRealData = data.followers > 0 || data.likes > 0 || data.videoCount > 0
+        console.log('TikTok API returned:', JSON.stringify(data, null, 2))
 
-        if (hasRealData) {
+        // If we have a valid openId, use the real data from TikTok
+        // Stats might be 0 in sandbox mode, but identity is real
+        if (data && data.openId) {
           accountData = {
-            id: `tiktok_${data.openId || Date.now()}`,
+            id: `tiktok_${data.openId}`,
             openId: data.openId,
-            username: data.username,
-            displayName: data.displayName,
-            avatarUrl: data.avatarUrl,
-            bio: data.bio,
-            isVerified: data.isVerified,
-            followers: data.followers,
-            following: data.following,
-            likes: data.likes,
-            videoCount: data.videoCount,
-            avgViews: data.avgViews,
-            avgLikes: data.avgLikes,
-            avgComments: data.avgComments,
-            avgShares: data.avgShares,
-            engagementRate: data.engagementRate,
-            recentVideos: data.recentVideos || [],
-            accessToken: data.accessToken,
-            refreshToken: data.refreshToken,
-            connectedAt: data.connectedAt,
-            lastUpdated: data.lastUpdated,
-          }
-          setStatus('Datos obtenidos correctamente!')
-        } else {
-          // TikTok returned empty data (sandbox without target user)
-          console.warn('TikTok returned empty data, using demo mode')
-          setStatus('Modo demo (sandbox)...')
-
-          accountData = {
-            id: `tiktok_${data.openId || Date.now()}`,
-            openId: data.openId || `demo_${Date.now()}`,
-            username: data.username || data.displayName || 'mi_tiktok',
-            displayName: data.displayName || data.username || 'Mi TikTok',
+            username: data.username || data.displayName || 'Usuario TikTok',
+            displayName: data.displayName || data.username || 'Usuario TikTok',
             avatarUrl: data.avatarUrl,
             bio: data.bio || '',
             isVerified: data.isVerified || false,
-            followers: Math.floor(Math.random() * 50000) + 5000,
-            following: Math.floor(Math.random() * 500) + 100,
-            likes: Math.floor(Math.random() * 500000) + 50000,
-            videoCount: Math.floor(Math.random() * 100) + 20,
-            avgViews: Math.floor(Math.random() * 50000) + 5000,
-            avgLikes: Math.floor(Math.random() * 2000) + 200,
-            avgComments: Math.floor(Math.random() * 100) + 10,
-            avgShares: Math.floor(Math.random() * 50) + 5,
-            engagementRate: parseFloat((Math.random() * 6 + 3).toFixed(2)),
-            recentVideos: [],
+            followers: data.followers || 0,
+            following: data.following || 0,
+            likes: data.likes || 0,
+            videoCount: data.videoCount || 0,
+            avgViews: data.avgViews || 0,
+            avgLikes: data.avgLikes || 0,
+            avgComments: data.avgComments || 0,
+            avgShares: data.avgShares || 0,
+            engagementRate: data.engagementRate || 0,
+            recentVideos: data.recentVideos || [],
             accessToken: data.accessToken,
             refreshToken: data.refreshToken,
-            connectedAt: new Date().toISOString(),
-            lastUpdated: new Date().toISOString(),
-            isDemo: true,
+            connectedAt: data.connectedAt || new Date().toISOString(),
+            lastUpdated: data.lastUpdated || new Date().toISOString(),
+            // Mark as sandbox/limited if no stats (but NOT demo - real connection)
+            isLimited: (data.followers === 0 && data.likes === 0 && data.videoCount === 0),
           }
+
+          if (data.followers > 0 || data.likes > 0) {
+            setStatus('Datos obtenidos correctamente!')
+          } else {
+            setStatus('Conexión exitosa (stats limitados en sandbox)')
+          }
+        } else {
+          // API returned but no valid data
+          throw new Error('TikTok no devolvió datos válidos')
         }
       } else {
-        // API call failed completely
-        console.warn('TikTok API failed, using demo mode')
-        setStatus('Modo demo activado...')
-
-        accountData = {
-          id: `tiktok_${Date.now()}`,
-          openId: `demo_${Date.now()}`,
-          username: 'mi_tiktok',
-          displayName: 'Mi TikTok',
-          avatarUrl: null,
-          bio: '',
-          isVerified: false,
-          followers: Math.floor(Math.random() * 50000) + 5000,
-          following: Math.floor(Math.random() * 500) + 100,
-          likes: Math.floor(Math.random() * 500000) + 50000,
-          videoCount: Math.floor(Math.random() * 100) + 20,
-          avgViews: Math.floor(Math.random() * 50000) + 5000,
-          avgLikes: Math.floor(Math.random() * 2000) + 200,
-          avgComments: Math.floor(Math.random() * 100) + 10,
-          avgShares: Math.floor(Math.random() * 50) + 5,
-          engagementRate: parseFloat((Math.random() * 6 + 3).toFixed(2)),
-          recentVideos: [],
-          accessToken: code,
-          refreshToken: null,
-          connectedAt: new Date().toISOString(),
-          lastUpdated: new Date().toISOString(),
-          isDemo: true,
-        }
+        // API call failed completely - show error, don't use demo
+        const errorText = await response.text()
+        console.error('TikTok API error:', response.status, errorText)
+        throw new Error(`Error de TikTok: ${response.status}`)
       }
 
       setProgress(80)
