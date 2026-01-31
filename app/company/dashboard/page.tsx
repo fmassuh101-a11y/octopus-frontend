@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ftvqoudlmojdxwjxljzr.supabase.co'
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
+// Hardcoded to avoid env var issues
+const SUPABASE_URL = 'https://ftvqoudlmojdxwjxljzr.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
 
 const ACTION_ITEMS = [
   { id: 1, label: 'Publica tu primer trabajo', completed: false, link: '/company/jobs/new' },
@@ -49,21 +50,47 @@ export default function CompanyDashboard() {
       const response = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=*`, {
         headers: {
           'Authorization': `Bearer ${token}`,
-          'apikey': SUPABASE_ANON_KEY || ''
+          'apikey': SUPABASE_ANON_KEY
         }
       })
 
       if (response.ok) {
         const profiles = await response.json()
         if (profiles.length > 0) {
-          setProfile(profiles[0])
+          const profileData = profiles[0]
+          setProfile(profileData)
+
+          // Check if user is a company
+          if (profileData.user_type !== 'company') {
+            if (profileData.user_type === 'creator') {
+              window.location.href = '/creator/dashboard'
+              return
+            }
+          }
+
+          // Parse bio data if it exists
+          if (profileData.bio) {
+            try {
+              const bioData = JSON.parse(profileData.bio)
+              setProfile({ ...profileData, ...bioData })
+            } catch (e) {}
+          }
+        } else {
+          // No profile, go to select-type
+          window.location.href = '/auth/select-type'
+          return
         }
+      } else {
+        // Error fetching, go to select-type to avoid loop
+        window.location.href = '/auth/select-type'
+        return
       }
 
       setLoading(false)
     } catch (err) {
       console.error('Auth check error:', err)
-      window.location.href = '/auth/login'
+      // On error, go to select-type instead of login to avoid redirect loop
+      window.location.href = '/auth/select-type'
     }
   }
 

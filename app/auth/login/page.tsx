@@ -14,75 +14,45 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [checkingSession, setCheckingSession] = useState(true)
 
-  // Check if already logged in using localStorage
+  // Check if already logged in using localStorage - simplified to avoid redirect loops
   useEffect(() => {
-    const checkExistingSession = async () => {
-      try {
-        const token = localStorage.getItem('sb-access-token')
-        const userStr = localStorage.getItem('sb-user')
+    const token = localStorage.getItem('sb-access-token')
+    const userStr = localStorage.getItem('sb-user')
 
-        if (token && userStr) {
-          const user = JSON.parse(userStr)
-          console.log('[Login] Existing session found:', user.email)
+    if (token && userStr) {
+      console.log('[Login] Session found, checking where to redirect...')
 
-          // Check for pending onboarding
-          const creatorOnboarding = localStorage.getItem('creatorOnboarding')
-          const companyOnboarding = localStorage.getItem('companyOnboarding')
+      // Check for pending onboarding first
+      const creatorOnboarding = localStorage.getItem('creatorOnboarding')
+      const companyOnboarding = localStorage.getItem('companyOnboarding')
 
-          if (creatorOnboarding) {
-            try {
-              const data = JSON.parse(creatorOnboarding)
-              if (data.pendingComplete) {
-                window.location.href = '/onboarding/creator/socials'
-                return
-              }
-            } catch (e) {}
+      if (creatorOnboarding) {
+        try {
+          const data = JSON.parse(creatorOnboarding)
+          if (data.pendingComplete) {
+            window.location.href = '/onboarding/creator/socials'
+            return
           }
-          if (companyOnboarding) {
-            try {
-              const data = JSON.parse(companyOnboarding)
-              if (data.pendingComplete) {
-                window.location.href = '/onboarding/company/logo'
-                return
-              }
-            } catch (e) {}
-          }
-
-          // Check if user has profile using direct fetch
-          const response = await fetch(
-            `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=user_type`,
-            {
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'apikey': SUPABASE_ANON_KEY
-              }
-            }
-          )
-
-          if (response.ok) {
-            const profiles = await response.json()
-            if (profiles && profiles.length > 0) {
-              const userType = profiles[0].user_type
-              if (userType === 'creator') {
-                window.location.href = '/creator/dashboard'
-                return
-              } else if (userType === 'company') {
-                window.location.href = '/company/dashboard'
-                return
-              }
-            }
-          }
-
-          // Has session but no profile, go to select-type
-          window.location.href = '/auth/select-type'
-        }
-      } catch (err) {
-        console.error('[Login] Error checking session:', err)
-      } finally {
-        setCheckingSession(false)
+        } catch (e) {}
       }
+      if (companyOnboarding) {
+        try {
+          const data = JSON.parse(companyOnboarding)
+          if (data.pendingComplete) {
+            window.location.href = '/onboarding/company/logo'
+            return
+          }
+        } catch (e) {}
+      }
+
+      // Has session, go directly to select-type which will route appropriately
+      // Don't do profile checks here to avoid redirect loops
+      window.location.href = '/auth/select-type'
+      return
     }
-    checkExistingSession()
+
+    // No session, show login form
+    setCheckingSession(false)
   }, [])
 
   const handleEmailSignIn = async (e: React.FormEvent) => {

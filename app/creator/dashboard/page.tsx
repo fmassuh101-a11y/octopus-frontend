@@ -3,8 +3,9 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ftvqoudlmojdxwjxljzr.supabase.co'
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
+// Hardcoded to avoid env var issues
+const SUPABASE_URL = 'https://ftvqoudlmojdxwjxljzr.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
 
 export default function CreatorDashboard() {
   const [user, setUser] = useState<any>(null)
@@ -77,8 +78,10 @@ export default function CreatorDashboard() {
               // bio is not JSON, that's fine
             }
           }
+
+          setLoading(false)
         } else {
-          // No profile found
+          // No profile found - go to select-type (NOT login to avoid loop)
           console.log('[Dashboard] No profile found, redirecting to select-type')
           window.location.href = '/auth/select-type'
           return
@@ -86,14 +89,14 @@ export default function CreatorDashboard() {
       } else {
         const errorText = await response.text()
         console.error('[Dashboard] Profile fetch failed:', response.status, errorText)
-        window.location.href = '/auth/login'
+        // On error, go to select-type instead of login to avoid redirect loop
+        window.location.href = '/auth/select-type'
         return
       }
-
-      setLoading(false)
     } catch (err) {
       console.error('[Dashboard] Auth check error:', err)
-      window.location.href = '/auth/login'
+      // On error, go to select-type instead of login to avoid redirect loop
+      window.location.href = '/auth/select-type'
     }
   }
 

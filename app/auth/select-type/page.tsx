@@ -2,13 +2,61 @@
 
 import { useState, useEffect } from 'react'
 
+const SUPABASE_URL = 'https://ftvqoudlmojdxwjxljzr.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
+
 export default function SelectTypePage() {
   const [selectedType, setSelectedType] = useState<string>('')
-  const [mounted, setMounted] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    setMounted(true)
-    // Allow users to proceed without session - we'll require login when saving profile
+    // Check if user already has a profile
+    const checkExistingProfile = async () => {
+      const token = localStorage.getItem('sb-access-token')
+      const userStr = localStorage.getItem('sb-user')
+
+      if (!token || !userStr) {
+        // No session, show the selection form
+        setLoading(false)
+        return
+      }
+
+      try {
+        const user = JSON.parse(userStr)
+
+        // Check if user has profile
+        const response = await fetch(
+          `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=user_type`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'apikey': SUPABASE_ANON_KEY
+            }
+          }
+        )
+
+        if (response.ok) {
+          const profiles = await response.json()
+          if (profiles && profiles.length > 0) {
+            const userType = profiles[0].user_type
+            if (userType === 'creator') {
+              window.location.href = '/creator/dashboard'
+              return
+            } else if (userType === 'company') {
+              window.location.href = '/company/dashboard'
+              return
+            }
+          }
+        }
+      } catch (err) {
+        console.error('[SelectType] Error checking profile:', err)
+      }
+
+      // No profile found, show selection form
+      setLoading(false)
+    }
+
+    checkExistingProfile()
   }, [])
 
   const handleContinue = () => {
@@ -23,7 +71,7 @@ export default function SelectTypePage() {
     }
   }
 
-  if (!mounted) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
