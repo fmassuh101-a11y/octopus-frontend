@@ -34,10 +34,18 @@ interface TalentCreator {
   avatarUrl?: string
   followers?: number
   engagementRate?: number
+  avgViews?: number
+  avgLikes?: number
+  avgComments?: number
+  videoCount?: number
+  totalLikes?: number
+  recentVideos?: any[]
   addedAt: string
   notes?: string
   status: 'active' | 'completed' | 'pending'
   gigsCount: number
+  isVerified?: boolean
+  linkedToProfile?: boolean // true if matches a registered creator
 }
 
 export default function CompanyAnalyticsPage() {
@@ -172,22 +180,38 @@ export default function CompanyAnalyticsPage() {
     // Clean handle (remove @ if present)
     const cleanHandle = newTalentHandle.trim().replace(/^@/, '')
 
-    // Create new talent entry
-    const newTalent: TalentCreator = {
-      id: `talent_${Date.now()}`,
-      handle: cleanHandle,
-      displayName: newTalentName.trim() || cleanHandle,
-      addedAt: new Date().toISOString(),
-      notes: newTalentNotes.trim() || undefined,
-      status: 'active',
-      gigsCount: 0
-    }
-
     // Check if already exists
     if (myTalent.some(t => t.handle.toLowerCase() === cleanHandle.toLowerCase())) {
       alert('Este creador ya esta en tu lista de talento')
       setAddingTalent(false)
       return
+    }
+
+    // Check if this handle matches a registered creator on the platform
+    const matchedCreator = creators.find(c =>
+      c.username.toLowerCase() === cleanHandle.toLowerCase()
+    )
+
+    // Create new talent entry with data from matched creator if found
+    const newTalent: TalentCreator = {
+      id: `talent_${Date.now()}`,
+      handle: cleanHandle,
+      displayName: matchedCreator?.displayName || newTalentName.trim() || cleanHandle,
+      avatarUrl: matchedCreator?.avatarUrl || undefined,
+      followers: matchedCreator?.followers,
+      engagementRate: matchedCreator?.engagementRate,
+      avgViews: matchedCreator?.avgViews,
+      avgLikes: matchedCreator?.avgLikes,
+      avgComments: matchedCreator?.avgComments,
+      videoCount: matchedCreator?.videoCount,
+      totalLikes: matchedCreator?.likes,
+      recentVideos: matchedCreator?.recentVideos,
+      addedAt: new Date().toISOString(),
+      notes: newTalentNotes.trim() || undefined,
+      status: 'active',
+      gigsCount: 0,
+      isVerified: matchedCreator?.isVerified,
+      linkedToProfile: !!matchedCreator
     }
 
     // Save
@@ -201,6 +225,43 @@ export default function CompanyAnalyticsPage() {
     setShowAddTalentModal(false)
     setAddingTalent(false)
   }
+
+  // Function to refresh talent data from platform creators
+  const refreshTalentData = () => {
+    const updatedTalent = myTalent.map(talent => {
+      const matchedCreator = creators.find(c =>
+        c.username.toLowerCase() === talent.handle.toLowerCase()
+      )
+
+      if (matchedCreator) {
+        return {
+          ...talent,
+          displayName: matchedCreator.displayName,
+          avatarUrl: matchedCreator.avatarUrl || undefined,
+          followers: matchedCreator.followers,
+          engagementRate: matchedCreator.engagementRate,
+          avgViews: matchedCreator.avgViews,
+          avgLikes: matchedCreator.avgLikes,
+          avgComments: matchedCreator.avgComments,
+          videoCount: matchedCreator.videoCount,
+          totalLikes: matchedCreator.likes,
+          recentVideos: matchedCreator.recentVideos,
+          isVerified: matchedCreator.isVerified,
+          linkedToProfile: true
+        }
+      }
+      return talent
+    })
+
+    saveMyTalent(updatedTalent)
+  }
+
+  // Refresh talent data when creators are loaded
+  useEffect(() => {
+    if (creators.length > 0 && myTalent.length > 0) {
+      refreshTalentData()
+    }
+  }, [creators])
 
   const handleRemoveTalent = (talentId: string) => {
     if (!confirm('Seguro que quieres eliminar este creador de tu lista?')) return
@@ -514,18 +575,31 @@ export default function CompanyAnalyticsPage() {
                 </div>
                 <div className="divide-y divide-gray-100">
                   {myTalent.map((talent) => (
-                    <div key={talent.id} className="p-4 hover:bg-gray-50 transition">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
+                    <div key={talent.id} className="p-5 hover:bg-gray-50 transition">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-start gap-4 flex-1">
                           {/* Avatar */}
-                          <div className="w-14 h-14 bg-gradient-to-br from-pink-500 to-purple-600 rounded-xl flex items-center justify-center text-white text-xl font-bold">
-                            {talent.displayName.charAt(0).toUpperCase()}
-                          </div>
+                          {talent.avatarUrl ? (
+                            <img
+                              src={talent.avatarUrl}
+                              alt={talent.displayName}
+                              className="w-16 h-16 rounded-xl object-cover"
+                            />
+                          ) : (
+                            <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-purple-600 rounded-xl flex items-center justify-center text-white text-2xl font-bold flex-shrink-0">
+                              {talent.displayName.charAt(0).toUpperCase()}
+                            </div>
+                          )}
 
                           {/* Info */}
-                          <div>
-                            <div className="flex items-center gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <h4 className="font-semibold text-gray-900">{talent.displayName}</h4>
+                              {talent.isVerified && (
+                                <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                              )}
                               <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                                 talent.status === 'active' ? 'bg-green-100 text-green-700' :
                                 talent.status === 'completed' ? 'bg-gray-100 text-gray-700' :
@@ -534,26 +608,83 @@ export default function CompanyAnalyticsPage() {
                                 {talent.status === 'active' ? 'Activo' :
                                  talent.status === 'completed' ? 'Completado' : 'Pendiente'}
                               </span>
+                              {talent.linkedToProfile && (
+                                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                                  En Plataforma
+                                </span>
+                              )}
                             </div>
                             <a
                               href={`https://tiktok.com/@${talent.handle}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+                              className="text-sm text-blue-600 hover:underline flex items-center gap-1 mt-0.5"
                             >
                               @{talent.handle}
                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                               </svg>
                             </a>
+
+                            {/* Metrics - Show if linked to platform */}
+                            {talent.linkedToProfile && talent.followers ? (
+                              <div className="flex flex-wrap gap-4 mt-3">
+                                <div className="flex items-center gap-1.5">
+                                  <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                                  </svg>
+                                  <span className="text-sm font-medium text-gray-900">{formatNumber(talent.followers)}</span>
+                                  <span className="text-xs text-gray-500">seguidores</span>
+                                </div>
+                                {talent.engagementRate && (
+                                  <div className="flex items-center gap-1.5">
+                                    <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                                    </svg>
+                                    <span className={`text-sm font-medium ${
+                                      talent.engagementRate >= 6 ? 'text-green-600' :
+                                      talent.engagementRate >= 3 ? 'text-yellow-600' : 'text-red-600'
+                                    }`}>{talent.engagementRate}%</span>
+                                    <span className="text-xs text-gray-500">engagement</span>
+                                  </div>
+                                )}
+                                {talent.avgViews && (
+                                  <div className="flex items-center gap-1.5">
+                                    <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                      <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                      <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                                    </svg>
+                                    <span className="text-sm font-medium text-gray-900">{formatNumber(talent.avgViews)}</span>
+                                    <span className="text-xs text-gray-500">views prom.</span>
+                                  </div>
+                                )}
+                                {talent.avgLikes && (
+                                  <div className="flex items-center gap-1.5">
+                                    <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                                    </svg>
+                                    <span className="text-sm font-medium text-gray-900">{formatNumber(talent.avgLikes)}</span>
+                                    <span className="text-xs text-gray-500">likes prom.</span>
+                                  </div>
+                                )}
+                              </div>
+                            ) : !talent.linkedToProfile && (
+                              <div className="mt-3 flex items-center gap-2 text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span>Este creador aun no esta registrado en Octopus</span>
+                              </div>
+                            )}
+
                             {talent.notes && (
-                              <p className="text-xs text-gray-500 mt-1">{talent.notes}</p>
+                              <p className="text-xs text-gray-500 mt-2 bg-gray-50 px-2 py-1 rounded inline-block">{talent.notes}</p>
                             )}
                           </div>
                         </div>
 
                         {/* Actions */}
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-shrink-0">
                           {/* Status Dropdown */}
                           <select
                             value={talent.status}
