@@ -34,12 +34,25 @@ export default function GigsPage() {
   const [isApplying, setIsApplying] = useState(false)
   const [applicationMessage, setApplicationMessage] = useState('')
   const [appliedGigs, setAppliedGigs] = useState<Set<string>>(new Set())
+  const [showSuccessToast, setShowSuccessToast] = useState(false)
+  const [countdown, setCountdown] = useState(5)
 
   useEffect(() => {
     checkAuth()
     loadGigs()
     loadAppliedGigs()
   }, [])
+
+  // Countdown effect for success toast
+  useEffect(() => {
+    if (showSuccessToast && countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
+      return () => clearTimeout(timer)
+    } else if (countdown === 0) {
+      setShowSuccessToast(false)
+      setCountdown(5)
+    }
+  }, [showSuccessToast, countdown])
 
   const checkAuth = () => {
     const userStr = localStorage.getItem('sb-user')
@@ -127,12 +140,17 @@ export default function GigsPage() {
         setAppliedGigs(prev => new Set([...Array.from(prev), gig.id]))
         setSelectedGig(null)
         setApplicationMessage('')
+        // Show success toast
+        setShowSuccessToast(true)
+        setCountdown(5)
       } else {
         const error = await response.text()
         console.error('Error applying:', error)
+        alert('Error al aplicar. Intenta de nuevo.')
       }
     } catch (err) {
       console.error('Error applying to gig:', err)
+      alert('Error al aplicar. Intenta de nuevo.')
     } finally {
       setIsApplying(false)
     }
@@ -169,8 +187,6 @@ export default function GigsPage() {
 
   const formatBudget = (budget: string) => {
     if (!budget) return '$0'
-    if (budget.includes('CPM')) return budget
-    if (budget.includes('/hora')) return budget
     return budget
   }
 
@@ -201,6 +217,26 @@ export default function GigsPage() {
 
   return (
     <div className="min-h-screen bg-gray-100">
+      {/* Success Toast */}
+      {showSuccessToast && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] animate-bounce">
+          <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-4">
+            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+              <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <div>
+              <p className="font-bold text-lg">Aplicacion Enviada</p>
+              <p className="text-white/80 text-sm">Este mensaje desaparecera en {countdown}s</p>
+            </div>
+            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center font-bold text-xl">
+              {countdown}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white sticky top-0 z-20 shadow-sm">
         <div className="px-4 py-3">
@@ -277,7 +313,7 @@ export default function GigsPage() {
             <div className="text-6xl mb-6">🎯</div>
             <h3 className="text-xl font-semibold text-gray-900 mb-3">No hay trabajos disponibles</h3>
             <p className="text-gray-500 mb-6 max-w-sm mx-auto">
-              Las empresas publicarán oportunidades muy pronto. Completa tu perfil para estar listo.
+              Las empresas publicaran oportunidades muy pronto. Completa tu perfil para estar listo.
             </p>
             <Link
               href="/creator/profile"
@@ -339,7 +375,7 @@ export default function GigsPage() {
                   {/* Applied Badge */}
                   {appliedGigs.has(gig.id) && (
                     <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold">
-                      Aplicado ✓
+                      Aplicado
                     </div>
                   )}
                 </div>
@@ -360,14 +396,13 @@ export default function GigsPage() {
                         setSelectedGig(gig)
                       }
                     }}
-                    disabled={appliedGigs.has(gig.id)}
                     className={`w-full py-3 rounded-xl font-bold text-sm transition-all ${
                       appliedGigs.has(gig.id)
-                        ? 'bg-gray-100 text-gray-500'
+                        ? 'bg-green-100 text-green-700'
                         : 'bg-gray-900 text-white hover:bg-gray-800'
                     }`}
                   >
-                    {appliedGigs.has(gig.id) ? 'Ver Aplicación' : 'Aplicar ⚡'}
+                    {appliedGigs.has(gig.id) ? 'Ver Aplicacion' : 'Aplicar'}
                   </button>
                 </div>
               </div>
@@ -422,7 +457,7 @@ export default function GigsPage() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
             {/* Modal Header Image */}
-            <div className={`h-56 relative bg-gradient-to-br ${getGradient(gigs.indexOf(selectedGig))}`}>
+            <div className={`h-48 relative bg-gradient-to-br ${getGradient(gigs.indexOf(selectedGig))}`}>
               {selectedGig.image_url ? (
                 <img
                   src={selectedGig.image_url}
@@ -455,17 +490,17 @@ export default function GigsPage() {
             <div className="p-6">
               {/* Company Info */}
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center">
+                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
                   {selectedGig.company_logo ? (
-                    <img src={selectedGig.company_logo} alt="" className="w-12 h-12 rounded-full object-cover" />
+                    <img src={selectedGig.company_logo} alt="" className="w-10 h-10 rounded-full object-cover" />
                   ) : (
-                    <span className="text-gray-800 font-bold text-xl">
+                    <span className="text-gray-800 font-bold text-lg">
                       {(selectedGig.company_name || selectedGig.title)?.charAt(0).toUpperCase()}
                     </span>
                   )}
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-bold text-gray-900 text-lg">{selectedGig.company_name || 'Empresa'}</h3>
+                  <h3 className="font-bold text-gray-900">{selectedGig.company_name || 'Empresa'}</h3>
                   <p className="text-gray-500 text-sm">{selectedGig.category}</p>
                 </div>
                 <div className="text-right">
@@ -476,10 +511,10 @@ export default function GigsPage() {
               {/* Title */}
               <h2 className="text-xl font-bold text-gray-900 mb-4">{selectedGig.title}</h2>
 
-              {/* What You'll Be Doing */}
+              {/* Description */}
               <div className="mb-6">
-                <h4 className="font-semibold text-gray-900 mb-3">Lo que harás:</h4>
-                <div className="bg-gray-50 rounded-2xl p-4">
+                <h4 className="font-semibold text-gray-900 mb-2">Lo que haras:</h4>
+                <div className="bg-gray-50 rounded-xl p-4">
                   <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{selectedGig.description}</p>
                 </div>
               </div>
@@ -487,29 +522,34 @@ export default function GigsPage() {
               {/* Requirements */}
               {selectedGig.requirements && (
                 <div className="mb-6">
-                  <h4 className="font-semibold text-gray-900 mb-3">Requisitos:</h4>
-                  <div className="bg-gray-50 rounded-2xl p-4">
+                  <h4 className="font-semibold text-gray-900 mb-2">Requisitos:</h4>
+                  <div className="bg-gray-50 rounded-xl p-4">
                     <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{selectedGig.requirements}</p>
                   </div>
                 </div>
               )}
 
-              {/* Applicants Count */}
-              <div className="text-center py-4 border-t border-b border-gray-100 mb-6">
-                <span className="text-gray-600">
-                  {selectedGig.applicants_count || Math.floor(Math.random() * 50) + 5} Aplicantes 🔥
-                </span>
-              </div>
+              {/* Real Applicants Count - NO FAKE DATA */}
+              {(selectedGig.applicants_count || 0) > 0 && (
+                <div className="text-center py-3 mb-4 bg-orange-50 rounded-xl">
+                  <span className="text-orange-700 font-medium">
+                    {selectedGig.applicants_count} {selectedGig.applicants_count === 1 ? 'persona ha aplicado' : 'personas han aplicado'}
+                  </span>
+                </div>
+              )}
 
               {/* Apply Section */}
               {appliedGigs.has(selectedGig.id) ? (
                 <div className="text-center">
-                  <div className="bg-green-50 text-green-700 py-4 px-6 rounded-2xl mb-4">
-                    <span className="font-bold">✓ Ya aplicaste a este trabajo</span>
+                  <div className="bg-green-50 text-green-700 py-4 px-6 rounded-xl mb-4 flex items-center justify-center gap-2">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="font-bold">Ya aplicaste a este trabajo</span>
                   </div>
                   <Link
                     href="/creator/applications"
-                    className="block w-full py-4 bg-gray-100 text-gray-700 rounded-2xl font-bold text-center hover:bg-gray-200 transition-colors"
+                    className="block w-full py-4 bg-gray-100 text-gray-700 rounded-xl font-bold text-center hover:bg-gray-200 transition-colors"
                   >
                     Ver Mis Aplicaciones
                   </Link>
@@ -520,21 +560,26 @@ export default function GigsPage() {
                     value={applicationMessage}
                     onChange={(e) => setApplicationMessage(e.target.value)}
                     placeholder="Escribe un mensaje para la empresa (opcional)..."
-                    className="w-full p-4 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent resize-none"
+                    className="w-full p-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                     rows={3}
                   />
                   <button
                     onClick={() => handleApply(selectedGig)}
                     disabled={isApplying}
-                    className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-lg transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-bold text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {isApplying ? (
                       <>
                         <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        Aplicando...
+                        Enviando...
                       </>
                     ) : (
-                      'Aplicar'
+                      <>
+                        <span>Aplicar Ahora</span>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                        </svg>
+                      </>
                     )}
                   </button>
                 </div>
