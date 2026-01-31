@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
-import { User } from '@supabase/supabase-js'
+
+const SUPABASE_URL = 'https://ftvqoudlmojdxwjxljzr.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
 
 export default function CompanyLogoPage() {
   const [logo, setLogo] = useState<string | null>(null)
@@ -12,11 +13,12 @@ export default function CompanyLogoPage() {
   const [formData, setFormData] = useState<any>({})
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Auth state
-  const [user, setUser] = useState<User | null>(null)
+  // Auth state from localStorage
+  const [accessToken, setAccessToken] = useState<string | null>(null)
+  const [user, setUser] = useState<any>(null)
   const [checkingSession, setCheckingSession] = useState(true)
 
-  const isAuthenticated = !!user
+  const isAuthenticated = !!accessToken && !!user
 
   useEffect(() => {
     // Load existing company onboarding data
@@ -24,29 +26,20 @@ export default function CompanyLogoPage() {
     setFormData(existing)
     if (existing.logo) setLogo(existing.logo)
 
-    // Check session using Supabase client
-    const checkSession = async () => {
+    // Check session from localStorage
+    const token = localStorage.getItem('sb-access-token')
+    const userStr = localStorage.getItem('sb-user')
+
+    if (token && userStr) {
       try {
-        console.log('[CompanyLogo] Checking session...')
-        const { data: { session }, error } = await supabase.auth.getSession()
-
-        console.log('[CompanyLogo] Session check:', {
-          hasSession: !!session,
-          userEmail: session?.user?.email,
-          error: error?.message
-        })
-
-        if (session?.user) {
-          setUser(session.user)
-        }
-      } catch (err) {
-        console.error('[CompanyLogo] Error checking session:', err)
-      } finally {
-        setCheckingSession(false)
+        setAccessToken(token)
+        setUser(JSON.parse(userStr))
+      } catch (e) {
+        console.error('Error parsing user:', e)
       }
     }
 
-    checkSession()
+    setCheckingSession(false)
   }, [])
 
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -68,7 +61,7 @@ export default function CompanyLogoPage() {
     setLoading(true)
     setError('')
 
-    if (!user) {
+    if (!isAuthenticated || !user || !accessToken) {
       setError('Debes iniciar sesión para guardar tu perfil')
       setLoading(false)
       return
@@ -101,35 +94,59 @@ export default function CompanyLogoPage() {
         updated_at: new Date().toISOString()
       }
 
-      // Check if profile exists
-      const { data: profiles, error: checkError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', user.id)
+      // Check if profile exists using direct fetch
+      const checkResponse = await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=id`,
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'apikey': SUPABASE_ANON_KEY
+          }
+        }
+      )
 
-      if (checkError) {
-        console.error('[CompanyLogo] Profile check error:', checkError)
+      if (!checkResponse.ok) {
         throw new Error('Error verificando perfil')
       }
 
-      let saveError
+      const profiles = await checkResponse.json()
+
+      let saveResponse
       if (profiles && profiles.length > 0) {
         // Update existing profile
-        const { error } = await supabase
-          .from('profiles')
-          .update(profileData)
-          .eq('user_id', user.id)
-        saveError = error
+        saveResponse = await fetch(
+          `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}`,
+          {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`,
+              'apikey': SUPABASE_ANON_KEY,
+              'Prefer': 'return=minimal'
+            },
+            body: JSON.stringify(profileData)
+          }
+        )
       } else {
         // Insert new profile
-        const { error } = await supabase
-          .from('profiles')
-          .insert(profileData)
-        saveError = error
+        saveResponse = await fetch(
+          `${SUPABASE_URL}/rest/v1/profiles`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`,
+              'apikey': SUPABASE_ANON_KEY,
+              'Prefer': 'return=minimal'
+            },
+            body: JSON.stringify(profileData)
+          }
+        )
       }
 
-      if (saveError) {
-        console.error('[CompanyLogo] Save error:', saveError)
+      if (!saveResponse.ok) {
+        const errorText = await saveResponse.text()
+        console.error('Save error:', errorText)
         throw new Error('Error guardando perfil')
       }
 
@@ -191,21 +208,17 @@ export default function CompanyLogoPage() {
         <p className="text-gray-500 mb-8">Sube el logo de tu empresa para que los creadores te reconozcan</p>
 
         {/* Auth status */}
-        {!isAuthenticated && (
+        {!isAuthenticated ? (
           <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
             <p className="text-yellow-800 text-sm text-center">
               No hay sesión activa.{' '}
               <a href="/auth/login" className="font-bold underline">Inicia sesión</a> para guardar tu perfil.
             </p>
-            <p className="text-yellow-600 text-xs text-center mt-2">
-              Si acabas de registrarte, intenta <button onClick={() => window.location.reload()} className="underline">recargar la página</button>
-            </p>
           </div>
-        )}
-        {isAuthenticated && user && (
+        ) : (
           <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl">
             <p className="text-green-800 text-sm text-center">
-              Sesión activa: {user.email}
+              ✓ Sesión activa: {user?.email}
             </p>
           </div>
         )}
