@@ -14,45 +14,91 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [checkingSession, setCheckingSession] = useState(true)
 
-  // Check if already logged in using localStorage - simplified to avoid redirect loops
+  // Check if already logged in using localStorage
   useEffect(() => {
-    const token = localStorage.getItem('sb-access-token')
-    const userStr = localStorage.getItem('sb-user')
+    const checkSession = async () => {
+      const token = localStorage.getItem('sb-access-token')
+      const userStr = localStorage.getItem('sb-user')
 
-    if (token && userStr) {
-      console.log('[Login] Session found, checking where to redirect...')
-
-      // Check for pending onboarding first
-      const creatorOnboarding = localStorage.getItem('creatorOnboarding')
-      const companyOnboarding = localStorage.getItem('companyOnboarding')
-
-      if (creatorOnboarding) {
-        try {
-          const data = JSON.parse(creatorOnboarding)
-          if (data.pendingComplete) {
-            window.location.href = '/onboarding/creator/socials'
-            return
-          }
-        } catch (e) {}
-      }
-      if (companyOnboarding) {
-        try {
-          const data = JSON.parse(companyOnboarding)
-          if (data.pendingComplete) {
-            window.location.href = '/onboarding/company/logo'
-            return
-          }
-        } catch (e) {}
+      if (!token || !userStr) {
+        // No session, show login form
+        setCheckingSession(false)
+        return
       }
 
-      // Has session, go directly to select-type which will route appropriately
-      // Don't do profile checks here to avoid redirect loops
-      window.location.href = '/auth/select-type'
-      return
+      console.log('[Login] Session found, checking profile...')
+
+      try {
+        const user = JSON.parse(userStr)
+
+        // Check for pending onboarding first
+        const creatorOnboarding = localStorage.getItem('creatorOnboarding')
+        const companyOnboarding = localStorage.getItem('companyOnboarding')
+
+        if (creatorOnboarding) {
+          try {
+            const data = JSON.parse(creatorOnboarding)
+            if (data.pendingComplete) {
+              window.location.href = '/onboarding/creator/socials'
+              return
+            }
+          } catch (e) {}
+        }
+        if (companyOnboarding) {
+          try {
+            const data = JSON.parse(companyOnboarding)
+            if (data.pendingComplete) {
+              window.location.href = '/onboarding/company/logo'
+              return
+            }
+          } catch (e) {}
+        }
+
+        // Check if user has a profile
+        const response = await fetch(
+          `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=user_type`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'apikey': SUPABASE_ANON_KEY
+            }
+          }
+        )
+
+        if (response.ok) {
+          const profiles = await response.json()
+          if (profiles && profiles.length > 0) {
+            const userType = profiles[0].user_type
+            console.log('[Login] User has profile, type:', userType)
+            if (userType === 'creator') {
+              window.location.href = '/creator/dashboard'
+              return
+            } else if (userType === 'company') {
+              window.location.href = '/company/dashboard'
+              return
+            }
+          }
+          // Has session but no profile, go to select-type
+          console.log('[Login] No profile found, going to select-type')
+          window.location.href = '/auth/select-type'
+        } else if (response.status === 401) {
+          // Token expired, clear and show login
+          console.log('[Login] Token expired, clearing session')
+          localStorage.removeItem('sb-access-token')
+          localStorage.removeItem('sb-refresh-token')
+          localStorage.removeItem('sb-user')
+          setCheckingSession(false)
+        } else {
+          // Error, go to select-type as fallback
+          window.location.href = '/auth/select-type'
+        }
+      } catch (err) {
+        console.error('[Login] Error checking session:', err)
+        setCheckingSession(false)
+      }
     }
 
-    // No session, show login form
-    setCheckingSession(false)
+    checkSession()
   }, [])
 
   const handleEmailSignIn = async (e: React.FormEvent) => {

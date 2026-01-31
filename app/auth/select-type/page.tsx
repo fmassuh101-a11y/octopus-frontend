@@ -15,14 +15,18 @@ export default function SelectTypePage() {
       const token = localStorage.getItem('sb-access-token')
       const userStr = localStorage.getItem('sb-user')
 
+      console.log('[SelectType] Checking session...', { hasToken: !!token, hasUser: !!userStr })
+
       if (!token || !userStr) {
-        // No session, show the selection form
-        setLoading(false)
+        // No session - redirect to login instead of showing selection
+        console.log('[SelectType] No session found, redirecting to login')
+        window.location.href = '/auth/login'
         return
       }
 
       try {
         const user = JSON.parse(userStr)
+        console.log('[SelectType] User ID:', user.id)
 
         // Check if user has profile
         const response = await fetch(
@@ -35,24 +39,43 @@ export default function SelectTypePage() {
           }
         )
 
+        console.log('[SelectType] Profile check response status:', response.status)
+
         if (response.ok) {
           const profiles = await response.json()
+          console.log('[SelectType] Profiles found:', profiles)
+
           if (profiles && profiles.length > 0) {
             const userType = profiles[0].user_type
+            console.log('[SelectType] User type:', userType)
+
             if (userType === 'creator') {
+              console.log('[SelectType] Redirecting to creator dashboard')
               window.location.href = '/creator/dashboard'
               return
             } else if (userType === 'company') {
+              console.log('[SelectType] Redirecting to company dashboard')
               window.location.href = '/company/dashboard'
               return
             }
           }
+        } else if (response.status === 401) {
+          // Token expired or invalid - clear and redirect to login
+          console.log('[SelectType] Token invalid/expired, clearing session')
+          localStorage.removeItem('sb-access-token')
+          localStorage.removeItem('sb-refresh-token')
+          localStorage.removeItem('sb-user')
+          window.location.href = '/auth/login'
+          return
+        } else {
+          console.error('[SelectType] Profile check failed:', response.status)
         }
       } catch (err) {
         console.error('[SelectType] Error checking profile:', err)
       }
 
       // No profile found, show selection form
+      console.log('[SelectType] No profile found, showing selection form')
       setLoading(false)
     }
 
