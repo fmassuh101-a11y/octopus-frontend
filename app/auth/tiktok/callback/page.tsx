@@ -98,7 +98,7 @@ export default function TikTokCallbackPage() {
         console.log('TikTok data:', JSON.stringify(data, null, 2))
 
         // If we have a valid openId, use the real data from TikTok
-        // Stats might be 0 in sandbox mode, but identity is real
+        // Stats might be 0 if user.info.stats scope is not approved
         if (data && data.openId) {
           accountData = {
             id: `tiktok_${data.openId}`,
@@ -122,18 +122,25 @@ export default function TikTokCallbackPage() {
             refreshToken: data.refreshToken,
             connectedAt: data.connectedAt || new Date().toISOString(),
             lastUpdated: data.lastUpdated || new Date().toISOString(),
-            // Mark as sandbox/limited if no stats (but NOT demo - real connection)
-            isLimited: (data.followers === 0 && data.likes === 0 && data.videoCount === 0),
+            // Track scope limitations
+            hasStatsScope: data.hasStatsScope || false,
+            grantedScopes: data.grantedScopes || [],
+            isLimited: !data.hasStatsScope || (data.followers === 0 && data.likes === 0 && data.videoCount === 0),
           }
 
-          if (data.followers > 0 || data.likes > 0) {
+          // Set appropriate status message
+          if (!data.hasStatsScope) {
+            setStatus('Conexión exitosa (scope user.info.stats pendiente)')
+            console.warn('Missing user.info.stats scope - stats will be 0. Need to enable this scope in TikTok Developer Portal.')
+          } else if (data.followers > 0 || data.likes > 0) {
             setStatus('Datos obtenidos correctamente!')
           } else {
-            setStatus('Conexión exitosa (stats limitados en sandbox)')
+            setStatus('Conexión exitosa (sandbox mode)')
           }
         } else {
           // API returned but no valid data
-          throw new Error('TikTok no devolvió datos válidos')
+          console.error('No openId in response. Full data:', data)
+          throw new Error('TikTok no devolvió datos válidos (sin openId)')
         }
       } else {
         // API call failed completely - show error, don't use demo

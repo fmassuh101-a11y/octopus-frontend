@@ -121,29 +121,40 @@ export async function POST(request: NextRequest) {
       scope: tokenData.scope
     })
 
-    // Step 2: Fetch user info with stats
-    const userFields = [
-      'open_id',
-      'union_id',
-      'avatar_url',
-      'avatar_url_100',
-      'avatar_large_url',
-      'display_name',
-      'bio_description',
-      'profile_deep_link',
-      'is_verified',
-      'follower_count',
-      'following_count',
-      'likes_count',
-      'video_count'
-    ].join(',')
-
+    // Step 2: Fetch user info - build fields based on granted scopes
+    const grantedScopes = tokenData.scope?.split(',') || []
     console.log('=== TikTok User Info Request ===')
+    console.log('Granted scopes:', grantedScopes)
+
+    // Base fields (user.info.basic)
+    const baseFields = ['open_id', 'union_id', 'avatar_url', 'avatar_url_100', 'avatar_large_url', 'display_name']
+
+    // Profile fields (user.info.profile)
+    const profileFields = ['bio_description', 'profile_deep_link', 'is_verified', 'username']
+
+    // Stats fields (user.info.stats) - REQUIRES APPROVED SCOPE
+    const statsFields = ['follower_count', 'following_count', 'likes_count', 'video_count']
+
+    // Build fields list based on what scopes we have
+    let userFields = [...baseFields]
+
+    const hasProfileScope = grantedScopes.includes('user.info.profile')
+    const hasStatsScope = grantedScopes.includes('user.info.stats')
+
+    if (hasProfileScope) {
+      userFields = [...userFields, ...profileFields]
+    }
+    if (hasStatsScope) {
+      userFields = [...userFields, ...statsFields]
+    }
+
+    console.log('Has user.info.profile scope:', hasProfileScope)
+    console.log('Has user.info.stats scope:', hasStatsScope)
+    console.log('Requesting fields:', userFields.join(','))
     console.log('Access Token (first 20 chars):', tokenData.access_token?.substring(0, 20))
     console.log('Open ID:', tokenData.open_id)
-    console.log('Scopes:', tokenData.scope)
 
-    const userResponse = await fetch(`${TIKTOK_USER_INFO_URL}?fields=${userFields}`, {
+    const userResponse = await fetch(`${TIKTOK_USER_INFO_URL}?fields=${userFields.join(',')}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${tokenData.access_token}`,
@@ -283,6 +294,12 @@ export async function POST(request: NextRequest) {
       // Metadata
       connectedAt: new Date().toISOString(),
       lastUpdated: new Date().toISOString(),
+
+      // Scope info - helps client show appropriate message
+      hasStatsScope: hasStatsScope,
+      hasProfileScope: hasProfileScope,
+      grantedScopes: grantedScopes,
+      missingScopes: !hasStatsScope ? ['user.info.stats'] : [],
     }
 
     console.log('Final account data being returned:', {

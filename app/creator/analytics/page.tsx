@@ -274,6 +274,9 @@ export default function CreatorAnalyticsPage() {
                       {account.isDemo && (
                         <span className="text-xs px-1.5 py-0.5 bg-yellow-500 text-black rounded">Demo</span>
                       )}
+                      {!account.isDemo && account.hasStatsScope === false && (
+                        <span className="text-xs px-1.5 py-0.5 bg-amber-500 text-black rounded">Limitado</span>
+                      )}
                     </div>
                     <p className={`text-xs ${selectedAccount === account.id || selectedAccount === 'all' ? 'text-white/70' : 'text-gray-500'}`}>
                       {formatNumber(account.followers)} seguidores
@@ -532,7 +535,30 @@ export default function CreatorAnalyticsPage() {
           </>
         )}
 
-        {/* Info Banner */}
+        {/* Info Banner - Stats Scope Missing */}
+        {tiktokAccounts.some((a: any) => a.isLimited || a.hasStatsScope === false) && (
+          <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl mb-6">
+            <div className="flex items-start gap-3">
+              <svg className="w-5 h-5 text-amber-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <div>
+                <p className="text-sm text-amber-800 font-medium">Estadisticas Limitadas</p>
+                <p className="text-xs text-amber-600 mt-1">
+                  Para ver seguidores, likes y videos necesitas habilitar el scope <strong>user.info.stats</strong> en TikTok Developer Portal:
+                </p>
+                <ol className="text-xs text-amber-600 mt-2 list-decimal list-inside space-y-1">
+                  <li>Ve a developers.tiktok.com</li>
+                  <li>Selecciona tu app → Products → Scopes</li>
+                  <li>Agrega "user.info.stats" y guarda</li>
+                  <li>Desconecta y vuelve a conectar tu TikTok</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Info Banner - Demo Mode */}
         {tiktokAccounts.some((a: any) => a.isDemo) && (
           <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-xl mb-6">
             <div className="flex items-start gap-3">
