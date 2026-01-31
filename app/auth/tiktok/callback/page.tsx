@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react'
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ftvqoudlmojdxwjxljzr.supabase.co'
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
+// Hardcoded credentials
+const SUPABASE_URL = 'https://ftvqoudlmojdxwjxljzr.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
 
 export default function TikTokCallbackPage() {
   const [status, setStatus] = useState('Conectando con TikTok...')
@@ -141,69 +142,81 @@ export default function TikTokCallbackPage() {
       const profileResponse = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=*`, {
         headers: {
           'Authorization': `Bearer ${token}`,
-          'apikey': SUPABASE_ANON_KEY || ''
+          'apikey': SUPABASE_ANON_KEY
         }
       })
 
-      if (profileResponse.ok) {
-        const profiles = await profileResponse.json()
-        if (profiles.length > 0) {
-          const profile = profiles[0]
-          let bioData: any = {}
-
-          try {
-            bioData = profile.bio ? JSON.parse(profile.bio) : {}
-          } catch (e) {
-            bioData = {}
-          }
-
-          // Add TikTok connection
-          const tiktokAccounts = bioData.tiktokAccounts || []
-
-          // Check if account already exists (by openId or username)
-          const existingIndex = tiktokAccounts.findIndex((a: any) =>
-            a.openId === accountData.openId || a.username === accountData.username
-          )
-
-          if (existingIndex >= 0) {
-            // Update existing account
-            tiktokAccounts[existingIndex] = accountData
-          } else {
-            // Add new account
-            tiktokAccounts.push(accountData)
-          }
-
-          bioData.tiktokAccounts = tiktokAccounts
-          bioData.tiktokConnected = true
-
-          // Save to profile
-          await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}`, {
-            method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
-              'apikey': SUPABASE_ANON_KEY || '',
-              'Prefer': 'return=minimal'
-            },
-            body: JSON.stringify({
-              bio: JSON.stringify(bioData),
-              updated_at: new Date().toISOString()
-            })
-          })
-
-          setProgress(100)
-          setStatus('¡Cuenta conectada exitosamente!')
-
-          setTimeout(() => {
-            window.location.href = '/creator/analytics'
-          }, 1500)
-        }
+      if (!profileResponse.ok) {
+        console.error('Profile fetch failed:', profileResponse.status)
+        throw new Error('No se pudo obtener el perfil')
       }
 
-    } catch (err) {
+      const profiles = await profileResponse.json()
+
+      if (profiles.length === 0) {
+        console.error('No profile found for user')
+        throw new Error('No se encontró el perfil del usuario')
+      }
+
+      const profile = profiles[0]
+      let bioData: any = {}
+
+      try {
+        bioData = profile.bio ? JSON.parse(profile.bio) : {}
+      } catch (e) {
+        bioData = {}
+      }
+
+      // Add TikTok connection
+      const tiktokAccounts = bioData.tiktokAccounts || []
+
+      // Check if account already exists (by openId or username)
+      const existingIndex = tiktokAccounts.findIndex((a: any) =>
+        a.openId === accountData.openId || a.username === accountData.username
+      )
+
+      if (existingIndex >= 0) {
+        // Update existing account
+        tiktokAccounts[existingIndex] = accountData
+      } else {
+        // Add new account
+        tiktokAccounts.push(accountData)
+      }
+
+      bioData.tiktokAccounts = tiktokAccounts
+      bioData.tiktokConnected = true
+
+      // Save to profile
+      const saveResponse = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'apikey': SUPABASE_ANON_KEY,
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({
+          bio: JSON.stringify(bioData),
+          updated_at: new Date().toISOString()
+        })
+      })
+
+      if (!saveResponse.ok) {
+        console.error('Profile save failed:', saveResponse.status)
+        throw new Error('No se pudo guardar la conexión')
+      }
+
+      setProgress(100)
+      setStatus('¡Cuenta conectada exitosamente!')
+
+      setTimeout(() => {
+        window.location.href = '/creator/analytics'
+      }, 1500)
+
+    } catch (err: any) {
       console.error('TikTok callback error:', err)
       setError(true)
-      setStatus('Error al conectar con TikTok')
+      setStatus(err.message || 'Error al conectar con TikTok')
       setTimeout(() => {
         window.location.href = '/creator/analytics'
       }, 2000)
