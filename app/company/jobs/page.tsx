@@ -4,18 +4,22 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
+const SUPABASE_URL = 'https://ftvqoudlmojdxwjxljzr.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
+
 interface Job {
   id: string
   title: string
   description: string
-  budget: number
-  status: 'active' | 'draft' | 'archived' | 'completed'
-  applicants: number
-  views: number
-  createdAt: string
-  deadline?: string
+  budget: string
+  status: string
+  applicants_count: number
+  created_at: string
   category: string
-  requirements?: string[]
+  requirements?: string
+  company_id: string
+  company_name?: string
+  image_url?: string
 }
 
 export default function CompanyJobsPage() {
@@ -25,27 +29,48 @@ export default function CompanyJobsPage() {
   const [activeTab, setActiveTab] = useState<'active' | 'draft' | 'archived'>('active')
   const [searchQuery, setSearchQuery] = useState('')
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
+  const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
-    // Check auth
-    const token = localStorage.getItem('sb-access-token')
-    if (!token) {
-      router.push('/auth/login')
-      return
-    }
-
-    // Load jobs from localStorage (simulated for now)
-    const savedJobs = localStorage.getItem('octopus-company-jobs')
-    if (savedJobs) {
-      setJobs(JSON.parse(savedJobs))
-    }
-    setLoading(false)
+    checkAuthAndLoadJobs()
   }, [])
+
+  const checkAuthAndLoadJobs = async () => {
+    try {
+      const token = localStorage.getItem('sb-access-token')
+      const userStr = localStorage.getItem('sb-user')
+
+      if (!token || !userStr) {
+        router.push('/auth/login')
+        return
+      }
+
+      const userData = JSON.parse(userStr)
+      setUser(userData)
+
+      // Cargar trabajos desde Supabase
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/gigs?company_id=eq.${userData.id}&select=*&order=created_at.desc`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'apikey': SUPABASE_ANON_KEY
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setJobs(data)
+      }
+    } catch (err) {
+      console.error('Error:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const filteredJobs = jobs.filter(job => {
     const matchesTab = job.status === activeTab
-    const matchesSearch = job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         job.description.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesSearch = job.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         job.description?.toLowerCase().includes(searchQuery.toLowerCase())
     return matchesTab && matchesSearch
   })
 
@@ -55,15 +80,37 @@ export default function CompanyJobsPage() {
     archived: jobs.filter(j => j.status === 'archived').length,
   }
 
-  const totalApplicants = jobs.reduce((sum, job) => sum + job.applicants, 0)
-  const totalViews = jobs.reduce((sum, job) => sum + job.views, 0)
+  const totalApplicants = jobs.reduce((sum, job) => sum + (job.applicants_count || 0), 0)
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'active': return 'Activo'
+      case 'draft': return 'Borrador'
+      case 'archived': return 'Archivado'
+      default: return status
+    }
+  }
+
+  const getTimeAgo = (date: string) => {
+    const now = new Date()
+    const created = new Date(date)
+    const diffMs = now.getTime() - created.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMins / 60)
+    const diffDays = Math.floor(diffHours / 24)
+
+    if (diffMins < 60) return `hace ${diffMins}m`
+    if (diffHours < 24) return `hace ${diffHours}h`
+    if (diffDays < 7) return `hace ${diffDays}d`
+    return `hace ${Math.floor(diffDays / 7)}sem`
+  }
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading jobs...</p>
+          <p className="text-gray-600">Cargando trabajos...</p>
         </div>
       </div>
     )
@@ -82,8 +129,8 @@ export default function CompanyJobsPage() {
                 </svg>
               </Link>
               <div>
-                <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Job Dashboard</h1>
-                <p className="text-gray-500 mt-1">Create, manage and track your creator job postings</p>
+                <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Panel de Trabajos</h1>
+                <p className="text-gray-500 mt-1">Crea, gestiona y rastrea tus publicaciones de trabajo</p>
               </div>
             </div>
 
@@ -95,7 +142,7 @@ export default function CompanyJobsPage() {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
-                Create New Job
+                Crear Nuevo Trabajo
               </Link>
             </div>
           </div>
@@ -114,7 +161,7 @@ export default function CompanyJobsPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900">{jobs.length}</p>
-                <p className="text-sm text-gray-500">Total Jobs</p>
+                <p className="text-sm text-gray-500">Total Trabajos</p>
               </div>
             </div>
           </div>
@@ -128,7 +175,7 @@ export default function CompanyJobsPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900">{jobCounts.active}</p>
-                <p className="text-sm text-gray-500">Active Jobs</p>
+                <p className="text-sm text-gray-500">Trabajos Activos</p>
               </div>
             </div>
           </div>
@@ -142,7 +189,7 @@ export default function CompanyJobsPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900">{totalApplicants}</p>
-                <p className="text-sm text-gray-500">Total Applicants</p>
+                <p className="text-sm text-gray-500">Total Aplicantes</p>
               </div>
             </div>
           </div>
@@ -151,13 +198,12 @@ export default function CompanyJobsPage() {
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center">
                 <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">{totalViews}</p>
-                <p className="text-sm text-gray-500">Total Views</p>
+                <p className="text-2xl font-bold text-gray-900">{jobCounts.draft}</p>
+                <p className="text-sm text-gray-500">Borradores</p>
               </div>
             </div>
           </div>
@@ -173,7 +219,7 @@ export default function CompanyJobsPage() {
               </svg>
               <input
                 type="text"
-                placeholder="Search by title or description..."
+                placeholder="Buscar por titulo o descripcion..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -208,13 +254,13 @@ export default function CompanyJobsPage() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-lg font-medium transition capitalize flex items-center gap-2 ${
+              className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 ${
                 activeTab === tab
                   ? 'bg-white text-gray-900 shadow-sm'
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              {tab}
+              {tab === 'active' ? 'Activos' : tab === 'draft' ? 'Borradores' : 'Archivados'}
               <span className={`px-2 py-0.5 rounded-full text-xs ${
                 activeTab === tab ? 'bg-blue-100 text-blue-600' : 'bg-gray-200 text-gray-500'
               }`}>
@@ -243,7 +289,7 @@ export default function CompanyJobsPage() {
                     job.status === 'draft' ? 'bg-yellow-100 text-yellow-700' :
                     'bg-gray-100 text-gray-600'
                   }`}>
-                    {job.status}
+                    {getStatusLabel(job.status)}
                   </span>
                 </div>
 
@@ -252,20 +298,19 @@ export default function CompanyJobsPage() {
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    {job.applicants} applicants
+                    {job.applicants_count || 0} aplicantes
                   </div>
                   <div className="flex items-center gap-1">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    {job.views} views
+                    {getTimeAgo(job.created_at)}
                   </div>
                   <div className="flex items-center gap-1">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    ${job.budget}
+                    {job.budget}
                   </div>
                 </div>
               </div>
@@ -280,10 +325,10 @@ export default function CompanyJobsPage() {
               </svg>
             </div>
 
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome to Your Job Dashboard</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Bienvenido a tu Panel de Trabajos</h2>
             <p className="text-gray-500 mb-8 max-w-md mx-auto">
-              Start building your creator team by posting your first job.
-              We'll help you find the perfect content creators for your brand.
+              Empieza a construir tu equipo de creadores publicando tu primer trabajo.
+              Te ayudaremos a encontrar los mejores creadores de contenido para tu marca.
             </p>
 
             <Link
@@ -293,30 +338,30 @@ export default function CompanyJobsPage() {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              Create Your First Job
+              Crear Tu Primer Trabajo
             </Link>
 
             <div className="mt-8 pt-8 border-t border-gray-100">
-              <p className="text-gray-400 text-sm mb-4">Need help getting started?</p>
+              <p className="text-gray-400 text-sm mb-4">¿Necesitas ayuda para empezar?</p>
               <div className="flex flex-wrap justify-center gap-4">
                 <button className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-medium">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  Watch Tutorial
+                  Ver Tutorial
                 </button>
                 <button className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-medium">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  Read FAQ
+                  Leer FAQ
                 </button>
                 <button className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-medium">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
-                  Contact Support
+                  Contactar Soporte
                 </button>
               </div>
             </div>

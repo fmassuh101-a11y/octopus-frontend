@@ -161,25 +161,25 @@ export default function CompanyDashboard() {
               </Link>
 
               <div className="pt-4">
-                <p className="px-3 text-xs font-semibold text-gray-400 uppercase">Hire Creators</p>
+                <p className="px-3 text-xs font-semibold text-gray-400 uppercase">Contratar Creadores</p>
                 <div className="mt-2 space-y-1">
                   <Link href="/company/jobs" onClick={() => setShowMobileMenu(false)} className="flex items-center space-x-3 px-3 py-3 rounded-lg text-gray-700 hover:bg-gray-50">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
-                    <span>Jobs</span>
+                    <span>Trabajos</span>
                   </Link>
                   <Link href="/company/recruit" onClick={() => setShowMobileMenu(false)} className="flex items-center space-x-3 px-3 py-3 rounded-lg text-gray-700 hover:bg-gray-50">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
-                    <span>Recruit</span>
+                    <span>Reclutar</span>
                   </Link>
                 </div>
               </div>
 
               <div className="pt-4">
-                <p className="px-3 text-xs font-semibold text-gray-400 uppercase">Manage Creators</p>
+                <p className="px-3 text-xs font-semibold text-gray-400 uppercase">Gestionar Creadores</p>
                 <div className="mt-2 space-y-1">
                   <Link href="/company/campaigns" onClick={() => setShowMobileMenu(false)} className="flex items-center space-x-3 px-3 py-3 rounded-lg text-gray-700 hover:bg-gray-50">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -192,7 +192,7 @@ export default function CompanyDashboard() {
               </div>
 
               <div className="pt-4">
-                <p className="px-3 text-xs font-semibold text-gray-400 uppercase">Track Performance</p>
+                <p className="px-3 text-xs font-semibold text-gray-400 uppercase">Rendimiento</p>
                 <div className="mt-2 space-y-1">
                   <Link href="/company/analytics" onClick={() => setShowMobileMenu(false)} className="flex items-center space-x-3 px-3 py-3 rounded-lg text-gray-700 hover:bg-gray-50">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -214,7 +214,7 @@ export default function CompanyDashboard() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    <span>Settings</span>
+                    <span>Ajustes</span>
                   </a>
                 </div>
               </div>
@@ -237,7 +237,7 @@ export default function CompanyDashboard() {
       )}
 
       {/* Left Sidebar - Hidden on mobile */}
-      <div className="hidden lg:flex w-64 bg-white border-r border-gray-200 flex-col">
+      <div className="hidden lg:flex w-64 bg-white border-r border-gray-200 flex-col max-h-screen">
         {/* Logo */}
         <div className="p-6 border-b border-gray-100">
           <div className="flex items-center space-x-2">
@@ -249,7 +249,7 @@ export default function CompanyDashboard() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           <Link
             href="/company/dashboard"
             className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
@@ -262,60 +262,60 @@ export default function CompanyDashboard() {
             <span className="font-medium">Dashboard</span>
           </Link>
 
-          {/* Hire Creators Section */}
+          {/* Contratar Creadores */}
           <div className="pt-4">
-            <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Hire Creators</p>
+            <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Contratar Creadores</p>
             <div className="mt-2 space-y-1">
               <Link href="/company/jobs" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
-                <span>Jobs</span>
+                <span>Trabajos</span>
               </Link>
               <Link href="/company/applicants" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
-                <span>Applicants</span>
+                <span>Aplicantes</span>
               </Link>
               <Link href="/company/recruit" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
-                <span>Recruit</span>
+                <span>Reclutar</span>
               </Link>
               <Link href="/company/messages" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
-                <span>Messages</span>
+                <span>Mensajes</span>
               </Link>
             </div>
           </div>
 
-          {/* Manage Creators Section */}
+          {/* Gestionar Creadores */}
           <div className="pt-4">
-            <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Manage Creators</p>
+            <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Gestionar Creadores</p>
             <div className="mt-2 space-y-1">
               <Link href="/company/campaigns" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
                 </svg>
-                <span>Campaigns</span>
+                <span>Campanas</span>
               </Link>
               <Link href="/company/creators" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
-                <span>Creators</span>
+                <span>Creadores</span>
               </Link>
             </div>
           </div>
 
-          {/* Track Performance Section */}
+          {/* Rendimiento */}
           <div className="pt-4">
-            <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Track Performance</p>
+            <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Rendimiento</p>
             <div className="mt-2 space-y-1">
               <Link href="/company/analytics" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -328,8 +328,8 @@ export default function CompanyDashboard() {
 
         </nav>
 
-        {/* User Profile at bottom */}
-        <div className="p-4 border-t border-gray-100">
+        {/* User Profile - with padding for dock */}
+        <div className="p-4 pb-20 border-t border-gray-100">
           {/* Free Plan Badge */}
           <div className="mb-3 px-3 py-2 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-100">
             <div className="flex items-center justify-between">
@@ -377,7 +377,7 @@ export default function CompanyDashboard() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  Settings
+                  Configuracion
                 </a>
                 <button
                   onClick={handleLogout}
@@ -386,7 +386,7 @@ export default function CompanyDashboard() {
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                   </svg>
-                  Logout
+                  Cerrar Sesion
                 </button>
               </div>
             )}
@@ -519,7 +519,7 @@ export default function CompanyDashboard() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
-            <span className="text-xs mt-1">Settings</span>
+            <span className="text-xs mt-1">Ajustes</span>
           </a>
         </div>
       </div>
