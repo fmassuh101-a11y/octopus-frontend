@@ -55,8 +55,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Hardcoded credentials - DO NOT use env variable to avoid mismatch
-    const clientKey = 'sbawzx5ya0iuu4hs58'
-    const clientSecret = '7of3cvjDDs94MTS2VGq96xSyMUNvl34G'
+    const clientKey = 'sbawvc8t9r40h68u7q'
+    const clientSecret = 'TPJoLFHD03ywB2yiTFXRsekOWa4MwnHk'
 
     if (!clientKey || !clientSecret) {
       return NextResponse.json({ error: 'TikTok credentials not configured' }, { status: 500 })
