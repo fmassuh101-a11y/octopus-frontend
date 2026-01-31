@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { createGig } from '../../../../lib/database'
-import { useAuth } from '../../../../lib/contexts/AuthContext'
+
+const SUPABASE_URL = 'https://ftvqoudlmojdxwjxljzr.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
 
 type PaymentType = "fixed" | "hourly" | "cpm"
 type PaymentFrequency = "one_time" | "weekly" | "monthly"
@@ -23,8 +24,6 @@ interface JobFormData {
   requireTikTok: boolean
   requireAge21: boolean
   minFollowers: string
-  targetRegions: string[]
-  targetAudience: string[]
   jobImage: string | null
 }
 
@@ -42,67 +41,33 @@ const initialFormData: JobFormData = {
   requireTikTok: false,
   requireAge21: false,
   minFollowers: "",
-  targetRegions: [],
-  targetAudience: [],
   jobImage: null,
 }
 
 const jobTypes = [
-  "UGC Creator",
-  "Brand Ambassador",
-  "Content Creator",
-  "Influencer Campaign",
-  "Product Review",
-  "Social Media Manager",
-  "Video Editor",
-  "Photographer",
-  "TikTok Content",
-  "Instagram Content",
-  "YouTube Content",
-  "Other"
-]
-
-const regions = [
-  "United States",
-  "Canada",
-  "Mexico",
-  "Latin America",
-  "Europe",
-  "United Kingdom",
-  "Spain",
-  "Germany",
-  "France",
-  "Asia",
-  "Australia",
-  "Worldwide"
-]
-
-const audiences = [
-  "Gen Z (18-24)",
-  "Millennials (25-40)",
-  "Gen X (41-56)",
-  "Parents",
-  "Students",
-  "Professionals",
-  "Gamers",
-  "Fitness Enthusiasts",
-  "Beauty & Fashion",
-  "Tech Enthusiasts",
-  "Foodies",
-  "Travel Lovers"
+  "Creador UGC",
+  "Embajador de Marca",
+  "Creador de Contenido",
+  "Campana de Influencer",
+  "Resena de Producto",
+  "Community Manager",
+  "Editor de Video",
+  "Fotografo",
+  "Contenido TikTok",
+  "Contenido Instagram",
+  "Contenido YouTube",
+  "Otro"
 ]
 
 const steps = [
   { id: 1, name: "Detalles", icon: "1" },
   { id: 2, name: "Pago", icon: "2" },
   { id: 3, name: "Requisitos", icon: "3" },
-  { id: 4, name: "Audiencia", icon: "4" },
-  { id: 5, name: "Imagen", icon: "5" },
+  { id: 4, name: "Imagen", icon: "4" },
 ]
 
 export default function NewJobPage() {
   const router = useRouter()
-  const { user } = useAuth()
   const [currentStep, setCurrentStep] = useState(1)
   const [formData, setFormData] = useState<JobFormData>(initialFormData)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -126,15 +91,13 @@ export default function NewJobPage() {
         return true
       case 4:
         return true
-      case 5:
-        return true
       default:
         return false
     }
   }
 
   const handleNext = () => {
-    if (currentStep < 5 && canProceed()) {
+    if (currentStep < 4 && canProceed()) {
       setCurrentStep(prev => prev + 1)
     }
   }
@@ -155,7 +118,7 @@ export default function NewJobPage() {
       return `$${formData.hourlyRate}/hora`
     }
     if (formData.paymentType === "cpm") {
-      return `$${formData.cpmRate} CPM (por 1K views)`
+      return `$${formData.cpmRate} CPM`
     }
     return ""
   }
@@ -164,9 +127,8 @@ export default function NewJobPage() {
     const reqs = []
     if (formData.requireInstagram) reqs.push("Instagram requerido")
     if (formData.requireTikTok) reqs.push("TikTok requerido")
-    if (formData.requireAge21) reqs.push("21+ años")
+    if (formData.requireAge21) reqs.push("21+ anos")
     if (formData.minFollowers) reqs.push(`${formData.minFollowers}+ seguidores`)
-    if (formData.targetRegions.length > 0) reqs.push(formData.targetRegions.join(", "))
     return reqs.join(", ") || undefined
   }
 
@@ -175,23 +137,46 @@ export default function NewJobPage() {
     setError("")
 
     try {
-      if (!user) {
+      const token = localStorage.getItem('sb-access-token')
+      const userStr = localStorage.getItem('sb-user')
+
+      if (!token || !userStr) {
         router.push('/auth/login')
         return
       }
 
-      await createGig({
+      const userData = JSON.parse(userStr)
+
+      const gigData = {
+        company_id: userData.id,
         title: formData.title,
         description: formData.description,
         budget: getBudgetString(),
         category: formData.jobType,
         requirements: getRequirementsString(),
-        deliverables: formData.targetAudience.join(", ") || undefined,
+        status: 'active'
+      }
+
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/gigs`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'apikey': SUPABASE_ANON_KEY,
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify(gigData)
       })
+
+      if (!response.ok) {
+        const errorData = await response.text()
+        throw new Error(errorData || 'Error al crear la campana')
+      }
 
       router.push("/company/campaigns")
     } catch (error: any) {
-      setError(error.message || 'Error al crear el trabajo')
+      console.error('Error creating gig:', error)
+      setError(error.message || 'Error al crear la campana')
       setIsSubmitting(false)
     }
   }
@@ -205,13 +190,6 @@ export default function NewJobPage() {
       }
       reader.readAsDataURL(file)
     }
-  }
-
-  const toggleArrayItem = (array: string[], item: string, key: "targetRegions" | "targetAudience") => {
-    const newArray = array.includes(item)
-      ? array.filter(i => i !== item)
-      : [...array, item]
-    updateFormData({ [key]: newArray })
   }
 
   return (
@@ -231,7 +209,7 @@ export default function NewJobPage() {
 
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-600 to-pink-500 flex items-center justify-center">
-              <span className="text-white text-lg">O</span>
+              <span className="text-white text-lg font-bold">O</span>
             </div>
             <span className="font-bold text-xl bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
               Nueva Campana
@@ -239,7 +217,7 @@ export default function NewJobPage() {
           </div>
 
           <div className="text-sm text-gray-500">
-            Paso {currentStep}/5
+            Paso {currentStep}/4
           </div>
         </div>
       </header>
@@ -408,8 +386,8 @@ export default function NewJobPage() {
                             </svg>
                           </div>
                         )}
-                        <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-emerald-500 rounded-xl flex items-center justify-center mb-3">
-                          <span className="text-2xl">$</span>
+                        <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-emerald-500 rounded-xl flex items-center justify-center mb-3 text-white font-bold text-xl">
+                          $
                         </div>
                         <h3 className="font-bold text-gray-900">Precio Fijo</h3>
                         <p className="text-sm text-gray-500 mt-1">Pago unico por entrega</p>
@@ -440,7 +418,7 @@ export default function NewJobPage() {
                         <p className="text-sm text-gray-500 mt-1">Trabajo continuo por horas</p>
                       </button>
 
-                      {/* CPM - UNIQUE TO OCTOPUS */}
+                      {/* CPM */}
                       <button
                         onClick={() => updateFormData({ paymentType: "cpm" })}
                         className={`relative p-5 rounded-2xl border-2 text-left transition-all ${
@@ -468,7 +446,7 @@ export default function NewJobPage() {
                           </svg>
                         </div>
                         <h3 className="font-bold text-gray-900">CPM</h3>
-                        <p className="text-sm text-gray-500 mt-1">Pago por 1,000 views</p>
+                        <p className="text-sm text-gray-500 mt-1">Pago por 1,000 vistas</p>
                       </button>
                     </div>
 
@@ -555,7 +533,7 @@ export default function NewJobPage() {
                       {formData.paymentType === "cpm" && (
                         <div>
                           <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Tarifa por 1,000 Views *
+                            Tarifa por 1,000 vistas *
                           </label>
                           <div className="relative">
                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">$</span>
@@ -564,9 +542,9 @@ export default function NewJobPage() {
                               value={formData.cpmRate}
                               onChange={e => updateFormData({ cpmRate: e.target.value })}
                               placeholder="5.00"
-                              className="w-full pl-8 pr-24 py-3 rounded-xl border border-gray-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-gray-900"
+                              className="w-full pl-8 pr-28 py-3 rounded-xl border border-gray-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-gray-900"
                             />
-                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">/1K views</span>
+                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">/1K vistas</span>
                           </div>
                           <div className="mt-4 p-4 bg-gradient-to-r from-orange-50 to-pink-50 rounded-xl border border-orange-100">
                             <div className="flex items-start gap-3">
@@ -574,7 +552,7 @@ export default function NewJobPage() {
                               <div>
                                 <p className="font-medium text-gray-900">Pago por rendimiento</p>
                                 <p className="text-sm text-gray-600 mt-1">
-                                  Paga solo por resultados. Si un creador obtiene 100K views a ${formData.cpmRate || "5"}/1K,
+                                  Paga solo por resultados. Si un creador obtiene 100K vistas a ${formData.cpmRate || "5"}/1K,
                                   pagas ${((parseFloat(formData.cpmRate || "5") * 100) || 500).toFixed(2)}.
                                 </p>
                               </div>
@@ -651,8 +629,8 @@ export default function NewJobPage() {
                         {/* Age 21+ */}
                         <div className="p-5 flex items-center justify-between">
                           <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center">
-                              <span className="text-xl">21+</span>
+                            <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center text-white font-bold">
+                              21+
                             </div>
                             <div>
                               <p className="font-semibold text-gray-900">Requiere 21+ anos</p>
@@ -693,76 +671,8 @@ export default function NewJobPage() {
                   </div>
                 )}
 
-                {/* Step 4: Targeting */}
+                {/* Step 4: Image */}
                 {currentStep === 4 && (
-                  <div className="space-y-6">
-                    <div>
-                      <h2 className="text-2xl font-bold text-gray-900 mb-2">Audiencia objetivo</h2>
-                      <p className="text-gray-500">A quien quieres llegar con este contenido?</p>
-                    </div>
-
-                    <div className="space-y-6">
-                      {/* Regions */}
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-3">
-                          Regiones
-                        </label>
-                        <div className="flex flex-wrap gap-2">
-                          {regions.map(region => (
-                            <button
-                              key={region}
-                              type="button"
-                              onClick={() => toggleArrayItem(formData.targetRegions, region, "targetRegions")}
-                              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                                formData.targetRegions.includes(region)
-                                  ? "bg-purple-500 text-white shadow-lg"
-                                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                              }`}
-                            >
-                              {region}
-                            </button>
-                          ))}
-                        </div>
-                        {formData.targetRegions.length === 0 && (
-                          <p className="mt-2 text-sm text-gray-500">
-                            Sin regiones = visible para todos
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Audience */}
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-3">
-                          Tipo de audiencia
-                        </label>
-                        <div className="flex flex-wrap gap-2">
-                          {audiences.map(audience => (
-                            <button
-                              key={audience}
-                              type="button"
-                              onClick={() => toggleArrayItem(formData.targetAudience, audience, "targetAudience")}
-                              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                                formData.targetAudience.includes(audience)
-                                  ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg"
-                                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                              }`}
-                            >
-                              {audience}
-                            </button>
-                          ))}
-                        </div>
-                        {formData.targetAudience.length === 0 && (
-                          <p className="mt-2 text-sm text-gray-500">
-                            Sin audiencia seleccionada = visible para todos los creadores
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Step 5: Image */}
-                {currentStep === 5 && (
                   <div className="space-y-6">
                     <div>
                       <h2 className="text-2xl font-bold text-gray-900 mb-2">Imagen del trabajo</h2>
@@ -775,7 +685,7 @@ export default function NewJobPage() {
                           <div className="aspect-video rounded-2xl overflow-hidden bg-gray-100">
                             <img
                               src={formData.jobImage}
-                              alt="Job preview"
+                              alt="Vista previa"
                               className="w-full h-full object-cover"
                             />
                           </div>
@@ -828,7 +738,7 @@ export default function NewJobPage() {
                             {formData.jobImage ? (
                               <img src={formData.jobImage} alt="" className="w-full h-full object-cover" />
                             ) : (
-                              <span className="text-2xl">O</span>
+                              <span className="text-2xl font-bold text-purple-500">O</span>
                             )}
                           </div>
                           <div className="flex-1">
@@ -878,7 +788,7 @@ export default function NewJobPage() {
                   </Link>
                 )}
 
-                {currentStep < 5 ? (
+                {currentStep < 4 ? (
                   <button
                     type="button"
                     onClick={handleNext}
