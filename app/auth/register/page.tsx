@@ -60,9 +60,12 @@ export default function RegisterPage() {
         return
       }
 
-      // If we got a session, redirect
+      // If we got a session, save to localStorage and redirect
       if (data.session) {
-        console.log('[Register] Session created, redirecting...')
+        console.log('[Register] Session created, saving and redirecting...')
+        localStorage.setItem('sb-access-token', data.session.access_token)
+        localStorage.setItem('sb-refresh-token', data.session.refresh_token || '')
+        localStorage.setItem('sb-user', JSON.stringify(data.session.user))
         window.location.href = '/auth/select-type'
         return
       }
@@ -84,7 +87,10 @@ export default function RegisterPage() {
         }
 
         if (signInData.session) {
-          console.log('[Register] Sign in successful, redirecting...')
+          console.log('[Register] Sign in successful, saving and redirecting...')
+          localStorage.setItem('sb-access-token', signInData.session.access_token)
+          localStorage.setItem('sb-refresh-token', signInData.session.refresh_token || '')
+          localStorage.setItem('sb-user', JSON.stringify(signInData.session.user))
           window.location.href = '/auth/select-type'
           return
         }

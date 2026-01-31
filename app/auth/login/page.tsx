@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 
+const SUPABASE_URL = 'https://ftvqoudlmojdxwjxljzr.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
+
 export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -11,14 +14,16 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [checkingSession, setCheckingSession] = useState(true)
 
-  // Check if already logged in
+  // Check if already logged in using localStorage
   useEffect(() => {
     const checkExistingSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession()
+        const token = localStorage.getItem('sb-access-token')
+        const userStr = localStorage.getItem('sb-user')
 
-        if (session?.user) {
-          console.log('[Login] Existing session found:', session.user.email)
+        if (token && userStr) {
+          const user = JSON.parse(userStr)
+          console.log('[Login] Existing session found:', user.email)
 
           // Check for pending onboarding
           const creatorOnboarding = localStorage.getItem('creatorOnboarding')
@@ -43,20 +48,28 @@ export default function LoginPage() {
             } catch (e) {}
           }
 
-          // Check if user has profile
-          const { data: profiles } = await supabase
-            .from('profiles')
-            .select('user_type')
-            .eq('user_id', session.user.id)
+          // Check if user has profile using direct fetch
+          const response = await fetch(
+            `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=user_type`,
+            {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'apikey': SUPABASE_ANON_KEY
+              }
+            }
+          )
 
-          if (profiles && profiles.length > 0) {
-            const userType = profiles[0].user_type
-            if (userType === 'creator') {
-              window.location.href = '/creator/dashboard'
-              return
-            } else if (userType === 'company') {
-              window.location.href = '/company/dashboard'
-              return
+          if (response.ok) {
+            const profiles = await response.json()
+            if (profiles && profiles.length > 0) {
+              const userType = profiles[0].user_type
+              if (userType === 'creator') {
+                window.location.href = '/creator/dashboard'
+                return
+              } else if (userType === 'company') {
+                window.location.href = '/company/dashboard'
+                return
+              }
             }
           }
 
@@ -112,6 +125,11 @@ export default function LoginPage() {
 
       console.log('[Login] Sign in successful:', data.session.user.email)
 
+      // Store session in localStorage (same format as callback)
+      localStorage.setItem('sb-access-token', data.session.access_token)
+      localStorage.setItem('sb-refresh-token', data.session.refresh_token || '')
+      localStorage.setItem('sb-user', JSON.stringify(data.session.user))
+
       // Check for pending onboarding
       const creatorOnboarding = localStorage.getItem('creatorOnboarding')
       const companyOnboarding = localStorage.getItem('companyOnboarding')
@@ -135,20 +153,28 @@ export default function LoginPage() {
         } catch (e) {}
       }
 
-      // Check if user has a profile
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('user_type')
-        .eq('user_id', data.session.user.id)
+      // Check if user has a profile using direct fetch
+      const profileResponse = await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${data.session.user.id}&select=user_type`,
+        {
+          headers: {
+            'Authorization': `Bearer ${data.session.access_token}`,
+            'apikey': SUPABASE_ANON_KEY
+          }
+        }
+      )
 
-      if (profiles && profiles.length > 0) {
-        const userType = profiles[0].user_type
-        if (userType === 'creator') {
-          window.location.href = '/creator/dashboard'
-          return
-        } else if (userType === 'company') {
-          window.location.href = '/company/dashboard'
-          return
+      if (profileResponse.ok) {
+        const profiles = await profileResponse.json()
+        if (profiles && profiles.length > 0) {
+          const userType = profiles[0].user_type
+          if (userType === 'creator') {
+            window.location.href = '/creator/dashboard'
+            return
+          } else if (userType === 'company') {
+            window.location.href = '/company/dashboard'
+            return
+          }
         }
       }
 
