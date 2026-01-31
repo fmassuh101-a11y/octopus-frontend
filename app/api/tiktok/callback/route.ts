@@ -93,7 +93,32 @@ export async function POST(request: NextRequest) {
 
     let tokenData: TikTokTokenResponse
     try {
-      tokenData = JSON.parse(tokenText)
+      const parsedResponse = JSON.parse(tokenText)
+      console.log('Parsed token response structure:', Object.keys(parsedResponse))
+
+      // Handle both v1 (nested data) and v2 (flat) response formats
+      // V1: { data: { access_token, open_id, ... }, message: ... }
+      // V2: { access_token, open_id, ... }
+      if (parsedResponse.data && parsedResponse.data.access_token) {
+        console.log('Detected v1 API response format (nested data)')
+        tokenData = parsedResponse.data
+      } else if (parsedResponse.access_token) {
+        console.log('Detected v2 API response format (flat)')
+        tokenData = parsedResponse
+      } else {
+        console.error('Unknown response format:', parsedResponse)
+        // Check for error in response
+        if (parsedResponse.error || parsedResponse.message) {
+          return NextResponse.json({
+            error: 'TikTok API error',
+            details: parsedResponse.error_description || parsedResponse.error || parsedResponse.message
+          }, { status: 400 })
+        }
+        return NextResponse.json({
+          error: 'Unknown token response format',
+          details: JSON.stringify(parsedResponse)
+        }, { status: 500 })
+      }
     } catch (e) {
       console.error('Failed to parse token response:', e)
       return NextResponse.json({ error: 'Invalid token response', details: tokenText }, { status: 500 })
@@ -109,10 +134,10 @@ export async function POST(request: NextRequest) {
     }
 
     if (!tokenData.access_token || !tokenData.open_id) {
-      console.error('Missing access_token or open_id:', tokenData)
+      console.error('Missing access_token or open_id. Token data:', JSON.stringify(tokenData))
       return NextResponse.json({
         error: 'Incomplete token response',
-        details: 'TikTok did not return access_token or open_id'
+        details: `Missing: ${!tokenData.access_token ? 'access_token ' : ''}${!tokenData.open_id ? 'open_id' : ''}`
       }, { status: 400 })
     }
     console.log('TikTok token data:', {
@@ -171,17 +196,25 @@ export async function POST(request: NextRequest) {
         console.log('TikTok user parsed response:', JSON.stringify(userResult, null, 2))
 
         // Check for API error in response body
-        if (userResult.error) {
+        if (userResult.error && userResult.error.code !== 'ok') {
           console.error('TikTok user API error:', userResult.error)
         }
 
-        userData = userResult.data?.user || null
+        // Handle different response structures
+        userData = userResult.data?.user || userResult.user || userResult.data || null
         console.log('Parsed user data:', JSON.stringify(userData, null, 2))
       } catch (e) {
         console.error('Failed to parse user response:', e)
       }
     } else {
       console.error('TikTok user info error status:', userResponse.status, userText)
+      // Try to parse error for more details
+      try {
+        const errorResult = JSON.parse(userText)
+        console.error('User info error details:', errorResult)
+      } catch (e) {
+        // Ignore parse error
+      }
     }
 
     // Step 3: Fetch recent videos for engagement calculation
