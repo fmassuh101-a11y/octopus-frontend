@@ -132,6 +132,7 @@ export default function GigsPage() {
           creator_id: user.id,
           company_id: gig.company_id,
           message: applicationMessage || 'Me interesa esta oportunidad',
+          proposal_text: applicationMessage || 'Me interesa esta oportunidad',
           status: 'pending'
         })
       })
