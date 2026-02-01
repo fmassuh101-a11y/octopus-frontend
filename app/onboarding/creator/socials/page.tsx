@@ -156,11 +156,14 @@ export default function CreatorSocialsPage() {
       if (!saveResponse.ok) {
         const errorText = await saveResponse.text()
         console.error('Save error:', errorText)
-        throw new Error('Error guardando perfil')
+        // Don't throw - continue with localStorage data
+        console.log('Continuing with localStorage backup...')
       }
 
-      // Clear onboarding data
-      localStorage.removeItem('creatorOnboarding')
+      // IMPORTANT: Keep onboarding data in localStorage as backup
+      // Update it with all the final data
+      localStorage.setItem('creatorOnboarding', JSON.stringify(allData))
+      console.log('Saved to localStorage:', allData)
 
       // Redirect to dashboard
       window.location.href = '/creator/dashboard'

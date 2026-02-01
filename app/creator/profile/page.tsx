@@ -43,58 +43,58 @@ export default function ProfilePage() {
       setUser(userData)
       console.log('[Profile] User loaded:', userData.email, userData.id)
 
-      // Fetch profile using REST API (same as dashboard)
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=*`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'apikey': SUPABASE_ANON_KEY || ''
-        }
-      })
-
-      console.log('[Profile] Profile fetch response:', response.status)
-
-      if (response.ok) {
-        const profiles = await response.json()
-        console.log('[Profile] Profiles found:', profiles.length)
-
-        if (profiles.length > 0) {
-          const profileData = profiles[0]
-          console.log('[Profile] Profile data:', profileData)
-          console.log('[Profile] Bio raw:', profileData.bio)
-
-          // Parse bio data if it exists (same approach as dashboard)
-          if (profileData.bio) {
-            try {
-              const parsedBio = JSON.parse(profileData.bio)
-              console.log('[Profile] Parsed bio:', parsedBio)
-              // Merge bio data into profile (same as dashboard does)
-              setProfile({ ...profileData, ...parsedBio })
-              setBioData(parsedBio)
-            } catch (e) {
-              console.log('[Profile] Bio is not JSON, using as-is')
-              setProfile(profileData)
-            }
-          } else {
-            setProfile(profileData)
-          }
-        } else {
-          console.log('[Profile] No profile found')
-        }
-      } else {
-        const errorText = await response.text()
-        console.error('[Profile] Failed to fetch profile:', response.status, errorText)
-      }
-
-      // Try localStorage as fallback
+      // FIRST: Try localStorage (most reliable source)
       const onboardingStr = localStorage.getItem('creatorOnboarding')
       if (onboardingStr) {
         try {
           const onboardingData = JSON.parse(onboardingStr)
-          console.log('[Profile] Found onboarding localStorage:', onboardingData)
-          setBioData((prev: any) => ({ ...onboardingData, ...prev }))
+          console.log('[Profile] Found localStorage data:', onboardingData)
+          setBioData(onboardingData)
+          setProfile((prev: any) => ({ ...prev, ...onboardingData }))
         } catch (e) {
-          console.log('[Profile] Could not parse onboarding data')
+          console.log('[Profile] Could not parse localStorage data')
         }
+      }
+
+      // THEN: Try Supabase (may override with fresher data)
+      try {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=*`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'apikey': SUPABASE_ANON_KEY || ''
+          }
+        })
+
+        console.log('[Profile] Supabase response:', response.status)
+
+        if (response.ok) {
+          const profiles = await response.json()
+          console.log('[Profile] Profiles found:', profiles.length)
+
+          if (profiles.length > 0) {
+            const profileData = profiles[0]
+            console.log('[Profile] Profile from Supabase:', profileData)
+
+            // Parse bio data if it exists
+            if (profileData.bio) {
+              try {
+                const parsedBio = JSON.parse(profileData.bio)
+                console.log('[Profile] Parsed bio from Supabase:', parsedBio)
+                // Merge with existing data, Supabase takes priority
+                setBioData((prev: any) => ({ ...prev, ...parsedBio }))
+                setProfile((prev: any) => ({ ...prev, ...profileData, ...parsedBio }))
+              } catch (e) {
+                console.log('[Profile] Bio is not JSON')
+                setProfile((prev: any) => ({ ...prev, ...profileData }))
+              }
+            } else {
+              console.log('[Profile] No bio in Supabase profile')
+              setProfile((prev: any) => ({ ...prev, ...profileData }))
+            }
+          }
+        }
+      } catch (fetchError) {
+        console.error('[Profile] Supabase fetch error:', fetchError)
       }
 
       setLoading(false)
