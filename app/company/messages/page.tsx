@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import TemplateSelector from '@/components/messaging/TemplateSelector'
-import { MessageTemplate, TemplateVariables } from '@/lib/utils/messageTemplates'
+import { MessageTemplate } from '@/lib/utils/messageTemplates'
 
 const SUPABASE_URL = 'https://ftvqoudlmojdxwjxljzr.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
@@ -45,8 +45,14 @@ export default function CompanyMessagesPage() {
   const [templates, setTemplates] = useState<MessageTemplate[]>([])
   const [showTemplateSelector, setShowTemplateSelector] = useState(false)
   const [companyName, setCompanyName] = useState('Mi Empresa')
+  const [cameFromApplicants, setCameFromApplicants] = useState(false)
 
   useEffect(() => {
+    // Check if we came from applicants page
+    const applicationId = searchParams.get('application')
+    if (applicationId) {
+      setCameFromApplicants(true)
+    }
     checkAuth()
   }, [])
 
@@ -67,9 +73,9 @@ export default function CompanyMessagesPage() {
 
     const userData = JSON.parse(userStr)
     setUser(userData)
-    await loadConversations(userData.id, token)
     await loadTemplates(token)
     await loadCompanyName(userData.id, token)
+    await loadConversations(userData.id, token)
   }
 
   const loadTemplates = async (token: string) => {
@@ -116,9 +122,9 @@ export default function CompanyMessagesPage() {
 
   const loadConversations = async (userId: string, token: string) => {
     try {
-      // Cargar aplicaciones aceptadas de esta empresa
-      const response = await fetch(
-        `${SUPABASE_URL}/rest/v1/applications?company_id=eq.${userId}&status=eq.accepted&select=*,gig:gigs(title),creator:profiles!applications_creator_id_fkey(full_name)&order=created_at.desc`,
+      // Step 1: Get all accepted applications for this company
+      const appsResponse = await fetch(
+        `${SUPABASE_URL}/rest/v1/applications?company_id=eq.${userId}&status=eq.accepted&select=id,creator_id,gig_id,created_at`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -127,35 +133,97 @@ export default function CompanyMessagesPage() {
         }
       )
 
-      if (response.ok) {
-        const data = await response.json()
-        const convs: Conversation[] = data.map((app: any) => ({
+      if (!appsResponse.ok) {
+        console.error('Error loading applications')
+        setLoading(false)
+        return
+      }
+
+      const applications = await appsResponse.json()
+      console.log('[Messages] Found applications:', applications.length)
+
+      // Step 2: Enrich with creator and gig data
+      const convs: Conversation[] = []
+
+      for (const app of applications) {
+        let creatorName = 'Creador'
+        let gigTitle = 'Proyecto'
+
+        // Get creator name
+        try {
+          const creatorRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${app.creator_id}&select=full_name,bio`,
+            { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+          )
+          if (creatorRes.ok) {
+            const creators = await creatorRes.json()
+            if (creators[0]) {
+              // Try to get name from bio JSON
+              if (creators[0].bio) {
+                try {
+                  const bioData = JSON.parse(creators[0].bio)
+                  if (bioData.firstName && bioData.lastName) {
+                    creatorName = `${bioData.firstName} ${bioData.lastName}`
+                  } else if (creators[0].full_name) {
+                    creatorName = creators[0].full_name
+                  }
+                } catch (e) {
+                  creatorName = creators[0].full_name || 'Creador'
+                }
+              } else {
+                creatorName = creators[0].full_name || 'Creador'
+              }
+            }
+          }
+        } catch (e) { console.log('Error fetching creator') }
+
+        // Get gig title
+        try {
+          const gigRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/gigs?id=eq.${app.gig_id}&select=title`,
+            { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+          )
+          if (gigRes.ok) {
+            const gigs = await gigRes.json()
+            if (gigs[0]?.title) {
+              gigTitle = gigs[0].title
+            }
+          }
+        } catch (e) { console.log('Error fetching gig') }
+
+        convs.push({
           id: app.id,
-          company_id: app.company_id,
+          company_id: userId,
           creator_id: app.creator_id,
-          creator_name: app.creator?.full_name || 'Creador',
-          gig_title: app.gig?.title
-        }))
-        setConversations(convs)
+          creator_name: creatorName,
+          gig_title: gigTitle
+        })
+      }
 
-        // Si hay un application_id o creator_id en la URL, abrir esa conversación
-        const applicationId = searchParams.get('application')
-        const creatorId = searchParams.get('creator')
+      setConversations(convs)
+      console.log('[Messages] Conversations:', convs)
 
-        if (applicationId) {
-          // Buscar por ID de aplicación (que es el ID de conversación)
-          const conv = convs.find(c => c.id === applicationId)
-          if (conv) {
-            setSelectedConversation(conv)
-            await loadMessages(conv.id, token)
+      // Step 3: Auto-select conversation if coming from applicants
+      const applicationId = searchParams.get('application')
+      const creatorId = searchParams.get('creator')
+
+      if (applicationId) {
+        const conv = convs.find(c => c.id === applicationId)
+        if (conv) {
+          console.log('[Messages] Auto-selecting conversation:', conv)
+          setSelectedConversation(conv)
+          await loadMessages(conv.id, token)
+          // Show template selector if no messages yet
+          const msgs = await fetchMessages(conv.id, token)
+          if (msgs.length === 0) {
+            setShowTemplateSelector(true)
           }
-        } else if (creatorId) {
-          // Buscar por creator_id
-          const conv = convs.find(c => c.creator_id === creatorId)
-          if (conv) {
-            setSelectedConversation(conv)
-            await loadMessages(conv.id, token)
-          }
+        }
+      } else if (creatorId) {
+        const conv = convs.find(c => c.creator_id === creatorId)
+        if (conv) {
+          setSelectedConversation(conv)
+          await loadMessages(conv.id, token)
         }
       }
     } catch (err) {
@@ -165,25 +233,31 @@ export default function CompanyMessagesPage() {
     }
   }
 
-  const loadMessages = async (conversationId: string, token?: string) => {
+  const fetchMessages = async (conversationId: string, token: string): Promise<Message[]> => {
     try {
-      const authToken = token || localStorage.getItem('sb-access-token')
       const response = await fetch(
         `${SUPABASE_URL}/rest/v1/messages?conversation_id=eq.${conversationId}&select=*&order=created_at.asc`,
         {
           headers: {
-            'Authorization': `Bearer ${authToken}`,
+            'Authorization': `Bearer ${token}`,
             'apikey': SUPABASE_ANON_KEY
           }
         }
       )
-
       if (response.ok) {
-        const data = await response.json()
-        setMessages(data)
-      } else {
-        setMessages([])
+        return await response.json()
       }
+    } catch (err) {
+      console.error('Error fetching messages:', err)
+    }
+    return []
+  }
+
+  const loadMessages = async (conversationId: string, token?: string) => {
+    try {
+      const authToken = token || localStorage.getItem('sb-access-token')
+      const msgs = await fetchMessages(conversationId, authToken!)
+      setMessages(msgs)
     } catch (err) {
       console.error('Error loading messages:', err)
       setMessages([])
@@ -229,6 +303,16 @@ export default function CompanyMessagesPage() {
     await loadMessages(conv.id)
   }
 
+  const handleBack = () => {
+    if (selectedConversation) {
+      setSelectedConversation(null)
+    } else if (cameFromApplicants) {
+      router.push('/company/applicants')
+    } else {
+      router.back()
+    }
+  }
+
   const formatTime = (date: string) => {
     const d = new Date(date)
     return d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
@@ -265,8 +349,8 @@ export default function CompanyMessagesPage() {
             {selectedConversation ? (
               <>
                 <button
-                  onClick={() => setSelectedConversation(null)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors md:hidden"
+                  onClick={handleBack}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -284,14 +368,14 @@ export default function CompanyMessagesPage() {
               </>
             ) : (
               <>
-                <Link
-                  href="/company/dashboard"
+                <button
+                  onClick={handleBack}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
-                </Link>
+                </button>
                 <h1 className="text-xl font-bold text-gray-900">Mensajes</h1>
               </>
             )}
@@ -313,13 +397,13 @@ export default function CompanyMessagesPage() {
                 </div>
                 <h3 className="font-semibold text-gray-900 mb-2">Sin conversaciones</h3>
                 <p className="text-sm text-gray-500 mb-4">
-                  Acepta aplicaciones de creadores para comenzar a comunicarte.
+                  Acepta aplicantes para comenzar a chatear.
                 </p>
                 <Link
-                  href="/company/campaigns"
+                  href="/company/applicants"
                   className="text-purple-600 font-medium hover:underline"
                 >
-                  Ver campanas
+                  Ver aplicantes
                 </Link>
               </div>
             </div>
@@ -339,19 +423,9 @@ export default function CompanyMessagesPage() {
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold text-gray-900 truncate">{conv.creator_name}</h3>
-                      {conv.last_message_at && (
-                        <span className="text-xs text-gray-400">{formatDate(conv.last_message_at)}</span>
-                      )}
-                    </div>
+                    <h3 className="font-semibold text-gray-900 truncate">{conv.creator_name}</h3>
                     <p className="text-sm text-gray-500 truncate">{conv.gig_title}</p>
                   </div>
-                  {conv.unread_count && conv.unread_count > 0 && (
-                    <div className="w-5 h-5 bg-purple-600 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">{conv.unread_count}</span>
-                    </div>
-                  )}
                 </button>
               ))}
             </div>
@@ -367,8 +441,13 @@ export default function CompanyMessagesPage() {
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
                     <div className="text-4xl mb-4">💬</div>
-                    <p className="text-gray-500">Inicia la conversacion</p>
-                    <p className="text-sm text-gray-400">Escribe un mensaje para comenzar</p>
+                    <p className="text-gray-500 mb-2">Inicia la conversacion con {selectedConversation.creator_name}</p>
+                    <button
+                      onClick={() => setShowTemplateSelector(true)}
+                      className="text-purple-600 font-medium hover:underline"
+                    >
+                      Usar un template de mensaje
+                    </button>
                   </div>
                 </div>
               ) : (
@@ -400,14 +479,12 @@ export default function CompanyMessagesPage() {
                           <div className={`text-xs text-gray-400 mt-1 flex items-center gap-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
                             {formatTime(msg.created_at)}
                             {isMe && (
-                              <span title={msg.read_at ? `Leido: ${new Date(msg.read_at).toLocaleString('es-ES')}` : 'Enviado'}>
+                              <span title={msg.read_at ? `Leido` : 'Enviado'}>
                                 {msg.read_at ? (
-                                  // Double check - read
                                   <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
                                     <path d="M18 7l-1.41-1.41-6.34 6.34 1.41 1.41L18 7zm4.24-1.41L11.66 16.17 7.48 12l-1.41 1.41L11.66 19l12-12-1.42-1.41zM.41 13.41L6 19l1.41-1.41L1.83 12 .41 13.41z"/>
                                   </svg>
                                 ) : (
-                                  // Single check - sent
                                   <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
                                     <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
                                   </svg>
@@ -442,7 +519,7 @@ export default function CompanyMessagesPage() {
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-                  placeholder="Escribe un mensaje o usa un template..."
+                  placeholder="Escribe un mensaje..."
                   className="flex-1 px-4 py-3 bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
                 <button
