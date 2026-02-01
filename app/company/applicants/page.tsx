@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import AcceptAndMessageModal from '@/components/messaging/AcceptAndMessageModal'
+import { MessageTemplate } from '@/lib/utils/messageTemplates'
 
 const SUPABASE_URL = 'https://ftvqoudlmojdxwjxljzr.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
@@ -11,6 +13,7 @@ interface Application {
   id: string
   gig_id: string
   creator_id: string
+  company_id: string
   message: string
   status: 'pending' | 'accepted' | 'rejected'
   created_at: string
@@ -34,6 +37,10 @@ export default function ApplicantsPage() {
   const [user, setUser] = useState<any>(null)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null)
+  const [showAcceptModal, setShowAcceptModal] = useState(false)
+  const [applicationToAccept, setApplicationToAccept] = useState<Application | null>(null)
+  const [templates, setTemplates] = useState<MessageTemplate[]>([])
+  const [companyName, setCompanyName] = useState('Mi Empresa')
 
   useEffect(() => {
     checkAuth()
@@ -51,6 +58,50 @@ export default function ApplicantsPage() {
     const userData = JSON.parse(userStr)
     setUser(userData)
     await loadApplications(userData.id, token)
+    await loadTemplates(token)
+    await loadCompanyName(userData.id, token)
+  }
+
+  const loadTemplates = async (token: string) => {
+    try {
+      const response = await fetch(
+        `${SUPABASE_URL}/rest/v1/message_templates?select=*&order=created_at.desc`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'apikey': SUPABASE_ANON_KEY
+          }
+        }
+      )
+      if (response.ok) {
+        const data = await response.json()
+        setTemplates(data)
+      }
+    } catch (err) {
+      console.error('Error loading templates:', err)
+    }
+  }
+
+  const loadCompanyName = async (userId: string, token: string) => {
+    try {
+      const response = await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userId}&select=full_name`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'apikey': SUPABASE_ANON_KEY
+          }
+        }
+      )
+      if (response.ok) {
+        const data = await response.json()
+        if (data[0]?.full_name) {
+          setCompanyName(data[0].full_name)
+        }
+      }
+    } catch (err) {
+      console.error('Error loading company name:', err)
+    }
   }
 
   const loadApplications = async (userId: string, token: string) => {
@@ -145,6 +196,68 @@ export default function ApplicantsPage() {
       }
     } catch (err) {
       console.error('Error updating application:', err)
+    } finally {
+      setUpdatingId(null)
+    }
+  }
+
+  const openAcceptModal = (app: Application) => {
+    setApplicationToAccept(app)
+    setShowAcceptModal(true)
+  }
+
+  const handleAcceptWithMessage = async (sendMessage: boolean, message: string) => {
+    if (!applicationToAccept || !user) return
+
+    setUpdatingId(applicationToAccept.id)
+    try {
+      const token = localStorage.getItem('sb-access-token')
+
+      // 1. Actualizar estado de la aplicacion
+      const response = await fetch(
+        `${SUPABASE_URL}/rest/v1/applications?id=eq.${applicationToAccept.id}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'apikey': SUPABASE_ANON_KEY,
+            'Prefer': 'return=representation'
+          },
+          body: JSON.stringify({ status: 'accepted' })
+        }
+      )
+
+      if (response.ok) {
+        // 2. Si hay mensaje, enviarlo
+        if (sendMessage && message.trim()) {
+          await fetch(`${SUPABASE_URL}/rest/v1/messages`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+              'apikey': SUPABASE_ANON_KEY
+            },
+            body: JSON.stringify({
+              conversation_id: applicationToAccept.id,
+              sender_id: user.id,
+              sender_type: 'company',
+              content: message.trim()
+            })
+          })
+        }
+
+        // Actualizar UI
+        setApplications(prev =>
+          prev.map(app =>
+            app.id === applicationToAccept.id ? { ...app, status: 'accepted' } : app
+          )
+        )
+        setShowAcceptModal(false)
+        setApplicationToAccept(null)
+      }
+    } catch (err) {
+      console.error('Error accepting application:', err)
     } finally {
       setUpdatingId(null)
     }
@@ -368,7 +481,7 @@ export default function ApplicantsPage() {
                           Rechazar
                         </button>
                         <button
-                          onClick={() => updateApplicationStatus(app.id, 'accepted')}
+                          onClick={() => openAcceptModal(app)}
                           disabled={updatingId === app.id}
                           className="px-4 py-2 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center gap-2"
                         >
@@ -438,6 +551,24 @@ export default function ApplicantsPage() {
         </div>
         <div className="h-1 bg-gray-900 mx-auto w-32 rounded-full mb-2"></div>
       </div>
+
+      {/* Accept Modal */}
+      {showAcceptModal && applicationToAccept && (
+        <AcceptAndMessageModal
+          creatorName={applicationToAccept.creator?.full_name || 'Creador'}
+          gigTitle={applicationToAccept.gig?.title || 'Gig'}
+          gigBudget={applicationToAccept.gig?.budget}
+          gigCategory={applicationToAccept.gig?.category}
+          companyName={companyName}
+          templates={templates}
+          onAccept={handleAcceptWithMessage}
+          onCancel={() => {
+            setShowAcceptModal(false)
+            setApplicationToAccept(null)
+          }}
+          loading={updatingId === applicationToAccept.id}
+        />
+      )}
     </div>
   )
 }

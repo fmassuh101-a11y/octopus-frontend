@@ -28,6 +28,10 @@ export default function CampaignsPage() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'active' | 'closed' | 'draft'>('all')
   const [showArchived, setShowArchived] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [gigToDelete, setGigToDelete] = useState<Gig | null>(null)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     loadGigs()
@@ -58,7 +62,30 @@ export default function CampaignsPage() {
 
       if (response.ok) {
         const data = await response.json()
-        setGigs(data)
+
+        // Fetch application counts for each gig
+        const gigsWithCounts = await Promise.all(data.map(async (gig: Gig) => {
+          try {
+            const countRes = await fetch(
+              `${SUPABASE_URL}/rest/v1/applications?gig_id=eq.${gig.id}&select=id`,
+              {
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'apikey': SUPABASE_ANON_KEY
+                }
+              }
+            )
+            if (countRes.ok) {
+              const apps = await countRes.json()
+              return { ...gig, applications_count: apps.length }
+            }
+          } catch (e) {
+            console.log('Error counting apps:', e)
+          }
+          return { ...gig, applications_count: 0 }
+        }))
+
+        setGigs(gigsWithCounts)
       } else {
         setGigs([])
       }
@@ -110,6 +137,56 @@ export default function CampaignsPage() {
         {budget}
       </span>
     )
+  }
+
+  const openDeleteModal = (gig: Gig) => {
+    setGigToDelete(gig)
+    setDeleteConfirmText('')
+    setShowDeleteModal(true)
+  }
+
+  const handleDeleteGig = async () => {
+    if (!gigToDelete || deleteConfirmText !== 'confirmar') return
+
+    setDeleting(true)
+    try {
+      const token = localStorage.getItem('sb-access-token')
+
+      // First delete all applications for this gig
+      await fetch(
+        `${SUPABASE_URL}/rest/v1/applications?gig_id=eq.${gigToDelete.id}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'apikey': SUPABASE_ANON_KEY
+          }
+        }
+      )
+
+      // Then delete the gig
+      const response = await fetch(
+        `${SUPABASE_URL}/rest/v1/gigs?id=eq.${gigToDelete.id}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'apikey': SUPABASE_ANON_KEY
+          }
+        }
+      )
+
+      if (response.ok) {
+        setGigs(prev => prev.filter(g => g.id !== gigToDelete.id))
+        setShowDeleteModal(false)
+        setGigToDelete(null)
+        setDeleteConfirmText('')
+      }
+    } catch (err) {
+      console.error('Error deleting gig:', err)
+    } finally {
+      setDeleting(false)
+    }
   }
 
   const getStatusBadge = (status: string) => {
@@ -339,19 +416,33 @@ export default function CampaignsPage() {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <div className="text-right mr-4 hidden sm:block">
+                    <Link
+                      href="/company/applicants"
+                      className="text-right mr-4 hidden sm:block hover:bg-purple-50 p-2 rounded-lg transition-colors cursor-pointer"
+                    >
                       <div className="text-2xl font-bold text-gray-900">{gig.applications_count || 0}</div>
                       <div className="text-xs text-gray-500">Aplicaciones</div>
-                    </div>
+                    </Link>
 
                     <button
+                      onClick={() => openDeleteModal(gig)}
+                      className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Eliminar"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+
+                    <Link
+                      href="/company/applicants"
                       className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                      title="Ver detalles"
+                      title="Ver aplicantes"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
-                    </button>
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -394,6 +485,74 @@ export default function CampaignsPage() {
         </div>
         <div className="h-1 bg-gray-900 mx-auto w-32 rounded-full mb-2"></div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && gigToDelete && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Eliminar Campana</h3>
+              <p className="text-gray-500">
+                Estas seguro de eliminar <strong>"{gigToDelete.title}"</strong>?
+              </p>
+              <p className="text-red-500 text-sm mt-2">
+                Esto eliminara todas las aplicaciones asociadas. Esta accion no se puede deshacer.
+              </p>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Escribe <strong>"confirmar"</strong> para eliminar:
+              </label>
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder="confirmar"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false)
+                  setGigToDelete(null)
+                  setDeleteConfirmText('')
+                }}
+                disabled={deleting}
+                className="flex-1 px-4 py-3 border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDeleteGig}
+                disabled={deleteConfirmText !== 'confirmar' || deleting}
+                className="flex-1 px-4 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {deleting ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Eliminando...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Eliminar
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -43,20 +43,10 @@ export default function ProfilePage() {
       setUser(userData)
       console.log('[Profile] User loaded:', userData.email, userData.id)
 
-      // FIRST: Try localStorage (most reliable source)
-      const onboardingStr = localStorage.getItem('creatorOnboarding')
-      if (onboardingStr) {
-        try {
-          const onboardingData = JSON.parse(onboardingStr)
-          console.log('[Profile] Found localStorage data:', onboardingData)
-          setBioData(onboardingData)
-          setProfile((prev: any) => ({ ...prev, ...onboardingData }))
-        } catch (e) {
-          console.log('[Profile] Could not parse localStorage data')
-        }
-      }
+      let finalBioData: any = {}
+      let finalProfile: any = {}
 
-      // THEN: Try Supabase (may override with fresher data)
+      // FIRST: Try Supabase (this is the source of truth)
       try {
         const response = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=*`, {
           headers: {
@@ -74,22 +64,21 @@ export default function ProfilePage() {
           if (profiles.length > 0) {
             const profileData = profiles[0]
             console.log('[Profile] Profile from Supabase:', profileData)
+            finalProfile = { ...profileData }
 
             // Parse bio data if it exists
             if (profileData.bio) {
               try {
                 const parsedBio = JSON.parse(profileData.bio)
                 console.log('[Profile] Parsed bio from Supabase:', parsedBio)
-                // Merge with existing data, Supabase takes priority
-                setBioData((prev: any) => ({ ...prev, ...parsedBio }))
-                setProfile((prev: any) => ({ ...prev, ...profileData, ...parsedBio }))
+                finalBioData = { ...parsedBio }
+                finalProfile = { ...finalProfile, ...parsedBio }
+
+                // Also save to localStorage for faster loading next time
+                localStorage.setItem('creatorOnboarding', JSON.stringify(parsedBio))
               } catch (e) {
-                console.log('[Profile] Bio is not JSON')
-                setProfile((prev: any) => ({ ...prev, ...profileData }))
+                console.log('[Profile] Bio is not JSON, using as-is')
               }
-            } else {
-              console.log('[Profile] No bio in Supabase profile')
-              setProfile((prev: any) => ({ ...prev, ...profileData }))
             }
           }
         }
@@ -97,6 +86,23 @@ export default function ProfilePage() {
         console.error('[Profile] Supabase fetch error:', fetchError)
       }
 
+      // FALLBACK: If no Supabase data, try localStorage
+      if (Object.keys(finalBioData).length === 0) {
+        const onboardingStr = localStorage.getItem('creatorOnboarding')
+        if (onboardingStr) {
+          try {
+            const onboardingData = JSON.parse(onboardingStr)
+            console.log('[Profile] Fallback to localStorage data:', onboardingData)
+            finalBioData = onboardingData
+            finalProfile = { ...finalProfile, ...onboardingData }
+          } catch (e) {
+            console.log('[Profile] Could not parse localStorage data')
+          }
+        }
+      }
+
+      setBioData(finalBioData)
+      setProfile(finalProfile)
       setLoading(false)
     } catch (error) {
       console.error('[Profile] Error:', error)

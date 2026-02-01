@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
+import TemplateSelector from '@/components/messaging/TemplateSelector'
+import { MessageTemplate, TemplateVariables } from '@/lib/utils/messageTemplates'
 
 const SUPABASE_URL = 'https://ftvqoudlmojdxwjxljzr.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
@@ -26,6 +28,7 @@ interface Message {
   content: string
   created_at: string
   sender_type: 'creator' | 'company'
+  read_at?: string | null
 }
 
 export default function CompanyMessagesPage() {
@@ -39,6 +42,9 @@ export default function CompanyMessagesPage() {
   const [user, setUser] = useState<any>(null)
   const [sending, setSending] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [templates, setTemplates] = useState<MessageTemplate[]>([])
+  const [showTemplateSelector, setShowTemplateSelector] = useState(false)
+  const [companyName, setCompanyName] = useState('Mi Empresa')
 
   useEffect(() => {
     checkAuth()
@@ -62,6 +68,50 @@ export default function CompanyMessagesPage() {
     const userData = JSON.parse(userStr)
     setUser(userData)
     await loadConversations(userData.id, token)
+    await loadTemplates(token)
+    await loadCompanyName(userData.id, token)
+  }
+
+  const loadTemplates = async (token: string) => {
+    try {
+      const response = await fetch(
+        `${SUPABASE_URL}/rest/v1/message_templates?select=*&order=created_at.desc`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'apikey': SUPABASE_ANON_KEY
+          }
+        }
+      )
+      if (response.ok) {
+        const data = await response.json()
+        setTemplates(data)
+      }
+    } catch (err) {
+      console.error('Error loading templates:', err)
+    }
+  }
+
+  const loadCompanyName = async (userId: string, token: string) => {
+    try {
+      const response = await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userId}&select=full_name`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'apikey': SUPABASE_ANON_KEY
+          }
+        }
+      )
+      if (response.ok) {
+        const data = await response.json()
+        if (data[0]?.full_name) {
+          setCompanyName(data[0].full_name)
+        }
+      }
+    } catch (err) {
+      console.error('Error loading company name:', err)
+    }
   }
 
   const loadConversations = async (userId: string, token: string) => {
@@ -337,8 +387,23 @@ export default function CompanyMessagesPage() {
                           >
                             <p className="whitespace-pre-wrap">{msg.content}</p>
                           </div>
-                          <div className={`text-xs text-gray-400 mt-1 ${isMe ? 'text-right' : 'text-left'}`}>
+                          <div className={`text-xs text-gray-400 mt-1 flex items-center gap-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
                             {formatTime(msg.created_at)}
+                            {isMe && (
+                              <span title={msg.read_at ? `Leido: ${new Date(msg.read_at).toLocaleString('es-ES')}` : 'Enviado'}>
+                                {msg.read_at ? (
+                                  // Double check - read
+                                  <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M18 7l-1.41-1.41-6.34 6.34 1.41 1.41L18 7zm4.24-1.41L11.66 16.17 7.48 12l-1.41 1.41L11.66 19l12-12-1.42-1.41zM.41 13.41L6 19l1.41-1.41L1.83 12 .41 13.41z"/>
+                                  </svg>
+                                ) : (
+                                  // Single check - sent
+                                  <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                                  </svg>
+                                )}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -352,12 +417,22 @@ export default function CompanyMessagesPage() {
             {/* Input */}
             <div className="bg-white border-t border-gray-200 p-4">
               <div className="flex items-center gap-3">
+                {/* Template Button */}
+                <button
+                  onClick={() => setShowTemplateSelector(true)}
+                  className="p-3 text-purple-600 hover:bg-purple-50 rounded-full transition-colors"
+                  title="Usar template"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </button>
                 <input
                   type="text"
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-                  placeholder="Escribe un mensaje..."
+                  placeholder="Escribe un mensaje o usa un template..."
                   className="flex-1 px-4 py-3 bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
                 <button
@@ -421,6 +496,23 @@ export default function CompanyMessagesPage() {
           </div>
           <div className="h-1 bg-gray-900 mx-auto w-32 rounded-full mb-2"></div>
         </div>
+      )}
+
+      {/* Template Selector Modal */}
+      {showTemplateSelector && selectedConversation && (
+        <TemplateSelector
+          templates={templates}
+          variables={{
+            nombre: selectedConversation.creator_name || 'Creador',
+            gig_title: selectedConversation.gig_title || 'Proyecto',
+            company_name: companyName
+          }}
+          onSelect={(processedContent) => {
+            setNewMessage(processedContent)
+            setShowTemplateSelector(false)
+          }}
+          onClose={() => setShowTemplateSelector(false)}
+        />
       )}
     </div>
   )

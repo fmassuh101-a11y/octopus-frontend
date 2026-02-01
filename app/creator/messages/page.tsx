@@ -26,6 +26,7 @@ interface Message {
   content: string
   created_at: string
   sender_type: 'creator' | 'company'
+  read_at?: string | null
 }
 
 export default function MessagesPage() {
@@ -307,9 +308,11 @@ export default function MessagesPage() {
               {messages.length === 0 ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
-                    <div className="text-4xl mb-4">💬</div>
-                    <p className="text-gray-500">Inicia la conversacion</p>
-                    <p className="text-sm text-gray-400">Escribe un mensaje para comenzar</p>
+                    <div className="text-4xl mb-4">⏳</div>
+                    <p className="text-gray-500 font-medium">Esperando a la empresa</p>
+                    <p className="text-sm text-gray-400 mt-2 max-w-xs">
+                      La empresa iniciara la conversacion cuando este lista para comenzar el proyecto.
+                    </p>
                   </div>
                 </div>
               ) : (
@@ -338,8 +341,23 @@ export default function MessagesPage() {
                           >
                             <p className="whitespace-pre-wrap">{msg.content}</p>
                           </div>
-                          <div className={`text-xs text-gray-400 mt-1 ${isMe ? 'text-right' : 'text-left'}`}>
+                          <div className={`text-xs text-gray-400 mt-1 flex items-center gap-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
                             {formatTime(msg.created_at)}
+                            {isMe && (
+                              <span title={msg.read_at ? `Leido: ${new Date(msg.read_at).toLocaleString('es-ES')}` : 'Enviado'}>
+                                {msg.read_at ? (
+                                  // Double check - read
+                                  <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M18 7l-1.41-1.41-6.34 6.34 1.41 1.41L18 7zm4.24-1.41L11.66 16.17 7.48 12l-1.41 1.41L11.66 19l12-12-1.42-1.41zM.41 13.41L6 19l1.41-1.41L1.83 12 .41 13.41z"/>
+                                  </svg>
+                                ) : (
+                                  // Single check - sent
+                                  <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                                  </svg>
+                                )}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -352,29 +370,40 @@ export default function MessagesPage() {
 
             {/* Input */}
             <div className="bg-white border-t border-gray-200 p-4">
-              <div className="flex items-center gap-3">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-                  placeholder="Escribe un mensaje..."
-                  className="flex-1 px-4 py-3 bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <button
-                  onClick={sendMessage}
-                  disabled={!newMessage.trim() || sending}
-                  className="p-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-                >
-                  {sending ? (
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  ) : (
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-                    </svg>
-                  )}
-                </button>
-              </div>
+              {messages.length === 0 ? (
+                // Bloqueado - esperando primer mensaje de la empresa
+                <div className="flex items-center gap-3 px-4 py-3 bg-gray-100 rounded-full">
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  <span className="text-gray-400 text-sm">Esperando mensaje de la empresa...</span>
+                </div>
+              ) : (
+                // Activo - puede responder
+                <div className="flex items-center gap-3">
+                  <input
+                    type="text"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+                    placeholder="Escribe un mensaje..."
+                    className="flex-1 px-4 py-3 bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <button
+                    onClick={sendMessage}
+                    disabled={!newMessage.trim() || sending}
+                    className="p-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  >
+                    {sending ? (
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         ) : (
