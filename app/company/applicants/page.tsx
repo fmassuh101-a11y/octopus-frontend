@@ -82,9 +82,12 @@ export default function ApplicantsPage() {
 
     const userData = JSON.parse(userStr)
     setUser(userData)
-    await loadApplications(userData.id, token)
-    await loadTemplates(token)
-    await loadCompanyName(userData.id, token)
+    // Load everything in parallel for speed
+    await Promise.all([
+      loadApplications(userData.id, token),
+      loadTemplates(token),
+      loadCompanyName(userData.id, token)
+    ])
   }
 
   const loadTemplates = async (token: string) => {
@@ -144,61 +147,66 @@ export default function ApplicantsPage() {
       if (response.ok) {
         const data = await response.json()
 
-        // Enrich with gig and creator data
-        const enrichedApps = await Promise.all(data.map(async (app: any) => {
-          // Get gig info
-          try {
-            const gigRes = await fetch(
-              `${SUPABASE_URL}/rest/v1/gigs?id=eq.${app.gig_id}&select=title,budget,category`,
-              { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
-            )
-            if (gigRes.ok) {
-              const gigs = await gigRes.json()
-              app.gig = gigs[0] || null
+        if (data.length === 0) {
+          setApplications([])
+          return
+        }
+
+        // Collect unique IDs for batch fetching
+        const gigIds = [...new Set(data.map((app: any) => app.gig_id).filter(Boolean))]
+        const creatorIds = [...new Set(data.map((app: any) => app.creator_id).filter(Boolean))]
+
+        // Fetch all gigs and creators in parallel (batch requests)
+        const [gigsRes, creatorsRes] = await Promise.all([
+          gigIds.length > 0 ? fetch(
+            `${SUPABASE_URL}/rest/v1/gigs?id=in.(${gigIds.join(',')})&select=id,title,budget,category`,
+            { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+          ) : Promise.resolve(null),
+          creatorIds.length > 0 ? fetch(
+            `${SUPABASE_URL}/rest/v1/profiles?user_id=in.(${creatorIds.join(',')})&select=*`,
+            { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+          ) : Promise.resolve(null)
+        ])
+
+        // Parse responses
+        const gigs = gigsRes && gigsRes.ok ? await gigsRes.json() : []
+        const creators = creatorsRes && creatorsRes.ok ? await creatorsRes.json() : []
+
+        // Create lookup maps for O(1) access
+        const gigMap = new Map(gigs.map((g: any) => [g.id, g]))
+        const creatorMap = new Map(creators.map((c: any) => {
+          // Parse bio JSON to get full data
+          let bioData: any = {}
+          if (c.bio) {
+            try {
+              bioData = JSON.parse(c.bio)
+            } catch (e) {
+              // bio is plain text
             }
-          } catch (e) { console.log('Error fetching gig:', e) }
+          }
+          return [c.user_id, {
+            user_id: c.user_id,
+            full_name: c.full_name,
+            avatar_url: c.avatar_url,
+            firstName: bioData.firstName,
+            lastName: bioData.lastName,
+            email: bioData.email,
+            about: bioData.about,
+            city: bioData.city,
+            country: bioData.country,
+            niche: bioData.niche,
+            categories: bioData.categories,
+            tiktokAccounts: bioData.tiktokAccounts || [],
+            instagram: bioData.instagram,
+            linkedin: bioData.linkedin
+          }]
+        }))
 
-          // Get FULL creator profile with bio data
-          try {
-            const creatorRes = await fetch(
-              `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${app.creator_id}&select=*`,
-              { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
-            )
-            if (creatorRes.ok) {
-              const creators = await creatorRes.json()
-              if (creators[0]) {
-                const creatorData = creators[0]
-                // Parse bio JSON to get full data
-                let bioData: any = {}
-                if (creatorData.bio) {
-                  try {
-                    bioData = JSON.parse(creatorData.bio)
-                  } catch (e) {
-                    // bio is plain text
-                  }
-                }
-
-                app.creator = {
-                  user_id: creatorData.user_id,
-                  full_name: creatorData.full_name,
-                  avatar_url: creatorData.avatar_url,
-                  firstName: bioData.firstName,
-                  lastName: bioData.lastName,
-                  email: bioData.email,
-                  about: bioData.about,
-                  city: bioData.city,
-                  country: bioData.country,
-                  niche: bioData.niche,
-                  categories: bioData.categories,
-                  tiktokAccounts: bioData.tiktokAccounts || [],
-                  instagram: bioData.instagram,
-                  linkedin: bioData.linkedin
-                }
-              }
-            }
-          } catch (e) { console.log('Error fetching creator:', e) }
-
-          return app
+        // Enrich applications with pre-fetched data (no more API calls)
+        const enrichedApps = data.map((app: any) => ({
+          ...app,
+          gig: gigMap.get(app.gig_id) || null,
+          creator: creatorMap.get(app.creator_id) || null
         }))
 
         setApplications(enrichedApps)

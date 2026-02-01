@@ -86,48 +86,44 @@ export default function CreatorMessagesPage() {
       }
 
       const applications = await appsResponse.json()
-      const convs: Conversation[] = []
 
-      for (const app of applications) {
-        let companyName = 'Empresa'
-        let gigTitle = 'Proyecto'
-
-        // Get company name from profiles
-        try {
-          const companyRes = await fetch(
-            `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${app.company_id}&select=full_name`,
-            { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
-          )
-          if (companyRes.ok) {
-            const companies = await companyRes.json()
-            if (companies[0]?.full_name) {
-              companyName = companies[0].full_name
-            }
-          }
-        } catch (e) { }
-
-        // Get gig title
-        try {
-          const gigRes = await fetch(
-            `${SUPABASE_URL}/rest/v1/gigs?id=eq.${app.gig_id}&select=title`,
-            { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
-          )
-          if (gigRes.ok) {
-            const gigs = await gigRes.json()
-            if (gigs[0]?.title) {
-              gigTitle = gigs[0].title
-            }
-          }
-        } catch (e) { }
-
-        convs.push({
-          id: app.id,
-          company_id: app.company_id,
-          creator_id: userId,
-          company_name: companyName,
-          gig_title: gigTitle
-        })
+      if (applications.length === 0) {
+        setConversations([])
+        setLoading(false)
+        return
       }
+
+      // Collect unique IDs for batch fetching
+      const companyIds = [...new Set(applications.map((a: any) => a.company_id))]
+      const gigIds = [...new Set(applications.map((a: any) => a.gig_id))]
+
+      // Fetch all companies and gigs in parallel (batch requests)
+      const [companiesRes, gigsRes] = await Promise.all([
+        fetch(
+          `${SUPABASE_URL}/rest/v1/profiles?user_id=in.(${companyIds.join(',')})&select=user_id,full_name`,
+          { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+        ),
+        fetch(
+          `${SUPABASE_URL}/rest/v1/gigs?id=in.(${gigIds.join(',')})&select=id,title`,
+          { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+        )
+      ])
+
+      const companies = companiesRes.ok ? await companiesRes.json() : []
+      const gigs = gigsRes.ok ? await gigsRes.json() : []
+
+      // Create lookup maps for O(1) access
+      const companyMap = new Map(companies.map((c: any) => [c.user_id, c.full_name || 'Empresa']))
+      const gigMap = new Map(gigs.map((g: any) => [g.id, g.title || 'Proyecto']))
+
+      // Build conversations with pre-fetched data (no more API calls)
+      const convs: Conversation[] = applications.map((app: any) => ({
+        id: app.id,
+        company_id: app.company_id,
+        creator_id: userId,
+        company_name: companyMap.get(app.company_id) || 'Empresa',
+        gig_title: gigMap.get(app.gig_id) || 'Proyecto'
+      }))
 
       setConversations(convs)
 
@@ -314,7 +310,12 @@ export default function CreatorMessagesPage() {
                 type="text"
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    sendMessage()
+                  }
+                }}
                 placeholder="Escribe tu respuesta..."
                 className="flex-1 px-4 py-3 bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-gray-900"
               />

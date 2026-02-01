@@ -34,6 +34,7 @@ export default function CompanyMessagesPage() {
   const [newMessage, setNewMessage] = useState('')
   const [user, setUser] = useState<any>(null)
   const [sending, setSending] = useState(false)
+  const [error, setError] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -47,7 +48,6 @@ export default function CompanyMessagesPage() {
     }
   }, [messages])
 
-  // Focus input when conversation is selected
   useEffect(() => {
     if (selectedConversation && inputRef.current) {
       setTimeout(() => inputRef.current?.focus(), 100)
@@ -55,17 +55,23 @@ export default function CompanyMessagesPage() {
   }, [selectedConversation])
 
   const checkAuth = async () => {
-    const token = localStorage.getItem('sb-access-token')
-    const userStr = localStorage.getItem('sb-user')
+    try {
+      const token = localStorage.getItem('sb-access-token')
+      const userStr = localStorage.getItem('sb-user')
 
-    if (!token || !userStr) {
-      router.push('/auth/login')
-      return
+      if (!token || !userStr) {
+        router.push('/auth/login')
+        return
+      }
+
+      const userData = JSON.parse(userStr)
+      setUser(userData)
+      await loadConversations(userData.id, token)
+    } catch (err) {
+      console.error('Auth error:', err)
+      setError('Error de autenticacion')
+      setLoading(false)
     }
-
-    const userData = JSON.parse(userStr)
-    setUser(userData)
-    await loadConversations(userData.id, token)
   }
 
   const loadConversations = async (userId: string, token: string) => {
@@ -82,66 +88,62 @@ export default function CompanyMessagesPage() {
       )
 
       if (!appsResponse.ok) {
+        throw new Error('Failed to load applications')
+      }
+
+      const applications = await appsResponse.json()
+
+      if (applications.length === 0) {
+        setConversations([])
         setLoading(false)
         return
       }
 
-      const applications = await appsResponse.json()
-      const convs: Conversation[] = []
+      // Get all creator IDs and gig IDs
+      const creatorIds = [...new Set(applications.map((a: any) => a.creator_id))]
+      const gigIds = [...new Set(applications.map((a: any) => a.gig_id))]
 
-      for (const app of applications) {
-        let creatorName = 'Creador'
-        let gigTitle = 'Proyecto'
+      // Fetch creators and gigs in parallel
+      const [creatorsRes, gigsRes] = await Promise.all([
+        fetch(
+          `${SUPABASE_URL}/rest/v1/profiles?user_id=in.(${creatorIds.join(',')})&select=user_id,full_name,bio`,
+          { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+        ),
+        fetch(
+          `${SUPABASE_URL}/rest/v1/gigs?id=in.(${gigIds.join(',')})&select=id,title`,
+          { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+        )
+      ])
 
-        // Get creator name
-        try {
-          const creatorRes = await fetch(
-            `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${app.creator_id}&select=full_name,bio`,
-            { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
-          )
-          if (creatorRes.ok) {
-            const creators = await creatorRes.json()
-            if (creators[0]) {
-              if (creators[0].bio) {
-                try {
-                  const bioData = JSON.parse(creators[0].bio)
-                  if (bioData.firstName && bioData.lastName) {
-                    creatorName = `${bioData.firstName} ${bioData.lastName}`
-                  } else {
-                    creatorName = creators[0].full_name || 'Creador'
-                  }
-                } catch (e) {
-                  creatorName = creators[0].full_name || 'Creador'
-                }
-              } else {
-                creatorName = creators[0].full_name || 'Creador'
-              }
+      const creators = creatorsRes.ok ? await creatorsRes.json() : []
+      const gigs = gigsRes.ok ? await gigsRes.json() : []
+
+      // Create lookup maps
+      const creatorMap = new Map()
+      creators.forEach((c: any) => {
+        let name = c.full_name || 'Creador'
+        if (c.bio) {
+          try {
+            const bioData = JSON.parse(c.bio)
+            if (bioData.firstName && bioData.lastName) {
+              name = `${bioData.firstName} ${bioData.lastName}`
             }
-          }
-        } catch (e) { }
+          } catch (e) {}
+        }
+        creatorMap.set(c.user_id, name)
+      })
 
-        // Get gig title
-        try {
-          const gigRes = await fetch(
-            `${SUPABASE_URL}/rest/v1/gigs?id=eq.${app.gig_id}&select=title`,
-            { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
-          )
-          if (gigRes.ok) {
-            const gigs = await gigRes.json()
-            if (gigs[0]?.title) {
-              gigTitle = gigs[0].title
-            }
-          }
-        } catch (e) { }
+      const gigMap = new Map()
+      gigs.forEach((g: any) => gigMap.set(g.id, g.title))
 
-        convs.push({
-          id: app.id,
-          company_id: userId,
-          creator_id: app.creator_id,
-          creator_name: creatorName,
-          gig_title: gigTitle
-        })
-      }
+      // Build conversations
+      const convs: Conversation[] = applications.map((app: any) => ({
+        id: app.id,
+        company_id: userId,
+        creator_id: app.creator_id,
+        creator_name: creatorMap.get(app.creator_id) || 'Creador',
+        gig_title: gigMap.get(app.gig_id) || 'Proyecto'
+      }))
 
       setConversations(convs)
 
@@ -164,6 +166,7 @@ export default function CompanyMessagesPage() {
 
     } catch (err) {
       console.error('Error loading conversations:', err)
+      setError('Error cargando conversaciones')
     } finally {
       setLoading(false)
     }
@@ -188,16 +191,35 @@ export default function CompanyMessagesPage() {
         setMessages([])
       }
     } catch (err) {
+      console.error('Error loading messages:', err)
       setMessages([])
     }
   }
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedConversation || !user) return
+    if (!newMessage.trim() || !selectedConversation || !user || sending) return
 
+    const messageContent = newMessage.trim()
+    const tempId = `temp-${Date.now()}`
+
+    // Optimistic update - show message immediately
+    const optimisticMessage: Message = {
+      id: tempId,
+      conversation_id: selectedConversation.id,
+      sender_id: user.id,
+      sender_type: 'company',
+      content: messageContent,
+      created_at: new Date().toISOString()
+    }
+
+    setMessages(prev => [...prev, optimisticMessage])
+    setNewMessage('')
     setSending(true)
+    setError('')
+
     try {
       const token = localStorage.getItem('sb-access-token')
+
       const response = await fetch(`${SUPABASE_URL}/rest/v1/messages`, {
         method: 'POST',
         headers: {
@@ -210,17 +232,30 @@ export default function CompanyMessagesPage() {
           conversation_id: selectedConversation.id,
           sender_id: user.id,
           sender_type: 'company',
-          content: newMessage.trim()
+          content: messageContent
         })
       })
 
       if (response.ok) {
         const newMsg = await response.json()
-        setMessages(prev => [...prev, newMsg[0]])
-        setNewMessage('')
+        if (Array.isArray(newMsg) && newMsg.length > 0) {
+          // Replace optimistic message with real one
+          setMessages(prev => prev.map(m => m.id === tempId ? newMsg[0] : m))
+        }
+      } else {
+        const errorText = await response.text()
+        console.error('Send error:', response.status, errorText)
+        setError(`Error: ${response.status}`)
+        // Remove optimistic message on error
+        setMessages(prev => prev.filter(m => m.id !== tempId))
+        setNewMessage(messageContent)
       }
     } catch (err) {
       console.error('Error sending message:', err)
+      setError('Error de conexion')
+      // Remove optimistic message on error
+      setMessages(prev => prev.filter(m => m.id !== tempId))
+      setNewMessage(messageContent)
     } finally {
       setSending(false)
     }
@@ -233,7 +268,6 @@ export default function CompanyMessagesPage() {
 
   const handleBack = () => {
     if (selectedConversation) {
-      // If we have URL params, go back to applicants
       if (searchParams.get('application') || searchParams.get('creator')) {
         router.push('/company/applicants')
       } else {
@@ -260,25 +294,20 @@ export default function CompanyMessagesPage() {
     )
   }
 
-  // If we have a selected conversation, show full-screen chat
+  // Full-screen chat when conversation selected
   if (selectedConversation) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
         {/* Header */}
         <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
           <div className="px-4 py-3 flex items-center gap-3">
-            <button
-              onClick={handleBack}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
+            <button onClick={handleBack} className="p-2 hover:bg-gray-100 rounded-lg">
               <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
             <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold">
-                {selectedConversation.creator_name.charAt(0).toUpperCase()}
-              </span>
+              <span className="text-white font-bold">{selectedConversation.creator_name.charAt(0).toUpperCase()}</span>
             </div>
             <div className="flex-1">
               <h1 className="font-bold text-gray-900">{selectedConversation.creator_name}</h1>
@@ -297,25 +326,21 @@ export default function CompanyMessagesPage() {
                 </svg>
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Inicia la conversacion con {selectedConversation.creator_name}
+                Escribe a {selectedConversation.creator_name}
               </h3>
-              <p className="text-gray-500 text-sm">
-                Escribe un mensaje abajo para comenzar
-              </p>
+              <p className="text-gray-500 text-sm">Envia tu primer mensaje</p>
             </div>
           ) : (
             messages.map((msg) => {
               const isMe = msg.sender_type === 'company'
               return (
                 <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[80%]`}>
-                    <div
-                      className={`px-4 py-3 rounded-2xl ${
-                        isMe
-                          ? 'bg-purple-600 text-white rounded-br-md'
-                          : 'bg-white text-gray-900 rounded-bl-md shadow-sm border border-gray-100'
-                      }`}
-                    >
+                  <div className="max-w-[80%]">
+                    <div className={`px-4 py-3 rounded-2xl ${
+                      isMe
+                        ? 'bg-purple-600 text-white rounded-br-md'
+                        : 'bg-white text-gray-900 rounded-bl-md shadow-sm border border-gray-100'
+                    }`}>
                       <p className="whitespace-pre-wrap">{msg.content}</p>
                     </div>
                     <p className={`text-xs text-gray-400 mt-1 ${isMe ? 'text-right' : 'text-left'}`}>
@@ -329,6 +354,13 @@ export default function CompanyMessagesPage() {
           <div ref={messagesEndRef} />
         </div>
 
+        {/* Error message */}
+        {error && (
+          <div className="px-4 py-2 bg-red-50 text-red-600 text-sm text-center">
+            {error}
+          </div>
+        )}
+
         {/* Input */}
         <div className="bg-white border-t border-gray-200 p-4 pb-6">
           <div className="flex items-center gap-3">
@@ -337,9 +369,15 @@ export default function CompanyMessagesPage() {
               type="text"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault()
+                  sendMessage()
+                }
+              }}
               placeholder={`Escribe a ${selectedConversation.creator_name}...`}
               className="flex-1 px-4 py-3 bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500"
+              disabled={sending}
             />
             <button
               onClick={sendMessage}
@@ -363,13 +401,9 @@ export default function CompanyMessagesPage() {
   // Conversation list view
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Header */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="px-4 py-4 flex items-center gap-4">
-          <button
-            onClick={() => router.back()}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
+          <button onClick={() => router.back()} className="p-2 hover:bg-gray-100 rounded-lg">
             <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
@@ -378,7 +412,6 @@ export default function CompanyMessagesPage() {
         </div>
       </div>
 
-      {/* Conversations List */}
       {conversations.length === 0 ? (
         <div className="flex flex-col items-center justify-center px-4 py-16">
           <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
@@ -387,13 +420,8 @@ export default function CompanyMessagesPage() {
             </svg>
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Sin conversaciones</h3>
-          <p className="text-gray-500 text-center mb-6">
-            Acepta aplicantes para comenzar a chatear con creadores
-          </p>
-          <Link
-            href="/company/applicants"
-            className="px-6 py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 transition-colors"
-          >
+          <p className="text-gray-500 text-center mb-6">Acepta aplicantes para chatear</p>
+          <Link href="/company/applicants" className="px-6 py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700">
             Ver Aplicantes
           </Link>
         </div>
@@ -403,16 +431,14 @@ export default function CompanyMessagesPage() {
             <button
               key={conv.id}
               onClick={() => selectConversation(conv)}
-              className="w-full p-4 flex items-center gap-4 hover:bg-gray-50 transition-colors text-left"
+              className="w-full p-4 flex items-center gap-4 hover:bg-gray-50 text-left"
             >
-              <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-white font-bold text-xl">
-                  {conv.creator_name.charAt(0).toUpperCase()}
-                </span>
+              <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-xl">{conv.creator_name.charAt(0).toUpperCase()}</span>
               </div>
-              <div className="flex-1 min-w-0">
+              <div className="flex-1">
                 <h3 className="font-semibold text-gray-900">{conv.creator_name}</h3>
-                <p className="text-sm text-gray-500 truncate">{conv.gig_title}</p>
+                <p className="text-sm text-gray-500">{conv.gig_title}</p>
               </div>
               <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -426,27 +452,19 @@ export default function CompanyMessagesPage() {
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200">
         <div className="flex justify-around py-2">
           <Link href="/company/dashboard" className="flex flex-col items-center py-2 px-4 text-gray-400">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-            </svg>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
             <span className="text-xs mt-1">Dashboard</span>
           </Link>
           <Link href="/company/campaigns" className="flex flex-col items-center py-2 px-4 text-gray-400">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-            </svg>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
             <span className="text-xs mt-1">Campanas</span>
           </Link>
           <div className="flex flex-col items-center py-2 px-4 text-purple-600">
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
-            </svg>
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" /></svg>
             <span className="text-xs mt-1 font-medium">Mensajes</span>
           </div>
           <Link href="/company/applicants" className="flex flex-col items-center py-2 px-4 text-gray-400">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
             <span className="text-xs mt-1">Aplicantes</span>
           </Link>
         </div>
