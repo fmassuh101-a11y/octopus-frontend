@@ -45,6 +45,190 @@ interface User {
   }
 }
 
+// Gigs Management Component
+function GigsManagement() {
+  const [gigs, setGigs] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  const getToken = () => localStorage.getItem('sb-access-token')
+
+  useEffect(() => {
+    loadGigs()
+  }, [])
+
+  const loadGigs = async () => {
+    const token = getToken()
+    if (!token) return
+
+    try {
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/gigs?select=*&order=created_at.desc`,
+        { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+      )
+      const data = res.ok ? await res.json() : []
+
+      // Get company names
+      const companyIds = Array.from(new Set<string>(data.map((g: any) => g.company_id).filter(Boolean)))
+      if (companyIds.length > 0) {
+        const profilesRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/profiles?user_id=in.(${companyIds.join(',')})&select=user_id,full_name`,
+          { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+        )
+        const profiles = profilesRes.ok ? await profilesRes.json() : []
+        const profileMap = new Map(profiles.map((p: any) => [p.user_id, p.full_name]))
+
+        const enrichedGigs = data.map((g: any) => ({
+          ...g,
+          company_name: profileMap.get(g.company_id) || 'Unknown'
+        }))
+        setGigs(enrichedGigs)
+      } else {
+        setGigs(data)
+      }
+
+      setLoading(false)
+    } catch (err) {
+      console.error('Error loading gigs:', err)
+      setLoading(false)
+    }
+  }
+
+  const handleDelete = async (id: string, title: string) => {
+    if (!confirm(`¿Eliminar el gig "${title}"? Esta acción no se puede deshacer.`)) return
+
+    setDeletingId(id)
+    const token = getToken()
+
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/gigs?id=eq.${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'apikey': SUPABASE_ANON_KEY,
+          'Prefer': 'return=minimal'
+        }
+      })
+
+      if (res.ok) {
+        setGigs(prev => prev.filter(g => g.id !== id))
+        alert('✅ Gig eliminado')
+      } else {
+        const errorText = await res.text()
+        console.error('Delete error:', res.status, errorText)
+        alert('Error al eliminar el gig')
+      }
+    } catch (err) {
+      console.error('Error:', err)
+      alert('Error al eliminar')
+    }
+    setDeletingId(null)
+  }
+
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString('es-ES', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    })
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Gestión de Gigs</h2>
+          <p className="text-neutral-400">Ver y eliminar gigs de la plataforma</p>
+        </div>
+        <div className="text-right">
+          <p className="text-sm text-neutral-500">Total Gigs</p>
+          <p className="text-2xl font-bold">{gigs.length}</p>
+        </div>
+      </div>
+
+      {gigs.length === 0 ? (
+        <div className="bg-neutral-900 rounded-2xl p-12 text-center border border-neutral-800">
+          <span className="text-4xl mb-4 block">📭</span>
+          <h3 className="text-xl font-semibold mb-2">No hay gigs</h3>
+          <p className="text-neutral-500">Aún no se han creado gigs en la plataforma</p>
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          {gigs.map((gig) => (
+            <div
+              key={gig.id}
+              className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 hover:border-neutral-700 transition-colors"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="text-lg font-semibold">{gig.title}</h3>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                      gig.status === 'active' ? 'bg-green-500/20 text-green-400' :
+                      gig.status === 'paused' ? 'bg-amber-500/20 text-amber-400' :
+                      'bg-neutral-500/20 text-neutral-400'
+                    }`}>
+                      {gig.status || 'active'}
+                    </span>
+                  </div>
+
+                  <p className="text-neutral-400 text-sm mb-4 line-clamp-2">
+                    {gig.description || 'Sin descripción'}
+                  </p>
+
+                  <div className="flex flex-wrap gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="text-neutral-500">🏢</span>
+                      <span>{gig.company_name || 'Unknown'}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-neutral-500">💰</span>
+                      <span className="text-green-400 font-semibold">${gig.budget || 0}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-neutral-500">📅</span>
+                      <span>{formatDate(gig.created_at)}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-neutral-500">📁</span>
+                      <span>{gig.category || 'Sin categoría'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <a
+                    href={`/gigs/${gig.id}`}
+                    target="_blank"
+                    className="px-4 py-2 bg-sky-500/20 text-sky-400 rounded-xl text-sm font-medium hover:bg-sky-500/30 transition-colors text-center"
+                  >
+                    👁️ Ver
+                  </a>
+                  <button
+                    onClick={() => handleDelete(gig.id, gig.title)}
+                    disabled={deletingId === gig.id}
+                    className="px-4 py-2 bg-red-500/20 text-red-400 rounded-xl text-sm font-medium hover:bg-red-500/30 transition-colors disabled:opacity-50"
+                  >
+                    {deletingId === gig.id ? '...' : '🗑️ Eliminar'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // Users Management Component
 function UsersManagement() {
   const [users, setUsers] = useState<User[]>([])
@@ -128,7 +312,11 @@ function UsersManagement() {
           }
         )
 
-        if (!res.ok) throw new Error('Failed to update wallet')
+        if (!res.ok) {
+          const errorText = await res.text()
+          console.error('Wallet update error:', res.status, errorText)
+          throw new Error(`Failed to update wallet: ${res.status}`)
+        }
 
         // Create transaction record
         await fetch(`${SUPABASE_URL}/rest/v1/transactions`, {
@@ -172,7 +360,11 @@ function UsersManagement() {
           })
         })
 
-        if (!walletRes.ok) throw new Error('Failed to create wallet')
+        if (!walletRes.ok) {
+          const errorText = await walletRes.text()
+          console.error('Wallet create error:', walletRes.status, errorText)
+          throw new Error(`Failed to create wallet: ${walletRes.status}`)
+        }
 
         const newWallet = await walletRes.json()
 
@@ -839,11 +1031,7 @@ export default function AdminDashboard() {
         )}
 
         {activeTab === 'gigs' && (
-          <div className="bg-neutral-900 rounded-2xl p-8 border border-neutral-800 text-center">
-            <span className="text-4xl mb-4 block">🚧</span>
-            <h3 className="text-xl font-semibold mb-2">Coming Soon</h3>
-            <p className="text-neutral-500">Gestión de gigs en desarrollo</p>
-          </div>
+          <GigsManagement />
         )}
       </div>
     </div>
