@@ -32,6 +32,7 @@ export default function CompanyDashboard() {
     avgCPM: 0,
     activeCreators: 0
   })
+  const [wallet, setWallet] = useState<{ balance: number; pending_balance: number } | null>(null)
 
   useEffect(() => {
     checkAuth()
@@ -78,6 +79,24 @@ export default function CompanyDashboard() {
               const bioData = JSON.parse(profileData.bio)
               setProfile({ ...profileData, ...bioData })
             } catch (e) {}
+          }
+
+          // Fetch wallet balance
+          try {
+            const walletRes = await fetch(`${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${userData.id}&select=balance,pending_balance`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'apikey': SUPABASE_ANON_KEY
+              }
+            })
+            if (walletRes.ok) {
+              const wallets = await walletRes.json()
+              if (wallets.length > 0) {
+                setWallet(wallets[0])
+              }
+            }
+          } catch (e) {
+            console.log('[Dashboard] No wallet found')
           }
         } else {
           // No profile, go to select-type
@@ -326,6 +345,20 @@ export default function CompanyDashboard() {
             </div>
           </div>
 
+          {/* Pagos */}
+          <div className="pt-4">
+            <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Pagos</p>
+            <div className="mt-2 space-y-1">
+              <Link href="/company/wallet" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                <span className="text-lg">💰</span>
+                <span>Wallet</span>
+                {wallet && wallet.balance > 0 && (
+                  <span className="ml-auto text-xs font-semibold text-green-600">${wallet.balance.toFixed(0)}</span>
+                )}
+              </Link>
+            </div>
+          </div>
+
         </nav>
 
         {/* User Profile - with padding for dock */}
@@ -526,6 +559,16 @@ export default function CompanyDashboard() {
 
       {/* Right Sidebar */}
       <div className="w-80 bg-white border-l border-gray-200 p-6 overflow-y-auto hidden xl:block">
+        {/* Wallet Card */}
+        <Link href="/company/wallet" className="block mb-6 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-5 text-white hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm text-blue-100">Balance Disponible</span>
+            <span className="text-xl">💰</span>
+          </div>
+          <p className="text-3xl font-bold">${wallet?.balance?.toFixed(2) || '0.00'}</p>
+          <p className="text-sm text-blue-200 mt-1">Para pagar a creadores</p>
+        </Link>
+
         {/* Campaign Overview */}
         <div className="mb-8">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Resumen de Campañas</h3>

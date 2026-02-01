@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 // Hardcoded Supabase credentials to avoid any env var issues
 const SUPABASE_URL = 'https://ftvqoudlmojdxwjxljzr.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
+const ADMIN_EMAIL = 'fmassuh133@gmail.com'
 
 export default function AuthCallback() {
   const [status, setStatus] = useState('Procesando...')
@@ -57,6 +58,13 @@ export default function AuthCallback() {
       localStorage.setItem(`sb-ftvqoudlmojdxwjxljzr-auth-token`, JSON.stringify(sessionData))
 
       setStatus('¡Sesión guardada!')
+
+      // Check if user is admin - redirect directly to admin dashboard
+      if (user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+        console.log('[Callback] Admin detected, redirecting to admin dashboard')
+        window.location.href = '/admin'
+        return
+      }
 
       // Check for pending onboarding
       const creatorOnboarding = localStorage.getItem('creatorOnboarding')

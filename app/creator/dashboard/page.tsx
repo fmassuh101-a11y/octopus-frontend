@@ -18,6 +18,7 @@ export default function CreatorDashboard() {
     pendingApplications: 0,
     thisMonth: 0
   })
+  const [wallet, setWallet] = useState<{ balance: number; pending_balance: number; total_earned: number } | null>(null)
 
   useEffect(() => {
     checkAuth()
@@ -77,6 +78,24 @@ export default function CreatorDashboard() {
             } catch (e) {
               // bio is not JSON, that's fine
             }
+          }
+
+          // Fetch wallet balance
+          try {
+            const walletRes = await fetch(`${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${userData.id}&select=balance,pending_balance,total_earned`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'apikey': SUPABASE_ANON_KEY
+              }
+            })
+            if (walletRes.ok) {
+              const wallets = await walletRes.json()
+              if (wallets.length > 0) {
+                setWallet(wallets[0])
+              }
+            }
+          } catch (e) {
+            console.log('[Dashboard] No wallet found')
           }
 
           setLoading(false)
@@ -191,28 +210,33 @@ export default function CreatorDashboard() {
           </div>
         </div>
 
-        {/* Earnings Summary */}
-        <div className="bg-white rounded-2xl p-6 mb-6 shadow-sm">
-          <div className="text-center mb-6">
-            <div className="text-3xl font-bold text-gray-900 mb-1">${stats.totalEarnings}</div>
-            <div className="text-sm text-gray-500">Ganancias Totales</div>
-          </div>
-
-          <div className="h-32 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl mb-4 flex items-center justify-center">
-            <span className="text-gray-500">📊 Gráfico de Rendimiento</span>
+        {/* Wallet Summary */}
+        <Link href="/creator/wallet" className="block bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-6 mb-6 shadow-lg hover:shadow-xl transition-shadow">
+          <div className="text-center mb-4">
+            <div className="text-sm text-green-100 mb-1">Balance Disponible</div>
+            <div className="text-4xl font-black text-white">${wallet?.balance?.toFixed(2) || '0.00'}</div>
+            {wallet && wallet.pending_balance > 0 && (
+              <div className="text-sm text-green-200 mt-1">
+                + ${wallet.pending_balance.toFixed(2)} pendiente
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="text-center">
-              <div className="text-lg font-semibold text-gray-900">{stats.totalCampaigns}</div>
-              <div className="text-xs text-gray-500">Campañas</div>
+            <div className="bg-white/10 backdrop-blur rounded-xl p-3 text-center">
+              <div className="text-lg font-bold text-white">${wallet?.total_earned?.toFixed(2) || '0.00'}</div>
+              <div className="text-xs text-green-100">Total Ganado</div>
             </div>
-            <div className="text-center">
-              <div className="text-lg font-semibold text-gray-900">0K</div>
-              <div className="text-xs text-gray-500">Vistas Totales</div>
+            <div className="bg-white/10 backdrop-blur rounded-xl p-3 text-center">
+              <div className="text-lg font-bold text-white">{stats.totalCampaigns}</div>
+              <div className="text-xs text-green-100">Campañas</div>
             </div>
           </div>
-        </div>
+
+          <div className="mt-4 text-center">
+            <span className="text-sm text-green-100">Toca para ver detalles →</span>
+          </div>
+        </Link>
 
         {/* Quick Stats */}
         <div className="grid grid-cols-2 gap-4 mb-6">
@@ -279,31 +303,27 @@ export default function CreatorDashboard() {
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100">
         <div className="flex justify-around py-3">
           <Link href="/gigs" className="flex flex-col items-center space-y-1 text-gray-400">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zM3 16a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-            </svg>
+            <span className="text-lg">💼</span>
             <span className="text-xs font-medium">Trabajos</span>
           </Link>
 
           <div className="flex flex-col items-center space-y-1 text-blue-600">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
-            </svg>
+            <span className="text-lg">📊</span>
             <span className="text-xs font-medium">Panel</span>
           </div>
 
-          <Link href="/creator/analytics" className="flex flex-col items-center space-y-1 text-gray-400">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" />
-              <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" />
-            </svg>
-            <span className="text-xs font-medium">Analytics</span>
+          <Link href="/creator/wallet" className="flex flex-col items-center space-y-1 text-gray-400">
+            <span className="text-lg">💰</span>
+            <span className="text-xs font-medium">Wallet</span>
+          </Link>
+
+          <Link href="/creator/messages" className="flex flex-col items-center space-y-1 text-gray-400">
+            <span className="text-lg">💬</span>
+            <span className="text-xs font-medium">Mensajes</span>
           </Link>
 
           <Link href="/creator/profile" className="flex flex-col items-center space-y-1 text-gray-400">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-            </svg>
+            <span className="text-lg">👤</span>
             <span className="text-xs font-medium">Perfil</span>
           </Link>
         </div>

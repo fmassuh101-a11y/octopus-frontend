@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 
 const SUPABASE_URL = 'https://ftvqoudlmojdxwjxljzr.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
+const ADMIN_EMAIL = 'fmassuh133@gmail.com'
 
 export default function SelectTypePage() {
   const [selectedType, setSelectedType] = useState<string>('')
@@ -26,7 +27,14 @@ export default function SelectTypePage() {
 
       try {
         const user = JSON.parse(userStr)
-        console.log('[SelectType] User ID:', user.id)
+        console.log('[SelectType] User ID:', user.id, 'Email:', user.email)
+
+        // Check if user is admin - redirect directly to admin dashboard
+        if (user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+          console.log('[SelectType] Admin detected, redirecting to admin dashboard')
+          window.location.href = '/admin'
+          return
+        }
 
         // Check if user has profile
         const response = await fetch(
