@@ -138,9 +138,19 @@ export default function CompanyMessagesPage() {
         }))
         setConversations(convs)
 
-        // Si hay un creator_id en la URL, abrir esa conversación
+        // Si hay un application_id o creator_id en la URL, abrir esa conversación
+        const applicationId = searchParams.get('application')
         const creatorId = searchParams.get('creator')
-        if (creatorId) {
+
+        if (applicationId) {
+          // Buscar por ID de aplicación (que es el ID de conversación)
+          const conv = convs.find(c => c.id === applicationId)
+          if (conv) {
+            setSelectedConversation(conv)
+            await loadMessages(conv.id, token)
+          }
+        } else if (creatorId) {
+          // Buscar por creator_id
           const conv = convs.find(c => c.creator_id === creatorId)
           if (conv) {
             setSelectedConversation(conv)
