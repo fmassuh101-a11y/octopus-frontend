@@ -221,22 +221,22 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Experience & Niche */}
+      {/* Experience & Education */}
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Experiencia</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Educacion y Experiencia</h3>
         <div className="space-y-4">
           <div className="flex justify-between items-center py-3 border-b border-gray-100">
-            <span className="text-gray-600">Nicho</span>
-            <span className="font-medium text-gray-900">{data.niche || 'Sin configurar'}</span>
+            <span className="text-gray-600">Nivel Academico</span>
+            <span className="font-medium text-gray-900">{data.academicLevel || 'Sin configurar'}</span>
           </div>
           <div className="flex justify-between items-center py-3 border-b border-gray-100">
-            <span className="text-gray-600">Nivel de Experiencia</span>
-            <span className="font-medium text-gray-900">{data.experienceLevel || 'Sin configurar'}</span>
+            <span className="text-gray-600">Estudios</span>
+            <span className="font-medium text-gray-900">{data.studies || 'Sin configurar'}</span>
           </div>
           <div className="flex justify-between items-center py-3">
-            <span className="text-gray-600">Testimonial</span>
-            <span className="font-medium text-gray-900 text-right max-w-[200px] truncate">
-              {data.testimonial || 'Sin configurar'}
+            <span className="text-gray-600">Categorias</span>
+            <span className="font-medium text-gray-900 text-right max-w-[200px]">
+              {data.categories?.length > 0 ? data.categories.join(', ') : 'Sin configurar'}
             </span>
           </div>
         </div>
