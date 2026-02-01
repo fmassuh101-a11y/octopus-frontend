@@ -13,6 +13,9 @@ interface Conversation {
   creator_id: string
   creator_name: string
   gig_title: string
+  last_message?: string
+  last_message_time?: string
+  unread_count?: number
 }
 
 interface Message {
@@ -136,14 +139,45 @@ export default function CompanyMessagesPage() {
       const gigMap = new Map()
       gigs.forEach((g: any) => gigMap.set(g.id, g.title))
 
-      // Build conversations
-      const convs: Conversation[] = applications.map((app: any) => ({
-        id: app.id,
-        company_id: userId,
-        creator_id: app.creator_id,
-        creator_name: creatorMap.get(app.creator_id) || 'Creador',
-        gig_title: gigMap.get(app.gig_id) || 'Proyecto'
-      }))
+      // Fetch last message for each conversation
+      const appIds = applications.map((a: any) => a.id)
+      const messagesRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/messages?conversation_id=in.(${appIds.join(',')})&select=conversation_id,content,created_at&order=created_at.desc`,
+        { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+      )
+      const allMessages = messagesRes.ok ? await messagesRes.json() : []
+
+      // Get last message per conversation
+      const lastMessageMap = new Map()
+      allMessages.forEach((m: any) => {
+        if (!lastMessageMap.has(m.conversation_id)) {
+          lastMessageMap.set(m.conversation_id, {
+            content: m.content,
+            time: m.created_at
+          })
+        }
+      })
+
+      // Build conversations with last message
+      const convs: Conversation[] = applications.map((app: any) => {
+        const lastMsg = lastMessageMap.get(app.id)
+        return {
+          id: app.id,
+          company_id: userId,
+          creator_id: app.creator_id,
+          creator_name: creatorMap.get(app.creator_id) || 'Creador',
+          gig_title: gigMap.get(app.gig_id) || 'Proyecto',
+          last_message: lastMsg?.content,
+          last_message_time: lastMsg?.time
+        }
+      })
+
+      // Sort by last message time (newest first)
+      convs.sort((a, b) => {
+        if (!a.last_message_time) return 1
+        if (!b.last_message_time) return -1
+        return new Date(b.last_message_time).getTime() - new Date(a.last_message_time).getTime()
+      })
 
       setConversations(convs)
 
@@ -426,14 +460,23 @@ export default function CompanyMessagesPage() {
               onClick={() => selectConversation(conv)}
               className="w-full p-4 flex items-center gap-4 hover:bg-gray-50 text-left"
             >
-              <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+              <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
                 <span className="text-white font-bold text-xl">{conv.creator_name.charAt(0).toUpperCase()}</span>
               </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-900">{conv.creator_name}</h3>
-                <p className="text-sm text-gray-500">{conv.gig_title}</p>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-gray-900">{conv.creator_name}</h3>
+                  {conv.last_message_time && (
+                    <span className="text-xs text-gray-400">
+                      {new Date(conv.last_message_time).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm text-gray-500 truncate">
+                  {conv.last_message || conv.gig_title}
+                </p>
               </div>
-              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </button>
