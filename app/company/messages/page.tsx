@@ -100,8 +100,8 @@ export default function CompanyMessagesPage() {
       }
 
       // Get all creator IDs and gig IDs
-      const creatorIds = [...new Set(applications.map((a: any) => a.creator_id))]
-      const gigIds = [...new Set(applications.map((a: any) => a.gig_id))]
+      const creatorIds = Array.from(new Set(applications.map((a: any) => a.creator_id)))
+      const gigIds = Array.from(new Set(applications.map((a: any) => a.gig_id)))
 
       // Fetch creators and gigs in parallel
       const [creatorsRes, gigsRes] = await Promise.all([

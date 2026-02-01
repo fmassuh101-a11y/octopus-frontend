@@ -153,8 +153,8 @@ export default function ApplicantsPage() {
         }
 
         // Collect unique IDs for batch fetching
-        const gigIds = [...new Set(data.map((app: any) => app.gig_id).filter(Boolean))]
-        const creatorIds = [...new Set(data.map((app: any) => app.creator_id).filter(Boolean))]
+        const gigIds = Array.from(new Set(data.map((app: any) => app.gig_id).filter(Boolean)))
+        const creatorIds = Array.from(new Set(data.map((app: any) => app.creator_id).filter(Boolean)))
 
         // Fetch all gigs and creators in parallel (batch requests)
         const [gigsRes, creatorsRes] = await Promise.all([

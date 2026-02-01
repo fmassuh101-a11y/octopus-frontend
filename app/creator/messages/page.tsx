@@ -94,8 +94,8 @@ export default function CreatorMessagesPage() {
       }
 
       // Collect unique IDs for batch fetching
-      const companyIds = [...new Set(applications.map((a: any) => a.company_id))]
-      const gigIds = [...new Set(applications.map((a: any) => a.gig_id))]
+      const companyIds = Array.from(new Set(applications.map((a: any) => a.company_id)))
+      const gigIds = Array.from(new Set(applications.map((a: any) => a.gig_id)))
 
       // Fetch all companies and gigs in parallel (batch requests)
       const [companiesRes, gigsRes] = await Promise.all([
