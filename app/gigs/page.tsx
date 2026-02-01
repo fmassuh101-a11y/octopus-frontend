@@ -332,11 +332,15 @@ export default function GigsPage() {
               >
                 {/* Card Image */}
                 <div className={`h-52 relative bg-gradient-to-br ${getGradient(index)}`}>
-                  {gig.image_url ? (
+                  {gig.image_url && gig.image_url.startsWith('http') ? (
                     <img
                       src={gig.image_url}
                       alt={gig.title}
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        // Hide broken image
+                        (e.target as HTMLImageElement).style.display = 'none'
+                      }}
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
@@ -458,11 +462,14 @@ export default function GigsPage() {
           <div className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
             {/* Modal Header Image */}
             <div className={`h-48 relative bg-gradient-to-br ${getGradient(gigs.indexOf(selectedGig))}`}>
-              {selectedGig.image_url ? (
+              {selectedGig.image_url && selectedGig.image_url.startsWith('http') ? (
                 <img
                   src={selectedGig.image_url}
                   alt={selectedGig.title}
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none'
+                  }}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
