@@ -197,30 +197,31 @@ export default function CompanyMessagesPage() {
   }
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedConversation || !user || sending) return
+    const content = newMessage.trim()
+    if (!content || !selectedConversation || !user) {
+      alert('No se puede enviar: faltan datos')
+      return
+    }
+    if (sending) return
 
-    const messageContent = newMessage.trim()
-    const tempId = `temp-${Date.now()}`
-
-    // Optimistic update - show message immediately
-    const optimisticMessage: Message = {
-      id: tempId,
+    // Show message immediately
+    const tempMsg: Message = {
+      id: `temp-${Date.now()}`,
       conversation_id: selectedConversation.id,
       sender_id: user.id,
       sender_type: 'company',
-      content: messageContent,
+      content: content,
       created_at: new Date().toISOString()
     }
-
-    setMessages(prev => [...prev, optimisticMessage])
+    setMessages(prev => [...prev, tempMsg])
     setNewMessage('')
     setSending(true)
     setError('')
 
-    try {
-      const token = localStorage.getItem('sb-access-token')
+    const token = localStorage.getItem('sb-access-token')
 
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/messages`, {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -232,33 +233,25 @@ export default function CompanyMessagesPage() {
           conversation_id: selectedConversation.id,
           sender_id: user.id,
           sender_type: 'company',
-          content: messageContent
+          content: content
         })
       })
 
-      if (response.ok) {
-        const newMsg = await response.json()
-        if (Array.isArray(newMsg) && newMsg.length > 0) {
-          // Replace optimistic message with real one
-          setMessages(prev => prev.map(m => m.id === tempId ? newMsg[0] : m))
-        }
-      } else {
-        const errorText = await response.text()
-        console.error('Send error:', response.status, errorText)
-        setError(`Error: ${response.status}`)
-        // Remove optimistic message on error
-        setMessages(prev => prev.filter(m => m.id !== tempId))
-        setNewMessage(messageContent)
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(`Error ${res.status}: ${JSON.stringify(data)}`)
+        setMessages(prev => prev.filter(m => m.id !== tempMsg.id))
+        setNewMessage(content)
+      } else if (Array.isArray(data) && data[0]) {
+        setMessages(prev => prev.map(m => m.id === tempMsg.id ? data[0] : m))
       }
-    } catch (err) {
-      console.error('Error sending message:', err)
-      setError('Error de conexion')
-      // Remove optimistic message on error
-      setMessages(prev => prev.filter(m => m.id !== tempId))
-      setNewMessage(messageContent)
-    } finally {
-      setSending(false)
+    } catch (err: any) {
+      setError(`Error: ${err.message}`)
+      setMessages(prev => prev.filter(m => m.id !== tempMsg.id))
+      setNewMessage(content)
     }
+    setSending(false)
   }
 
   const selectConversation = async (conv: Conversation) => {
