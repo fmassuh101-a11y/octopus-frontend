@@ -670,7 +670,7 @@ export default function AdminDashboard() {
         fetch(`${SUPABASE_URL}/rest/v1/gigs?select=id`, {
           headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY }
         }),
-        fetch(`${SUPABASE_URL}/rest/v1/withdrawal_requests?select=*&status=eq.pending&order=created_at.desc`, {
+        fetch(`${SUPABASE_URL}/rest/v1/withdrawal_requests?select=*&order=created_at.desc`, {
           headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY }
         })
       ])
@@ -681,20 +681,22 @@ export default function AdminDashboard() {
 
       const creators = users.filter((u: any) => u.user_type === 'creator').length
       const companies = users.filter((u: any) => u.user_type === 'company').length
-      const totalPending = pendingWithdrawals.reduce((sum: number, w: any) => sum + (w.amount || 0), 0)
+      // Filter only pending withdrawals
+      const onlyPending = pendingWithdrawals.filter((w: any) => w.status === 'pending')
+      const totalPending = onlyPending.reduce((sum: number, w: any) => sum + (w.amount || 0), 0)
 
       setStats({
         totalUsers: users.length,
         totalCreators: creators,
         totalCompanies: companies,
         totalGigs: gigs.length,
-        pendingWithdrawals: pendingWithdrawals.length,
+        pendingWithdrawals: onlyPending.length,
         totalPendingAmount: totalPending
       })
 
       // Load withdrawal details with user info
-      if (pendingWithdrawals.length > 0) {
-        const userIds = Array.from(new Set<string>(pendingWithdrawals.map((w: any) => w.user_id)))
+      if (onlyPending.length > 0) {
+        const userIds = Array.from(new Set<string>(onlyPending.map((w: any) => w.user_id)))
         const profilesRes = await fetch(
           `${SUPABASE_URL}/rest/v1/profiles?user_id=in.(${userIds.join(',')})&select=user_id,full_name`,
           { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
@@ -702,11 +704,13 @@ export default function AdminDashboard() {
         const profiles = profilesRes.ok ? await profilesRes.json() : []
         const profileMap = new Map<string, { user_id: string; full_name: string }>(profiles.map((p: any) => [p.user_id, p]))
 
-        const enrichedWithdrawals = pendingWithdrawals.map((w: any) => ({
+        const enrichedWithdrawals = onlyPending.map((w: any) => ({
           ...w,
-          user_name: profileMap.get(w.user_id)?.full_name || 'Unknown'
+          user_name: profileMap.get(w.user_id)?.full_name || 'Usuario'
         }))
         setWithdrawals(enrichedWithdrawals)
+      } else {
+        setWithdrawals([])
       }
 
       setLoading(false)
