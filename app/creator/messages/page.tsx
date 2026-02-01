@@ -11,12 +11,8 @@ interface Conversation {
   id: string
   company_id: string
   creator_id: string
-  company_name?: string
-  company_logo?: string
-  last_message?: string
-  last_message_at?: string
-  unread_count?: number
-  gig_title?: string
+  company_name: string
+  gig_title: string
 }
 
 interface Message {
@@ -26,10 +22,9 @@ interface Message {
   content: string
   created_at: string
   sender_type: 'creator' | 'company'
-  read_at?: string | null
 }
 
-export default function MessagesPage() {
+export default function CreatorMessagesPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState(true)
@@ -40,6 +35,7 @@ export default function MessagesPage() {
   const [user, setUser] = useState<any>(null)
   const [sending, setSending] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     checkAuth()
@@ -50,6 +46,12 @@ export default function MessagesPage() {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
     }
   }, [messages])
+
+  useEffect(() => {
+    if (selectedConversation && inputRef.current && messages.length > 0) {
+      setTimeout(() => inputRef.current?.focus(), 100)
+    }
+  }, [selectedConversation, messages])
 
   const checkAuth = async () => {
     const token = localStorage.getItem('sb-access-token')
@@ -67,9 +69,9 @@ export default function MessagesPage() {
 
   const loadConversations = async (userId: string, token: string) => {
     try {
-      // Cargar aplicaciones aceptadas como "conversaciones"
-      const response = await fetch(
-        `${SUPABASE_URL}/rest/v1/applications?creator_id=eq.${userId}&status=eq.accepted&select=*,gig:gigs(title,company_name)&order=created_at.desc`,
+      // Get accepted applications for this creator
+      const appsResponse = await fetch(
+        `${SUPABASE_URL}/rest/v1/applications?creator_id=eq.${userId}&status=eq.accepted&select=id,company_id,gig_id`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -78,28 +80,67 @@ export default function MessagesPage() {
         }
       )
 
-      if (response.ok) {
-        const data = await response.json()
-        // Convertir aplicaciones aceptadas en conversaciones
-        const convs: Conversation[] = data.map((app: any) => ({
+      if (!appsResponse.ok) {
+        setLoading(false)
+        return
+      }
+
+      const applications = await appsResponse.json()
+      const convs: Conversation[] = []
+
+      for (const app of applications) {
+        let companyName = 'Empresa'
+        let gigTitle = 'Proyecto'
+
+        // Get company name from profiles
+        try {
+          const companyRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${app.company_id}&select=full_name`,
+            { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+          )
+          if (companyRes.ok) {
+            const companies = await companyRes.json()
+            if (companies[0]?.full_name) {
+              companyName = companies[0].full_name
+            }
+          }
+        } catch (e) { }
+
+        // Get gig title
+        try {
+          const gigRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/gigs?id=eq.${app.gig_id}&select=title`,
+            { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+          )
+          if (gigRes.ok) {
+            const gigs = await gigRes.json()
+            if (gigs[0]?.title) {
+              gigTitle = gigs[0].title
+            }
+          }
+        } catch (e) { }
+
+        convs.push({
           id: app.id,
           company_id: app.company_id,
-          creator_id: app.creator_id,
-          company_name: app.gig?.company_name || 'Empresa',
-          gig_title: app.gig?.title
-        }))
-        setConversations(convs)
+          creator_id: userId,
+          company_name: companyName,
+          gig_title: gigTitle
+        })
+      }
 
-        // Si hay un company_id en la URL, abrir esa conversación
-        const companyId = searchParams.get('company')
-        if (companyId) {
-          const conv = convs.find(c => c.company_id === companyId)
-          if (conv) {
-            setSelectedConversation(conv)
-            await loadMessages(conv.id, token)
-          }
+      setConversations(convs)
+
+      // Auto-select conversation from URL params
+      const companyId = searchParams.get('company')
+      if (companyId) {
+        const conv = convs.find(c => c.company_id === companyId)
+        if (conv) {
+          setSelectedConversation(conv)
+          await loadMessages(conv.id, token)
         }
       }
+
     } catch (err) {
       console.error('Error loading conversations:', err)
     } finally {
@@ -119,7 +160,6 @@ export default function MessagesPage() {
           }
         }
       )
-
       if (response.ok) {
         const data = await response.json()
         setMessages(data)
@@ -127,13 +167,12 @@ export default function MessagesPage() {
         setMessages([])
       }
     } catch (err) {
-      console.error('Error loading messages:', err)
       setMessages([])
     }
   }
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedConversation || !user) return
+    if (!newMessage.trim() || !selectedConversation || !user || messages.length === 0) return
 
     setSending(true)
     try {
@@ -171,20 +210,17 @@ export default function MessagesPage() {
     await loadMessages(conv.id)
   }
 
+  const handleBack = () => {
+    if (selectedConversation) {
+      setSelectedConversation(null)
+    } else {
+      router.back()
+    }
+  }
+
   const formatTime = (date: string) => {
     const d = new Date(date)
     return d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
-  }
-
-  const formatDate = (date: string) => {
-    const d = new Date(date)
-    const today = new Date()
-    const yesterday = new Date(today)
-    yesterday.setDate(yesterday.getDate() - 1)
-
-    if (d.toDateString() === today.toDateString()) return 'Hoy'
-    if (d.toDateString() === yesterday.toDateString()) return 'Ayer'
-    return d.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' })
   }
 
   if (loading) {
@@ -192,273 +228,214 @@ export default function MessagesPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-10 h-10 border-4 border-gray-900 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando mensajes...</p>
+          <p className="text-gray-600">Cargando...</p>
         </div>
       </div>
     )
   }
 
-  return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-20">
-        <div className="px-4 py-3">
-          <div className="flex items-center gap-4">
-            {selectedConversation ? (
-              <>
-                <button
-                  onClick={() => setSelectedConversation(null)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors md:hidden"
-                >
-                  <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-                <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold">
-                    {selectedConversation.company_name?.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-                <div>
-                  <h1 className="font-bold text-gray-900">{selectedConversation.company_name}</h1>
-                  <p className="text-sm text-gray-500">{selectedConversation.gig_title}</p>
-                </div>
-              </>
-            ) : (
-              <>
-                <Link
-                  href="/gigs"
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </Link>
-                <h1 className="text-xl font-bold text-gray-900">Mensajes</h1>
-              </>
-            )}
+  // If we have a selected conversation, show full-screen chat
+  if (selectedConversation) {
+    const canSendMessage = messages.length > 0
+
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+          <div className="px-4 py-3 flex items-center gap-3">
+            <button
+              onClick={handleBack}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+              <span className="text-white font-bold">
+                {selectedConversation.company_name.charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <div className="flex-1">
+              <h1 className="font-bold text-gray-900">{selectedConversation.company_name}</h1>
+              <p className="text-xs text-gray-500">{selectedConversation.gig_title}</p>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Conversations List */}
-        <div className={`${selectedConversation ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-80 bg-white border-r border-gray-200`}>
-          {conversations.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center p-6">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                  </svg>
-                </div>
-                <h3 className="font-semibold text-gray-900 mb-2">Sin conversaciones</h3>
-                <p className="text-sm text-gray-500 mb-4">
-                  Cuando una empresa acepte tu aplicacion, podras comunicarte aqui.
-                </p>
-                <Link
-                  href="/gigs"
-                  className="text-blue-600 font-medium hover:underline"
-                >
-                  Explorar trabajos
-                </Link>
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center px-4">
+              <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mb-4">
+                <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
               </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Esperando a {selectedConversation.company_name}
+              </h3>
+              <p className="text-gray-500 text-sm max-w-xs">
+                La empresa te escribira pronto para coordinar los detalles del proyecto.
+              </p>
             </div>
           ) : (
-            <div className="flex-1 overflow-y-auto">
-              {conversations.map((conv) => (
-                <button
-                  key={conv.id}
-                  onClick={() => selectConversation(conv)}
-                  className={`w-full p-4 flex items-center gap-3 border-b border-gray-100 hover:bg-gray-50 transition-colors text-left ${
-                    selectedConversation?.id === conv.id ? 'bg-blue-50' : ''
-                  }`}
-                >
-                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-white font-bold text-lg">
-                      {conv.company_name?.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold text-gray-900 truncate">{conv.company_name}</h3>
-                      {conv.last_message_at && (
-                        <span className="text-xs text-gray-400">{formatDate(conv.last_message_at)}</span>
-                      )}
+            messages.map((msg) => {
+              const isMe = msg.sender_type === 'creator'
+              return (
+                <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[80%]`}>
+                    <div
+                      className={`px-4 py-3 rounded-2xl ${
+                        isMe
+                          ? 'bg-gray-900 text-white rounded-br-md'
+                          : 'bg-white text-gray-900 rounded-bl-md shadow-sm border border-gray-100'
+                      }`}
+                    >
+                      <p className="whitespace-pre-wrap">{msg.content}</p>
                     </div>
-                    <p className="text-sm text-gray-500 truncate">{conv.gig_title}</p>
-                  </div>
-                  {conv.unread_count && conv.unread_count > 0 && (
-                    <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">{conv.unread_count}</span>
-                    </div>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Messages Area */}
-        {selectedConversation ? (
-          <div className="flex-1 flex flex-col bg-gray-50">
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {messages.length === 0 ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center">
-                    <div className="text-4xl mb-4">⏳</div>
-                    <p className="text-gray-500 font-medium">Esperando a la empresa</p>
-                    <p className="text-sm text-gray-400 mt-2 max-w-xs">
-                      La empresa iniciara la conversacion cuando este lista para comenzar el proyecto.
+                    <p className={`text-xs text-gray-400 mt-1 ${isMe ? 'text-right' : 'text-left'}`}>
+                      {formatTime(msg.created_at)}
                     </p>
                   </div>
                 </div>
-              ) : (
-                messages.map((msg, index) => {
-                  const isMe = msg.sender_type === 'creator'
-                  const showDate = index === 0 ||
-                    new Date(msg.created_at).toDateString() !== new Date(messages[index - 1].created_at).toDateString()
+              )
+            })
+          )}
+          <div ref={messagesEndRef} />
+        </div>
 
-                  return (
-                    <div key={msg.id}>
-                      {showDate && (
-                        <div className="text-center my-4">
-                          <span className="text-xs text-gray-500 bg-white px-3 py-1 rounded-full">
-                            {formatDate(msg.created_at)}
-                          </span>
-                        </div>
-                      )}
-                      <div className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-[80%] ${isMe ? 'order-1' : 'order-2'}`}>
-                          <div
-                            className={`px-4 py-3 rounded-2xl ${
-                              isMe
-                                ? 'bg-blue-600 text-white rounded-br-md'
-                                : 'bg-white text-gray-900 rounded-bl-md shadow-sm'
-                            }`}
-                          >
-                            <p className="whitespace-pre-wrap">{msg.content}</p>
-                          </div>
-                          <div className={`text-xs text-gray-400 mt-1 flex items-center gap-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
-                            {formatTime(msg.created_at)}
-                            {isMe && (
-                              <span title={msg.read_at ? `Leido: ${new Date(msg.read_at).toLocaleString('es-ES')}` : 'Enviado'}>
-                                {msg.read_at ? (
-                                  // Double check - read
-                                  <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M18 7l-1.41-1.41-6.34 6.34 1.41 1.41L18 7zm4.24-1.41L11.66 16.17 7.48 12l-1.41 1.41L11.66 19l12-12-1.42-1.41zM.41 13.41L6 19l1.41-1.41L1.83 12 .41 13.41z"/>
-                                  </svg>
-                                ) : (
-                                  // Single check - sent
-                                  <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
-                                  </svg>
-                                )}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* Input */}
-            <div className="bg-white border-t border-gray-200 p-4">
-              {messages.length === 0 ? (
-                // Bloqueado - esperando primer mensaje de la empresa
-                <div className="flex items-center gap-3 px-4 py-3 bg-gray-100 rounded-full">
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        {/* Input */}
+        <div className="bg-white border-t border-gray-200 p-4 pb-6">
+          {canSendMessage ? (
+            <div className="flex items-center gap-3">
+              <input
+                ref={inputRef}
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+                placeholder="Escribe tu respuesta..."
+                className="flex-1 px-4 py-3 bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-gray-900"
+              />
+              <button
+                onClick={sendMessage}
+                disabled={!newMessage.trim() || sending}
+                className="p-3 bg-gray-900 text-white rounded-full hover:bg-gray-800 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                {sending ? (
+                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
                   </svg>
-                  <span className="text-gray-400 text-sm">Esperando mensaje de la empresa...</span>
-                </div>
-              ) : (
-                // Activo - puede responder
-                <div className="flex items-center gap-3">
-                  <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-                    placeholder="Escribe un mensaje..."
-                    className="flex-1 px-4 py-3 bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <button
-                    onClick={sendMessage}
-                    disabled={!newMessage.trim() || sending}
-                    className="p-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-                  >
-                    {sending ? (
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    ) : (
-                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-                      </svg>
-                    )}
-                  </button>
-                </div>
-              )}
+                )}
+              </button>
             </div>
-          </div>
-        ) : (
-          <div className="hidden md:flex flex-1 items-center justify-center bg-gray-50">
-            <div className="text-center">
-              <div className="text-6xl mb-4">💬</div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Selecciona una conversacion</h3>
-              <p className="text-gray-500">Elige una empresa para ver los mensajes</p>
+          ) : (
+            <div className="flex items-center gap-3 px-4 py-3 bg-gray-100 rounded-full">
+              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <span className="text-gray-400 text-sm">Esperando mensaje de la empresa...</span>
             </div>
-          </div>
-        )}
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // Conversation list view
+  return (
+    <div className="min-h-screen bg-gray-50 pb-20">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="px-4 py-4 flex items-center gap-4">
+          <button
+            onClick={() => router.back()}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <h1 className="text-xl font-bold text-gray-900">Mensajes</h1>
+        </div>
       </div>
 
-      {/* Bottom Navigation - Only show when no conversation selected on mobile */}
-      {!selectedConversation && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 md:hidden">
-          <div className="flex justify-around py-2">
-            <Link href="/gigs" className="flex flex-col items-center py-2 px-4 text-gray-400 hover:text-gray-600">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-              </svg>
-              <span className="text-xs font-medium mt-1">Trabajos</span>
-            </Link>
-
-            <Link href="/creator/analytics" className="flex flex-col items-center py-2 px-4 text-gray-400 hover:text-gray-600">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-              <span className="text-xs font-medium mt-1">Analytics</span>
-            </Link>
-
-            <Link href="/creator/applications" className="flex flex-col items-center py-2 px-4 text-gray-400 hover:text-gray-600">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <span className="text-xs font-medium mt-1">Aplicaciones</span>
-            </Link>
-
-            <div className="flex flex-col items-center py-2 px-4 text-gray-900">
-              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
-              </svg>
-              <span className="text-xs font-medium mt-1">Mensajes</span>
-            </div>
-
-            <Link href="/creator/profile" className="flex flex-col items-center py-2 px-4 text-gray-400 hover:text-gray-600">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-              <span className="text-xs font-medium mt-1">Perfil</span>
-            </Link>
+      {/* Conversations List */}
+      {conversations.length === 0 ? (
+        <div className="flex flex-col items-center justify-center px-4 py-16">
+          <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+            <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
           </div>
-          <div className="h-1 bg-gray-900 mx-auto w-32 rounded-full mb-2"></div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Sin conversaciones</h3>
+          <p className="text-gray-500 text-center mb-6 max-w-xs">
+            Cuando una empresa acepte tu aplicacion, podras comunicarte aqui.
+          </p>
+          <Link
+            href="/gigs"
+            className="px-6 py-3 bg-gray-900 text-white rounded-full font-medium hover:bg-gray-800 transition-colors"
+          >
+            Explorar Trabajos
+          </Link>
+        </div>
+      ) : (
+        <div className="divide-y divide-gray-100">
+          {conversations.map((conv) => (
+            <button
+              key={conv.id}
+              onClick={() => selectConversation(conv)}
+              className="w-full p-4 flex items-center gap-4 hover:bg-gray-50 transition-colors text-left"
+            >
+              <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-white font-bold text-xl">
+                  {conv.company_name.charAt(0).toUpperCase()}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-gray-900">{conv.company_name}</h3>
+                <p className="text-sm text-gray-500 truncate">{conv.gig_title}</p>
+              </div>
+              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          ))}
         </div>
       )}
+
+      {/* Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200">
+        <div className="flex justify-around py-2">
+          <Link href="/gigs" className="flex flex-col items-center py-2 px-4 text-gray-400">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            <span className="text-xs mt-1">Trabajos</span>
+          </Link>
+          <Link href="/creator/applications" className="flex flex-col items-center py-2 px-4 text-gray-400">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span className="text-xs mt-1">Aplicaciones</span>
+          </Link>
+          <div className="flex flex-col items-center py-2 px-4 text-gray-900">
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
+            </svg>
+            <span className="text-xs mt-1 font-medium">Mensajes</span>
+          </div>
+          <Link href="/creator/profile" className="flex flex-col items-center py-2 px-4 text-gray-400">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            <span className="text-xs mt-1">Perfil</span>
+          </Link>
+        </div>
+      </div>
     </div>
   )
 }
