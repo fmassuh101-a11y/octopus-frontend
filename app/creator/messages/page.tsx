@@ -111,7 +111,7 @@ export default function CreatorMessagesPage() {
       )
 
       const companies = companiesRes.ok ? await companiesRes.json() : []
-      const companyMap = new Map(companies.map((c: any) => [c.user_id, c.full_name || 'Empresa']))
+      const companyMap = new Map<string, string>(companies.map((c: any) => [c.user_id, c.full_name || 'Empresa']))
 
       // Get all messages for all applications
       const allAppIds = applications.map((a: any) => a.id)
