@@ -55,8 +55,11 @@ export default function ApplicantsPage() {
 
   const loadApplications = async (userId: string, token: string) => {
     try {
+      console.log('[Applicants] Loading for company_id:', userId)
+
+      // Simplified query - no complex joins
       const response = await fetch(
-        `${SUPABASE_URL}/rest/v1/applications?company_id=eq.${userId}&select=*,gig:gigs(title,budget,category),creator:profiles!applications_creator_id_fkey(full_name,bio)&order=created_at.desc`,
+        `${SUPABASE_URL}/rest/v1/applications?company_id=eq.${userId}&select=*&order=created_at.desc`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -65,10 +68,45 @@ export default function ApplicantsPage() {
         }
       )
 
+      console.log('[Applicants] Response status:', response.status)
+
       if (response.ok) {
         const data = await response.json()
-        setApplications(data)
+        console.log('[Applicants] Found applications:', data.length, data)
+
+        // Now fetch gig and creator info separately for each application
+        const enrichedApps = await Promise.all(data.map(async (app: any) => {
+          // Get gig info
+          try {
+            const gigRes = await fetch(
+              `${SUPABASE_URL}/rest/v1/gigs?id=eq.${app.gig_id}&select=title,budget,category`,
+              { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+            )
+            if (gigRes.ok) {
+              const gigs = await gigRes.json()
+              app.gig = gigs[0] || null
+            }
+          } catch (e) { console.log('Error fetching gig:', e) }
+
+          // Get creator info
+          try {
+            const creatorRes = await fetch(
+              `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${app.creator_id}&select=full_name,bio`,
+              { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+            )
+            if (creatorRes.ok) {
+              const creators = await creatorRes.json()
+              app.creator = creators[0] || null
+            }
+          } catch (e) { console.log('Error fetching creator:', e) }
+
+          return app
+        }))
+
+        setApplications(enrichedApps)
       } else {
+        const errorText = await response.text()
+        console.error('[Applicants] Error:', response.status, errorText)
         setApplications([])
       }
     } catch (err) {
