@@ -149,8 +149,11 @@ export default function ProfilePage() {
             <span className="font-medium text-gray-900">{data.studies || 'Sin configurar'}</span>
           </div>
         </div>
-        <button className="mt-6 w-full py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors">
-          Editar Informacion
+        <button
+          onClick={() => window.location.href = '/onboarding/creator/name'}
+          className="mt-6 w-full py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors"
+        >
+          {data.firstName ? 'Editar Informacion' : 'Completar Perfil'}
         </button>
       </div>
 
