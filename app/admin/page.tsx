@@ -662,6 +662,8 @@ export default function AdminDashboard() {
     if (!token) return
 
     try {
+      console.log('[Admin] Loading dashboard data...')
+
       // Load stats
       const [usersRes, gigsRes, withdrawalsRes] = await Promise.all([
         fetch(`${SUPABASE_URL}/rest/v1/profiles?select=user_type`, {
@@ -675,14 +677,20 @@ export default function AdminDashboard() {
         })
       ])
 
+      console.log('[Admin] Withdrawals response status:', withdrawalsRes.status)
+
       const users = usersRes.ok ? await usersRes.json() : []
       const gigs = gigsRes.ok ? await gigsRes.json() : []
-      const pendingWithdrawals = withdrawalsRes.ok ? await withdrawalsRes.json() : []
+      const allWithdrawals = withdrawalsRes.ok ? await withdrawalsRes.json() : []
+
+      console.log('[Admin] All withdrawals from DB:', allWithdrawals)
+      console.log('[Admin] Withdrawals count:', allWithdrawals.length)
 
       const creators = users.filter((u: any) => u.user_type === 'creator').length
       const companies = users.filter((u: any) => u.user_type === 'company').length
       // Filter only pending withdrawals
-      const onlyPending = pendingWithdrawals.filter((w: any) => w.status === 'pending')
+      const onlyPending = allWithdrawals.filter((w: any) => w.status === 'pending')
+      console.log('[Admin] Pending withdrawals:', onlyPending.length, onlyPending)
       const totalPending = onlyPending.reduce((sum: number, w: any) => sum + (w.amount || 0), 0)
 
       setStats({
