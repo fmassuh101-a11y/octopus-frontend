@@ -145,8 +145,15 @@ export default function GigsPage() {
         setCountdown(5)
       } else {
         const error = await response.text()
-        console.error('Error applying:', error)
-        alert('Error al aplicar. Intenta de nuevo.')
+        console.error('Error applying:', response.status, error)
+        // Show specific error to help debug
+        if (error.includes('duplicate')) {
+          alert('Ya aplicaste a este trabajo.')
+        } else if (error.includes('violates row-level security')) {
+          alert('Error de permisos. Contacta soporte. (RLS)')
+        } else {
+          alert(`Error al aplicar: ${error}`)
+        }
       }
     } catch (err) {
       console.error('Error applying to gig:', err)
