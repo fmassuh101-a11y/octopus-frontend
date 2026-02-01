@@ -45,33 +45,83 @@ export default function CompanyWallet() {
   const loadWalletData = async () => {
     const token = getToken()
     const userId = getUserId()
+
+    console.log('[CompanyWallet] Loading data...', { hasToken: !!token, userId })
+
     if (!token || !userId) {
-      router.push('/auth/login')
+      console.log('[CompanyWallet] No token or user, redirecting')
+      window.location.href = '/auth/login'
       return
     }
 
     try {
       // Load wallet
+      console.log('[CompanyWallet] Fetching wallet...')
       const walletRes = await fetch(
         `${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${userId}&select=*`,
         { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
       )
-      const wallets = walletRes.ok ? await walletRes.json() : []
+
+      console.log('[CompanyWallet] Wallet response:', walletRes.status)
+
+      if (!walletRes.ok) {
+        console.error('[CompanyWallet] Wallet fetch failed:', walletRes.status)
+        setLoading(false)
+        return
+      }
+
+      const wallets = await walletRes.json()
+      console.log('[CompanyWallet] Wallets found:', wallets.length)
+
       if (wallets.length > 0) {
         setWallet(wallets[0])
 
         // Load transactions
+        console.log('[CompanyWallet] Fetching transactions...')
         const txRes = await fetch(
           `${SUPABASE_URL}/rest/v1/transactions?wallet_id=eq.${wallets[0].id}&select=*&order=created_at.desc&limit=20`,
           { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
         )
         const txs = txRes.ok ? await txRes.json() : []
+        console.log('[CompanyWallet] Transactions found:', txs.length)
         setTransactions(txs)
+      } else {
+        // No wallet exists - create one
+        console.log('[CompanyWallet] No wallet found, creating one...')
+        const createRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/wallets`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'apikey': SUPABASE_ANON_KEY,
+              'Content-Type': 'application/json',
+              'Prefer': 'return=representation'
+            },
+            body: JSON.stringify({
+              user_id: userId,
+              balance: 0,
+              pending_balance: 0,
+              total_earned: 0,
+              total_withdrawn: 0
+            })
+          }
+        )
+
+        if (createRes.ok) {
+          const newWallets = await createRes.json()
+          console.log('[CompanyWallet] Wallet created:', newWallets)
+          if (newWallets.length > 0) {
+            setWallet(newWallets[0])
+          }
+        } else {
+          console.error('[CompanyWallet] Failed to create wallet:', createRes.status)
+        }
       }
 
       setLoading(false)
     } catch (err) {
-      console.error('Error loading wallet:', err)
+      console.error('[CompanyWallet] Error loading wallet:', err)
       setLoading(false)
     }
   }

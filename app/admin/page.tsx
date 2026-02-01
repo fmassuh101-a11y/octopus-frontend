@@ -722,7 +722,15 @@ export default function AdminDashboard() {
     const userStr = localStorage.getItem('sb-user')
     const user = userStr ? JSON.parse(userStr) : null
 
+    const withdrawal = withdrawals.find(w => w.id === id)
+    if (!withdrawal) {
+      alert('No se encontró la solicitud')
+      setProcessingId(null)
+      return
+    }
+
     try {
+      // Update withdrawal request status
       const res = await fetch(`${SUPABASE_URL}/rest/v1/withdrawal_requests?id=eq.${id}`, {
         method: 'PATCH',
         headers: {
@@ -734,20 +742,79 @@ export default function AdminDashboard() {
         body: JSON.stringify({
           status: action,
           admin_notes: notes || (action === 'approved' ? 'Aprobado por admin' : 'Rechazado por admin'),
-          processed_by: user?.id,
           processed_at: new Date().toISOString()
         })
       })
 
-      if (res.ok) {
-        setWithdrawals(prev => prev.filter(w => w.id !== id))
-        setStats(prev => ({
-          ...prev,
-          pendingWithdrawals: prev.pendingWithdrawals - 1
-        }))
-        alert(action === 'approved' ? '✅ Request aprobado. Ahora debes enviar el pago manualmente.' : '❌ Request rechazado.')
+      if (!res.ok) {
+        throw new Error('Failed to update withdrawal status')
+      }
+
+      // If rejected, return money to user's wallet
+      if (action === 'rejected') {
+        // Get user's wallet
+        const walletRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${withdrawal.user_id}&select=*`,
+          { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+        )
+        const wallets = walletRes.ok ? await walletRes.json() : []
+
+        if (wallets.length > 0) {
+          const wallet = wallets[0]
+          // Return money to balance, remove from pending
+          await fetch(`${SUPABASE_URL}/rest/v1/wallets?id=eq.${wallet.id}`, {
+            method: 'PATCH',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'apikey': SUPABASE_ANON_KEY,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              balance: (wallet.balance || 0) + withdrawal.amount,
+              pending_balance: Math.max(0, (wallet.pending_balance || 0) - withdrawal.amount)
+            })
+          })
+        }
+      }
+
+      // If approved, update wallet totals
+      if (action === 'approved') {
+        // Get user's wallet
+        const walletRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${withdrawal.user_id}&select=*`,
+          { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+        )
+        const wallets = walletRes.ok ? await walletRes.json() : []
+
+        if (wallets.length > 0) {
+          const wallet = wallets[0]
+          // Move from pending to withdrawn
+          await fetch(`${SUPABASE_URL}/rest/v1/wallets?id=eq.${wallet.id}`, {
+            method: 'PATCH',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'apikey': SUPABASE_ANON_KEY,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              pending_balance: Math.max(0, (wallet.pending_balance || 0) - withdrawal.amount),
+              total_withdrawn: (wallet.total_withdrawn || 0) + withdrawal.net_amount
+            })
+          })
+        }
+      }
+
+      setWithdrawals(prev => prev.filter(w => w.id !== id))
+      setStats(prev => ({
+        ...prev,
+        pendingWithdrawals: prev.pendingWithdrawals - 1,
+        totalPendingAmount: prev.totalPendingAmount - withdrawal.amount
+      }))
+
+      if (action === 'approved') {
+        alert(`✅ Retiro aprobado!\n\nDEBES ENVIAR MANUALMENTE:\n$${withdrawal.net_amount} a ${withdrawal.user_name}\nMétodo: ${withdrawal.method}\nDetalles: ${JSON.stringify(withdrawal.payment_details)}`)
       } else {
-        alert('Error al procesar el request')
+        alert('❌ Retiro rechazado. El dinero fue devuelto al balance del usuario.')
       }
     } catch (err) {
       console.error('Error:', err)

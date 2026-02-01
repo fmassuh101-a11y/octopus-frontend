@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 const SUPABASE_URL = 'https://ftvqoudlmojdxwjxljzr.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
@@ -36,7 +36,6 @@ interface WithdrawalRequest {
 }
 
 export default function CreatorWallet() {
-  const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [wallet, setWallet] = useState<Wallet | null>(null)
   const [transactions, setTransactions] = useState<Transaction[]>([])
@@ -46,7 +45,7 @@ export default function CreatorWallet() {
   const [withdrawMethod, setWithdrawMethod] = useState<'bank_transfer' | 'paypal' | 'crypto_usdt' | 'crypto_usdc'>('bank_transfer')
   const [paymentDetails, setPaymentDetails] = useState('')
   const [processing, setProcessing] = useState(false)
-  const [activeTab, setActiveTab] = useState<'overview' | 'transactions' | 'withdrawals'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'activity' | 'withdrawals'>('overview')
 
   const getToken = () => localStorage.getItem('sb-access-token')
   const getUserId = () => {
@@ -61,8 +60,11 @@ export default function CreatorWallet() {
   const loadWalletData = async () => {
     const token = getToken()
     const userId = getUserId()
+
+    console.log('[CreatorWallet] Loading...', { hasToken: !!token, userId })
+
     if (!token || !userId) {
-      router.push('/auth/login')
+      window.location.href = '/auth/login'
       return
     }
 
@@ -72,7 +74,16 @@ export default function CreatorWallet() {
         `${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${userId}&select=*`,
         { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
       )
-      const wallets = walletRes.ok ? await walletRes.json() : []
+
+      if (!walletRes.ok) {
+        console.error('[CreatorWallet] Wallet fetch failed:', walletRes.status)
+        setLoading(false)
+        return
+      }
+
+      const wallets = await walletRes.json()
+      console.log('[CreatorWallet] Wallets:', wallets)
+
       if (wallets.length > 0) {
         setWallet(wallets[0])
 
@@ -81,8 +92,32 @@ export default function CreatorWallet() {
           `${SUPABASE_URL}/rest/v1/transactions?wallet_id=eq.${wallets[0].id}&select=*&order=created_at.desc&limit=20`,
           { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
         )
-        const txs = txRes.ok ? await txRes.json() : []
-        setTransactions(txs)
+        if (txRes.ok) {
+          const txs = await txRes.json()
+          setTransactions(txs)
+        }
+      } else {
+        // Create wallet if doesn't exist
+        const createRes = await fetch(`${SUPABASE_URL}/rest/v1/wallets`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'apikey': SUPABASE_ANON_KEY,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation'
+          },
+          body: JSON.stringify({
+            user_id: userId,
+            balance: 0,
+            pending_balance: 0,
+            total_earned: 0,
+            total_withdrawn: 0
+          })
+        })
+        if (createRes.ok) {
+          const newWallets = await createRes.json()
+          if (newWallets.length > 0) setWallet(newWallets[0])
+        }
       }
 
       // Load withdrawal requests
@@ -90,12 +125,14 @@ export default function CreatorWallet() {
         `${SUPABASE_URL}/rest/v1/withdrawal_requests?user_id=eq.${userId}&select=*&order=created_at.desc`,
         { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
       )
-      const wds = wdRes.ok ? await wdRes.json() : []
-      setWithdrawals(wds)
+      if (wdRes.ok) {
+        const wds = await wdRes.json()
+        setWithdrawals(wds)
+      }
 
       setLoading(false)
     } catch (err) {
-      console.error('Error loading wallet:', err)
+      console.error('[CreatorWallet] Error:', err)
       setLoading(false)
     }
   }
@@ -121,12 +158,26 @@ export default function CreatorWallet() {
     const token = getToken()
     const userId = getUserId()
 
-    // Calculate fee (2% for simplicity)
     const fee = amount * 0.02
     const netAmount = amount - fee
 
     try {
-      // Create withdrawal request
+      // Create withdrawal request FIRST with minimal data
+      console.log('[Withdraw] Creating request for user:', userId)
+      console.log('[Withdraw] Data:', { amount, fee, netAmount, method: withdrawMethod })
+
+      const requestBody = {
+        user_id: userId,
+        amount: Number(amount),
+        fee: Number(fee),
+        net_amount: Number(netAmount),
+        method: String(withdrawMethod),
+        status: 'pending',
+        payment_details: { info: String(paymentDetails) }
+      }
+
+      console.log('[Withdraw] Request body:', JSON.stringify(requestBody))
+
       const res = await fetch(`${SUPABASE_URL}/rest/v1/withdrawal_requests`, {
         method: 'POST',
         headers: {
@@ -135,46 +186,40 @@ export default function CreatorWallet() {
           'Content-Type': 'application/json',
           'Prefer': 'return=representation'
         },
+        body: JSON.stringify(requestBody)
+      })
+
+      const responseText = await res.text()
+      console.log('[Withdraw] Response:', res.status, responseText)
+
+      if (!res.ok) {
+        console.error('[Withdraw] Failed:', responseText)
+        throw new Error('Error: ' + responseText.substring(0, 100))
+      }
+
+      // Only update wallet if request was created successfully
+      console.log('[Withdraw] Updating wallet...')
+      await fetch(`${SUPABASE_URL}/rest/v1/wallets?id=eq.${wallet.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'apikey': SUPABASE_ANON_KEY,
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
-          user_id: userId,
-          wallet_id: wallet.id,
-          amount: amount,
-          fee: fee,
-          net_amount: netAmount,
-          method: withdrawMethod,
-          status: 'pending',
-          payment_details: { details: paymentDetails }
+          balance: wallet.balance - amount,
+          pending_balance: (wallet.pending_balance || 0) + amount
         })
       })
 
-      if (res.ok) {
-        // Update wallet balance (move to pending)
-        await fetch(`${SUPABASE_URL}/rest/v1/wallets?id=eq.${wallet.id}`, {
-          method: 'PATCH',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'apikey': SUPABASE_ANON_KEY,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=minimal'
-          },
-          body: JSON.stringify({
-            balance: wallet.balance - amount,
-            pending_balance: (wallet.pending_balance || 0) + amount,
-            updated_at: new Date().toISOString()
-          })
-        })
-
-        alert('✅ Solicitud de retiro creada. Un admin la revisará pronto.')
-        setShowWithdrawModal(false)
-        setWithdrawAmount('')
-        setPaymentDetails('')
-        await loadWalletData()
-      } else {
-        alert('Error al crear la solicitud')
-      }
-    } catch (err) {
-      console.error('Error:', err)
-      alert('Error al procesar')
+      setShowWithdrawModal(false)
+      setWithdrawAmount('')
+      setPaymentDetails('')
+      await loadWalletData()
+      alert('Solicitud de retiro creada exitosamente!')
+    } catch (err: any) {
+      console.error('[Withdraw] Error:', err)
+      alert('Error al crear solicitud: ' + (err.message || 'Intenta de nuevo'))
     }
     setProcessing(false)
   }
@@ -183,304 +228,366 @@ export default function CreatorWallet() {
     return new Date(date).toLocaleDateString('es-ES', {
       day: 'numeric',
       month: 'short',
-      year: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
     })
   }
 
-  const getStatusBadge = (status: string) => {
-    const styles: Record<string, string> = {
-      'pending': 'bg-amber-100 text-amber-700',
-      'approved': 'bg-blue-100 text-blue-700',
-      'processing': 'bg-purple-100 text-purple-700',
-      'completed': 'bg-green-100 text-green-700',
-      'rejected': 'bg-red-100 text-red-700'
+  const getStatusConfig = (status: string) => {
+    const config: Record<string, { bg: string; text: string; label: string }> = {
+      'pending': { bg: 'bg-amber-500/20', text: 'text-amber-400', label: 'Pendiente' },
+      'approved': { bg: 'bg-blue-500/20', text: 'text-blue-400', label: 'Aprobado' },
+      'processing': { bg: 'bg-purple-500/20', text: 'text-purple-400', label: 'Procesando' },
+      'completed': { bg: 'bg-green-500/20', text: 'text-green-400', label: 'Completado' },
+      'rejected': { bg: 'bg-red-500/20', text: 'text-red-400', label: 'Rechazado' }
     }
-    const labels: Record<string, string> = {
-      'pending': 'Pendiente',
-      'approved': 'Aprobado',
-      'processing': 'Procesando',
-      'completed': 'Completado',
-      'rejected': 'Rechazado'
-    }
-    return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${styles[status] || 'bg-gray-100 text-gray-700'}`}>
-        {labels[status] || status}
-      </span>
-    )
-  }
-
-  const getTransactionIcon = (type: string) => {
-    const icons: Record<string, string> = {
-      'payment_received': '💰',
-      'bonus': '🎁',
-      'withdrawal': '📤',
-      'refund': '↩️'
-    }
-    return icons[type] || '💵'
-  }
-
-  const getMethodIcon = (method: string) => {
-    const icons: Record<string, string> = {
-      'bank_transfer': '🏦',
-      'paypal': '💳',
-      'crypto_usdt': '₮',
-      'crypto_usdc': '💵'
-    }
-    return icons[method] || '💵'
+    return config[status] || { bg: 'bg-neutral-500/20', text: 'text-neutral-400', label: status }
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
+      <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
-          <div className="w-10 h-10 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-neutral-400">Cargando wallet...</p>
+          <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-white/60">Cargando wallet...</p>
         </div>
       </div>
     )
   }
 
+  const pendingWithdrawals = withdrawals.filter(w => w.status === 'pending' || w.status === 'processing')
+
   return (
-    <div className="min-h-screen bg-neutral-950 text-white pb-24">
+    <div className="min-h-screen bg-black text-white">
       {/* Header */}
-      <div className="bg-neutral-900 border-b border-neutral-800 sticky top-0 z-10">
-        <div className="px-4 py-4">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => router.push('/creator/dashboard')}
-              className="w-10 h-10 bg-neutral-800 rounded-xl flex items-center justify-center hover:bg-neutral-700 transition-colors"
-            >
+      <div className="bg-gradient-to-b from-emerald-900/30 to-black">
+        <div className="px-4 pt-4 pb-2">
+          <div className="flex items-center justify-between mb-6">
+            <Link href="/creator/dashboard" className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-            </button>
-            <div className="text-center">
-              <h1 className="text-xl font-bold">💰 Mi Wallet</h1>
-              <p className="text-xs text-neutral-500">Balance y retiros</p>
-            </div>
-            <div className="w-10 h-10" /> {/* Spacer */}
+            </Link>
+            <h1 className="text-lg font-semibold">Mi Wallet</h1>
+            <div className="w-10" />
           </div>
-        </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="px-4 py-6 space-y-6">
-        {/* Balance Card */}
-        <div className="bg-gradient-to-br from-green-500 via-emerald-500 to-teal-600 rounded-3xl p-6 text-white shadow-xl">
-          <div className="text-center mb-6">
-            <p className="text-sm text-green-100 mb-2">Balance Disponible</p>
-            <p className="text-5xl font-black">${wallet?.balance?.toFixed(2) || '0.00'}</p>
+          {/* Balance Card */}
+          <div className="text-center py-8">
+            <p className="text-emerald-400 text-sm font-medium mb-2">Balance Disponible</p>
+            <h2 className="text-6xl font-black tracking-tight mb-2">
+              ${wallet?.balance?.toFixed(2) || '0.00'}
+            </h2>
             {wallet && wallet.pending_balance > 0 && (
-              <p className="text-sm text-green-200 mt-2">
-                + ${wallet.pending_balance.toFixed(2)} pendiente de aprobación
+              <p className="text-white/50 text-sm">
+                <span className="text-amber-400">${wallet.pending_balance.toFixed(2)}</span> en proceso de retiro
               </p>
             )}
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-center">
-              <p className="text-2xl font-bold">${wallet?.total_earned?.toFixed(2) || '0.00'}</p>
-              <p className="text-xs text-green-100">Total Ganado</p>
+          {/* Stats Row */}
+          <div className="flex gap-3 mb-6">
+            <div className="flex-1 bg-white/5 backdrop-blur rounded-2xl p-4 text-center border border-white/10">
+              <p className="text-2xl font-bold text-emerald-400">${wallet?.total_earned?.toFixed(2) || '0.00'}</p>
+              <p className="text-xs text-white/50 mt-1">Total Ganado</p>
             </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-center">
+            <div className="flex-1 bg-white/5 backdrop-blur rounded-2xl p-4 text-center border border-white/10">
               <p className="text-2xl font-bold">${wallet?.total_withdrawn?.toFixed(2) || '0.00'}</p>
-              <p className="text-xs text-green-100">Total Retirado</p>
+              <p className="text-xs text-white/50 mt-1">Retirado</p>
+            </div>
+            <div className="flex-1 bg-white/5 backdrop-blur rounded-2xl p-4 text-center border border-white/10">
+              <p className="text-2xl font-bold text-amber-400">{pendingWithdrawals.length}</p>
+              <p className="text-xs text-white/50 mt-1">Pendientes</p>
             </div>
           </div>
 
           {/* Withdraw Button */}
           <button
             onClick={() => setShowWithdrawModal(true)}
-            disabled={!wallet || wallet.balance <= 0}
-            className="w-full py-4 bg-white text-green-600 rounded-2xl font-bold text-lg hover:bg-green-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!wallet || wallet.balance < 10}
+            className="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-black font-bold rounded-2xl transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            📤 Retirar Fondos
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            </svg>
+            Retirar Fondos
+          </button>
+          {wallet && wallet.balance > 0 && wallet.balance < 10 && (
+            <p className="text-center text-amber-400 text-sm mt-2">Mínimo de retiro: $10.00</p>
+          )}
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="px-4 py-6">
+        {/* Tabs */}
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={() => setActiveTab('overview')}
+            className={`flex-1 py-3 rounded-xl font-medium transition-all ${
+              activeTab === 'overview'
+                ? 'bg-white text-black'
+                : 'bg-white/5 text-white/60 hover:bg-white/10'
+            }`}
+          >
+            Resumen
+          </button>
+          <button
+            onClick={() => setActiveTab('activity')}
+            className={`flex-1 py-3 rounded-xl font-medium transition-all ${
+              activeTab === 'activity'
+                ? 'bg-white text-black'
+                : 'bg-white/5 text-white/60 hover:bg-white/10'
+            }`}
+          >
+            Actividad
+          </button>
+          <button
+            onClick={() => setActiveTab('withdrawals')}
+            className={`flex-1 py-3 rounded-xl font-medium transition-all relative ${
+              activeTab === 'withdrawals'
+                ? 'bg-white text-black'
+                : 'bg-white/5 text-white/60 hover:bg-white/10'
+            }`}
+          >
+            Retiros
+            {pendingWithdrawals.length > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-amber-500 rounded-full text-xs flex items-center justify-center text-black font-bold">
+                {pendingWithdrawals.length}
+              </span>
+            )}
           </button>
         </div>
 
-        {/* Tabs */}
-        <div className="flex bg-neutral-900 rounded-2xl p-1">
-          {[
-            { id: 'overview', label: 'Resumen' },
-            { id: 'transactions', label: 'Transacciones' },
-            { id: 'withdrawals', label: 'Retiros' }
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`flex-1 py-3 rounded-xl text-sm font-medium transition-colors ${
-                activeTab === tab.id
-                  ? 'bg-white text-black'
-                  : 'text-neutral-400 hover:text-white'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Tab Content */}
+        {/* Overview Tab */}
         {activeTab === 'overview' && (
           <div className="space-y-4">
-            {/* Quick Info */}
-            <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800">
-              <h3 className="font-semibold mb-4">📊 Resumen Rápido</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-neutral-400">Transacciones este mes</span>
-                  <span className="font-semibold">{transactions.length}</span>
+            {/* Quick Stats */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-white/5 rounded-2xl p-5 border border-white/5">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center">
+                    <span className="text-xl">💵</span>
+                  </div>
+                  <span className="text-white/50 text-sm">Disponible</span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-neutral-400">Retiros pendientes</span>
-                  <span className="font-semibold text-amber-400">
-                    {withdrawals.filter(w => w.status === 'pending').length}
-                  </span>
+                <p className="text-3xl font-black text-emerald-400">${wallet?.balance?.toFixed(2) || '0.00'}</p>
+              </div>
+              <div className="bg-white/5 rounded-2xl p-5 border border-white/5">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-amber-500/20 rounded-xl flex items-center justify-center">
+                    <span className="text-xl">⏳</span>
+                  </div>
+                  <span className="text-white/50 text-sm">En Proceso</span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-neutral-400">Fee de retiro</span>
-                  <span className="font-semibold">2%</span>
-                </div>
+                <p className="text-3xl font-black text-amber-400">${wallet?.pending_balance?.toFixed(2) || '0.00'}</p>
               </div>
             </div>
 
-            {/* Payment Methods */}
-            <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800">
-              <h3 className="font-semibold mb-4">💳 Métodos de Retiro</h3>
+            {/* Métodos de Pago */}
+            <div className="bg-white/5 rounded-2xl p-5 border border-white/5">
+              <h3 className="font-semibold mb-4 flex items-center gap-2">
+                <span>💳</span> Métodos de Retiro Disponibles
+              </h3>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { id: 'bank_transfer', label: 'Transferencia', icon: '🏦' },
-                  { id: 'paypal', label: 'PayPal', icon: '💳' },
-                  { id: 'crypto_usdt', label: 'USDT', icon: '₮' },
-                  { id: 'crypto_usdc', label: 'USDC', icon: '💵' }
+                  { icon: '🏦', name: 'Banco', desc: 'Transferencia' },
+                  { icon: '💳', name: 'PayPal', desc: 'Instantáneo' },
+                  { icon: '₮', name: 'USDT', desc: 'Crypto TRC20' },
+                  { icon: '💵', name: 'USDC', desc: 'Crypto ERC20' }
                 ].map((method) => (
-                  <div key={method.id} className="bg-neutral-800 rounded-xl p-4 text-center">
-                    <span className="text-2xl block mb-2">{method.icon}</span>
-                    <span className="text-sm text-neutral-400">{method.label}</span>
+                  <div key={method.name} className="bg-white/5 rounded-xl p-3 flex items-center gap-3">
+                    <span className="text-2xl">{method.icon}</span>
+                    <div>
+                      <p className="font-medium text-sm">{method.name}</p>
+                      <p className="text-xs text-white/40">{method.desc}</p>
+                    </div>
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Info */}
+            <div className="bg-gradient-to-r from-emerald-500/10 to-teal-500/10 rounded-2xl p-5 border border-emerald-500/20">
+              <h4 className="font-semibold text-emerald-400 mb-3 flex items-center gap-2">
+                <span>💡</span> Información
+              </h4>
+              <ul className="space-y-2 text-sm text-white/60">
+                <li className="flex items-center gap-2">
+                  <span className="text-emerald-400">✓</span> Fee de retiro: solo 2%
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-emerald-400">✓</span> Procesamiento: 1-3 días hábiles
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-emerald-400">✓</span> Mínimo de retiro: $10.00
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-emerald-400">✓</span> Sin límite máximo
+                </li>
+              </ul>
             </div>
           </div>
         )}
 
-        {activeTab === 'transactions' && (
-          <div className="bg-neutral-900 rounded-2xl border border-neutral-800 overflow-hidden">
+        {/* Activity Tab */}
+        {activeTab === 'activity' && (
+          <div className="space-y-3">
             {transactions.length === 0 ? (
-              <div className="p-12 text-center">
-                <span className="text-4xl block mb-4">📭</span>
-                <p className="text-neutral-500">No hay transacciones aún</p>
+              <div className="text-center py-16">
+                <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-3xl">💸</span>
+                </div>
+                <p className="text-white/40 mb-2">Sin actividad reciente</p>
+                <p className="text-white/20 text-sm">Tus pagos aparecerán aquí</p>
               </div>
             ) : (
-              <div className="divide-y divide-neutral-800">
-                {transactions.map((tx) => (
-                  <div key={tx.id} className="p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-neutral-800 rounded-full flex items-center justify-center">
-                        <span>{getTransactionIcon(tx.type)}</span>
-                      </div>
-                      <div>
-                        <p className="font-medium">{tx.description || tx.type}</p>
-                        <p className="text-sm text-neutral-500">{formatDate(tx.created_at)}</p>
-                      </div>
+              transactions.map((tx) => (
+                <div key={tx.id} className="bg-white/5 rounded-2xl p-4 flex items-center justify-between border border-white/5">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      tx.type === 'withdrawal' ? 'bg-red-500/20' : 'bg-emerald-500/20'
+                    }`}>
+                      {tx.type === 'withdrawal' ? '📤' : '💰'}
                     </div>
-                    <div className="text-right">
-                      <p className={`font-semibold ${tx.type === 'withdrawal' ? 'text-red-400' : 'text-green-400'}`}>
-                        {tx.type === 'withdrawal' ? '-' : '+'}${tx.net_amount.toFixed(2)}
-                      </p>
-                      {tx.fee > 0 && (
-                        <p className="text-xs text-neutral-500">Fee: ${tx.fee.toFixed(2)}</p>
-                      )}
+                    <div>
+                      <p className="font-medium">{tx.description || 'Pago recibido'}</p>
+                      <p className="text-xs text-white/40">{formatDate(tx.created_at)}</p>
                     </div>
                   </div>
-                ))}
-              </div>
+                  <div className="text-right">
+                    <p className={`font-bold ${tx.type === 'withdrawal' ? 'text-red-400' : 'text-emerald-400'}`}>
+                      {tx.type === 'withdrawal' ? '-' : '+'}${tx.net_amount?.toFixed(2) || tx.amount?.toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+              ))
             )}
           </div>
         )}
 
+        {/* Withdrawals Tab */}
         {activeTab === 'withdrawals' && (
-          <div className="bg-neutral-900 rounded-2xl border border-neutral-800 overflow-hidden">
+          <div className="space-y-3">
             {withdrawals.length === 0 ? (
-              <div className="p-12 text-center">
-                <span className="text-4xl block mb-4">📤</span>
-                <p className="text-neutral-500">No has solicitado retiros aún</p>
+              <div className="text-center py-16">
+                <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-3xl">📤</span>
+                </div>
+                <p className="text-white/40 mb-2">Sin retiros</p>
+                <p className="text-white/20 text-sm">Tus solicitudes de retiro aparecerán aquí</p>
               </div>
             ) : (
-              <div className="divide-y divide-neutral-800">
-                {withdrawals.map((wd) => (
-                  <div key={wd.id} className="p-4">
-                    <div className="flex items-center justify-between mb-2">
+              withdrawals.map((wd) => {
+                const status = getStatusConfig(wd.status)
+                return (
+                  <div key={wd.id} className="bg-white/5 rounded-2xl p-4 border border-white/5">
+                    <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
-                        <span>{getMethodIcon(wd.method)}</span>
-                        <span className="font-medium">${wd.amount.toFixed(2)}</span>
+                        <span className="text-xl">
+                          {wd.method === 'bank_transfer' && '🏦'}
+                          {wd.method === 'paypal' && '💳'}
+                          {wd.method === 'crypto_usdt' && '₮'}
+                          {wd.method === 'crypto_usdc' && '💵'}
+                        </span>
+                        <span className="font-bold text-lg">${wd.amount.toFixed(2)}</span>
                       </div>
-                      {getStatusBadge(wd.status)}
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${status.bg} ${status.text}`}>
+                        {status.label}
+                      </span>
                     </div>
-                    <div className="flex justify-between text-sm text-neutral-500">
-                      <span>Fee: ${wd.fee.toFixed(2)} • Neto: ${wd.net_amount.toFixed(2)}</span>
+                    <div className="flex justify-between text-sm text-white/40">
+                      <span>Neto: ${wd.net_amount.toFixed(2)}</span>
                       <span>{formatDate(wd.created_at)}</span>
                     </div>
                   </div>
-                ))}
-              </div>
+                )
+              })
             )}
           </div>
         )}
+
+      </div>
+
+      {/* Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-xl border-t border-white/10">
+        <div className="flex justify-around py-3">
+          <Link href="/gigs" className="flex flex-col items-center gap-1 text-white/40">
+            <span className="text-xl">💼</span>
+            <span className="text-[10px]">Trabajos</span>
+          </Link>
+          <Link href="/creator/dashboard" className="flex flex-col items-center gap-1 text-white/40">
+            <span className="text-xl">📊</span>
+            <span className="text-[10px]">Panel</span>
+          </Link>
+          <div className="flex flex-col items-center gap-1 text-emerald-400">
+            <span className="text-xl">💰</span>
+            <span className="text-[10px] font-medium">Wallet</span>
+          </div>
+          <Link href="/creator/messages" className="flex flex-col items-center gap-1 text-white/40">
+            <span className="text-xl">💬</span>
+            <span className="text-[10px]">Mensajes</span>
+          </Link>
+          <Link href="/creator/profile" className="flex flex-col items-center gap-1 text-white/40">
+            <span className="text-xl">👤</span>
+            <span className="text-[10px]">Perfil</span>
+          </Link>
+        </div>
+        <div className="h-1 bg-white/20 mx-auto w-32 rounded-full mb-2" />
       </div>
 
       {/* Withdraw Modal */}
       {showWithdrawModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-            onClick={() => setShowWithdrawModal(false)}
-          />
-          <div className="relative bg-neutral-900 rounded-2xl p-6 w-full max-w-md border border-neutral-800">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowWithdrawModal(false)} />
+
+          <div className="relative w-full max-w-lg bg-neutral-900 rounded-t-3xl sm:rounded-3xl p-6 max-h-[90vh] overflow-y-auto">
+            {/* Handle */}
+            <div className="w-12 h-1 bg-white/20 rounded-full mx-auto mb-6 sm:hidden" />
+
+            {/* Close */}
             <button
               onClick={() => setShowWithdrawModal(false)}
-              className="absolute top-4 right-4 text-neutral-500 hover:text-white"
+              className="absolute top-4 right-4 w-8 h-8 bg-white/10 rounded-full flex items-center justify-center text-white/60 hover:text-white"
             >
               ✕
             </button>
 
-            <h2 className="text-xl font-bold mb-6">📤 Solicitar Retiro</h2>
+            <h2 className="text-2xl font-bold mb-6">Retirar Fondos</h2>
 
-            <div className="space-y-4">
+            <div className="space-y-5">
               {/* Amount */}
               <div>
-                <label className="block text-sm font-medium text-neutral-400 mb-2">
-                  Monto (máx: ${wallet?.balance?.toFixed(2) || '0.00'})
+                <label className="block text-sm text-white/60 mb-2">
+                  Monto a retirar
                 </label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500">$</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-white/40">$</span>
                   <input
                     type="number"
                     value={withdrawAmount}
                     onChange={(e) => setWithdrawAmount(e.target.value)}
                     placeholder="0.00"
                     max={wallet?.balance || 0}
-                    min="1"
+                    min="10"
                     step="0.01"
-                    className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 pl-8 text-lg font-semibold focus:outline-none focus:border-green-500"
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 pl-10 text-2xl font-bold focus:outline-none focus:border-emerald-500 placeholder:text-white/20"
                   />
                 </div>
-                {withdrawAmount && parseFloat(withdrawAmount) > 0 && (
-                  <p className="text-sm text-neutral-500 mt-2">
-                    Fee (2%): ${(parseFloat(withdrawAmount) * 0.02).toFixed(2)} •
-                    Recibirás: ${(parseFloat(withdrawAmount) * 0.98).toFixed(2)}
-                  </p>
-                )}
+                <div className="flex justify-between mt-2 text-sm">
+                  <span className="text-white/40">Disponible: ${wallet?.balance?.toFixed(2)}</span>
+                  {withdrawAmount && parseFloat(withdrawAmount) > 0 && (
+                    <span className="text-emerald-400">
+                      Recibes: ${(parseFloat(withdrawAmount) * 0.98).toFixed(2)}
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Method */}
               <div>
-                <label className="block text-sm font-medium text-neutral-400 mb-2">
-                  Método de pago
-                </label>
-                <div className="grid grid-cols-2 gap-2">
+                <label className="block text-sm text-white/60 mb-3">Método de pago</label>
+                <div className="grid grid-cols-2 gap-3">
                   {[
                     { id: 'bank_transfer', label: 'Banco', icon: '🏦' },
                     { id: 'paypal', label: 'PayPal', icon: '💳' },
@@ -490,14 +597,14 @@ export default function CreatorWallet() {
                     <button
                       key={m.id}
                       onClick={() => setWithdrawMethod(m.id as any)}
-                      className={`p-3 rounded-xl border flex items-center justify-center gap-2 transition-colors ${
+                      className={`p-4 rounded-2xl border-2 flex items-center gap-3 transition-all ${
                         withdrawMethod === m.id
-                          ? 'border-green-500 bg-green-500/10 text-green-400'
-                          : 'border-neutral-700 text-neutral-400 hover:border-neutral-600'
+                          ? 'border-emerald-500 bg-emerald-500/10'
+                          : 'border-white/10 hover:border-white/20'
                       }`}
                     >
-                      <span>{m.icon}</span>
-                      <span className="text-sm font-medium">{m.label}</span>
+                      <span className="text-2xl">{m.icon}</span>
+                      <span className="font-medium">{m.label}</span>
                     </button>
                   ))}
                 </div>
@@ -505,7 +612,7 @@ export default function CreatorWallet() {
 
               {/* Payment Details */}
               <div>
-                <label className="block text-sm font-medium text-neutral-400 mb-2">
+                <label className="block text-sm text-white/60 mb-2">
                   {withdrawMethod === 'bank_transfer' && 'Número de cuenta / IBAN'}
                   {withdrawMethod === 'paypal' && 'Email de PayPal'}
                   {withdrawMethod === 'crypto_usdt' && 'Dirección USDT (TRC20)'}
@@ -520,53 +627,30 @@ export default function CreatorWallet() {
                     withdrawMethod === 'paypal' ? 'tu@email.com' :
                     '0x...'
                   }
-                  className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
               {/* Submit */}
               <button
                 onClick={handleWithdraw}
-                disabled={processing || !withdrawAmount || parseFloat(withdrawAmount) <= 0 || !paymentDetails}
-                className="w-full py-4 bg-green-500 text-white rounded-xl font-bold hover:bg-green-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                disabled={processing || !withdrawAmount || parseFloat(withdrawAmount) < 10 || parseFloat(withdrawAmount) > (wallet?.balance || 0) || !paymentDetails}
+                className="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-black font-bold rounded-2xl transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {processing ? (
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  <>📤 Solicitar Retiro</>
+                  'Confirmar Retiro'
                 )}
               </button>
 
-              <p className="text-xs text-neutral-500 text-center">
-                Las solicitudes son revisadas manualmente. Tiempo estimado: 1-3 días hábiles.
+              <p className="text-xs text-white/40 text-center">
+                Fee de 2% aplicado. Procesamiento en 1-3 días hábiles.
               </p>
             </div>
           </div>
         </div>
       )}
-
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-800">
-        <div className="flex justify-around py-3">
-          <button onClick={() => router.push('/gigs')} className="flex flex-col items-center space-y-1 text-neutral-500 hover:text-white transition-colors">
-            <span className="text-lg">💼</span>
-            <span className="text-xs">Jobs</span>
-          </button>
-          <button onClick={() => router.push('/creator/dashboard')} className="flex flex-col items-center space-y-1 text-neutral-500 hover:text-white transition-colors">
-            <span className="text-lg">📊</span>
-            <span className="text-xs">Dashboard</span>
-          </button>
-          <div className="flex flex-col items-center space-y-1 text-green-500">
-            <span className="text-lg">💰</span>
-            <span className="text-xs font-medium">Wallet</span>
-          </div>
-          <button onClick={() => router.push('/creator/profile')} className="flex flex-col items-center space-y-1 text-neutral-500 hover:text-white transition-colors">
-            <span className="text-lg">👤</span>
-            <span className="text-xs">Profile</span>
-          </button>
-        </div>
-        <div className="h-1 bg-white mx-auto w-32 rounded-full mb-2" />
-      </div>
     </div>
   )
 }

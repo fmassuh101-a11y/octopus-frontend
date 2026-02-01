@@ -3,22 +3,32 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
-// Hardcoded to avoid env var issues
 const SUPABASE_URL = 'https://ftvqoudlmojdxwjxljzr.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
+
+interface Application {
+  id: string
+  status: string
+  created_at: string
+  gig: {
+    title: string
+    budget_min: number
+    budget_max: number
+  }
+}
 
 export default function CreatorDashboard() {
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [showLogoutModal, setShowLogoutModal] = useState(false)
-  const [stats, setStats] = useState({
-    totalEarnings: 0,
-    totalCampaigns: 0,
-    pendingApplications: 0,
-    thisMonth: 0
-  })
   const [wallet, setWallet] = useState<{ balance: number; pending_balance: number; total_earned: number } | null>(null)
+  const [applications, setApplications] = useState<Application[]>([])
+  const [stats, setStats] = useState({
+    pending: 0,
+    accepted: 0,
+    completed: 0
+  })
 
   useEffect(() => {
     checkAuth()
@@ -29,19 +39,15 @@ export default function CreatorDashboard() {
       const token = localStorage.getItem('sb-access-token')
       const userStr = localStorage.getItem('sb-user')
 
-      console.log('[Dashboard] Checking auth:', { hasToken: !!token, hasUser: !!userStr })
-
       if (!token || !userStr) {
-        console.log('[Dashboard] No token or user, redirecting to login')
         window.location.href = '/auth/login'
         return
       }
 
       const userData = JSON.parse(userStr)
       setUser(userData)
-      console.log('[Dashboard] User loaded:', userData.email, userData.id)
 
-      // Fetch profile using REST API (not supabase client)
+      // Fetch profile
       const response = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=*`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -49,18 +55,13 @@ export default function CreatorDashboard() {
         }
       })
 
-      console.log('[Dashboard] Profile fetch response:', response.status, response.statusText)
-
       if (response.ok) {
         const profiles = await response.json()
-        console.log('[Dashboard] Profiles found:', profiles.length)
 
         if (profiles.length > 0) {
           const profileData = profiles[0]
           setProfile(profileData)
-          console.log('[Dashboard] Profile loaded:', profileData.user_type)
 
-          // Check if user is a creator
           if (profileData.user_type !== 'creator') {
             if (profileData.user_type === 'company') {
               window.location.href = '/company/dashboard'
@@ -70,51 +71,58 @@ export default function CreatorDashboard() {
             return
           }
 
-          // Parse bio data if it exists
+          // Parse bio data
           if (profileData.bio) {
             try {
               const bioData = JSON.parse(profileData.bio)
               setProfile({ ...profileData, ...bioData })
-            } catch (e) {
-              // bio is not JSON, that's fine
+            } catch (e) {}
+          }
+
+          // Fetch wallet
+          const walletRes = await fetch(`${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${userData.id}&select=*`, {
+            headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY }
+          })
+          if (walletRes.ok) {
+            const wallets = await walletRes.json()
+            if (wallets.length > 0) {
+              setWallet(wallets[0])
             }
           }
 
-          // Fetch wallet balance
-          try {
-            const walletRes = await fetch(`${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${userData.id}&select=balance,pending_balance,total_earned`, {
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'apikey': SUPABASE_ANON_KEY
-              }
-            })
-            if (walletRes.ok) {
-              const wallets = await walletRes.json()
-              if (wallets.length > 0) {
-                setWallet(wallets[0])
-              }
+          // Fetch applications
+          const appsRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/applications?creator_id=eq.${userData.id}&select=id,status,created_at,gig:gigs(title,budget_min,budget_max)&order=created_at.desc&limit=5`,
+            { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+          )
+          if (appsRes.ok) {
+            const apps = await appsRes.json()
+            setApplications(apps)
+
+            // Calculate stats
+            const allAppsRes = await fetch(
+              `${SUPABASE_URL}/rest/v1/applications?creator_id=eq.${userData.id}&select=status`,
+              { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+            )
+            if (allAppsRes.ok) {
+              const allApps = await allAppsRes.json()
+              setStats({
+                pending: allApps.filter((a: any) => a.status === 'pending').length,
+                accepted: allApps.filter((a: any) => a.status === 'accepted').length,
+                completed: allApps.filter((a: any) => a.status === 'completed').length
+              })
             }
-          } catch (e) {
-            console.log('[Dashboard] No wallet found')
           }
 
           setLoading(false)
         } else {
-          // No profile found - go to select-type (NOT login to avoid loop)
-          console.log('[Dashboard] No profile found, redirecting to select-type')
           window.location.href = '/auth/select-type'
-          return
         }
       } else {
-        const errorText = await response.text()
-        console.error('[Dashboard] Profile fetch failed:', response.status, errorText)
-        // On error, go to select-type instead of login to avoid redirect loop
         window.location.href = '/auth/select-type'
-        return
       }
     } catch (err) {
-      console.error('[Dashboard] Auth check error:', err)
-      // On error, go to select-type instead of login to avoid redirect loop
+      console.error('[Dashboard] Error:', err)
       window.location.href = '/auth/select-type'
     }
   }
@@ -127,232 +135,240 @@ export default function CreatorDashboard() {
     window.location.href = '/'
   }
 
+  const getStatusConfig = (status: string) => {
+    const config: Record<string, { bg: string; text: string; label: string }> = {
+      'pending': { bg: 'bg-amber-500/20', text: 'text-amber-400', label: 'Pendiente' },
+      'accepted': { bg: 'bg-emerald-500/20', text: 'text-emerald-400', label: 'Aceptado' },
+      'rejected': { bg: 'bg-red-500/20', text: 'text-red-400', label: 'Rechazado' },
+      'completed': { bg: 'bg-blue-500/20', text: 'text-blue-400', label: 'Completado' }
+    }
+    return config[status] || { bg: 'bg-neutral-500/20', text: 'text-neutral-400', label: status }
+  }
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando dashboard...</p>
+          <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-white/60">Cargando...</p>
         </div>
       </div>
     )
   }
 
   const displayName = profile?.full_name || user?.email?.split('@')[0] || 'Usuario'
+  const greeting = new Date().getHours() < 12 ? 'Buenos días' : new Date().getHours() < 18 ? 'Buenas tardes' : 'Buenas noches'
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-black text-white pb-24">
       {/* Header */}
-      <div className="bg-white sticky top-0 z-10 border-b border-gray-100">
-        <div className="px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">Panel</h1>
-              <p className="text-sm text-gray-500">Gestiona tu actividad como creador</p>
+      <div className="px-4 pt-6 pb-4">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <p className="text-white/50 text-sm">{greeting}</p>
+            <h1 className="text-2xl font-bold">{displayName}</h1>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowLogoutModal(true)}
+              className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors"
+            >
+              <svg className="w-5 h-5 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+            </button>
+            <Link href="/creator/profile" className="w-10 h-10 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-full flex items-center justify-center font-bold">
+              {displayName.charAt(0).toUpperCase()}
+            </Link>
+          </div>
+        </div>
+
+        {/* Balance Card */}
+        <Link href="/creator/wallet" className="block">
+          <div className="bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-600 rounded-3xl p-6 relative overflow-hidden">
+            {/* Background Pattern */}
+            <div className="absolute inset-0 opacity-10">
+              <div className="absolute -right-8 -top-8 w-32 h-32 border-[20px] border-white rounded-full" />
+              <div className="absolute -left-4 -bottom-4 w-24 h-24 border-[15px] border-white rounded-full" />
             </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setShowLogoutModal(true)}
-                className="p-2 text-gray-600 hover:text-red-600 transition-colors"
-                title="Cerrar sesión"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-              </button>
-              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-bold">
-                  {displayName.charAt(0).toUpperCase()}
-                </span>
+
+            <div className="relative">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-emerald-100 text-sm font-medium">Balance Disponible</span>
+                <span className="text-emerald-100/60 text-xs">Toca para ver detalles →</span>
+              </div>
+
+              <h2 className="text-5xl font-black mb-4">${wallet?.balance?.toFixed(2) || '0.00'}</h2>
+
+              <div className="flex gap-6">
+                <div>
+                  <p className="text-emerald-100/60 text-xs">Total Ganado</p>
+                  <p className="text-lg font-bold">${wallet?.total_earned?.toFixed(2) || '0.00'}</p>
+                </div>
+                {wallet && wallet.pending_balance > 0 && (
+                  <div>
+                    <p className="text-emerald-100/60 text-xs">En Proceso</p>
+                    <p className="text-lg font-bold text-amber-300">${wallet.pending_balance.toFixed(2)}</p>
+                  </div>
+                )}
               </div>
             </div>
+          </div>
+        </Link>
+      </div>
+
+      {/* Stats */}
+      <div className="px-4 mb-6">
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-white/5 rounded-2xl p-4 text-center border border-white/5">
+            <p className="text-3xl font-bold text-amber-400">{stats.pending}</p>
+            <p className="text-xs text-white/40 mt-1">Pendientes</p>
+          </div>
+          <div className="bg-white/5 rounded-2xl p-4 text-center border border-white/5">
+            <p className="text-3xl font-bold text-emerald-400">{stats.accepted}</p>
+            <p className="text-xs text-white/40 mt-1">Aceptados</p>
+          </div>
+          <div className="bg-white/5 rounded-2xl p-4 text-center border border-white/5">
+            <p className="text-3xl font-bold text-blue-400">{stats.completed}</p>
+            <p className="text-xs text-white/40 mt-1">Completados</p>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="px-4 py-6 pb-24">
-        {/* Profile Card */}
-        <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl p-6 mb-6 shadow-lg">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <h2 className="text-2xl font-bold text-white mb-2">
-                ¡Hola {displayName}! 👋
-              </h2>
-              <p className="text-white/90 text-sm mb-3">
-                {profile?.location && `📍 ${profile.location}`}
-              </p>
-              <div className="flex gap-2 flex-wrap">
-                {profile?.instagram && (
-                  <div className="bg-white/20 backdrop-blur px-3 py-1 rounded-full">
-                    <span className="text-xs text-white">📸 @{profile.instagram}</span>
-                  </div>
-                )}
-                {profile?.tiktok && (
-                  <div className="bg-white/20 backdrop-blur px-3 py-1 rounded-full">
-                    <span className="text-xs text-white">🎵 @{profile.tiktok}</span>
-                  </div>
-                )}
-                {profile?.youtube && (
-                  <div className="bg-white/20 backdrop-blur px-3 py-1 rounded-full">
-                    <span className="text-xs text-white">▶️ @{profile.youtube}</span>
-                  </div>
-                )}
-              </div>
+      {/* Quick Actions */}
+      <div className="px-4 mb-6">
+        <div className="grid grid-cols-2 gap-3">
+          <Link href="/gigs" className="bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl p-5 flex flex-col items-start">
+            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mb-3">
+              <span className="text-xl">🔍</span>
             </div>
-            <div className="w-16 h-16 rounded-full overflow-hidden border-3 border-white shadow-lg bg-white/20 flex items-center justify-center">
-              {profile?.profilePhoto ? (
-                <img src={profile.profilePhoto} alt="Profile" className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-3xl">👤</span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Wallet Summary */}
-        <Link href="/creator/wallet" className="block bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-6 mb-6 shadow-lg hover:shadow-xl transition-shadow">
-          <div className="text-center mb-4">
-            <div className="text-sm text-green-100 mb-1">Balance Disponible</div>
-            <div className="text-4xl font-black text-white">${wallet?.balance?.toFixed(2) || '0.00'}</div>
-            {wallet && wallet.pending_balance > 0 && (
-              <div className="text-sm text-green-200 mt-1">
-                + ${wallet.pending_balance.toFixed(2)} pendiente
-              </div>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white/10 backdrop-blur rounded-xl p-3 text-center">
-              <div className="text-lg font-bold text-white">${wallet?.total_earned?.toFixed(2) || '0.00'}</div>
-              <div className="text-xs text-green-100">Total Ganado</div>
-            </div>
-            <div className="bg-white/10 backdrop-blur rounded-xl p-3 text-center">
-              <div className="text-lg font-bold text-white">{stats.totalCampaigns}</div>
-              <div className="text-xs text-green-100">Campañas</div>
-            </div>
-          </div>
-
-          <div className="mt-4 text-center">
-            <span className="text-sm text-green-100">Toca para ver detalles →</span>
-          </div>
-        </Link>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="bg-white rounded-xl p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-600">Pendientes</span>
-              <span className="text-orange-500">⏳</span>
-            </div>
-            <div className="text-2xl font-bold text-gray-900">{stats.pendingApplications}</div>
-            <div className="text-xs text-gray-500">Aplicaciones</div>
-          </div>
-
-          <div className="bg-white rounded-xl p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-600">Esta Semana</span>
-              <span className="text-green-500">💰</span>
-            </div>
-            <div className="text-2xl font-bold text-gray-900">${stats.thisMonth}</div>
-            <div className="text-xs text-gray-500">Ganancias</div>
-          </div>
-        </div>
-
-        {/* Recent Activity */}
-        <div className="bg-white rounded-2xl p-6 mb-6 shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Campañas Recientes</h3>
-          <div className="text-center py-8 text-gray-500">
-            <div className="text-4xl mb-4">🎯</div>
-            <p>No tienes campañas recientes</p>
-            <p className="text-sm mt-2">¡Aplica a trabajos para empezar a ganar!</p>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <Link
-            href="/gigs"
-            className="bg-blue-600 text-white rounded-xl p-4 text-center font-semibold shadow-sm"
-          >
-            <div className="text-lg mb-1">🔍</div>
-            <div className="text-sm">Buscar Trabajos</div>
+            <h3 className="font-bold mb-1">Buscar Trabajos</h3>
+            <p className="text-xs text-white/70">Encuentra gigs y campañas</p>
           </Link>
 
-          <Link
-            href="/creator/profile"
-            className="bg-gray-800 text-white rounded-xl p-4 text-center font-semibold shadow-sm"
-          >
-            <div className="text-lg mb-1">👤</div>
-            <div className="text-sm">Mi Perfil</div>
+          <Link href="/creator/applications" className="bg-white/5 border border-white/10 rounded-2xl p-5 flex flex-col items-start">
+            <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center mb-3">
+              <span className="text-xl">📋</span>
+            </div>
+            <h3 className="font-bold mb-1">Mis Aplicaciones</h3>
+            <p className="text-xs text-white/50">Ver estado de aplicaciones</p>
           </Link>
         </div>
+      </div>
 
-        {/* Tips */}
-        <div className="bg-blue-50 rounded-2xl p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">💡 Consejos Pro</h3>
+      {/* Recent Applications */}
+      <div className="px-4">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold">Actividad Reciente</h2>
+          {applications.length > 0 && (
+            <Link href="/creator/applications" className="text-sm text-white/50 hover:text-white">
+              Ver todo →
+            </Link>
+          )}
+        </div>
+
+        {applications.length === 0 ? (
+          <div className="bg-white/5 border border-white/5 rounded-2xl p-8 text-center">
+            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-3xl">🎯</span>
+            </div>
+            <h3 className="font-semibold mb-2">Sin aplicaciones aún</h3>
+            <p className="text-white/40 text-sm mb-4">Empieza a buscar trabajos y aplica a los que te interesen</p>
+            <Link href="/gigs" className="inline-block bg-white text-black px-6 py-2 rounded-full font-semibold text-sm hover:bg-white/90 transition-colors">
+              Buscar Trabajos
+            </Link>
+          </div>
+        ) : (
           <div className="space-y-3">
-            <div className="text-sm text-gray-700">• Aplica rápido a las campañas para mejores oportunidades</div>
-            <div className="text-sm text-gray-700">• Sube muestras de alta calidad a tu portafolio</div>
-            <div className="text-sm text-gray-700">• Revisa tus métricas semanalmente para ver tu crecimiento</div>
+            {applications.map((app) => {
+              const status = getStatusConfig(app.status)
+              return (
+                <div key={app.id} className="bg-white/5 border border-white/5 rounded-2xl p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <h3 className="font-semibold flex-1 pr-2">{app.gig?.title || 'Gig'}</h3>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${status.bg} ${status.text}`}>
+                      {status.label}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-emerald-400 font-medium">
+                      ${app.gig?.budget_min} - ${app.gig?.budget_max}
+                    </span>
+                    <span className="text-white/40 text-xs">
+                      {new Date(app.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                    </span>
+                  </div>
+                </div>
+              )
+            })}
           </div>
+        )}
+      </div>
+
+      {/* Tips Section */}
+      <div className="px-4 mt-6">
+        <div className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/20 rounded-2xl p-5">
+          <h3 className="font-semibold text-blue-400 mb-3 flex items-center gap-2">
+            <span>💡</span> Consejos Pro
+          </h3>
+          <ul className="space-y-2 text-sm text-white/60">
+            <li>• Aplica rápido a las campañas nuevas</li>
+            <li>• Mantén tu perfil actualizado con tu mejor trabajo</li>
+            <li>• Responde a los mensajes en menos de 24h</li>
+          </ul>
         </div>
       </div>
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100">
+      <div className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-xl border-t border-white/10">
         <div className="flex justify-around py-3">
-          <Link href="/gigs" className="flex flex-col items-center space-y-1 text-gray-400">
-            <span className="text-lg">💼</span>
-            <span className="text-xs font-medium">Trabajos</span>
+          <Link href="/gigs" className="flex flex-col items-center gap-1 text-white/40">
+            <span className="text-xl">💼</span>
+            <span className="text-[10px]">Trabajos</span>
           </Link>
-
-          <div className="flex flex-col items-center space-y-1 text-blue-600">
-            <span className="text-lg">📊</span>
-            <span className="text-xs font-medium">Panel</span>
+          <div className="flex flex-col items-center gap-1 text-white">
+            <span className="text-xl">📊</span>
+            <span className="text-[10px] font-medium">Panel</span>
           </div>
-
-          <Link href="/creator/wallet" className="flex flex-col items-center space-y-1 text-gray-400">
-            <span className="text-lg">💰</span>
-            <span className="text-xs font-medium">Wallet</span>
+          <Link href="/creator/wallet" className="flex flex-col items-center gap-1 text-white/40">
+            <span className="text-xl">💰</span>
+            <span className="text-[10px]">Wallet</span>
           </Link>
-
-          <Link href="/creator/messages" className="flex flex-col items-center space-y-1 text-gray-400">
-            <span className="text-lg">💬</span>
-            <span className="text-xs font-medium">Mensajes</span>
+          <Link href="/creator/messages" className="flex flex-col items-center gap-1 text-white/40">
+            <span className="text-xl">💬</span>
+            <span className="text-[10px]">Mensajes</span>
           </Link>
-
-          <Link href="/creator/profile" className="flex flex-col items-center space-y-1 text-gray-400">
-            <span className="text-lg">👤</span>
-            <span className="text-xs font-medium">Perfil</span>
+          <Link href="/creator/profile" className="flex flex-col items-center gap-1 text-white/40">
+            <span className="text-xl">👤</span>
+            <span className="text-[10px]">Perfil</span>
           </Link>
         </div>
-        <div className="h-1 bg-gray-900 mx-auto w-32 rounded-full mb-2"></div>
+        <div className="h-1 bg-white/20 mx-auto w-32 rounded-full mb-2" />
       </div>
 
       {/* Logout Modal */}
       {showLogoutModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-neutral-900 border border-white/10 rounded-3xl p-6 max-w-sm w-full">
             <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Cerrar sesión</h3>
-              <p className="text-gray-600">¿Estás seguro de que quieres cerrar tu sesión?</p>
+              <h3 className="text-xl font-bold mb-2">Cerrar sesión</h3>
+              <p className="text-white/60">¿Estás seguro de que quieres cerrar tu sesión?</p>
             </div>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowLogoutModal(false)}
-                className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
+                className="flex-1 py-3 px-4 bg-white/10 rounded-xl font-semibold hover:bg-white/20 transition-colors"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleLogout}
-                className="flex-1 py-3 px-4 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition-colors"
+                className="flex-1 py-3 px-4 bg-red-500 text-white rounded-xl font-semibold hover:bg-red-400 transition-colors"
               >
                 Cerrar sesión
               </button>
