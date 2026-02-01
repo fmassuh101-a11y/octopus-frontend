@@ -8,23 +8,56 @@ import {
   TEMPLATE_CATEGORIES
 } from '@/lib/utils/messageTemplates'
 
+// Templates predeterminados que siempre estan disponibles
+const DEFAULT_QUICK_MESSAGES = [
+  {
+    id: 'quick-1',
+    title: 'Bienvenida',
+    content: 'Hola {nombre}! Gracias por aplicar a "{gig_title}". Me encanta tu perfil y creo que serias perfecto/a para este proyecto. Me gustaria discutir los detalles contigo. Estas disponible?',
+    category: 'bienvenida'
+  },
+  {
+    id: 'quick-2',
+    title: 'Detalles del proyecto',
+    content: 'Hola {nombre}! Te cuento mas sobre el proyecto "{gig_title}". Necesitamos contenido de alta calidad que conecte con nuestra audiencia. Tienes alguna pregunta sobre los requisitos?',
+    category: 'detalles'
+  },
+  {
+    id: 'quick-3',
+    title: 'Confirmar colaboracion',
+    content: 'Excelente {nombre}! Estamos muy contentos de trabajar contigo en "{gig_title}". Los proximos pasos son acordar fechas y definir el brief creativo. Te parece bien?',
+    category: 'cierre'
+  },
+  {
+    id: 'quick-4',
+    title: 'Mensaje rapido',
+    content: 'Hola {nombre}! Gracias por tu interes en "{gig_title}". Te escribo para coordinar los siguientes pasos.',
+    category: 'general'
+  }
+]
+
 interface TemplateSelectorProps {
   templates: MessageTemplate[]
   variables: TemplateVariables
-  onSelect: (processedContent: string, templateId: string) => void
+  onSelect: (processedContent: string, templateId?: string) => void
   onClose: () => void
+  onSendDirect?: (content: string) => void // Enviar mensaje directamente
 }
 
 export default function TemplateSelector({
   templates,
   variables,
   onSelect,
-  onClose
+  onClose,
+  onSendDirect
 }: TemplateSelectorProps) {
-  const [search, setSearch] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const [selectedTemplate, setSelectedTemplate] = useState<MessageTemplate | null>(null)
+  const [selectedTemplate, setSelectedTemplate] = useState<typeof DEFAULT_QUICK_MESSAGES[0] | MessageTemplate | null>(null)
   const [preview, setPreview] = useState('')
+  const [customMessage, setCustomMessage] = useState('')
+  const [showCustom, setShowCustom] = useState(false)
+
+  // Combinar templates del usuario con los predeterminados
+  const allTemplates = [...DEFAULT_QUICK_MESSAGES, ...templates]
 
   useEffect(() => {
     if (selectedTemplate) {
@@ -32,27 +65,33 @@ export default function TemplateSelector({
     }
   }, [selectedTemplate, variables])
 
-  const filteredTemplates = templates.filter(t => {
-    const matchesSearch = t.title.toLowerCase().includes(search.toLowerCase()) ||
-      t.content.toLowerCase().includes(search.toLowerCase())
-    const matchesCategory = !selectedCategory || t.category === selectedCategory
-    return matchesSearch && matchesCategory
-  })
-
-  const handleSelect = () => {
-    if (selectedTemplate) {
+  const handleSend = () => {
+    if (selectedTemplate && onSendDirect) {
       const processed = processTemplate(selectedTemplate.content, variables)
-      onSelect(processed, selectedTemplate.id)
+      onSendDirect(processed)
+    } else if (selectedTemplate) {
+      const processed = processTemplate(selectedTemplate.content, variables)
+      onSelect(processed, 'id' in selectedTemplate ? selectedTemplate.id : undefined)
+    }
+  }
+
+  const handleSendCustom = () => {
+    if (customMessage.trim()) {
+      if (onSendDirect) {
+        onSendDirect(customMessage.trim())
+      } else {
+        onSelect(customMessage.trim())
+      }
     }
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center">
+      <div className="bg-white w-full max-w-lg max-h-[85vh] flex flex-col rounded-t-3xl sm:rounded-2xl">
         {/* Header */}
         <div className="p-4 border-b border-gray-100">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-gray-900">Seleccionar Template</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-bold text-gray-900">Enviar Mensaje</h3>
             <button
               onClick={onClose}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -62,110 +101,107 @@ export default function TemplateSelector({
               </svg>
             </button>
           </div>
-
-          {/* Search */}
-          <div className="relative">
-            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar templates..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
-          </div>
+          <p className="text-sm text-gray-500 mt-1">
+            Para: <span className="font-medium text-gray-700">{variables.nombre}</span>
+          </p>
         </div>
 
-        {/* Categories */}
-        <div className="p-3 border-b border-gray-100 flex gap-2 overflow-x-auto">
+        {/* Tabs */}
+        <div className="flex border-b border-gray-100">
           <button
-            onClick={() => setSelectedCategory(null)}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-              !selectedCategory
-                ? 'bg-purple-600 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            onClick={() => setShowCustom(false)}
+            className={`flex-1 py-3 text-sm font-medium transition-colors ${
+              !showCustom
+                ? 'text-purple-600 border-b-2 border-purple-600'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            Todos
+            Mensajes Rapidos
           </button>
-          {TEMPLATE_CATEGORIES.map(cat => (
+          <button
+            onClick={() => setShowCustom(true)}
+            className={`flex-1 py-3 text-sm font-medium transition-colors ${
+              showCustom
+                ? 'text-purple-600 border-b-2 border-purple-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Escribir Mensaje
+          </button>
+        </div>
+
+        {showCustom ? (
+          /* Custom Message Tab */
+          <div className="flex-1 p-4 flex flex-col">
+            <textarea
+              value={customMessage}
+              onChange={(e) => setCustomMessage(e.target.value)}
+              placeholder={`Escribe tu mensaje para ${variables.nombre}...`}
+              className="flex-1 min-h-[200px] p-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+            />
             <button
-              key={cat.id}
-              onClick={() => setSelectedCategory(cat.id)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                selectedCategory === cat.id
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+              onClick={handleSendCustom}
+              disabled={!customMessage.trim()}
+              className="mt-4 w-full py-3 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {cat.emoji} {cat.label}
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+              </svg>
+              Enviar Mensaje
             </button>
-          ))}
-        </div>
-
-        {/* Templates List */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-2">
-          {filteredTemplates.length === 0 ? (
-            <div className="text-center py-8">
-              <div className="text-4xl mb-3">📝</div>
-              <p className="text-gray-500">No hay templates disponibles</p>
-              <p className="text-sm text-gray-400 mt-1">Crea tu primer template en la seccion de Templates</p>
-            </div>
-          ) : (
-            filteredTemplates.map(template => {
-              const category = TEMPLATE_CATEGORIES.find(c => c.id === template.category)
-              return (
-                <button
-                  key={template.id}
-                  onClick={() => setSelectedTemplate(template)}
-                  className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
-                    selectedTemplate?.id === template.id
-                      ? 'border-purple-500 bg-purple-50'
-                      : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-semibold text-gray-900">{template.title}</span>
-                    <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
-                      {category?.emoji} {category?.label}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-600 line-clamp-2">
-                    {processTemplate(template.content, variables).substring(0, 100)}...
-                  </p>
-                  {template.use_count > 0 && (
-                    <p className="text-xs text-gray-400 mt-2">Usado {template.use_count} veces</p>
-                  )}
-                </button>
-              )
-            })
-          )}
-        </div>
-
-        {/* Preview & Actions */}
-        {selectedTemplate && (
-          <div className="border-t border-gray-100 p-4">
-            <p className="text-xs font-medium text-gray-500 mb-2">Vista previa:</p>
-            <div className="bg-gray-50 rounded-xl p-3 max-h-32 overflow-y-auto mb-4">
-              <p className="text-sm text-gray-700 whitespace-pre-wrap">{preview}</p>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={onClose}
-                className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleSelect}
-                className="flex-1 px-4 py-2.5 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 transition-colors"
-              >
-                Usar Template
-              </button>
-            </div>
           </div>
+        ) : (
+          /* Quick Messages Tab */
+          <>
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {allTemplates.map((template, index) => {
+                const processed = processTemplate(template.content, variables)
+                const isSelected = selectedTemplate?.id === template.id
+                const category = TEMPLATE_CATEGORIES.find(c => c.id === template.category)
+
+                return (
+                  <button
+                    key={template.id || index}
+                    onClick={() => setSelectedTemplate(template)}
+                    className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
+                      isSelected
+                        ? 'border-purple-500 bg-purple-50'
+                        : 'border-gray-100 hover:border-purple-200 hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-semibold text-gray-900">{template.title}</span>
+                      {category && (
+                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                          {category.emoji}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-600 line-clamp-2">{processed}</p>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Preview & Send */}
+            {selectedTemplate && (
+              <div className="border-t border-gray-100 p-4">
+                <p className="text-xs font-medium text-gray-500 mb-2">Vista previa del mensaje:</p>
+                <div className="bg-purple-50 rounded-xl p-3 max-h-24 overflow-y-auto mb-4">
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{preview}</p>
+                </div>
+                <button
+                  onClick={handleSend}
+                  className="w-full py-3 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                  </svg>
+                  Enviar a {variables.nombre}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
