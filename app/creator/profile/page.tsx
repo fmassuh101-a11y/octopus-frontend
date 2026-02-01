@@ -234,9 +234,13 @@ export default function ProfilePage() {
             <span className="font-medium text-gray-900">{data.studies || 'Sin configurar'}</span>
           </div>
           <div className="flex justify-between items-center py-3">
-            <span className="text-gray-600">Categorias</span>
-            <span className="font-medium text-gray-900 text-right max-w-[200px]">
-              {data.categories?.length > 0 ? data.categories.join(', ') : 'Sin configurar'}
+            <span className="text-gray-600">LinkedIn</span>
+            <span className="font-medium text-gray-900 text-right max-w-[200px] truncate">
+              {data.linkedInUrl ? (
+                <a href={data.linkedInUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                  Ver perfil
+                </a>
+              ) : 'Sin configurar'}
             </span>
           </div>
         </div>
