@@ -106,7 +106,7 @@ export default function CompanyAnalyticsPage() {
       }
 
       // Get unique creator IDs
-      const creatorIds = [...new Set(applications.map((a: any) => a.creator_id))] as string[]
+      const creatorIds = Array.from(new Set(applications.map((a: any) => a.creator_id))) as string[]
 
       // Get creator profiles
       const profilesRes = await fetch(

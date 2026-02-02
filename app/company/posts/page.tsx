@@ -81,7 +81,7 @@ export default function CompanyPostsPage() {
         return
       }
 
-      const creatorIds = [...new Set(applications.map((a: any) => a.creator_id))] as string[]
+      const creatorIds = Array.from(new Set(applications.map((a: any) => a.creator_id))) as string[]
 
       // Get profiles
       const profilesRes = await fetch(

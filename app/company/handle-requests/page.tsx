@@ -75,7 +75,7 @@ export default function HandleRequestsPage() {
       const data = await requestsRes.json()
 
       // Get creator profiles
-      const creatorIds = [...new Set(data.map((r: any) => r.application?.creator_id).filter(Boolean))] as string[]
+      const creatorIds = Array.from(new Set(data.map((r: any) => r.application?.creator_id).filter(Boolean))) as string[]
 
       if (creatorIds.length > 0) {
         const profilesRes = await fetch(
