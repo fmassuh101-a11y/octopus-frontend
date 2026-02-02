@@ -248,22 +248,42 @@ function UsersManagement() {
 
   const loadUsers = async () => {
     const token = getToken()
-    if (!token) return
+    if (!token) {
+      console.error('[Admin Users] No token found')
+      setLoading(false)
+      return
+    }
 
     try {
+      console.log('[Admin Users] Loading profiles...')
+
       // Get all profiles
       const profilesRes = await fetch(
         `${SUPABASE_URL}/rest/v1/profiles?select=user_id,full_name,user_type&order=full_name.asc`,
         { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
       )
+
+      console.log('[Admin Users] Profiles response status:', profilesRes.status)
+
+      if (!profilesRes.ok) {
+        const errorText = await profilesRes.text()
+        console.error('[Admin Users] Profiles fetch error:', profilesRes.status, errorText)
+      }
+
       const profiles = profilesRes.ok ? await profilesRes.json() : []
+      console.log('[Admin Users] Profiles loaded:', profiles.length, profiles)
 
       // Get all wallets
       const walletsRes = await fetch(
         `${SUPABASE_URL}/rest/v1/wallets?select=*`,
         { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
       )
+
+      console.log('[Admin Users] Wallets response status:', walletsRes.status)
+
       const wallets = walletsRes.ok ? await walletsRes.json() : []
+      console.log('[Admin Users] Wallets loaded:', wallets.length)
+
       const walletMap = new Map(wallets.map((w: any) => [w.user_id, w]))
 
       // Merge data
@@ -272,10 +292,11 @@ function UsersManagement() {
         wallet: walletMap.get(p.user_id) || null
       }))
 
+      console.log('[Admin Users] Final users list:', usersWithWallets.length)
       setUsers(usersWithWallets)
       setLoading(false)
     } catch (err) {
-      console.error('Error loading users:', err)
+      console.error('[Admin Users] Error loading users:', err)
       setLoading(false)
     }
   }
