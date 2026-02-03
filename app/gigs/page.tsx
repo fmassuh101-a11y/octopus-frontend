@@ -36,11 +36,14 @@ export default function GigsPage() {
   const [appliedGigs, setAppliedGigs] = useState<Set<string>>(new Set())
   const [showSuccessToast, setShowSuccessToast] = useState(false)
   const [countdown, setCountdown] = useState(5)
+  const [isVerified, setIsVerified] = useState(false)
+  const [showVerificationModal, setShowVerificationModal] = useState(false)
 
   useEffect(() => {
     checkAuth()
     loadGigs()
     loadAppliedGigs()
+    checkVerification()
   }, [])
 
   // Countdown effect for success toast
@@ -58,6 +61,43 @@ export default function GigsPage() {
     const userStr = localStorage.getItem('sb-user')
     if (userStr) {
       setUser(JSON.parse(userStr))
+    }
+  }
+
+  // Check if user has verified at least one social account
+  const checkVerification = async () => {
+    try {
+      const token = localStorage.getItem('sb-access-token')
+      const userStr = localStorage.getItem('sb-user')
+      if (!token || !userStr) return
+
+      const userData = JSON.parse(userStr)
+
+      // Check Supabase for verification status
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=bio`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'apikey': SUPABASE_ANON_KEY
+        }
+      })
+
+      if (response.ok) {
+        const profiles = await response.json()
+        if (profiles.length > 0 && profiles[0].bio) {
+          try {
+            const bioData = JSON.parse(profiles[0].bio)
+            // User is verified if they have tiktokConnected=true AND at least one account
+            const hasTikTok = bioData.tiktokConnected && bioData.tiktokAccounts?.length > 0
+            setIsVerified(hasTikTok)
+            console.log('[Gigs] Verification status:', hasTikTok)
+          } catch (e) {
+            console.log('[Gigs] Could not parse bio')
+            setIsVerified(false)
+          }
+        }
+      }
+    } catch (err) {
+      console.error('[Gigs] Error checking verification:', err)
     }
   }
 
@@ -112,6 +152,12 @@ export default function GigsPage() {
   const handleApply = async (gig: Gig) => {
     if (!user) {
       router.push('/auth/login')
+      return
+    }
+
+    // Check if user is verified before allowing application
+    if (!isVerified) {
+      setShowVerificationModal(true)
       return
     }
 
@@ -463,6 +509,70 @@ export default function GigsPage() {
         </div>
         <div className="h-1 bg-gray-900 mx-auto w-32 rounded-full mb-2"></div>
       </div>
+
+      {/* Verification Required Modal */}
+      {showVerificationModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl">
+            {/* Icon */}
+            <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg className="w-10 h-10 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+
+            {/* Content */}
+            <div className="text-center mb-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Verificacion Requerida</h3>
+              <p className="text-gray-600">
+                Para aplicar a trabajos, necesitas verificar al menos una de tus redes sociales.
+                Esto ayuda a las empresas a confiar en ti y ver tus estadisticas reales.
+              </p>
+            </div>
+
+            {/* Benefits */}
+            <div className="bg-gray-50 rounded-xl p-4 mb-6">
+              <p className="text-sm font-medium text-gray-700 mb-2">Al verificar obtendras:</p>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  Acceso a aplicar a todos los trabajos
+                </li>
+                <li className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  Perfil destacado para empresas
+                </li>
+                <li className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  Mayor probabilidad de ser seleccionado
+                </li>
+              </ul>
+            </div>
+
+            {/* Buttons */}
+            <div className="space-y-3">
+              <Link
+                href="/creator/profile?section=verification"
+                className="block w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-bold text-center hover:from-blue-700 hover:to-purple-700 transition-all"
+              >
+                Verificar Mi Cuenta
+              </Link>
+              <button
+                onClick={() => setShowVerificationModal(false)}
+                className="w-full py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Gig Detail Modal */}
       {selectedGig && (

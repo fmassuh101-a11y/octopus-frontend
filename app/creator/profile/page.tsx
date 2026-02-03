@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ftvqoudlmojdxwjxljzr.supabase.co'
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
+const TIKTOK_CLIENT_KEY = 'sbawzx5ya0iuu4hs58'
 
 interface ProfileSection {
   id: string
@@ -15,6 +16,7 @@ interface ProfileSection {
 
 export default function ProfilePage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [profile, setProfile] = useState<any>(null)
   const [bioData, setBioData] = useState<any>({})
   const [user, setUser] = useState<any>(null)
@@ -24,7 +26,12 @@ export default function ProfilePage() {
 
   useEffect(() => {
     loadProfileData()
-  }, [])
+    // Check if there's a section parameter in the URL
+    const section = searchParams.get('section')
+    if (section && ['account', 'verification', 'earnings', 'stats', 'security'].includes(section)) {
+      setActiveSection(section)
+    }
+  }, [searchParams])
 
   const loadProfileData = async () => {
     console.log('[Profile] Loading profile data...')
@@ -359,6 +366,213 @@ export default function ProfilePage() {
     </div>
   )
 
+  // Handle TikTok OAuth connection
+  const handleConnectTikTok = () => {
+    const redirectUri = encodeURIComponent(`${window.location.origin}/auth/tiktok/callback`)
+    const scope = encodeURIComponent('user.info.basic,user.info.profile,user.info.stats,video.list')
+    const state = Math.random().toString(36).substring(7)
+
+    // Save state to localStorage for CSRF protection
+    localStorage.setItem('tiktok_oauth_state', state)
+
+    const authUrl = `https://www.tiktok.com/v2/auth/authorize/?client_key=${TIKTOK_CLIENT_KEY}&response_type=code&scope=${scope}&redirect_uri=${redirectUri}&state=${state}`
+
+    window.location.href = authUrl
+  }
+
+  // Verification Section - REAL OAuth verification
+  const VerificationSection = () => {
+    const data = { ...bioData, ...profile }
+    const tiktokAccounts = data.tiktokAccounts || []
+    const isTiktokVerified = data.tiktokConnected && tiktokAccounts.length > 0
+    const tiktokAccount = tiktokAccounts[0] // Get first connected account
+
+    return (
+      <div className="space-y-6">
+        {/* Verification Status Card */}
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Verificacion de Cuentas</h3>
+              <p className="text-sm text-gray-500">Conecta tus redes para aplicar a trabajos</p>
+            </div>
+          </div>
+
+          {/* Warning if not verified */}
+          {!isTiktokVerified && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-amber-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div>
+                  <p className="font-medium text-amber-800">Verifica al menos una cuenta</p>
+                  <p className="text-sm text-amber-700 mt-1">
+                    Necesitas verificar al menos una red social para poder aplicar a trabajos. Esto ayuda a las empresas a confiar en ti.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Success if verified */}
+          {isTiktokVerified && (
+            <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-green-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <div>
+                  <p className="font-medium text-green-800">Cuenta verificada</p>
+                  <p className="text-sm text-green-700 mt-1">
+                    Ya puedes aplicar a trabajos. Las empresas podran ver tus estadisticas.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TikTok */}
+          <div className={`p-4 rounded-xl border-2 transition-colors ${
+            isTiktokVerified ? 'border-green-500 bg-green-50' : 'border-gray-200 bg-gray-50'
+          }`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center">
+                  <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M19.321 5.562a5.124 5.124 0 0 1-.443-.258 6.228 6.228 0 0 1-1.137-.966c-.849-.849-1.432-1.884-1.432-3.052V.621h-3.714v14.325c0 1.568-1.277 2.845-2.845 2.845s-2.845-1.277-2.845-2.845 1.277-2.845 2.845-2.845c.195 0 .39.02.579.058V8.539c-.193-.013-.386-.02-.579-.02-3.462 0-6.265 2.803-6.265 6.265s2.803 6.265 6.265 6.265 6.265-2.803 6.265-6.265V8.317a9.14 9.14 0 0 0 5.125 1.553V6.538a5.549 5.549 0 0 1-2.119-.976z"/>
+                  </svg>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold text-gray-900">TikTok</p>
+                    {isTiktokVerified && (
+                      <span className="inline-flex items-center gap-1 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">
+                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                        Verificado
+                      </span>
+                    )}
+                  </div>
+                  {isTiktokVerified && tiktokAccount ? (
+                    <p className="text-sm text-gray-600">@{tiktokAccount.username} · {tiktokAccount.followers?.toLocaleString() || 0} seguidores</p>
+                  ) : (
+                    <p className="text-sm text-gray-500">No conectado</p>
+                  )}
+                </div>
+              </div>
+
+              {isTiktokVerified ? (
+                <button
+                  onClick={handleConnectTikTok}
+                  className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Reconectar
+                </button>
+              ) : (
+                <button
+                  onClick={handleConnectTikTok}
+                  className="px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-800 transition-colors"
+                >
+                  Verificar
+                </button>
+              )}
+            </div>
+
+            {/* TikTok Stats if verified */}
+            {isTiktokVerified && tiktokAccount && (
+              <div className="mt-4 pt-4 border-t border-green-200 grid grid-cols-3 gap-4">
+                <div className="text-center">
+                  <p className="text-lg font-bold text-gray-900">{tiktokAccount.followers?.toLocaleString() || 0}</p>
+                  <p className="text-xs text-gray-500">Seguidores</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-bold text-gray-900">{tiktokAccount.likes?.toLocaleString() || 0}</p>
+                  <p className="text-xs text-gray-500">Likes</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-bold text-gray-900">{tiktokAccount.videoCount || 0}</p>
+                  <p className="text-xs text-gray-500">Videos</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Instagram - Coming Soon */}
+          <div className="mt-4 p-4 rounded-xl border-2 border-gray-200 bg-gray-50 opacity-60">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                  <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                  </svg>
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900">Instagram</p>
+                  <p className="text-sm text-gray-500">Proximamente</p>
+                </div>
+              </div>
+              <span className="px-3 py-1 text-xs font-medium text-gray-500 bg-gray-200 rounded-full">
+                Pronto
+              </span>
+            </div>
+          </div>
+
+          {/* YouTube - Coming Soon */}
+          <div className="mt-4 p-4 rounded-xl border-2 border-gray-200 bg-gray-50 opacity-60">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-red-600 rounded-xl flex items-center justify-center">
+                  <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                  </svg>
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900">YouTube</p>
+                  <p className="text-sm text-gray-500">Proximamente</p>
+                </div>
+              </div>
+              <span className="px-3 py-1 text-xs font-medium text-gray-500 bg-gray-200 rounded-full">
+                Pronto
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Why Verify Card */}
+        <div className="bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl p-6 text-white">
+          <h3 className="text-lg font-semibold mb-3">¿Por que verificar?</h3>
+          <ul className="space-y-2 text-sm text-white/90">
+            <li className="flex items-start gap-2">
+              <svg className="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+              <span>Las empresas pueden ver tus estadisticas reales</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <svg className="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+              <span>Mayor confianza = mas oportunidades de trabajo</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <svg className="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+              <span>Requisito obligatorio para aplicar a trabajos</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    )
+  }
+
   // Statistics Section
   const StatsSection = () => (
     <div className="space-y-6">
@@ -406,6 +620,7 @@ export default function ProfilePage() {
 
   const sections: ProfileSection[] = [
     { id: 'account', title: 'Mi Cuenta', icon: '👤', component: <AccountSection /> },
+    { id: 'verification', title: 'Verificacion', icon: '✓', component: <VerificationSection /> },
     { id: 'earnings', title: 'Ganancias', icon: '💰', component: <EarningsSection /> },
     { id: 'stats', title: 'Estadisticas', icon: '📊', component: <StatsSection /> },
     { id: 'security', title: 'Seguridad', icon: '🔒', component: <SecuritySection /> }
