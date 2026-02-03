@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import LegalContractDocument from '@/components/contracts/LegalContractDocument'
 
 const SUPABASE_URL = 'https://ftvqoudlmojdxwjxljzr.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
@@ -29,6 +30,8 @@ interface Contract {
   viewed_at?: string
   accepted_at?: string
   creator_handles?: any[]
+  creator_signed_at?: string
+  company_signed_at?: string
   company_name?: string
   gig_title?: string
 }
@@ -55,6 +58,7 @@ export default function CreatorContractsPage() {
   const [contracts, setContracts] = useState<Contract[]>([])
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null)
   const [user, setUser] = useState<any>(null)
+  const [creatorName, setCreatorName] = useState('Creador')
   const [showAcceptModal, setShowAcceptModal] = useState(false)
   const [handles, setHandles] = useState<Record<string, string>>({})
   const [accepting, setAccepting] = useState(false)
@@ -75,6 +79,30 @@ export default function CreatorContractsPage() {
 
     const userData = JSON.parse(userStr)
     setUser(userData)
+
+    // Fetch creator's name from profile
+    try {
+      const profileRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=full_name,username,bio`,
+        { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+      )
+      if (profileRes.ok) {
+        const [profile] = await profileRes.json()
+        if (profile) {
+          let name = profile.full_name || profile.username || 'Creador'
+          if (profile.bio) {
+            try {
+              const bioData = JSON.parse(profile.bio)
+              if (bioData.name) name = bioData.name
+            } catch (e) {}
+          }
+          setCreatorName(name)
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching profile:', err)
+    }
+
     await loadContracts(userData.id, token)
   }
 
@@ -143,6 +171,7 @@ export default function CreatorContractsPage() {
         deliverables: typeof c.deliverables === 'string' ? JSON.parse(c.deliverables) : c.deliverables,
         usage_rights: typeof c.usage_rights === 'string' ? JSON.parse(c.usage_rights) : c.usage_rights,
         creator_handles: typeof c.creator_handles === 'string' ? JSON.parse(c.creator_handles) : c.creator_handles,
+        exclusivity_competitors: typeof c.exclusivity_competitors === 'string' ? JSON.parse(c.exclusivity_competitors) : c.exclusivity_competitors,
         company_name: companiesMap.get(c.company_id) || 'Empresa',
         gig_title: gigsMap.get(c.gig_id) || c.title
       }))
@@ -393,165 +422,17 @@ export default function CreatorContractsPage() {
         )}
       </div>
 
-      {/* Contract Detail Modal */}
+      {/* Legal Contract Document View */}
       {selectedContract && !showAcceptModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center">
-          <div className="bg-neutral-900 rounded-t-3xl sm:rounded-2xl w-full sm:max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
-            {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-neutral-800 flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-bold">{selectedContract.title}</h2>
-                <p className="text-sm text-neutral-400">{selectedContract.company_name}</p>
-              </div>
-              <button
-                onClick={() => setSelectedContract(null)}
-                className="p-2 hover:bg-neutral-800 rounded-xl"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Modal Content */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              {/* Payment */}
-              <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4">
-                <p className="text-sm text-green-400 mb-1">Pago</p>
-                <p className="text-2xl font-bold text-green-400">
-                  {formatCurrency(selectedContract.payment_amount, selectedContract.payment_currency)}
-                </p>
-                {selectedContract.payment_terms && (
-                  <p className="text-sm text-neutral-400 mt-2">{selectedContract.payment_terms}</p>
-                )}
-              </div>
-
-              {/* Deliverables */}
-              <div>
-                <h4 className="font-semibold mb-3">Entregables</h4>
-                <div className="space-y-2">
-                  {selectedContract.deliverables.map((del: any, i: number) => (
-                    <div key={i} className="flex items-center gap-3 bg-neutral-800 rounded-xl p-3">
-                      <span className="text-2xl">{PLATFORM_ICONS[del.platform] || '📱'}</span>
-                      <div className="flex-1">
-                        <p className="font-medium capitalize">{del.platform}</p>
-                        <p className="text-sm text-neutral-400">{del.quantity} {del.content_type}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Due Date */}
-              {selectedContract.content_due_date && (
-                <div>
-                  <h4 className="font-semibold mb-2">Fecha Límite</h4>
-                  <p className="text-neutral-300">{formatDate(selectedContract.content_due_date)}</p>
-                </div>
-              )}
-
-              {/* Hashtags & Mentions */}
-              {(selectedContract.hashtags?.length || selectedContract.mentions?.length) && (
-                <div>
-                  <h4 className="font-semibold mb-2">Requisitos</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedContract.hashtags?.map((h: string, i: number) => (
-                      <span key={i} className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-sm">{h}</span>
-                    ))}
-                    {selectedContract.mentions?.map((m: string, i: number) => (
-                      <span key={i} className="px-3 py-1 bg-violet-500/20 text-violet-400 rounded-full text-sm">{m}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Brand Guidelines */}
-              {selectedContract.brand_guidelines && (
-                <div>
-                  <h4 className="font-semibold mb-2">Instrucciones</h4>
-                  <p className="text-neutral-300 text-sm whitespace-pre-wrap">{selectedContract.brand_guidelines}</p>
-                </div>
-              )}
-
-              {/* Usage Rights */}
-              {selectedContract.usage_rights && (
-                <div>
-                  <h4 className="font-semibold mb-2">Derechos de Uso</h4>
-                  <div className="space-y-2 text-sm text-neutral-300">
-                    <p>• Duración: {selectedContract.usage_rights.duration_months === 999 ? 'Perpetuo' : `${selectedContract.usage_rights.duration_months} meses`}</p>
-                    {selectedContract.usage_rights.paid_ads && <p>• Incluye uso en anuncios pagados</p>}
-                    {selectedContract.usage_rights.whitelisting && <p>• Incluye whitelisting</p>}
-                  </div>
-                </div>
-              )}
-
-              {/* Exclusivity */}
-              {selectedContract.exclusivity_enabled && (
-                <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4">
-                  <h4 className="font-semibold text-amber-400 mb-2">Exclusividad</h4>
-                  <p className="text-sm text-neutral-300">
-                    No podrás trabajar con competidores por {selectedContract.exclusivity_days} días.
-                  </p>
-                  {selectedContract.exclusivity_competitors && selectedContract.exclusivity_competitors.length > 0 && (
-                    <p className="text-sm text-neutral-400 mt-1">
-                      Competidores: {selectedContract.exclusivity_competitors.join(', ')}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {/* Additional Terms */}
-              {selectedContract.additional_terms && (
-                <div>
-                  <h4 className="font-semibold mb-2">Términos Adicionales</h4>
-                  <p className="text-neutral-300 text-sm whitespace-pre-wrap">{selectedContract.additional_terms}</p>
-                </div>
-              )}
-
-              {/* Accepted Handles */}
-              {selectedContract.status === 'accepted' && selectedContract.creator_handles && selectedContract.creator_handles.length > 0 && (
-                <div>
-                  <h4 className="font-semibold mb-2">Tus Handles</h4>
-                  <div className="space-y-2">
-                    {selectedContract.creator_handles.map((h: any, i: number) => (
-                      <div key={i} className="flex items-center gap-3 bg-neutral-800 rounded-xl p-3">
-                        <span className="text-xl">{PLATFORM_ICONS[h.platform] || '📱'}</span>
-                        <span className="font-medium">{h.handle}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Legal Notice */}
-              <div className="bg-neutral-800 rounded-xl p-4">
-                <p className="text-xs text-neutral-500 leading-relaxed">
-                  Al aceptar este contrato, aceptas los términos de servicio de Octopus y te comprometes
-                  a entregar el contenido acordado. Las firmas electrónicas son legalmente válidas
-                  según las leyes de tu país. Octopus actúa como intermediario y no es parte del contrato.
-                </p>
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            {['sent', 'viewed'].includes(selectedContract.status) && (
-              <div className="px-6 py-4 border-t border-neutral-800 flex gap-3">
-                <button
-                  onClick={() => handleRejectContract(selectedContract.id)}
-                  className="flex-1 py-3 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl font-medium transition-colors"
-                >
-                  Rechazar
-                </button>
-                <button
-                  onClick={() => setShowAcceptModal(true)}
-                  className="flex-1 py-3 bg-green-600 hover:bg-green-500 text-white rounded-xl font-medium transition-colors"
-                >
-                  Aceptar Contrato
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+        <LegalContractDocument
+          contract={selectedContract}
+          companyName={selectedContract.company_name || 'Empresa'}
+          creatorName={creatorName}
+          onAccept={() => setShowAcceptModal(true)}
+          onReject={() => handleRejectContract(selectedContract.id)}
+          onClose={() => setSelectedContract(null)}
+          showActions={true}
+        />
       )}
 
       {/* Accept Modal with Handles */}

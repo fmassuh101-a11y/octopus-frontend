@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import LegalContractDocument from '@/components/contracts/LegalContractDocument'
 
 const SUPABASE_URL = 'https://ftvqoudlmojdxwjxljzr.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
@@ -22,10 +23,15 @@ interface Contract {
   usage_rights?: any
   exclusivity_enabled?: boolean
   exclusivity_days?: number
+  exclusivity_competitors?: string[]
+  additional_terms?: string
   status: string
   sent_at?: string
+  viewed_at?: string
   accepted_at?: string
   creator_handles?: any[]
+  creator_signed_at?: string
+  company_signed_at?: string
   creator_name?: string
   creator_id: string
 }
@@ -81,7 +87,9 @@ export default function CompanyContractsPage() {
   const [loading, setLoading] = useState(true)
   const [contracts, setContracts] = useState<Contract[]>([])
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null)
+  const [showLegalDoc, setShowLegalDoc] = useState(false)
   const [user, setUser] = useState<any>(null)
+  const [companyName, setCompanyName] = useState('Empresa')
   const [filter, setFilter] = useState<'all' | 'pending' | 'accepted'>('all')
 
   useEffect(() => {
@@ -99,6 +107,30 @@ export default function CompanyContractsPage() {
 
     const userData = JSON.parse(userStr)
     setUser(userData)
+
+    // Fetch company name from profile
+    try {
+      const profileRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=company_name,bio`,
+        { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+      )
+      if (profileRes.ok) {
+        const [profile] = await profileRes.json()
+        if (profile) {
+          let name = profile.company_name || 'Empresa'
+          if (profile.bio) {
+            try {
+              const bioData = JSON.parse(profile.bio)
+              if (bioData.companyName) name = bioData.companyName
+            } catch (e) {}
+          }
+          setCompanyName(name)
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching profile:', err)
+    }
+
     await loadContracts(userData.id, token)
   }
 
@@ -152,6 +184,7 @@ export default function CompanyContractsPage() {
         deliverables: typeof c.deliverables === 'string' ? JSON.parse(c.deliverables) : c.deliverables,
         usage_rights: typeof c.usage_rights === 'string' ? JSON.parse(c.usage_rights) : c.usage_rights,
         creator_handles: typeof c.creator_handles === 'string' ? JSON.parse(c.creator_handles) : c.creator_handles,
+        exclusivity_competitors: typeof c.exclusivity_competitors === 'string' ? JSON.parse(c.exclusivity_competitors) : c.exclusivity_competitors,
         creator_name: creatorsMap.get(c.creator_id) || 'Creador'
       }))
 
@@ -423,6 +456,17 @@ export default function CompanyContractsPage() {
                 </div>
               </div>
 
+              {/* View Legal Document Button */}
+              <button
+                onClick={() => setShowLegalDoc(true)}
+                className="w-full py-3 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Ver Documento Legal Completo
+              </button>
+
               {/* Actions */}
               <div className="flex gap-3">
                 <Link
@@ -441,6 +485,17 @@ export default function CompanyContractsPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Legal Document View */}
+      {showLegalDoc && selectedContract && (
+        <LegalContractDocument
+          contract={selectedContract}
+          companyName={companyName}
+          creatorName={selectedContract.creator_name || 'Creador'}
+          onClose={() => setShowLegalDoc(false)}
+          showActions={false}
+        />
       )}
 
       {/* Bottom Navigation */}
