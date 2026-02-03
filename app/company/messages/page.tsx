@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
+import CreateContractModal from '@/components/contracts/CreateContractModal'
 
 const SUPABASE_URL = 'https://ftvqoudlmojdxwjxljzr.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
@@ -12,9 +13,12 @@ interface Conversation {
   creator_name: string
   creator_avatar?: string
   application_ids: string[]
+  gig_ids: string[]
+  gig_titles: string[]
   last_message?: string
   last_message_time?: string
   unread_count: number
+  has_contract?: boolean
 }
 
 interface Message {
@@ -64,6 +68,7 @@ export default function CompanyMessagesPage() {
   const [user, setUser] = useState<any>(null)
   const [sending, setSending] = useState(false)
   const [loadingMessages, setLoadingMessages] = useState(false)
+  const [showContractModal, setShowContractModal] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -122,12 +127,27 @@ export default function CompanyMessagesPage() {
         return
       }
 
-      const creatorAppsMap = new Map<string, string[]>()
+      const creatorAppsMap = new Map<string, { appIds: string[], gigIds: string[] }>()
       applications.forEach((app: any) => {
-        const existing = creatorAppsMap.get(app.creator_id) || []
-        existing.push(app.id)
+        const existing = creatorAppsMap.get(app.creator_id) || { appIds: [], gigIds: [] }
+        existing.appIds.push(app.id)
+        if (app.gig_id) existing.gigIds.push(app.gig_id)
         creatorAppsMap.set(app.creator_id, existing)
       })
+
+      // Fetch gig titles
+      const allGigIds = Array.from(new Set(applications.map((a: any) => a.gig_id).filter(Boolean)))
+      let gigsMap = new Map<string, string>()
+      if (allGigIds.length > 0) {
+        const gigsRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/gigs?id=in.(${allGigIds.join(',')})&select=id,title`,
+          { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+        )
+        if (gigsRes.ok) {
+          const gigs = await gigsRes.json()
+          gigs.forEach((g: any) => gigsMap.set(g.id, g.title))
+        }
+      }
 
       const creatorIds = Array.from(creatorAppsMap.keys())
 
@@ -152,7 +172,7 @@ export default function CompanyMessagesPage() {
         creatorMap.set(c.user_id, { name, avatar: c.avatar_url })
       })
 
-      const allAppIds = applications.map((a: any) => a.id)
+      const allAppIds = Array.from(creatorAppsMap.values()).flatMap(d => d.appIds)
       const messagesRes = await fetch(
         `${SUPABASE_URL}/rest/v1/messages?conversation_id=in.(${allAppIds.join(',')})&select=conversation_id,content,created_at,sender_type,read_at&order=created_at.desc`,
         { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
@@ -179,14 +199,16 @@ export default function CompanyMessagesPage() {
         }
       })
 
-      const convs: Conversation[] = Array.from(creatorAppsMap.entries()).map(([creatorId, appIds]) => {
+      const convs: Conversation[] = Array.from(creatorAppsMap.entries()).map(([creatorId, data]) => {
         const lastMsg = creatorLastMessage.get(creatorId)
         const creatorInfo = creatorMap.get(creatorId) || { name: 'Creador', avatar: null }
         return {
           creator_id: creatorId,
           creator_name: creatorInfo.name,
           creator_avatar: creatorInfo.avatar,
-          application_ids: appIds,
+          application_ids: data.appIds,
+          gig_ids: data.gigIds,
+          gig_titles: data.gigIds.map((gid: string) => gigsMap.get(gid) || 'Campaña'),
           last_message: lastMsg?.content,
           last_message_time: lastMsg?.time,
           unread_count: creatorUnread.get(creatorId) || 0
@@ -411,6 +433,15 @@ export default function CompanyMessagesPage() {
               <h1 className="font-semibold">{selectedConversation.creator_name}</h1>
               <p className="text-xs text-neutral-500">Creador</p>
             </div>
+            <button
+              onClick={() => setShowContractModal(true)}
+              className="p-2 hover:bg-neutral-800 rounded-xl transition-colors"
+              title="Crear Contrato"
+            >
+              <svg className="w-5 h-5 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </button>
             <Link
               href={`/company/creator/${selectedConversation.creator_id}`}
               className="p-2 hover:bg-neutral-800 rounded-xl transition-colors"
@@ -421,6 +452,22 @@ export default function CompanyMessagesPage() {
             </Link>
           </div>
         </div>
+
+        {/* Contract Modal */}
+        <CreateContractModal
+          isOpen={showContractModal}
+          onClose={() => setShowContractModal(false)}
+          onSuccess={(contract) => {
+            console.log('Contract created:', contract)
+            loadMessages(selectedConversation.application_ids)
+          }}
+          applicationId={selectedConversation.application_ids[0]}
+          gigId={selectedConversation.gig_ids?.[0] || ''}
+          companyId={user?.id || ''}
+          creatorId={selectedConversation.creator_id}
+          creatorName={selectedConversation.creator_name}
+          gigTitle={selectedConversation.gig_titles?.[0] || 'Campaña'}
+        />
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto px-4 py-4">
