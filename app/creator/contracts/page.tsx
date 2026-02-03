@@ -32,6 +32,7 @@ interface Contract {
   creator_handles?: any[]
   creator_signed_at?: string
   company_signed_at?: string
+  company_id?: string
   company_name?: string
   gig_title?: string
 }
@@ -41,6 +42,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }
   viewed: { label: 'Visto', color: 'text-blue-400', bg: 'bg-blue-500/20' },
   accepted: { label: 'Aceptado', color: 'text-green-400', bg: 'bg-green-500/20' },
   rejected: { label: 'Rechazado', color: 'text-red-400', bg: 'bg-red-500/20' },
+  cancelled: { label: 'Cancelado', color: 'text-red-400', bg: 'bg-red-500/20' },
   in_progress: { label: 'En Progreso', color: 'text-violet-400', bg: 'bg-violet-500/20' },
   completed: { label: 'Completado', color: 'text-emerald-400', bg: 'bg-emerald-500/20' },
 }
@@ -243,6 +245,33 @@ export default function CreatorContractsPage() {
       })
 
       if (!response.ok) throw new Error('Error al aceptar contrato')
+
+      // Send notification message to company
+      // First get the application_id for the conversation
+      const appsRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/applications?creator_id=eq.${user.id}&company_id=eq.${selectedContract.company_id}&status=eq.accepted&select=id&limit=1`,
+        { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+      )
+      if (appsRes.ok) {
+        const apps = await appsRes.json()
+        if (apps.length > 0) {
+          const handlesText = creatorHandles.map(h => `${h.platform}: ${h.handle}`).join(', ')
+          await fetch(`${SUPABASE_URL}/rest/v1/messages`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+              'apikey': SUPABASE_ANON_KEY
+            },
+            body: JSON.stringify({
+              conversation_id: apps[0].id,
+              sender_id: user.id,
+              sender_type: 'creator',
+              content: `✅ He aceptado el contrato "${selectedContract.title}".\n\nMis handles: ${handlesText}`
+            })
+          })
+        }
+      }
 
       // Update local state
       setContracts(prev => prev.map(c =>

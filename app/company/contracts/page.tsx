@@ -42,6 +42,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }
   viewed: { label: 'Visto', color: 'text-blue-400', bg: 'bg-blue-500/20' },
   accepted: { label: 'Aceptado', color: 'text-green-400', bg: 'bg-green-500/20' },
   rejected: { label: 'Rechazado', color: 'text-red-400', bg: 'bg-red-500/20' },
+  cancelled: { label: 'Cancelado', color: 'text-red-400', bg: 'bg-red-500/20' },
   in_progress: { label: 'En Progreso', color: 'text-violet-400', bg: 'bg-violet-500/20' },
   completed: { label: 'Completado', color: 'text-emerald-400', bg: 'bg-emerald-500/20' },
 }
@@ -88,6 +89,9 @@ export default function CompanyContractsPage() {
   const [contracts, setContracts] = useState<Contract[]>([])
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null)
   const [showLegalDoc, setShowLegalDoc] = useState(false)
+  const [showCancelModal, setShowCancelModal] = useState(false)
+  const [cancelReason, setCancelReason] = useState('')
+  const [cancelling, setCancelling] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [companyName, setCompanyName] = useState('Empresa')
   const [filter, setFilter] = useState<'all' | 'pending' | 'accepted'>('all')
@@ -159,21 +163,36 @@ export default function CompanyContractsPage() {
 
       if (creatorIds.length > 0) {
         const creatorsRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/profiles?user_id=in.(${creatorIds.join(',')})&select=user_id,full_name,bio`,
+          `${SUPABASE_URL}/rest/v1/profiles?user_id=in.(${creatorIds.join(',')})&select=user_id,full_name,username,bio`,
           { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
         )
         if (creatorsRes.ok) {
           const creators = await creatorsRes.json()
           creators.forEach((c: any) => {
-            let name = c.full_name || 'Creador'
+            let name = 'Creador'
+
+            // Try bio first
             if (c.bio) {
               try {
                 const bioData = JSON.parse(c.bio)
                 if (bioData.firstName && bioData.lastName) {
                   name = `${bioData.firstName} ${bioData.lastName}`
+                } else if (bioData.name) {
+                  name = bioData.name
+                } else if (bioData.fullName) {
+                  name = bioData.fullName
                 }
               } catch (e) {}
             }
+
+            // Fallbacks
+            if (name === 'Creador' && c.full_name && c.full_name.trim()) {
+              name = c.full_name
+            }
+            if (name === 'Creador' && c.username && c.username.trim()) {
+              name = c.username
+            }
+
             creatorsMap.set(c.user_id, name)
           })
         }
@@ -203,6 +222,74 @@ export default function CompanyContractsPage() {
       month: 'short',
       year: 'numeric'
     })
+  }
+
+  const cancelContract = async (contractId: string, reason: string) => {
+    setCancelling(true)
+    try {
+      const token = localStorage.getItem('sb-access-token')
+      if (!token) throw new Error('No autorizado')
+
+      // Update contract status to cancelled
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/contracts?id=eq.${contractId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'apikey': SUPABASE_ANON_KEY
+        },
+        body: JSON.stringify({
+          status: 'cancelled',
+          cancelled_at: new Date().toISOString(),
+          cancellation_reason: reason || null
+        })
+      })
+
+      if (!response.ok) throw new Error('Error al cancelar contrato')
+
+      // Send notification message to creator
+      const contract = selectedContract
+      if (contract) {
+        // Find the application ID for this creator-company conversation
+        const appsRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/applications?company_id=eq.${user.id}&creator_id=eq.${contract.creator_id}&status=eq.accepted&select=id&limit=1`,
+          { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+        )
+        if (appsRes.ok) {
+          const [app] = await appsRes.json()
+          if (app) {
+            await fetch(`${SUPABASE_URL}/rest/v1/messages`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                'apikey': SUPABASE_ANON_KEY
+              },
+              body: JSON.stringify({
+                conversation_id: app.id,
+                sender_id: user.id,
+                sender_type: 'company',
+                content: `❌ El contrato "${contract.title}" ha sido cancelado por la empresa.${reason ? ` Razón: ${reason}` : ''}`
+              })
+            })
+          }
+        }
+      }
+
+      // Update local state
+      setContracts(prev => prev.map(c =>
+        c.id === contractId ? { ...c, status: 'cancelled' } : c
+      ))
+
+      setShowCancelModal(false)
+      setSelectedContract(null)
+      setCancelReason('')
+    } catch (err) {
+      console.error('Error cancelling contract:', err)
+      alert('Error al cancelar el contrato')
+    } finally {
+      setCancelling(false)
+    }
   }
 
   const formatCurrency = (amount: number, currency: string) => {
@@ -482,6 +569,82 @@ export default function CompanyContractsPage() {
                   Ver Perfil
                 </Link>
               </div>
+
+              {/* Cancel Contract Button - Only show if not already cancelled */}
+              {!['cancelled', 'rejected', 'completed'].includes(selectedContract.status) && (
+                <button
+                  onClick={() => setShowCancelModal(true)}
+                  className="w-full py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  Cancelar Contrato
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Contract Modal */}
+      {showCancelModal && selectedContract && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-neutral-900 rounded-2xl w-full max-w-md overflow-hidden">
+            <div className="px-6 py-4 border-b border-neutral-800">
+              <h2 className="text-lg font-bold text-red-400">Cancelar Contrato</h2>
+              <p className="text-sm text-neutral-400">Esta acción no se puede deshacer</p>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <p className="text-neutral-300">
+                ¿Estás seguro que deseas cancelar el contrato <strong>"{selectedContract.title}"</strong> con <strong>{selectedContract.creator_name}</strong>?
+              </p>
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-300 mb-2">
+                  Razón de cancelación (opcional)
+                </label>
+                <textarea
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  placeholder="Explica brevemente por qué cancelas el contrato..."
+                  rows={3}
+                  className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-red-500 resize-none"
+                />
+              </div>
+
+              <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
+                <p className="text-sm text-red-300">
+                  El creador recibirá una notificación de que el contrato ha sido cancelado.
+                </p>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 border-t border-neutral-800 flex gap-3">
+              <button
+                onClick={() => {
+                  setShowCancelModal(false)
+                  setCancelReason('')
+                }}
+                className="flex-1 py-3 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl font-medium transition-colors"
+              >
+                No, mantener
+              </button>
+              <button
+                onClick={() => cancelContract(selectedContract.id, cancelReason)}
+                disabled={cancelling}
+                className="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {cancelling ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Cancelando...
+                  </>
+                ) : (
+                  'Sí, cancelar'
+                )}
+              </button>
             </div>
           </div>
         </div>

@@ -152,23 +152,68 @@ export default function CompanyMessagesPage() {
       const creatorIds = Array.from(creatorAppsMap.keys())
 
       const creatorsRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?user_id=in.(${creatorIds.join(',')})&select=user_id,full_name,bio,avatar_url`,
+        `${SUPABASE_URL}/rest/v1/profiles?user_id=in.(${creatorIds.join(',')})&select=user_id,full_name,username,bio,avatar_url`,
         { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
       )
 
       const creators = creatorsRes.ok ? await creatorsRes.json() : []
 
+      // Also fetch from auth.users for email fallback
+      const usersRes = await fetch(
+        `${SUPABASE_URL}/auth/v1/admin/users`,
+        { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+      ).catch(() => null)
+
+      const usersEmailMap = new Map<string, string>()
+      if (usersRes && usersRes.ok) {
+        try {
+          const usersData = await usersRes.json()
+          if (usersData.users) {
+            usersData.users.forEach((u: any) => {
+              if (u.id && u.email) {
+                usersEmailMap.set(u.id, u.email.split('@')[0])
+              }
+            })
+          }
+        } catch (e) {}
+      }
+
       const creatorMap = new Map()
       creators.forEach((c: any) => {
-        let name = c.full_name || 'Creador'
+        let name = 'Creador'
+
+        // Try to get name from bio first
         if (c.bio) {
           try {
             const bioData = JSON.parse(c.bio)
             if (bioData.firstName && bioData.lastName) {
               name = `${bioData.firstName} ${bioData.lastName}`
+            } else if (bioData.name) {
+              name = bioData.name
+            } else if (bioData.fullName) {
+              name = bioData.fullName
             }
           } catch (e) {}
         }
+
+        // If still default, try full_name
+        if (name === 'Creador' && c.full_name && c.full_name.trim()) {
+          name = c.full_name
+        }
+
+        // If still default, try username
+        if (name === 'Creador' && c.username && c.username.trim()) {
+          name = c.username
+        }
+
+        // If still default, try email prefix
+        if (name === 'Creador') {
+          const emailName = usersEmailMap.get(c.user_id)
+          if (emailName) {
+            name = emailName
+          }
+        }
+
         creatorMap.set(c.user_id, { name, avatar: c.avatar_url })
       })
 
@@ -657,7 +702,7 @@ export default function CompanyMessagesPage() {
         <div className="flex justify-around py-3">
           {[
             { icon: '🏠', label: 'Dashboard', href: '/company/dashboard', active: false },
-            { icon: '📋', label: 'Campanas', href: '/company/campaigns', active: false },
+            { icon: '📝', label: 'Contratos', href: '/company/contracts', active: false },
             { icon: '💬', label: 'Mensajes', href: '/company/messages', active: true },
             { icon: '👥', label: 'Aplicantes', href: '/company/applicants', active: false },
           ].map((item) => (
