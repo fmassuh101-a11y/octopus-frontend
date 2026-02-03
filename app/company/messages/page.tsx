@@ -10,7 +10,8 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 interface Conversation {
   creator_id: string
   creator_name: string
-  application_ids: string[] // All applications with this creator
+  creator_avatar?: string
+  application_ids: string[]
   last_message?: string
   last_message_time?: string
   unread_count: number
@@ -26,6 +27,32 @@ interface Message {
   read_at?: string
 }
 
+// Skeleton Components
+function Skeleton({ className }: { className?: string }) {
+  return <div className={`animate-pulse bg-neutral-800 rounded ${className || ''}`} />
+}
+
+function ConversationSkeleton() {
+  return (
+    <div className="px-4 py-4 flex items-center gap-3">
+      <Skeleton className="w-12 h-12 rounded-full flex-shrink-0" />
+      <div className="flex-1 space-y-2">
+        <Skeleton className="h-4 w-32" />
+        <Skeleton className="h-3 w-48" />
+      </div>
+      <Skeleton className="h-3 w-10" />
+    </div>
+  )
+}
+
+function MessageSkeleton({ isMe }: { isMe: boolean }) {
+  return (
+    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+      <Skeleton className={`h-12 rounded-2xl ${isMe ? 'w-48' : 'w-56'}`} />
+    </div>
+  )
+}
+
 export default function CompanyMessagesPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -36,6 +63,7 @@ export default function CompanyMessagesPage() {
   const [newMessage, setNewMessage] = useState('')
   const [user, setUser] = useState<any>(null)
   const [sending, setSending] = useState(false)
+  const [loadingMessages, setLoadingMessages] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -94,7 +122,6 @@ export default function CompanyMessagesPage() {
         return
       }
 
-      // Group applications by creator_id (1 conversation per person)
       const creatorAppsMap = new Map<string, string[]>()
       applications.forEach((app: any) => {
         const existing = creatorAppsMap.get(app.creator_id) || []
@@ -105,7 +132,7 @@ export default function CompanyMessagesPage() {
       const creatorIds = Array.from(creatorAppsMap.keys())
 
       const creatorsRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?user_id=in.(${creatorIds.join(',')})&select=user_id,full_name,bio`,
+        `${SUPABASE_URL}/rest/v1/profiles?user_id=in.(${creatorIds.join(',')})&select=user_id,full_name,bio,avatar_url`,
         { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
       )
 
@@ -122,10 +149,9 @@ export default function CompanyMessagesPage() {
             }
           } catch (e) {}
         }
-        creatorMap.set(c.user_id, name)
+        creatorMap.set(c.user_id, { name, avatar: c.avatar_url })
       })
 
-      // Get all messages for all applications
       const allAppIds = applications.map((a: any) => a.id)
       const messagesRes = await fetch(
         `${SUPABASE_URL}/rest/v1/messages?conversation_id=in.(${allAppIds.join(',')})&select=conversation_id,content,created_at,sender_type,read_at&order=created_at.desc`,
@@ -133,7 +159,6 @@ export default function CompanyMessagesPage() {
       )
       const allMessages = messagesRes.ok ? await messagesRes.json() : []
 
-      // Map messages to creators
       const appToCreator = new Map<string, string>()
       applications.forEach((app: any) => {
         appToCreator.set(app.id, app.creator_id)
@@ -154,12 +179,13 @@ export default function CompanyMessagesPage() {
         }
       })
 
-      // Build conversations (1 per creator)
       const convs: Conversation[] = Array.from(creatorAppsMap.entries()).map(([creatorId, appIds]) => {
         const lastMsg = creatorLastMessage.get(creatorId)
+        const creatorInfo = creatorMap.get(creatorId) || { name: 'Creador', avatar: null }
         return {
           creator_id: creatorId,
-          creator_name: creatorMap.get(creatorId) || 'Creador',
+          creator_name: creatorInfo.name,
+          creator_avatar: creatorInfo.avatar,
           application_ids: appIds,
           last_message: lastMsg?.content,
           last_message_time: lastMsg?.time,
@@ -192,6 +218,7 @@ export default function CompanyMessagesPage() {
   }
 
   const loadMessages = async (applicationIds: string[], token?: string) => {
+    setLoadingMessages(true)
     try {
       const authToken = token || localStorage.getItem('sb-access-token')
       const response = await fetch(
@@ -206,7 +233,6 @@ export default function CompanyMessagesPage() {
       if (response.ok) {
         const data = await response.json()
         setMessages(data)
-        // Mark all as read
         applicationIds.forEach(appId => markMessagesAsRead(appId, authToken!))
       } else {
         setMessages([])
@@ -214,6 +240,7 @@ export default function CompanyMessagesPage() {
     } catch (err) {
       setMessages([])
     }
+    setLoadingMessages(false)
   }
 
   const markMessagesAsRead = async (conversationId: string, token: string) => {
@@ -238,7 +265,6 @@ export default function CompanyMessagesPage() {
     if (!content || !selectedConversation || !user) return
     if (sending) return
 
-    // Use first application_id for sending
     const conversationId = selectedConversation.application_ids[0]
     const tempId = `temp-${Date.now()}`
 
@@ -337,10 +363,18 @@ export default function CompanyMessagesPage() {
     return groups
   }
 
+  const totalUnread = conversations.reduce((sum, c) => sum + c.unread_count, 0)
+
+  // Loading State
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-neutral-950 text-white pb-20">
+        <div className="bg-neutral-900 border-b border-neutral-800 px-6 py-4">
+          <Skeleton className="h-7 w-32" />
+        </div>
+        <div className="divide-y divide-neutral-800">
+          {[1,2,3,4,5].map(i => <ConversationSkeleton key={i} />)}
+        </div>
       </div>
     )
   }
@@ -350,42 +384,67 @@ export default function CompanyMessagesPage() {
     const dateGroups = groupMessagesByDate(messages)
 
     return (
-      <div className="min-h-screen bg-white flex flex-col">
+      <div className="min-h-screen bg-neutral-950 text-white flex flex-col">
         {/* Header */}
-        <div className="border-b border-gray-200 bg-white sticky top-0 z-10">
+        <div className="bg-neutral-900 border-b border-neutral-800 sticky top-0 z-10">
           <div className="px-4 py-3 flex items-center gap-3">
-            <button onClick={() => setSelectedConversation(null)} className="p-2 -ml-2 hover:bg-gray-100 rounded-lg">
+            <button
+              onClick={() => setSelectedConversation(null)}
+              className="p-2 -ml-2 hover:bg-neutral-800 rounded-xl transition-colors"
+            >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center">
-              <span className="text-white font-medium">{selectedConversation.creator_name.charAt(0).toUpperCase()}</span>
-            </div>
+            {selectedConversation.creator_avatar ? (
+              <img
+                src={selectedConversation.creator_avatar}
+                alt=""
+                className="w-10 h-10 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-indigo-500 rounded-full flex items-center justify-center">
+                <span className="font-semibold">{selectedConversation.creator_name.charAt(0).toUpperCase()}</span>
+              </div>
+            )}
             <div className="flex-1">
-              <h1 className="font-semibold text-gray-900">{selectedConversation.creator_name}</h1>
-              <p className="text-xs text-gray-500">Creador</p>
+              <h1 className="font-semibold">{selectedConversation.creator_name}</h1>
+              <p className="text-xs text-neutral-500">Creador</p>
             </div>
+            <Link
+              href={`/company/creator/${selectedConversation.creator_id}`}
+              className="p-2 hover:bg-neutral-800 rounded-xl transition-colors"
+            >
+              <svg className="w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </Link>
           </div>
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto bg-gray-50 px-4 py-4">
-          {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="flex-1 overflow-y-auto px-4 py-4">
+          {loadingMessages ? (
+            <div className="space-y-3">
+              {[1,2,3,4,5].map(i => (
+                <MessageSkeleton key={i} isMe={i % 2 === 0} />
+              ))}
+            </div>
+          ) : messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center py-20">
+              <div className="w-16 h-16 bg-neutral-800 rounded-full flex items-center justify-center mb-4">
+                <svg className="w-8 h-8 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
               </div>
-              <p className="text-gray-500 text-sm">Envia el primer mensaje</p>
+              <p className="text-neutral-500 text-sm">Envia el primer mensaje</p>
             </div>
           ) : (
             <div className="space-y-4">
               {dateGroups.map((group, groupIndex) => (
                 <div key={groupIndex}>
                   <div className="flex justify-center mb-4">
-                    <span className="px-3 py-1 bg-white border border-gray-200 rounded-full text-xs text-gray-500 shadow-sm">
+                    <span className="px-3 py-1 bg-neutral-800 rounded-full text-xs text-neutral-400">
                       {formatDateSeparator(group.date)}
                     </span>
                   </div>
@@ -394,15 +453,19 @@ export default function CompanyMessagesPage() {
                       const isMe = msg.sender_type === 'company'
                       return (
                         <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`max-w-[75%] ${isMe ? 'bg-black text-white' : 'bg-white border border-gray-200 text-gray-900'} rounded-2xl px-4 py-2 shadow-sm`}>
+                          <div className={`max-w-[75%] ${
+                            isMe
+                              ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white'
+                              : 'bg-neutral-800 text-white'
+                          } rounded-2xl px-4 py-2.5`}>
                             <p className="text-[15px] leading-relaxed">{msg.content}</p>
                             <div className={`flex items-center gap-2 mt-1 ${isMe ? 'justify-end' : ''}`}>
-                              <span className={`text-[11px] ${isMe ? 'text-gray-400' : 'text-gray-400'}`}>
+                              <span className="text-[11px] text-white/60">
                                 {formatMessageTime(msg.created_at)}
                               </span>
                               {isMe && (
-                                <span className={`text-[10px] ${msg.read_at ? 'text-blue-400' : 'text-gray-500'}`}>
-                                  {msg.read_at ? '✓✓ Visto' : '✓ Enviado'}
+                                <span className="text-[10px] text-white/60">
+                                  {msg.read_at ? '✓✓' : '✓'}
                                 </span>
                               )}
                             </div>
@@ -419,7 +482,7 @@ export default function CompanyMessagesPage() {
         </div>
 
         {/* Input */}
-        <div className="border-t border-gray-200 bg-white px-4 py-3">
+        <div className="border-t border-neutral-800 bg-neutral-900 px-4 py-3">
           <div className="flex items-center gap-3">
             <input
               ref={inputRef}
@@ -428,15 +491,15 @@ export default function CompanyMessagesPage() {
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage())}
               placeholder="Escribe un mensaje..."
-              className="flex-1 px-4 py-2.5 border border-gray-300 rounded-full focus:outline-none focus:border-black text-sm"
+              className="flex-1 px-4 py-2.5 bg-neutral-800 border border-neutral-700 rounded-xl focus:outline-none focus:border-violet-500 text-sm transition-colors"
             />
             <button
               onClick={sendMessage}
               disabled={!newMessage.trim() || sending}
-              className="w-10 h-10 bg-black text-white rounded-full flex items-center justify-center disabled:bg-gray-300 disabled:cursor-not-allowed"
+              className="w-10 h-10 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white rounded-xl flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               {sending ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
@@ -451,78 +514,117 @@ export default function CompanyMessagesPage() {
 
   // Conversation List
   return (
-    <div className="min-h-screen bg-white pb-20">
-      <div className="border-b border-gray-200 px-4 py-4">
-        <h1 className="text-xl font-bold text-gray-900">Mensajes</h1>
+    <div className="min-h-screen bg-neutral-950 text-white pb-20">
+      {/* Header */}
+      <div className="bg-neutral-900 border-b border-neutral-800 sticky top-0 z-10">
+        <div className="px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link href="/company/dashboard" className="p-2 -ml-2 hover:bg-neutral-800 rounded-xl transition-colors">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </Link>
+            <div>
+              <h1 className="text-xl font-bold">Mensajes</h1>
+              {totalUnread > 0 && (
+                <p className="text-sm text-violet-400">{totalUnread} sin leer</p>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
       {conversations.length === 0 ? (
-        <div className="flex flex-col items-center justify-center px-4 py-20">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="flex flex-col items-center justify-center px-6 py-20">
+          <div className="w-20 h-20 bg-neutral-800 rounded-full flex items-center justify-center mb-6">
+            <svg className="w-10 h-10 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-1">Sin mensajes</h3>
-          <p className="text-gray-500 text-sm text-center">Acepta aplicantes para comenzar a chatear</p>
+          <h3 className="text-xl font-semibold mb-2">Sin mensajes</h3>
+          <p className="text-neutral-500 text-center mb-6 max-w-sm">
+            Acepta aplicantes para comenzar a chatear con creadores
+          </p>
+          <Link
+            href="/company/applicants"
+            className="px-6 py-3 bg-violet-600 hover:bg-violet-500 rounded-xl font-medium transition-colors"
+          >
+            Ver Aplicantes
+          </Link>
         </div>
       ) : (
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-neutral-800/50">
           {conversations.map((conv) => (
             <button
               key={conv.creator_id}
               onClick={() => selectConversation(conv)}
-              className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 text-left ${conv.unread_count > 0 ? 'bg-blue-50' : ''}`}
+              className={`w-full px-6 py-4 flex items-center gap-4 hover:bg-neutral-900/50 text-left transition-colors ${
+                conv.unread_count > 0 ? 'bg-violet-500/5' : ''
+              }`}
             >
-              <div className="relative">
-                <div className="w-12 h-12 bg-black rounded-full flex items-center justify-center">
-                  <span className="text-white font-medium text-lg">{conv.creator_name.charAt(0).toUpperCase()}</span>
-                </div>
+              <div className="relative flex-shrink-0">
+                {conv.creator_avatar ? (
+                  <img
+                    src={conv.creator_avatar}
+                    alt=""
+                    className="w-12 h-12 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-indigo-500 rounded-full flex items-center justify-center">
+                    <span className="font-semibold text-lg">{conv.creator_name.charAt(0).toUpperCase()}</span>
+                  </div>
+                )}
+                {conv.unread_count > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-violet-500 rounded-full flex items-center justify-center text-xs font-bold">
+                    {conv.unread_count}
+                  </span>
+                )}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <h3 className={`font-medium truncate ${conv.unread_count > 0 ? 'text-gray-900' : 'text-gray-700'}`}>
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className={`font-medium truncate ${conv.unread_count > 0 ? 'text-white' : 'text-neutral-300'}`}>
                     {conv.creator_name}
                   </h3>
-                  <span className={`text-xs ${conv.unread_count > 0 ? 'text-blue-600 font-medium' : 'text-gray-400'}`}>
+                  <span className={`text-xs flex-shrink-0 ml-2 ${
+                    conv.unread_count > 0 ? 'text-violet-400' : 'text-neutral-500'
+                  }`}>
                     {conv.last_message_time ? formatTime(conv.last_message_time) : ''}
                   </span>
                 </div>
-                <div className="flex items-center justify-between mt-0.5">
-                  <p className={`text-sm truncate pr-2 ${conv.unread_count > 0 ? 'text-gray-900 font-medium' : 'text-gray-500'}`}>
-                    {conv.last_message || 'Sin mensajes'}
-                  </p>
-                  {conv.unread_count > 0 && (
-                    <span className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                      {conv.unread_count}
-                    </span>
-                  )}
-                </div>
+                <p className={`text-sm truncate ${
+                  conv.unread_count > 0 ? 'text-neutral-300' : 'text-neutral-500'
+                }`}>
+                  {conv.last_message || 'Sin mensajes'}
+                </p>
               </div>
+              <svg className="w-5 h-5 text-neutral-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
             </button>
           ))}
         </div>
       )}
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200">
-        <div className="flex justify-around py-2">
-          <Link href="/company/dashboard" className="flex flex-col items-center py-2 px-4 text-gray-400">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
-            <span className="text-xs mt-1">Dashboard</span>
-          </Link>
-          <Link href="/company/campaigns" className="flex flex-col items-center py-2 px-4 text-gray-400">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-            <span className="text-xs mt-1">Campanas</span>
-          </Link>
-          <div className="flex flex-col items-center py-2 px-4 text-black">
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
-            <span className="text-xs mt-1 font-medium">Mensajes</span>
-          </div>
-          <Link href="/company/applicants" className="flex flex-col items-center py-2 px-4 text-gray-400">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-            <span className="text-xs mt-1">Aplicantes</span>
-          </Link>
+      <div className="fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-800">
+        <div className="flex justify-around py-3">
+          {[
+            { icon: '🏠', label: 'Dashboard', href: '/company/dashboard', active: false },
+            { icon: '📋', label: 'Campanas', href: '/company/campaigns', active: false },
+            { icon: '💬', label: 'Mensajes', href: '/company/messages', active: true },
+            { icon: '👥', label: 'Aplicantes', href: '/company/applicants', active: false },
+          ].map((item) => (
+            <Link
+              key={item.label}
+              href={item.href}
+              className={`flex flex-col items-center gap-1 px-4 py-1 ${
+                item.active ? 'text-violet-400' : 'text-neutral-500 hover:text-neutral-300'
+              } transition-colors`}
+            >
+              <span className="text-xl">{item.icon}</span>
+              <span className="text-xs">{item.label}</span>
+            </Link>
+          ))}
         </div>
       </div>
     </div>
