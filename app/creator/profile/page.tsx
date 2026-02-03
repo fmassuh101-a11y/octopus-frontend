@@ -620,7 +620,7 @@ export default function ProfilePage() {
 
   const sections: ProfileSection[] = [
     { id: 'account', title: 'Mi Cuenta', icon: '👤', component: <AccountSection /> },
-    { id: 'verification', title: 'Verificacion', icon: '✓', component: <VerificationSection /> },
+    { id: 'verification', title: 'Verificacion', icon: '🛡️', component: <VerificationSection /> },
     { id: 'earnings', title: 'Ganancias', icon: '💰', component: <EarningsSection /> },
     { id: 'stats', title: 'Estadisticas', icon: '📊', component: <StatsSection /> },
     { id: 'security', title: 'Seguridad', icon: '🔒', component: <SecuritySection /> }
