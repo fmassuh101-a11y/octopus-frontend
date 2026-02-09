@@ -504,9 +504,12 @@ export default function CompanyMessagesPage() {
           onClose={() => setShowContractModal(false)}
           onSuccess={(contract) => {
             console.log('Contract created:', contract)
-            loadMessages(selectedConversation.application_ids)
+            // Reload messages to show the new contract message
+            setTimeout(() => {
+              loadMessages(selectedConversation.application_ids)
+            }, 500)
           }}
-          applicationId={selectedConversation.application_ids[0]}
+          applicationId={selectedConversation.application_ids[0] || ''}
           gigId={selectedConversation.gig_ids?.[0] || ''}
           companyId={user?.id || ''}
           creatorId={selectedConversation.creator_id}

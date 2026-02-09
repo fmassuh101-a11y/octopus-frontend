@@ -174,22 +174,35 @@ export default function CreateContractModal({
       }
 
       const [contract] = await response.json()
+      console.log('Contract created successfully:', contract)
 
       // Send a system message in the conversation about the contract
-      await fetch(`${SUPABASE_URL}/rest/v1/messages`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'apikey': SUPABASE_ANON_KEY
-        },
-        body: JSON.stringify({
-          conversation_id: applicationId,
-          sender_id: companyId,
-          sender_type: 'company',
-          content: `📋 Te he enviado un contrato: "${title}" por ${CURRENCIES.find(c => c.id === paymentCurrency)?.symbol || '$'}${paymentAmount} ${paymentCurrency}. Revísalo en tu sección de contratos.`
+      if (applicationId) {
+        const messageRes = await fetch(`${SUPABASE_URL}/rest/v1/messages`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'apikey': SUPABASE_ANON_KEY,
+            'Prefer': 'return=representation'
+          },
+          body: JSON.stringify({
+            conversation_id: applicationId,
+            sender_id: companyId,
+            sender_type: 'company',
+            content: `📋 Te he enviado un contrato: "${title}" por ${CURRENCIES.find(c => c.id === paymentCurrency)?.symbol || '$'}${paymentAmount} ${paymentCurrency}. Revísalo en tu sección de contratos.`
+          })
         })
-      })
+
+        if (!messageRes.ok) {
+          console.error('Error sending contract message:', await messageRes.text())
+        } else {
+          console.log('Contract message sent successfully')
+        }
+      }
+
+      // Show success alert
+      alert(`✅ Contrato "${title}" enviado exitosamente a ${creatorName}`)
 
       onSuccess(contract)
       onClose()
