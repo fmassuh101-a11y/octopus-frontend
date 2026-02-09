@@ -93,20 +93,27 @@ export default function CompanyAnalyticsPage() {
         { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
       )
 
-      if (!appsRes.ok) {
-        setLoading(false)
-        return
-      }
+      // Also get creators from active contracts
+      const contractsRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/contracts?company_id=eq.${userId}&status=in.(accepted,in_progress,completed)&select=id,creator_id,payment_amount`,
+        { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+      )
 
-      const applications = await appsRes.json()
+      const applications = appsRes.ok ? await appsRes.json() : []
+      const contracts = contractsRes.ok ? await contractsRes.json() : []
 
-      if (applications.length === 0) {
+      // Combine creator IDs from both applications and contracts
+      const creatorIdsFromApps = applications.map((a: any) => a.creator_id)
+      const creatorIdsFromContracts = contracts.map((c: any) => c.creator_id)
+      const allCreatorIds = [...new Set([...creatorIdsFromApps, ...creatorIdsFromContracts])]
+
+      if (allCreatorIds.length === 0) {
         setLoading(false)
         return
       }
 
       // Get unique creator IDs
-      const creatorIds = Array.from(new Set(applications.map((a: any) => a.creator_id))) as string[]
+      const creatorIds = allCreatorIds as string[]
 
       // Get creator profiles
       const profilesRes = await fetch(
@@ -219,12 +226,18 @@ export default function CompanyAnalyticsPage() {
 
       const creatorsArray = Array.from(creatorsMap.values())
 
-      // Calculate total spend
+      // Calculate total spend from both applications and contracts
       let totalSpend = 0
       for (const app of applications) {
         if (app.gig?.budget) {
           const budget = parseFloat(app.gig.budget.replace(/[^0-9.]/g, ''))
           if (!isNaN(budget)) totalSpend += budget
+        }
+      }
+      // Add spend from contracts
+      for (const contract of contracts) {
+        if (contract.payment_amount) {
+          totalSpend += Number(contract.payment_amount) || 0
         }
       }
 

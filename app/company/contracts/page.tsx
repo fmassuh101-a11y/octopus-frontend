@@ -54,21 +54,35 @@ const PLATFORM_ICONS: Record<string, string> = {
   ugc: '🎬',
 }
 
+// Helper to build correct profile URLs
+const buildProfileUrl = (platform: string, handle: string): string => {
+  // Clean the handle - remove @ if present for URL building
+  const cleanHandle = handle.replace(/^@/, '')
+
+  switch (platform.toLowerCase()) {
+    case 'tiktok':
+      return `https://tiktok.com/@${cleanHandle}`
+    case 'instagram':
+      return `https://instagram.com/${cleanHandle}`
+    case 'youtube':
+      // YouTube handles can be @username or channel URLs
+      if (cleanHandle.includes('/')) return cleanHandle
+      return `https://youtube.com/@${cleanHandle}`
+    default:
+      return '#'
+  }
+}
+
 // Simple analytics display based on handle
 const HandleAnalytics = ({ platform, handle }: { platform: string; handle: string }) => {
-  // In production, this would fetch real data from APIs
-  // For now, show placeholder that indicates where analytics would appear
+  const profileUrl = buildProfileUrl(platform, handle)
+
   return (
     <div className="mt-2 p-3 bg-neutral-800/50 rounded-lg">
       <div className="flex items-center justify-between text-sm">
         <span className="text-neutral-400">Perfil público:</span>
         <a
-          href={
-            platform === 'tiktok' ? `https://tiktok.com/${handle}` :
-            platform === 'instagram' ? `https://instagram.com/${handle.replace('@', '')}` :
-            platform === 'youtube' ? `https://youtube.com/${handle}` :
-            '#'
-          }
+          href={profileUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="text-violet-400 hover:text-violet-300"
@@ -228,24 +242,30 @@ export default function CompanyContractsPage() {
     setCancelling(true)
     try {
       const token = localStorage.getItem('sb-access-token')
-      if (!token) throw new Error('No autorizado')
+      if (!token || !user?.id) throw new Error('No autorizado')
 
       // Update contract status to cancelled
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/contracts?id=eq.${contractId}`, {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/contracts?id=eq.${contractId}&company_id=eq.${user.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
-          'apikey': SUPABASE_ANON_KEY
+          'apikey': SUPABASE_ANON_KEY,
+          'Prefer': 'return=minimal'
         },
         body: JSON.stringify({
           status: 'cancelled',
           cancelled_at: new Date().toISOString(),
-          cancellation_reason: reason || null
+          cancellation_reason: reason || null,
+          updated_at: new Date().toISOString()
         })
       })
 
-      if (!response.ok) throw new Error('Error al cancelar contrato')
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Cancel contract error:', response.status, errorText)
+        throw new Error(`Error al cancelar contrato: ${response.status}`)
+      }
 
       // Send notification message to creator
       const contract = selectedContract
@@ -484,12 +504,7 @@ export default function CompanyContractsPage() {
                             </div>
                           </div>
                           <a
-                            href={
-                              h.platform === 'tiktok' ? `https://tiktok.com/${h.handle}` :
-                              h.platform === 'instagram' ? `https://instagram.com/${h.handle.replace('@', '')}` :
-                              h.platform === 'youtube' ? `https://youtube.com/${h.handle}` :
-                              '#'
-                            }
+                            href={buildProfileUrl(h.platform, h.handle)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="px-3 py-1.5 bg-violet-600 hover:bg-violet-500 text-white rounded-lg text-sm font-medium transition-colors"

@@ -386,7 +386,7 @@ export default function CreatorProfilePage() {
           {/* TikTok */}
           {tiktokAccount && (
             <a
-              href={`https://tiktok.com/@${tiktokAccount.username}`}
+              href={`https://tiktok.com/@${(tiktokAccount.username || '').replace(/^@/, '')}`}
               target="_blank"
               rel="noopener noreferrer"
               className="block bg-neutral-900 rounded-2xl p-4 border border-neutral-800 hover:border-neutral-700 transition"
@@ -438,7 +438,7 @@ export default function CreatorProfilePage() {
           {/* Instagram */}
           {creator.bio?.instagram && (
             <a
-              href={`https://instagram.com/${creator.bio.instagram}`}
+              href={`https://instagram.com/${(creator.bio.instagram || '').replace(/^@/, '')}`}
               target="_blank"
               rel="noopener noreferrer"
               className="block bg-neutral-900 rounded-2xl p-4 border border-neutral-800 hover:border-neutral-700 transition"

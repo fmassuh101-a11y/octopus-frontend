@@ -357,7 +357,7 @@ export default function HandleRequestsPage() {
                   <div className="mt-4 pt-4 border-t border-neutral-800 space-y-2">
                     {request.handles.tiktok && (
                       <a
-                        href={`https://tiktok.com/@${request.handles.tiktok}`}
+                        href={`https://tiktok.com/@${(request.handles.tiktok || '').replace(/^@/, '')}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-3 p-2 bg-neutral-800 rounded-xl hover:bg-neutral-700 transition"
@@ -379,7 +379,7 @@ export default function HandleRequestsPage() {
 
                     {request.handles.instagram && (
                       <a
-                        href={`https://instagram.com/${request.handles.instagram}`}
+                        href={`https://instagram.com/${(request.handles.instagram || '').replace(/^@/, '')}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-3 p-2 bg-neutral-800 rounded-xl hover:bg-neutral-700 transition"
