@@ -364,7 +364,7 @@ export default function SupportChatWidget() {
                   {isEscalated ? 'Conectado con agente' : 'Asistente virtual'}
                 </p>
               </div>
-              <div className={`w-2 h-2 rounded-full ${isEscalated ? 'bg-green-500' : 'bg-violet-500'}`}></div>
+              <div className={`w-2 h-2 rounded-full ${isEscalated ? 'bg-emerald-500' : 'bg-emerald-500'}`}></div>
             </div>
           </div>
 
@@ -378,21 +378,21 @@ export default function SupportChatWidget() {
                 <div
                   className={`max-w-[85%] rounded-xl px-4 py-2.5 ${
                     msg.type === 'user'
-                      ? 'bg-violet-600 text-white'
+                      ? 'bg-emerald-600 text-white'
                       : msg.type === 'agent'
-                      ? 'bg-green-600 text-white'
+                      ? 'bg-emerald-700 text-white'
                       : msg.type === 'system'
                       ? 'bg-neutral-800 text-neutral-300 text-center w-full'
                       : 'bg-neutral-800 text-neutral-200'
                   }`}
                 >
                   {msg.type === 'agent' && (
-                    <p className="text-xs text-green-200 mb-1 font-medium">Agente</p>
+                    <p className="text-xs text-emerald-200 mb-1 font-medium">Agente</p>
                   )}
                   <p className="text-sm leading-relaxed">{msg.content}</p>
                   <p className={`text-xs mt-1.5 ${
-                    msg.type === 'user' ? 'text-violet-200' :
-                    msg.type === 'agent' ? 'text-green-200' : 'text-neutral-500'
+                    msg.type === 'user' ? 'text-emerald-200' :
+                    msg.type === 'agent' ? 'text-emerald-200' : 'text-neutral-500'
                   }`}>
                     {formatTime(msg.timestamp)}
                   </p>
@@ -438,7 +438,7 @@ export default function SupportChatWidget() {
             <div className="px-4 py-2 border-t border-neutral-800 bg-neutral-900">
               <button
                 onClick={handleEscalateToAgent}
-                className="w-full py-2 text-sm text-violet-400 hover:text-violet-300 transition-colors"
+                className="w-full py-2 text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
               >
                 Hablar con un agente
               </button>
@@ -461,12 +461,12 @@ export default function SupportChatWidget() {
                 }}
                 placeholder={isEscalated ? "Escribe al agente..." : "Escribe tu mensaje..."}
                 disabled={isTyping}
-                className="flex-1 px-4 py-2.5 bg-neutral-800 border border-neutral-700 rounded-lg text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-violet-500 disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 bg-neutral-800 border border-neutral-700 rounded-lg text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500 disabled:opacity-50"
               />
               <button
                 onClick={handleSendMessage}
                 disabled={!inputValue.trim() || isTyping}
-                className="w-10 h-10 bg-violet-600 rounded-lg flex items-center justify-center text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-violet-500 transition-colors"
+                className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-emerald-500 transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />

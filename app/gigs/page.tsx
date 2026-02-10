@@ -260,21 +260,21 @@ export default function GigsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-10 h-10 border-4 border-gray-900 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando oportunidades...</p>
+          <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-neutral-400">Cargando oportunidades...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-neutral-950">
       {/* Success Toast */}
       {showSuccessToast && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] animate-bounce">
-          <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-4">
+          <div className="bg-emerald-500 text-white px-8 py-4 rounded-xl shadow-2xl flex items-center gap-4 border border-emerald-400">
             <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
               <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -292,13 +292,13 @@ export default function GigsPage() {
       )}
 
       {/* Header */}
-      <div className="bg-white sticky top-0 z-20 shadow-sm">
-        <div className="px-4 py-3">
+      <div className="bg-neutral-900 sticky top-0 z-20 border-b border-neutral-800">
+        <div className="px-4 py-3 pl-16">
           {/* Search Bar */}
           <div className="flex items-center gap-3 mb-4">
             <div className="flex-1 relative">
               <div className="absolute left-4 top-1/2 -translate-y-1/2">
-                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
@@ -307,10 +307,10 @@ export default function GigsPage() {
                 placeholder="Explorar Trabajos"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-gray-100 rounded-full text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                className="w-full pl-12 pr-4 py-3 bg-neutral-800 rounded-full text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 border border-neutral-700"
               />
             </div>
-            <Link href="/creator/profile" className="w-11 h-11 rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+            <Link href="/creator/profile" className="w-11 h-11 rounded-full overflow-hidden bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
               {user ? (
                 <span className="text-white font-bold">{user.email?.charAt(0).toUpperCase()}</span>
               ) : (
@@ -327,33 +327,30 @@ export default function GigsPage() {
               onClick={() => setFilter('para_ti')}
               className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                 filter === 'para_ti'
-                  ? 'bg-gray-900 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-emerald-500 text-white'
+                  : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white'
               }`}
             >
-              <span>🎯</span>
               Para Ti
             </button>
             <button
               onClick={() => setFilter('mejor_pago')}
               className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                 filter === 'mejor_pago'
-                  ? 'bg-gray-900 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-emerald-500 text-white'
+                  : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white'
               }`}
             >
-              <span>💰</span>
               Mejor Pago
             </button>
             <button
               onClick={() => setFilter('tendencia')}
               className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                 filter === 'tendencia'
-                  ? 'bg-gray-900 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-emerald-500 text-white'
+                  : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white'
               }`}
             >
-              <span>🔥</span>
               Tendencia
             </button>
           </div>
@@ -364,14 +361,18 @@ export default function GigsPage() {
       <div className="px-4 py-4 pb-28">
         {sortedGigs.length === 0 ? (
           <div className="text-center py-16">
-            <div className="text-6xl mb-6">🎯</div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">No hay trabajos disponibles</h3>
-            <p className="text-gray-500 mb-6 max-w-sm mx-auto">
+            <div className="w-20 h-20 mx-auto mb-6 bg-neutral-800 rounded-full flex items-center justify-center">
+              <svg className="w-10 h-10 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-3">No hay trabajos disponibles</h3>
+            <p className="text-neutral-400 mb-6 max-w-sm mx-auto">
               Las empresas publicaran oportunidades muy pronto. Completa tu perfil para estar listo.
             </p>
             <Link
               href="/creator/profile"
-              className="inline-block px-6 py-3 bg-gray-900 text-white rounded-full font-semibold hover:bg-gray-800 transition-colors"
+              className="inline-block px-6 py-3 bg-emerald-500 text-white rounded-full font-semibold hover:bg-emerald-600 transition-colors"
             >
               Completar Mi Perfil
             </Link>
@@ -382,7 +383,7 @@ export default function GigsPage() {
               <div
                 key={gig.id}
                 onClick={() => setSelectedGig(gig)}
-                className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-lg transition-all cursor-pointer group"
+                className="bg-neutral-900 rounded-2xl overflow-hidden border border-neutral-800 hover:border-emerald-500/50 transition-all cursor-pointer group"
               >
                 {/* Card Image */}
                 <div className={`h-52 relative bg-gradient-to-br ${getGradient(index)}`}>
@@ -398,14 +399,9 @@ export default function GigsPage() {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <div className="text-center text-white">
-                        <div className="text-5xl mb-2 opacity-80">
-                          {gig.category?.includes('TikTok') ? '🎵' :
-                           gig.category?.includes('Instagram') ? '📸' :
-                           gig.category?.includes('YouTube') ? '▶️' :
-                           gig.category?.includes('UGC') ? '🎬' : '✨'}
-                        </div>
-                      </div>
+                      <svg className="w-16 h-16 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
                     </div>
                   )}
 
@@ -441,8 +437,8 @@ export default function GigsPage() {
                 {/* Card Content */}
                 <div className="p-4">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-xl font-bold text-gray-900">{formatBudget(gig.budget)}</span>
-                    <span className="text-sm text-gray-500">{getTimeAgo(gig.created_at)}</span>
+                    <span className="text-xl font-bold text-emerald-400">{formatBudget(gig.budget)}</span>
+                    <span className="text-sm text-neutral-500">{getTimeAgo(gig.created_at)}</span>
                   </div>
 
                   <button
@@ -456,8 +452,8 @@ export default function GigsPage() {
                     }}
                     className={`w-full py-3 rounded-xl font-bold text-sm transition-all ${
                       appliedGigs.has(gig.id)
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-gray-900 text-white hover:bg-gray-800'
+                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                        : 'bg-emerald-500 text-white hover:bg-emerald-600'
                     }`}
                   >
                     {appliedGigs.has(gig.id) ? 'Ver Aplicacion' : 'Aplicar'}
@@ -470,84 +466,84 @@ export default function GigsPage() {
       </div>
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 safe-area-bottom">
+      <div className="fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-800 safe-area-bottom">
         <div className="flex justify-around py-2">
-          <div className="flex flex-col items-center py-2 px-4 text-gray-900">
+          <div className="flex flex-col items-center py-2 px-4 text-emerald-400">
             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
               <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
             </svg>
             <span className="text-xs font-medium mt-1">Trabajos</span>
           </div>
 
-          <Link href="/creator/analytics" className="flex flex-col items-center py-2 px-4 text-gray-400 hover:text-gray-600">
+          <Link href="/creator/analytics" className="flex flex-col items-center py-2 px-4 text-neutral-500 hover:text-neutral-300">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
             <span className="text-xs font-medium mt-1">Analytics</span>
           </Link>
 
-          <Link href="/creator/applications" className="flex flex-col items-center py-2 px-4 text-gray-400 hover:text-gray-600">
+          <Link href="/creator/applications" className="flex flex-col items-center py-2 px-4 text-neutral-500 hover:text-neutral-300">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             <span className="text-xs font-medium mt-1">Aplicaciones</span>
           </Link>
 
-          <Link href="/creator/messages" className="flex flex-col items-center py-2 px-4 text-gray-400 hover:text-gray-600">
+          <Link href="/creator/messages" className="flex flex-col items-center py-2 px-4 text-neutral-500 hover:text-neutral-300">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
             <span className="text-xs font-medium mt-1">Mensajes</span>
           </Link>
 
-          <Link href="/creator/profile" className="flex flex-col items-center py-2 px-4 text-gray-400 hover:text-gray-600">
+          <Link href="/creator/profile" className="flex flex-col items-center py-2 px-4 text-neutral-500 hover:text-neutral-300">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
             <span className="text-xs font-medium mt-1">Perfil</span>
           </Link>
         </div>
-        <div className="h-1 bg-gray-900 mx-auto w-32 rounded-full mb-2"></div>
+        <div className="h-1 bg-emerald-500 mx-auto w-32 rounded-full mb-2"></div>
       </div>
 
       {/* Verification Required Modal */}
       {showVerificationModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-neutral-900 rounded-2xl max-w-md w-full p-6 border border-neutral-800">
             {/* Icon */}
-            <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg className="w-10 h-10 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-20 h-20 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg className="w-10 h-10 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
 
             {/* Content */}
             <div className="text-center mb-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Verificacion Requerida</h3>
-              <p className="text-gray-600">
+              <h3 className="text-xl font-bold text-white mb-2">Verificacion Requerida</h3>
+              <p className="text-neutral-400">
                 Para aplicar a trabajos, necesitas verificar al menos una de tus redes sociales.
                 Esto ayuda a las empresas a confiar en ti y ver tus estadisticas reales.
               </p>
             </div>
 
             {/* Benefits */}
-            <div className="bg-gray-50 rounded-xl p-4 mb-6">
-              <p className="text-sm font-medium text-gray-700 mb-2">Al verificar obtendras:</p>
-              <ul className="space-y-2 text-sm text-gray-600">
+            <div className="bg-neutral-800 rounded-xl p-4 mb-6 border border-neutral-700">
+              <p className="text-sm font-medium text-neutral-300 mb-2">Al verificar obtendras:</p>
+              <ul className="space-y-2 text-sm text-neutral-400">
                 <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
                   Acceso a aplicar a todos los trabajos
                 </li>
                 <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
                   Perfil destacado para empresas
                 </li>
                 <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
                   Mayor probabilidad de ser seleccionado
@@ -559,13 +555,13 @@ export default function GigsPage() {
             <div className="space-y-3">
               <Link
                 href="/creator/profile?section=verification"
-                className="block w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-bold text-center hover:from-blue-700 hover:to-purple-700 transition-all"
+                className="block w-full py-4 bg-emerald-500 text-white rounded-xl font-bold text-center hover:bg-emerald-600 transition-all"
               >
                 Verificar Mi Cuenta
               </Link>
               <button
                 onClick={() => setShowVerificationModal(false)}
-                className="w-full py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                className="w-full py-3 bg-neutral-800 text-neutral-300 rounded-xl font-medium hover:bg-neutral-700 transition-colors border border-neutral-700"
               >
                 Cancelar
               </button>
@@ -576,8 +572,8 @@ export default function GigsPage() {
 
       {/* Gig Detail Modal */}
       {selectedGig && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-neutral-900 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto border border-neutral-800">
             {/* Modal Header Image */}
             <div className={`h-48 relative bg-gradient-to-br ${getGradient(gigs.indexOf(selectedGig))}`}>
               {selectedGig.image_url && selectedGig.image_url.startsWith('http') ? (
@@ -591,12 +587,9 @@ export default function GigsPage() {
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
-                  <div className="text-6xl opacity-80">
-                    {selectedGig.category?.includes('TikTok') ? '🎵' :
-                     selectedGig.category?.includes('Instagram') ? '📸' :
-                     selectedGig.category?.includes('YouTube') ? '▶️' :
-                     selectedGig.category?.includes('UGC') ? '🎬' : '✨'}
-                  </div>
+                  <svg className="w-16 h-16 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
                 </div>
               )}
 
@@ -615,49 +608,49 @@ export default function GigsPage() {
             <div className="p-6">
               {/* Company Info */}
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                <div className="w-12 h-12 bg-neutral-800 rounded-full flex items-center justify-center border border-neutral-700">
                   {selectedGig.company_logo ? (
                     <img src={selectedGig.company_logo} alt="" className="w-10 h-10 rounded-full object-cover" />
                   ) : (
-                    <span className="text-gray-800 font-bold text-lg">
+                    <span className="text-white font-bold text-lg">
                       {(selectedGig.company_name || selectedGig.title)?.charAt(0).toUpperCase()}
                     </span>
                   )}
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-bold text-gray-900">{selectedGig.company_name || 'Empresa'}</h3>
-                  <p className="text-gray-500 text-sm">{selectedGig.category}</p>
+                  <h3 className="font-bold text-white">{selectedGig.company_name || 'Empresa'}</h3>
+                  <p className="text-neutral-500 text-sm">{selectedGig.category}</p>
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-bold text-gray-900">{formatBudget(selectedGig.budget)}</div>
+                  <div className="text-2xl font-bold text-emerald-400">{formatBudget(selectedGig.budget)}</div>
                 </div>
               </div>
 
               {/* Title */}
-              <h2 className="text-xl font-bold text-gray-900 mb-4">{selectedGig.title}</h2>
+              <h2 className="text-xl font-bold text-white mb-4">{selectedGig.title}</h2>
 
               {/* Description */}
               <div className="mb-6">
-                <h4 className="font-semibold text-gray-900 mb-2">Lo que haras:</h4>
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{selectedGig.description}</p>
+                <h4 className="font-semibold text-neutral-300 mb-2">Lo que haras:</h4>
+                <div className="bg-neutral-800 rounded-xl p-4 border border-neutral-700">
+                  <p className="text-neutral-300 leading-relaxed whitespace-pre-wrap">{selectedGig.description}</p>
                 </div>
               </div>
 
               {/* Requirements */}
               {selectedGig.requirements && (
                 <div className="mb-6">
-                  <h4 className="font-semibold text-gray-900 mb-2">Requisitos:</h4>
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{selectedGig.requirements}</p>
+                  <h4 className="font-semibold text-neutral-300 mb-2">Requisitos:</h4>
+                  <div className="bg-neutral-800 rounded-xl p-4 border border-neutral-700">
+                    <p className="text-neutral-300 leading-relaxed whitespace-pre-wrap">{selectedGig.requirements}</p>
                   </div>
                 </div>
               )}
 
               {/* Real Applicants Count - NO FAKE DATA */}
               {(selectedGig.applicants_count || 0) > 0 && (
-                <div className="text-center py-3 mb-4 bg-orange-50 rounded-xl">
-                  <span className="text-orange-700 font-medium">
+                <div className="text-center py-3 mb-4 bg-amber-500/20 rounded-xl border border-amber-500/30">
+                  <span className="text-amber-400 font-medium">
                     {selectedGig.applicants_count} {selectedGig.applicants_count === 1 ? 'persona ha aplicado' : 'personas han aplicado'}
                   </span>
                 </div>
@@ -666,7 +659,7 @@ export default function GigsPage() {
               {/* Apply Section */}
               {appliedGigs.has(selectedGig.id) ? (
                 <div className="text-center">
-                  <div className="bg-green-50 text-green-700 py-4 px-6 rounded-xl mb-4 flex items-center justify-center gap-2">
+                  <div className="bg-emerald-500/20 text-emerald-400 py-4 px-6 rounded-xl mb-4 flex items-center justify-center gap-2 border border-emerald-500/30">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
@@ -674,7 +667,7 @@ export default function GigsPage() {
                   </div>
                   <Link
                     href="/creator/applications"
-                    className="block w-full py-4 bg-gray-100 text-gray-700 rounded-xl font-bold text-center hover:bg-gray-200 transition-colors"
+                    className="block w-full py-4 bg-neutral-800 text-neutral-300 rounded-xl font-bold text-center hover:bg-neutral-700 transition-colors border border-neutral-700"
                   >
                     Ver Mis Aplicaciones
                   </Link>
@@ -685,13 +678,13 @@ export default function GigsPage() {
                     value={applicationMessage}
                     onChange={(e) => setApplicationMessage(e.target.value)}
                     placeholder="Escribe un mensaje para la empresa (opcional)..."
-                    className="w-full p-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    className="w-full p-4 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none"
                     rows={3}
                   />
                   <button
                     onClick={() => handleApply(selectedGig)}
                     disabled={isApplying}
-                    className="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-bold text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {isApplying ? (
                       <>

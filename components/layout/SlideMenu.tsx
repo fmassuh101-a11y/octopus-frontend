@@ -108,7 +108,7 @@ export default function SlideMenu({ userType, userName, userEmail, avatarUrl }: 
           {/* User Profile */}
           <div className="px-5 py-6 border-b border-neutral-800">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center text-white text-lg font-semibold flex-shrink-0">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white text-lg font-semibold flex-shrink-0">
                 {avatarUrl ? (
                   <img src={avatarUrl} alt="" className="w-full h-full rounded-full object-cover" />
                 ) : (
@@ -140,13 +140,13 @@ export default function SlideMenu({ userType, userName, userEmail, avatarUrl }: 
                       href={item.href}
                       className={`flex items-center px-3 py-2.5 rounded-lg text-sm transition-all duration-150 ${
                         isActive
-                          ? 'bg-violet-600/20 text-violet-400 font-medium'
+                          ? 'bg-emerald-500/20 text-emerald-400 font-medium'
                           : 'text-neutral-400 hover:bg-neutral-800/50 hover:text-white'
                       }`}
                     >
                       {item.label}
                       {isActive && (
-                        <span className="ml-auto w-1.5 h-1.5 rounded-full bg-violet-500"></span>
+                        <span className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                       )}
                     </Link>
                   </li>
