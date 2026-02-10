@@ -336,10 +336,10 @@ export default function SupportChatWidget() {
 
   return (
     <>
-      {/* Chat Button */}
+      {/* Chat Button - positioned above bottom nav */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-neutral-900 rounded-full shadow-xl flex items-center justify-center text-white hover:bg-neutral-800 transition-all z-50 border border-neutral-700"
+        className="fixed bottom-24 right-4 w-14 h-14 bg-neutral-900 rounded-full shadow-xl flex items-center justify-center text-white hover:bg-neutral-800 transition-all z-40 border border-neutral-700"
       >
         {isOpen ? (
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -352,9 +352,9 @@ export default function SupportChatWidget() {
         )}
       </button>
 
-      {/* Chat Window */}
+      {/* Chat Window - positioned above bottom nav */}
       {isOpen && (
-        <div className="fixed bottom-24 right-6 w-[380px] h-[520px] bg-neutral-950 rounded-2xl shadow-2xl flex flex-col overflow-hidden z-50 border border-neutral-800">
+        <div className="fixed bottom-40 right-4 w-[360px] max-w-[calc(100vw-2rem)] h-[450px] max-h-[calc(100vh-12rem)] bg-neutral-950 rounded-2xl shadow-2xl flex flex-col overflow-hidden z-40 border border-neutral-800">
           {/* Header */}
           <div className="bg-neutral-900 px-5 py-4 border-b border-neutral-800">
             <div className="flex items-center justify-between">

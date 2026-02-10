@@ -71,18 +71,32 @@ export default function ProfilePage() {
           if (profiles.length > 0) {
             const profileData = profiles[0]
             console.log('[Profile] Profile from Supabase:', profileData)
-            finalProfile = { ...profileData }
 
-            // Parse bio data if it exists
+            // Map database fields to expected format
+            finalProfile = {
+              ...profileData,
+              // Map snake_case to camelCase for compatibility
+              phoneNumber: profileData.phone_number,
+              academicLevel: profileData.academic_level,
+              linkedInUrl: profileData.linkedin_url,
+              profilePhoto: profileData.profile_photo_url || profileData.avatar_url,
+              firstName: profileData.full_name?.split(' ')[0] || '',
+              lastName: profileData.full_name?.split(' ').slice(1).join(' ') || ''
+            }
+
+            finalBioData = { ...finalProfile }
+
+            // Parse bio data if it exists (for backward compatibility)
             if (profileData.bio) {
               try {
                 const parsedBio = JSON.parse(profileData.bio)
                 console.log('[Profile] Parsed bio from Supabase:', parsedBio)
-                finalBioData = { ...parsedBio }
-                finalProfile = { ...finalProfile, ...parsedBio }
+                // Merge but prefer direct database fields
+                finalBioData = { ...parsedBio, ...finalBioData }
+                finalProfile = { ...parsedBio, ...finalProfile }
 
                 // Also save to localStorage for faster loading next time
-                localStorage.setItem('creatorOnboarding', JSON.stringify(parsedBio))
+                localStorage.setItem('creatorOnboarding', JSON.stringify(finalBioData))
               } catch (e) {
                 console.log('[Profile] Bio is not JSON, using as-is')
               }

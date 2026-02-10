@@ -99,6 +99,15 @@ export default function CreatorSocialsPage() {
         user_id: user.id,
         user_type: 'creator',
         full_name: `${existing.firstName || ''} ${existing.lastName || ''}`.trim() || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario',
+        location: existing.location || null,
+        phone_number: existing.phoneNumber ? `${existing.countryCode || '+56'}${existing.phoneNumber}` : null,
+        academic_level: existing.academicLevel || null,
+        studies: existing.studies || null,
+        linkedin_url: existing.linkedInUrl || null,
+        instagram: instagram.trim() || null,
+        tiktok: tiktok.trim() || null,
+        youtube: youtube.trim() || null,
+        profile_photo_url: profilePhoto || null,
         bio: JSON.stringify(allData),
         updated_at: new Date().toISOString()
       }
