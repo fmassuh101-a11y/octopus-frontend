@@ -912,28 +912,41 @@ export default function AdminDashboard() {
               { id: 'withdrawals', label: 'Retiros Pendientes', icon: '💸', badge: stats.pendingWithdrawals },
               { id: 'users', label: 'Usuarios', icon: '👥' },
               { id: 'gigs', label: 'Gigs', icon: '💼' },
+              { id: 'support', label: 'Soporte', icon: '💬', href: '/admin/support' },
             ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`px-4 py-3 text-sm font-medium transition-colors relative ${
-                  activeTab === tab.id
-                    ? 'text-white'
-                    : 'text-neutral-400 hover:text-neutral-200'
-                }`}
-              >
-                <span className="flex items-center gap-2">
-                  {tab.icon} {tab.label}
-                  {tab.badge ? (
-                    <span className="px-2 py-0.5 text-xs bg-red-500 text-white rounded-full">
-                      {tab.badge}
-                    </span>
-                  ) : null}
-                </span>
-                {activeTab === tab.id && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-sky-500" />
-                )}
-              </button>
+              tab.href ? (
+                <Link
+                  key={tab.id}
+                  href={tab.href}
+                  className="px-4 py-3 text-sm font-medium transition-colors relative text-neutral-400 hover:text-neutral-200"
+                >
+                  <span className="flex items-center gap-2">
+                    {tab.icon} {tab.label}
+                  </span>
+                </Link>
+              ) : (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={`px-4 py-3 text-sm font-medium transition-colors relative ${
+                    activeTab === tab.id
+                      ? 'text-white'
+                      : 'text-neutral-400 hover:text-neutral-200'
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    {tab.icon} {tab.label}
+                    {tab.badge ? (
+                      <span className="px-2 py-0.5 text-xs bg-red-500 text-white rounded-full">
+                        {tab.badge}
+                      </span>
+                    ) : null}
+                  </span>
+                  {activeTab === tab.id && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-sky-500" />
+                  )}
+                </button>
+              )
             ))}
           </div>
         </div>

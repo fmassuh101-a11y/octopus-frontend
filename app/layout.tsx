@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '../lib/contexts/AuthContext'
+import SupportChatWidget from '../components/support/SupportChatWidget'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -23,6 +24,7 @@ export default function RootLayout({
           <div id="root" className="min-h-screen bg-gray-50">
             {children}
           </div>
+          <SupportChatWidget />
         </AuthProvider>
       </body>
     </html>

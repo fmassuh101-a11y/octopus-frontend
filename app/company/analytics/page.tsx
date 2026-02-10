@@ -105,7 +105,7 @@ export default function CompanyAnalyticsPage() {
       // Combine creator IDs from both applications and contracts
       const creatorIdsFromApps = applications.map((a: any) => a.creator_id)
       const creatorIdsFromContracts = contracts.map((c: any) => c.creator_id)
-      const allCreatorIds = [...new Set([...creatorIdsFromApps, ...creatorIdsFromContracts])]
+      const allCreatorIds = Array.from(new Set([...creatorIdsFromApps, ...creatorIdsFromContracts]))
 
       if (allCreatorIds.length === 0) {
         setLoading(false)
