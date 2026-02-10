@@ -1,131 +1,137 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyDb26jKEli_4Tx1jlhhf9amaGoKVW88DEo'
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent'
+const GEMINI_API_KEY = 'AIzaSyDb26jKEli_4Tx1jlhhf9amaGoKVW88DEo'
 
 const SYSTEM_PROMPT = `Eres el asistente de soporte de Octopus, una plataforma que conecta creadores de contenido (influencers, UGC creators) con empresas que buscan promocionar sus productos o servicios.
 
 REGLAS IMPORTANTES:
 1. SOLO respondes preguntas relacionadas con Octopus y su funcionamiento.
-2. Si te preguntan algo NO relacionado con Octopus (deportes, clima, política, etc.), responde EXACTAMENTE: "Solo puedo ayudarte con temas relacionados a Octopus. ¿En qué puedo ayudarte sobre nuestra plataforma?"
-3. Sé amable, profesional y conciso.
-4. Responde en español.
-5. Usa emojis ocasionalmente para ser más amigable.
+2. Si te preguntan algo NO relacionado con Octopus (deportes, clima, politica, etc.), responde: "Solo puedo ayudarte con temas relacionados a Octopus. En que puedo ayudarte sobre nuestra plataforma?"
+3. Se amable, profesional y conciso.
+4. Responde en espanol.
+5. NO uses emojis.
 
-INFORMACIÓN SOBRE OCTOPUS:
+INFORMACION SOBRE OCTOPUS:
 
-**Qué es Octopus:**
+Que es Octopus:
 - Marketplace que conecta creadores de contenido con empresas
-- Las empresas publican "gigs" (trabajos) y los creadores aplican
-- Los creadores crean contenido UGC, reseñas, posts, etc.
+- Las empresas publican gigs (trabajos) y los creadores aplican
+- Los creadores crean contenido UGC, resenas, posts, etc.
 
-**Para Creadores:**
+Para Creadores:
 - Pueden ver gigs disponibles y aplicar
-- Reciben contratos con términos y pago definido
-- Suben su contenido cuando está listo
+- Reciben contratos con terminos y pago definido
+- Suben su contenido cuando esta listo
 - Reciben pago cuando la empresa aprueba el contenido
 - Pueden retirar dinero a PayPal, transferencia bancaria o crypto (USDT/USDC)
-- El retiro mínimo es $10 USD
-- Octopus cobra 10% de comisión en cada pago
+- El retiro minimo es $10 USD
+- Octopus cobra 10% de comision en cada pago
 
-**Para Empresas:**
-- Crean gigs especificando qué contenido necesitan
+Para Empresas:
+- Crean gigs especificando que contenido necesitan
 - Revisan aplicaciones de creadores
-- Envían contratos a los creadores seleccionados
+- Envian contratos a los creadores seleccionados
 - Aprueban o piden revisiones del contenido
-- El pago se libera automáticamente al aprobar
+- El pago se libera automaticamente al aprobar
 
-**Contratos:**
-- Un contrato tiene: descripción del trabajo, fecha límite, monto a pagar
-- Estados: pending (pendiente), accepted (aceptado), in_progress (en progreso), completed (completado), cancelled (cancelado)
+Contratos:
+- Un contrato tiene: descripcion del trabajo, fecha limite, monto a pagar
+- Estados: pending, accepted, in_progress, completed, cancelled
 - Se pueden cancelar antes de que el creador entregue
 - Si hay disputas, contactar soporte
 
-**Pagos:**
-- Los pagos se procesan en 3-5 días hábiles
-- Métodos: PayPal, transferencia bancaria, crypto
-- Comisión de Octopus: 10%
-- Retiro mínimo: $10 USD
+Pagos:
+- Los pagos se procesan en 3-5 dias habiles
+- Metodos: PayPal, transferencia bancaria, crypto
+- Comision de Octopus: 10%
+- Retiro minimo: $10 USD
 
-**Problemas comunes:**
-- "No recibí mi pago" → Verificar que el contrato esté en estado "completed" y esperar 3-5 días hábiles
-- "La empresa no responde" → Esperar 48h, luego contactar soporte
-- "Quiero cancelar un contrato" → Ir a Contratos y usar el botón cancelar (solo si no se ha entregado)
-- "Olvidé mi contraseña" → Usar "Olvidé mi contraseña" en login
+Problemas comunes:
+- No recibi mi pago: Verificar que el contrato este en estado completed y esperar 3-5 dias habiles
+- La empresa no responde: Esperar 48h, luego contactar soporte
+- Quiero cancelar un contrato: Ir a Contratos y usar el boton cancelar
+- Olvide mi contrasena: Usar Olvide mi contrasena en login
 
-Si no sabes algo específico, sugiere contactar al equipo de soporte humano.`
+Si no sabes algo especifico, sugiere contactar al equipo de soporte humano.`
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, conversationHistory } = await request.json()
+    const body = await request.json()
+    const { message, conversationHistory } = body
 
     if (!message) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 })
     }
 
     // Build conversation for Gemini
-    const contents = []
+    const contents: any[] = []
 
     // Add conversation history if exists
-    if (conversationHistory && conversationHistory.length > 0) {
-      for (const msg of conversationHistory.slice(-10)) { // Last 10 messages for context
-        contents.push({
-          role: msg.type === 'user' ? 'user' : 'model',
-          parts: [{ text: msg.content }]
-        })
+    if (conversationHistory && Array.isArray(conversationHistory) && conversationHistory.length > 0) {
+      for (const msg of conversationHistory.slice(-6)) {
+        if (msg.content && msg.type) {
+          contents.push({
+            role: msg.type === 'user' ? 'user' : 'model',
+            parts: [{ text: String(msg.content) }]
+          })
+        }
       }
     }
 
     // Add current user message
     contents.push({
       role: 'user',
-      parts: [{ text: message }]
+      parts: [{ text: String(message) }]
     })
 
-    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    const requestBody = {
+      contents,
+      systemInstruction: {
+        parts: [{ text: SYSTEM_PROMPT }]
       },
-      body: JSON.stringify({
-        contents,
-        systemInstruction: {
-          parts: [{ text: SYSTEM_PROMPT }]
-        },
-        generationConfig: {
-          temperature: 0.7,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 1024,
-        },
-        safetySettings: [
-          { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-          { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-          { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-          { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-        ]
-      })
-    })
-
-    if (!response.ok) {
-      const errorData = await response.text()
-      console.error('Gemini API error:', response.status, errorData)
-      return NextResponse.json({
-        reply: 'Lo siento, hubo un error al procesar tu mensaje. Por favor intenta de nuevo.'
-      })
+      generationConfig: {
+        temperature: 0.7,
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 512,
+      }
     }
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
+      }
+    )
 
     const data = await response.json()
 
-    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text ||
-      'Lo siento, no pude generar una respuesta. ¿Puedes reformular tu pregunta?'
+    if (!response.ok) {
+      console.error('Gemini API error:', response.status, JSON.stringify(data))
+      return NextResponse.json({
+        reply: 'Disculpa, hay un problema tecnico. Por favor intenta de nuevo o contacta a soporte.'
+      })
+    }
+
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text
+
+    if (!reply) {
+      console.error('No reply from Gemini:', JSON.stringify(data))
+      return NextResponse.json({
+        reply: 'No pude generar una respuesta. Por favor reformula tu pregunta.'
+      })
+    }
 
     return NextResponse.json({ reply })
 
   } catch (error) {
     console.error('Support chat error:', error)
     return NextResponse.json({
-      reply: 'Lo siento, hubo un error. Por favor intenta de nuevo más tarde.'
+      reply: 'Error de conexion. Por favor intenta de nuevo.'
     })
   }
 }

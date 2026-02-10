@@ -5,18 +5,16 @@ import { useState, useEffect, useRef } from 'react'
 const SUPABASE_URL = 'https://ftvqoudlmojdxwjxljzr.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
 
-// Quick suggestion buttons
 const QUICK_SUGGESTIONS = [
-  { id: 'payment', label: 'Problemas de pago', icon: '💰' },
-  { id: 'contract', label: 'Contratos', icon: '📝' },
-  { id: 'dispute', label: 'Tengo una disputa', icon: '⚠️' },
-  { id: 'how', label: 'Cómo funciona', icon: '❓' },
-  { id: 'account', label: 'Mi cuenta', icon: '👤' },
+  { id: 'payment', label: 'Problemas de pago' },
+  { id: 'contract', label: 'Contratos' },
+  { id: 'dispute', label: 'Reportar disputa' },
+  { id: 'how', label: 'Como funciona' },
 ]
 
 interface ChatMessage {
   id: string
-  type: 'bot' | 'user' | 'agent'
+  type: 'bot' | 'user' | 'agent' | 'system'
   content: string
   timestamp: Date
 }
@@ -33,7 +31,6 @@ export default function SupportChatWidget() {
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    // Load user info
     const loadUserData = async () => {
       const userStr = localStorage.getItem('sb-user')
       const token = localStorage.getItem('sb-access-token')
@@ -76,25 +73,23 @@ export default function SupportChatWidget() {
   }, [isOpen])
 
   useEffect(() => {
-    // Show welcome message when chat opens for the first time
     if (isOpen && messages.length === 0) {
       const welcomeMsg: ChatMessage = {
         id: 'welcome',
         type: 'bot',
-        content: '¡Hola! 👋 Soy el asistente de Octopus. ¿En qué puedo ayudarte hoy?',
+        content: 'Hola, soy el asistente de Octopus. En que puedo ayudarte?',
         timestamp: new Date()
       }
       setMessages([welcomeMsg])
     }
-  }, [isOpen])
+  }, [isOpen, messages.length])
 
-  // Poll for agent messages when escalated
   useEffect(() => {
     if (!conversationId || !isEscalated) return
 
     const interval = setInterval(async () => {
       await checkForAgentMessages()
-    }, 10000)
+    }, 8000)
 
     return () => clearInterval(interval)
   }, [conversationId, isEscalated])
@@ -148,25 +143,28 @@ export default function SupportChatWidget() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: userMessage,
-          conversationHistory: messages.slice(-10)
+          conversationHistory: messages.slice(-8).map(m => ({
+            type: m.type,
+            content: m.content
+          }))
         })
       })
 
       if (response.ok) {
         const data = await response.json()
-        return data.reply
+        return data.reply || 'No pude procesar tu mensaje.'
       }
+      return 'Error de conexion. Intenta de nuevo.'
     } catch (err) {
       console.error('Error calling AI:', err)
+      return 'Error de conexion. Intenta de nuevo.'
     }
-    return 'Lo siento, hubo un error. ¿Puedes intentar de nuevo?'
   }
 
   const handleSendMessage = async () => {
     const message = inputValue.trim()
-    if (!message) return
+    if (!message || isTyping) return
 
-    // Add user message
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
       type: 'user',
@@ -177,17 +175,18 @@ export default function SupportChatWidget() {
     setInputValue('')
     setIsTyping(true)
 
-    // Save to database if escalated
     if (conversationId) {
       await saveMessageToDb(message, 'user')
     }
 
-    // Get AI response
-    const aiResponse = await sendToAI(message)
+    if (isEscalated) {
+      setIsTyping(false)
+      return
+    }
 
+    const aiResponse = await sendToAI(message)
     setIsTyping(false)
 
-    // Add bot response
     const botMsg: ChatMessage = {
       id: `bot-${Date.now()}`,
       type: 'bot',
@@ -196,25 +195,23 @@ export default function SupportChatWidget() {
     }
     setMessages(prev => [...prev, botMsg])
 
-    // Save bot response to database if escalated
     if (conversationId) {
       await saveMessageToDb(aiResponse, 'bot')
     }
   }
 
-  const handleSuggestionClick = async (suggestion: typeof QUICK_SUGGESTIONS[0]) => {
+  const handleSuggestionClick = async (label: string) => {
+    if (isTyping) return
+
     const messageMap: Record<string, string> = {
-      'payment': 'Tengo un problema con un pago',
-      'contract': 'Tengo una pregunta sobre contratos',
-      'dispute': 'Quiero reportar una disputa',
-      'how': '¿Cómo funciona Octopus?',
-      'account': 'Tengo una pregunta sobre mi cuenta'
+      'Problemas de pago': 'Tengo un problema con un pago',
+      'Contratos': 'Tengo una pregunta sobre contratos',
+      'Reportar disputa': 'Quiero reportar una disputa',
+      'Como funciona': 'Como funciona Octopus?'
     }
 
-    const message = messageMap[suggestion.id] || suggestion.label
-    setInputValue(message)
+    const message = messageMap[label] || label
 
-    // Automatically send the message
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
       type: 'user',
@@ -225,7 +222,6 @@ export default function SupportChatWidget() {
     setIsTyping(true)
 
     const aiResponse = await sendToAI(message)
-
     setIsTyping(false)
 
     const botMsg: ChatMessage = {
@@ -238,30 +234,33 @@ export default function SupportChatWidget() {
   }
 
   const handleEscalateToAgent = async () => {
+    if (isEscalated) return
+
     setIsEscalated(true)
 
-    // Create conversation in database
     const convId = await createConversation()
     if (!convId) {
       const errorMsg: ChatMessage = {
         id: `error-${Date.now()}`,
-        type: 'bot',
-        content: 'Lo siento, hubo un error al conectar con soporte. Por favor intenta más tarde.',
+        type: 'system',
+        content: 'No se pudo conectar con soporte. Intenta mas tarde.',
         timestamp: new Date()
       }
       setMessages(prev => [...prev, errorMsg])
+      setIsEscalated(false)
       return
     }
 
-    // Save conversation history to database
     for (const msg of messages) {
-      await saveMessageToDb(msg.content, msg.type === 'user' ? 'user' : 'bot')
+      if (msg.type === 'user' || msg.type === 'bot') {
+        await saveMessageToDb(msg.content, msg.type)
+      }
     }
 
     const escalateMsg: ChatMessage = {
       id: `escalate-${Date.now()}`,
-      type: 'bot',
-      content: '📞 Te estoy conectando con un agente de soporte humano.\n\n⏱️ **Tiempo de respuesta estimado:** 1-2 horas en horario laboral.\n\nPuedes seguir escribiendo tu mensaje y te responderemos lo antes posible.',
+      type: 'system',
+      content: 'Te hemos conectado con soporte. Un agente revisara tu caso y te respondera en las proximas horas. Puedes seguir escribiendo.',
       timestamp: new Date()
     }
     setMessages(prev => [...prev, escalateMsg])
@@ -295,6 +294,9 @@ export default function SupportChatWidget() {
         const conversation = Array.isArray(data) ? data[0] : data
         setConversationId(conversation.id)
         return conversation.id
+      } else {
+        const err = await response.text()
+        console.error('Create conversation error:', err)
       }
     } catch (err) {
       console.error('Error creating conversation:', err)
@@ -337,51 +339,60 @@ export default function SupportChatWidget() {
       {/* Chat Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full shadow-lg flex items-center justify-center text-white text-2xl hover:scale-110 transition-transform z-50"
+        className="fixed bottom-6 right-6 w-14 h-14 bg-neutral-900 rounded-full shadow-xl flex items-center justify-center text-white hover:bg-neutral-800 transition-all z-50 border border-neutral-700"
       >
-        {isOpen ? '✕' : '💬'}
+        {isOpen ? (
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        ) : (
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
+        )}
       </button>
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="fixed bottom-24 right-6 w-96 h-[500px] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden z-50 border border-gray-200">
+        <div className="fixed bottom-24 right-6 w-[380px] h-[520px] bg-neutral-950 rounded-2xl shadow-2xl flex flex-col overflow-hidden z-50 border border-neutral-800">
           {/* Header */}
-          <div className="bg-gradient-to-r from-violet-600 to-purple-600 p-4 text-white">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-xl">
-                🐙
-              </div>
+          <div className="bg-neutral-900 px-5 py-4 border-b border-neutral-800">
+            <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-semibold">Soporte Octopus</h3>
-                <p className="text-xs text-white/80">
-                  {isEscalated ? 'Conectado con agente' : 'Asistente con IA'}
+                <h3 className="font-semibold text-white text-sm">Soporte Octopus</h3>
+                <p className="text-xs text-neutral-400 mt-0.5">
+                  {isEscalated ? 'Conectado con agente' : 'Asistente virtual'}
                 </p>
               </div>
+              <div className={`w-2 h-2 rounded-full ${isEscalated ? 'bg-green-500' : 'bg-violet-500'}`}></div>
             </div>
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-neutral-950">
             {messages.map((msg) => (
               <div
                 key={msg.id}
                 className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[80%] rounded-2xl px-4 py-2 ${
+                  className={`max-w-[85%] rounded-xl px-4 py-2.5 ${
                     msg.type === 'user'
-                      ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white'
+                      ? 'bg-violet-600 text-white'
                       : msg.type === 'agent'
-                      ? 'bg-green-500 text-white'
-                      : 'bg-white text-gray-800 shadow-sm border border-gray-100'
+                      ? 'bg-green-600 text-white'
+                      : msg.type === 'system'
+                      ? 'bg-neutral-800 text-neutral-300 text-center w-full'
+                      : 'bg-neutral-800 text-neutral-200'
                   }`}
                 >
                   {msg.type === 'agent' && (
-                    <p className="text-xs text-green-100 mb-1">Agente de soporte</p>
+                    <p className="text-xs text-green-200 mb-1 font-medium">Agente</p>
                   )}
-                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                  <p className={`text-xs mt-1 ${
-                    msg.type === 'user' ? 'text-white/70' : 'text-gray-400'
+                  <p className="text-sm leading-relaxed">{msg.content}</p>
+                  <p className={`text-xs mt-1.5 ${
+                    msg.type === 'user' ? 'text-violet-200' :
+                    msg.type === 'agent' ? 'text-green-200' : 'text-neutral-500'
                   }`}>
                     {formatTime(msg.timestamp)}
                   </p>
@@ -391,11 +402,11 @@ export default function SupportChatWidget() {
 
             {isTyping && (
               <div className="flex justify-start">
-                <div className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-100">
-                  <div className="flex gap-1">
-                    <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                    <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                    <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                <div className="bg-neutral-800 rounded-xl px-4 py-3">
+                  <div className="flex gap-1.5">
+                    <span className="w-2 h-2 bg-neutral-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                    <span className="w-2 h-2 bg-neutral-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                    <span className="w-2 h-2 bg-neutral-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
                   </div>
                 </div>
               </div>
@@ -405,18 +416,17 @@ export default function SupportChatWidget() {
           </div>
 
           {/* Quick Suggestions */}
-          {messages.length <= 1 && (
-            <div className="px-4 py-2 border-t border-gray-100 bg-white">
-              <p className="text-xs text-gray-500 mb-2">Sugerencias rápidas:</p>
+          {messages.length <= 1 && !isEscalated && (
+            <div className="px-4 py-3 border-t border-neutral-800 bg-neutral-900">
               <div className="flex flex-wrap gap-2">
-                {QUICK_SUGGESTIONS.map((suggestion) => (
+                {QUICK_SUGGESTIONS.map((s) => (
                   <button
-                    key={suggestion.id}
-                    onClick={() => handleSuggestionClick(suggestion)}
-                    className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-full text-xs text-gray-700 transition-colors flex items-center gap-1"
+                    key={s.id}
+                    onClick={() => handleSuggestionClick(s.label)}
+                    disabled={isTyping}
+                    className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 rounded-lg text-xs text-neutral-300 transition-colors disabled:opacity-50"
                   >
-                    <span>{suggestion.icon}</span>
-                    <span>{suggestion.label}</span>
+                    {s.label}
                   </button>
                 ))}
               </div>
@@ -425,18 +435,18 @@ export default function SupportChatWidget() {
 
           {/* Escalate Button */}
           {messages.length > 2 && !isEscalated && (
-            <div className="px-4 py-2 border-t border-gray-100 bg-white">
+            <div className="px-4 py-2 border-t border-neutral-800 bg-neutral-900">
               <button
                 onClick={handleEscalateToAgent}
-                className="w-full py-2 text-sm text-violet-600 hover:bg-violet-50 rounded-lg transition-colors"
+                className="w-full py-2 text-sm text-violet-400 hover:text-violet-300 transition-colors"
               >
-                💬 Hablar con un agente humano
+                Hablar con un agente
               </button>
             </div>
           )}
 
           {/* Input */}
-          <div className="p-4 border-t border-gray-200 bg-white">
+          <div className="p-4 border-t border-neutral-800 bg-neutral-900">
             <div className="flex gap-2">
               <input
                 ref={inputRef}
@@ -449,15 +459,18 @@ export default function SupportChatWidget() {
                     handleSendMessage()
                   }
                 }}
-                placeholder="Escribe tu mensaje..."
-                className="flex-1 px-4 py-2 border border-gray-200 rounded-full text-sm focus:outline-none focus:border-violet-400 text-gray-800"
+                placeholder={isEscalated ? "Escribe al agente..." : "Escribe tu mensaje..."}
+                disabled={isTyping}
+                className="flex-1 px-4 py-2.5 bg-neutral-800 border border-neutral-700 rounded-lg text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-violet-500 disabled:opacity-50"
               />
               <button
                 onClick={handleSendMessage}
                 disabled={!inputValue.trim() || isTyping}
-                className="w-10 h-10 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full flex items-center justify-center text-white disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
+                className="w-10 h-10 bg-violet-600 rounded-lg flex items-center justify-center text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-violet-500 transition-colors"
               >
-                ➤
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
               </button>
             </div>
           </div>
