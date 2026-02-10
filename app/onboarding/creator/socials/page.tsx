@@ -165,8 +165,28 @@ export default function CreatorSocialsPage() {
       if (!saveResponse.ok) {
         const errorText = await saveResponse.text()
         console.error('Save error:', errorText)
-        // Don't throw - continue with localStorage data
-        console.log('Continuing with localStorage backup...')
+
+        // RETRY: Try one more time with just user_type update
+        console.log('Retrying with minimal update...')
+        const retryResponse = await fetch(
+          `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}`,
+          {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`,
+              'apikey': SUPABASE_ANON_KEY,
+              'Prefer': 'return=minimal'
+            },
+            body: JSON.stringify({ user_type: 'creator' })
+          }
+        )
+
+        if (!retryResponse.ok) {
+          const retryError = await retryResponse.text()
+          console.error('Retry also failed:', retryError)
+          throw new Error('No se pudo guardar tu tipo de usuario. Por favor intenta de nuevo.')
+        }
       }
 
       // IMPORTANT: Keep onboarding data in localStorage as backup
