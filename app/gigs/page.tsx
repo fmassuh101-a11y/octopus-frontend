@@ -157,7 +157,8 @@ export default function GigsPage() {
 
     // Check if user is verified before allowing application
     if (!isVerified) {
-      setShowVerificationModal(true)
+      setSelectedGig(null) // Close gig detail modal first
+      setTimeout(() => setShowVerificationModal(true), 100) // Then show verification modal
       return
     }
 
@@ -446,6 +447,10 @@ export default function GigsPage() {
                       e.stopPropagation()
                       if (appliedGigs.has(gig.id)) {
                         router.push('/creator/applications')
+                      } else if (!user) {
+                        router.push('/auth/login')
+                      } else if (!isVerified) {
+                        setShowVerificationModal(true)
                       } else {
                         setSelectedGig(gig)
                       }
