@@ -330,7 +330,7 @@ export default function CreatorMessagesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
       </div>
     )
@@ -342,27 +342,27 @@ export default function CreatorMessagesPage() {
     const dateGroups = groupMessagesByDate(messages)
 
     return (
-      <div className="min-h-screen bg-white flex flex-col">
+      <div className="min-h-screen bg-neutral-950 flex flex-col">
         {/* Header */}
-        <div className="border-b border-gray-200 bg-white sticky top-0 z-10">
+        <div className="border-b border-neutral-800 bg-neutral-950 sticky top-0 z-10">
           <div className="px-4 py-3 flex items-center gap-3">
-            <button onClick={() => setSelectedConversation(null)} className="p-2 -ml-2 hover:bg-gray-100 rounded-lg">
+            <button onClick={() => setSelectedConversation(null)} className="p-2 -ml-2 hover:bg-neutral-800 rounded-lg">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center">
+            <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center">
               <span className="text-white font-medium">{selectedConversation.company_name.charAt(0).toUpperCase()}</span>
             </div>
             <div className="flex-1">
-              <h1 className="font-semibold text-gray-900">{selectedConversation.company_name}</h1>
-              <p className="text-xs text-gray-500">Empresa</p>
+              <h1 className="font-semibold text-white">{selectedConversation.company_name}</h1>
+              <p className="text-xs text-neutral-400">Empresa</p>
             </div>
           </div>
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto bg-gray-50 px-4 py-4">
+        <div className="flex-1 overflow-y-auto bg-neutral-900 px-4 py-4">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mb-4">
@@ -370,15 +370,15 @@ export default function CreatorMessagesPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <h3 className="font-medium text-gray-900 mb-1">Esperando a {selectedConversation.company_name}</h3>
-              <p className="text-gray-500 text-sm">La empresa te escribira pronto</p>
+              <h3 className="font-medium text-white mb-1">Esperando a {selectedConversation.company_name}</h3>
+              <p className="text-neutral-400 text-sm">La empresa te escribira pronto</p>
             </div>
           ) : (
             <div className="space-y-4">
               {dateGroups.map((group, groupIndex) => (
                 <div key={groupIndex}>
                   <div className="flex justify-center mb-4">
-                    <span className="px-3 py-1 bg-white border border-gray-200 rounded-full text-xs text-gray-500 shadow-sm">
+                    <span className="px-3 py-1 bg-neutral-950 border border-neutral-800 rounded-full text-xs text-neutral-400 shadow-sm">
                       {formatDateSeparator(group.date)}
                     </span>
                   </div>
@@ -387,14 +387,14 @@ export default function CreatorMessagesPage() {
                       const isMe = msg.sender_type === 'creator'
                       return (
                         <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`max-w-[75%] ${isMe ? 'bg-black text-white' : 'bg-white border border-gray-200 text-gray-900'} rounded-2xl px-4 py-2 shadow-sm`}>
+                          <div className={`max-w-[75%] ${isMe ? 'bg-emerald-500 text-white' : 'bg-neutral-950 border border-neutral-800 text-white'} rounded-2xl px-4 py-2 shadow-sm`}>
                             <p className="text-[15px] leading-relaxed">{msg.content}</p>
                             <div className={`flex items-center gap-2 mt-1 ${isMe ? 'justify-end' : ''}`}>
-                              <span className={`text-[11px] ${isMe ? 'text-gray-400' : 'text-gray-400'}`}>
+                              <span className={`text-[11px] ${isMe ? 'text-neutral-500' : 'text-neutral-500'}`}>
                                 {formatMessageTime(msg.created_at)}
                               </span>
                               {isMe && (
-                                <span className={`text-[10px] ${msg.read_at ? 'text-blue-400' : 'text-gray-500'}`}>
+                                <span className={`text-[10px] ${msg.read_at ? 'text-emerald-400' : 'text-neutral-400'}`}>
                                   {msg.read_at ? '✓✓ Visto' : '✓ Enviado'}
                                 </span>
                               )}
@@ -412,7 +412,7 @@ export default function CreatorMessagesPage() {
         </div>
 
         {/* Input */}
-        <div className="border-t border-gray-200 bg-white px-4 py-3">
+        <div className="border-t border-neutral-800 bg-neutral-950 px-4 py-3">
           {canSendMessage ? (
             <div className="flex items-center gap-3">
               <input
@@ -422,12 +422,12 @@ export default function CreatorMessagesPage() {
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage())}
                 placeholder="Escribe un mensaje..."
-                className="flex-1 px-4 py-2.5 border border-gray-300 rounded-full focus:outline-none focus:border-black text-sm"
+                className="flex-1 px-4 py-2.5 border border-neutral-700 rounded-full focus:outline-none focus:border-emerald-500 text-sm"
               />
               <button
                 onClick={sendMessage}
                 disabled={!newMessage.trim() || sending}
-                className="w-10 h-10 bg-black text-white rounded-full flex items-center justify-center disabled:bg-gray-300 disabled:cursor-not-allowed"
+                className="w-10 h-10 bg-emerald-500 text-white rounded-full flex items-center justify-center disabled:bg-neutral-700 disabled:cursor-not-allowed"
               >
                 {sending ? (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -439,7 +439,7 @@ export default function CreatorMessagesPage() {
               </button>
             </div>
           ) : (
-            <div className="flex items-center justify-center gap-2 py-2 text-gray-400 text-sm">
+            <div className="flex items-center justify-center gap-2 py-2 text-neutral-500 text-sm">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
@@ -453,49 +453,49 @@ export default function CreatorMessagesPage() {
 
   // Conversation List
   return (
-    <div className="min-h-screen bg-white pb-20">
-      <div className="border-b border-gray-200 px-4 py-4">
-        <h1 className="text-xl font-bold text-gray-900">Mensajes</h1>
+    <div className="min-h-screen bg-neutral-950 pb-20">
+      <div className="border-b border-neutral-800 px-4 py-4">
+        <h1 className="text-xl font-bold text-white">Mensajes</h1>
       </div>
 
       {conversations.length === 0 ? (
         <div className="flex flex-col items-center justify-center px-4 py-20">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-16 h-16 bg-neutral-800 rounded-full flex items-center justify-center mb-4">
+            <svg className="w-8 h-8 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-1">Sin mensajes</h3>
-          <p className="text-gray-500 text-sm text-center">Aplica a trabajos para comenzar a chatear</p>
+          <h3 className="text-lg font-medium text-white mb-1">Sin mensajes</h3>
+          <p className="text-neutral-400 text-sm text-center">Aplica a trabajos para comenzar a chatear</p>
         </div>
       ) : (
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-neutral-800">
           {conversations.map((conv) => (
             <button
               key={conv.company_id}
               onClick={() => selectConversation(conv)}
-              className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 text-left ${conv.unread_count > 0 ? 'bg-blue-50' : ''}`}
+              className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-neutral-800 text-left ${conv.unread_count > 0 ? 'bg-blue-50' : ''}`}
             >
               <div className="relative">
-                <div className="w-12 h-12 bg-black rounded-full flex items-center justify-center">
+                <div className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center">
                   <span className="text-white font-medium text-lg">{conv.company_name.charAt(0).toUpperCase()}</span>
                 </div>
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <h3 className={`font-medium truncate ${conv.unread_count > 0 ? 'text-gray-900' : 'text-gray-700'}`}>
+                  <h3 className={`font-medium truncate ${conv.unread_count > 0 ? 'text-white' : 'text-neutral-300'}`}>
                     {conv.company_name}
                   </h3>
-                  <span className={`text-xs ${conv.unread_count > 0 ? 'text-blue-600 font-medium' : 'text-gray-400'}`}>
+                  <span className={`text-xs ${conv.unread_count > 0 ? 'text-emerald-400 font-medium' : 'text-neutral-500'}`}>
                     {conv.last_message_time ? formatTime(conv.last_message_time) : ''}
                   </span>
                 </div>
                 <div className="flex items-center justify-between mt-0.5">
-                  <p className={`text-sm truncate pr-2 ${conv.unread_count > 0 ? 'text-gray-900 font-medium' : 'text-gray-500'}`}>
+                  <p className={`text-sm truncate pr-2 ${conv.unread_count > 0 ? 'text-white font-medium' : 'text-neutral-400'}`}>
                     {conv.last_message || 'Sin mensajes'}
                   </p>
                   {conv.unread_count > 0 && (
-                    <span className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                    <span className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
                       {conv.unread_count}
                     </span>
                   )}
@@ -507,15 +507,15 @@ export default function CreatorMessagesPage() {
       )}
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200">
+      <div className="fixed bottom-0 left-0 right-0 bg-neutral-950 border-t border-neutral-800">
         <div className="flex justify-around py-2">
-          <Link href="/gigs" className="flex flex-col items-center py-2 px-4 text-gray-400">
+          <Link href="/gigs" className="flex flex-col items-center py-2 px-4 text-neutral-500">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
             <span className="text-xs mt-1">Trabajos</span>
           </Link>
-          <Link href="/creator/contracts" className="flex flex-col items-center py-2 px-4 text-gray-400">
+          <Link href="/creator/contracts" className="flex flex-col items-center py-2 px-4 text-neutral-500">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
@@ -525,7 +525,7 @@ export default function CreatorMessagesPage() {
             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
             <span className="text-xs mt-1 font-medium">Mensajes</span>
           </div>
-          <Link href="/creator/profile" className="flex flex-col items-center py-2 px-4 text-gray-400">
+          <Link href="/creator/profile" className="flex flex-col items-center py-2 px-4 text-neutral-500">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>

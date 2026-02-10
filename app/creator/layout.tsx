@@ -62,7 +62,7 @@ export default function CreatorLayout({
   }, [])
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-neutral-950">
+    <div className="min-h-screen bg-neutral-950">
       {userData && (
         <SlideMenu
           userType="creator"
