@@ -147,28 +147,49 @@ export default function CompanyLogoPage() {
       if (!saveResponse.ok) {
         const errorText = await saveResponse.text()
         console.error('Save error:', errorText)
+      }
 
-        // RETRY: Try one more time with just user_type update
-        console.log('Retrying with minimal update...')
-        const retryResponse = await fetch(
-          `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}`,
-          {
-            method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${accessToken}`,
-              'apikey': SUPABASE_ANON_KEY,
-              'Prefer': 'return=minimal'
-            },
-            body: JSON.stringify({ user_type: 'company' })
-          }
-        )
-
-        if (!retryResponse.ok) {
-          const retryError = await retryResponse.text()
-          console.error('Retry also failed:', retryError)
-          throw new Error('No se pudo guardar tu tipo de usuario. Por favor intenta de nuevo.')
+      // ALWAYS try to ensure user_type is set - do a direct PATCH just for user_type
+      console.log('Ensuring user_type is set...')
+      const ensureResponse = await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`,
+            'apikey': SUPABASE_ANON_KEY,
+            'Prefer': 'return=representation'
+          },
+          body: JSON.stringify({ user_type: 'company' })
         }
+      )
+
+      if (!ensureResponse.ok) {
+        const ensureError = await ensureResponse.text()
+        console.error('Ensure user_type failed:', ensureError)
+        throw new Error('No se pudo guardar tu tipo de usuario. Por favor intenta de nuevo.')
+      }
+
+      // VERIFY: Check that user_type was actually saved
+      const verifyResponse = await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=user_type`,
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'apikey': SUPABASE_ANON_KEY
+          }
+        }
+      )
+
+      if (verifyResponse.ok) {
+        const verifyData = await verifyResponse.json()
+        console.log('Verification result:', verifyData)
+        if (!verifyData[0] || verifyData[0].user_type !== 'company') {
+          console.error('user_type NOT saved correctly!', verifyData)
+          throw new Error('Error: El tipo de usuario no se guardó correctamente. Contacta soporte.')
+        }
+        console.log('SUCCESS: user_type verified as company')
       }
 
       // Clear onboarding data
