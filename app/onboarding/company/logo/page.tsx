@@ -149,26 +149,52 @@ export default function CompanyLogoPage() {
         console.error('Save error:', errorText)
       }
 
-      // ALWAYS try to ensure user_type is set - do a direct PATCH just for user_type
-      console.log('Ensuring user_type is set...')
-      const ensureResponse = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}`,
+      // ALWAYS try to ensure user_type is set using UPSERT
+      console.log('Ensuring user_type is set via UPSERT...')
+      const upsertData = {
+        user_id: user.id,
+        user_type: 'company',
+        full_name: profileData.full_name,
+        updated_at: new Date().toISOString()
+      }
+
+      const upsertResponse = await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles`,
         {
-          method: 'PATCH',
+          method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${accessToken}`,
             'apikey': SUPABASE_ANON_KEY,
-            'Prefer': 'return=representation'
+            'Prefer': 'resolution=merge-duplicates,return=representation'
           },
-          body: JSON.stringify({ user_type: 'company' })
+          body: JSON.stringify(upsertData)
         }
       )
 
-      if (!ensureResponse.ok) {
-        const ensureError = await ensureResponse.text()
-        console.error('Ensure user_type failed:', ensureError)
-        throw new Error('No se pudo guardar tu tipo de usuario. Por favor intenta de nuevo.')
+      console.log('Upsert response status:', upsertResponse.status)
+      const upsertResult = await upsertResponse.text()
+      console.log('Upsert result:', upsertResult)
+
+      if (!upsertResponse.ok) {
+        console.error('Upsert failed:', upsertResult)
+        // Try one more time with just PATCH
+        const patchResponse = await fetch(
+          `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}`,
+          {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`,
+              'apikey': SUPABASE_ANON_KEY,
+              'Prefer': 'return=minimal'
+            },
+            body: JSON.stringify({ user_type: 'company' })
+          }
+        )
+        if (!patchResponse.ok) {
+          throw new Error('No se pudo guardar tu tipo de usuario. Por favor intenta de nuevo.')
+        }
       }
 
       // VERIFY: Check that user_type was actually saved
@@ -187,9 +213,32 @@ export default function CompanyLogoPage() {
         console.log('Verification result:', verifyData)
         if (!verifyData[0] || verifyData[0].user_type !== 'company') {
           console.error('user_type NOT saved correctly!', verifyData)
-          throw new Error('Error: El tipo de usuario no se guardó correctamente. Contacta soporte.')
+          // Last resort: direct insert
+          console.log('Trying direct INSERT as last resort...')
+          const insertResponse = await fetch(
+            `${SUPABASE_URL}/rest/v1/profiles`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${accessToken}`,
+                'apikey': SUPABASE_ANON_KEY,
+                'Prefer': 'return=minimal'
+              },
+              body: JSON.stringify({
+                user_id: user.id,
+                user_type: 'company',
+                full_name: profileData.full_name || 'Empresa'
+              })
+            }
+          )
+          if (!insertResponse.ok) {
+            const insertError = await insertResponse.text()
+            console.error('Insert also failed:', insertError)
+            throw new Error('Error: No se pudo crear tu perfil. Contacta soporte.')
+          }
         }
-        console.log('SUCCESS: user_type verified as company')
+        console.log('SUCCESS: user_type set')
       }
 
       // Clear onboarding data
