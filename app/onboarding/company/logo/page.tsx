@@ -45,13 +45,51 @@ export default function CompanyLogoPage() {
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
+      // Compress image for mobile compatibility
+      const img = new Image()
       const reader = new FileReader()
+
       reader.onload = (e) => {
-        const result = e.target?.result as string
-        setLogo(result)
-        const existing = JSON.parse(localStorage.getItem('companyOnboarding') || '{}')
-        existing.logo = result
-        localStorage.setItem('companyOnboarding', JSON.stringify(existing))
+        img.onload = () => {
+          // Create canvas to resize/compress
+          const canvas = document.createElement('canvas')
+          const MAX_SIZE = 400 // Max width/height in pixels
+          let width = img.width
+          let height = img.height
+
+          // Resize if needed
+          if (width > height) {
+            if (width > MAX_SIZE) {
+              height *= MAX_SIZE / width
+              width = MAX_SIZE
+            }
+          } else {
+            if (height > MAX_SIZE) {
+              width *= MAX_SIZE / height
+              height = MAX_SIZE
+            }
+          }
+
+          canvas.width = width
+          canvas.height = height
+
+          const ctx = canvas.getContext('2d')
+          ctx?.drawImage(img, 0, 0, width, height)
+
+          // Convert to compressed JPEG (0.7 quality)
+          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7)
+
+          setLogo(compressedBase64)
+          try {
+            const existing = JSON.parse(localStorage.getItem('companyOnboarding') || '{}')
+            existing.logo = compressedBase64
+            localStorage.setItem('companyOnboarding', JSON.stringify(existing))
+          } catch (storageError) {
+            console.error('localStorage error:', storageError)
+            // Continue without saving to localStorage - logo is in state
+          }
+        }
+        img.src = e.target?.result as string
       }
       reader.readAsDataURL(file)
     }
