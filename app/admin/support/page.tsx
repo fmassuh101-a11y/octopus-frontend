@@ -112,7 +112,10 @@ export default function AdminSupportPage() {
 
   const loadConversations = async () => {
     const token = getToken()
-    if (!token) return
+    if (!token) {
+      setLoading(false)
+      return
+    }
 
     try {
       const res = await fetch(
@@ -132,26 +135,8 @@ export default function AdminSupportPage() {
       }
 
       const data = await res.json()
-
-      // Get unread counts for each conversation
-      const conversationsWithUnread = await Promise.all(
-        data.map(async (conv: Conversation) => {
-          const unreadRes = await fetch(
-            `${SUPABASE_URL}/rest/v1/support_messages?conversation_id=eq.${conv.id}&read_at=is.null&sender_type=eq.user&select=id`,
-            {
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'apikey': SUPABASE_ANON_KEY,
-                'Prefer': 'count=exact'
-              }
-            }
-          )
-          const unreadCount = unreadRes.headers.get('content-range')?.split('/')[1] || '0'
-          return { ...conv, unread_count: parseInt(unreadCount) }
-        })
-      )
-
-      setConversations(conversationsWithUnread)
+      // Set conversations directly without counting unread (faster load)
+      setConversations(data.map((c: Conversation) => ({ ...c, unread_count: 0 })))
       setLoading(false)
     } catch (err) {
       console.error('Error loading conversations:', err)

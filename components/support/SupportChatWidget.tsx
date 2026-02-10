@@ -44,10 +44,36 @@ export default function SupportChatWidget() {
 
   useEffect(() => {
     // Load user info
-    const userStr = localStorage.getItem('sb-user')
-    if (userStr) {
-      setUser(JSON.parse(userStr))
+    const loadUserData = async () => {
+      const userStr = localStorage.getItem('sb-user')
+      const token = localStorage.getItem('sb-access-token')
+      if (userStr && token) {
+        const userData = JSON.parse(userStr)
+        // Get profile for full_name and user_type
+        try {
+          const profileRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=full_name,user_type`,
+            {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'apikey': SUPABASE_ANON_KEY
+              }
+            }
+          )
+          if (profileRes.ok) {
+            const profiles = await profileRes.json()
+            if (profiles.length > 0) {
+              setUser({ ...userData, ...profiles[0] })
+              return
+            }
+          }
+        } catch (err) {
+          console.error('Error loading profile:', err)
+        }
+        setUser(userData)
+      }
     }
+    loadUserData()
 
     // Check for existing conversation
     const savedConvId = localStorage.getItem('support_conversation_id')
@@ -266,7 +292,10 @@ export default function SupportChatWidget() {
   const createConversation = async (): Promise<string | null> => {
     try {
       const token = localStorage.getItem('sb-access-token')
-      if (!token || !user) return null
+      if (!token || !user) {
+        console.error('No token or user for creating conversation')
+        return null
+      }
 
       const response = await fetch(`${SUPABASE_URL}/rest/v1/support_conversations`, {
         method: 'POST',
@@ -278,16 +307,23 @@ export default function SupportChatWidget() {
         },
         body: JSON.stringify({
           user_id: user.id,
-          user_email: user.email,
-          status: 'open'
+          user_email: user.email || '',
+          user_name: user.full_name || 'Usuario',
+          user_type: user.user_type || 'creator',
+          status: 'waiting_agent',
+          subject: 'Solicitud de soporte'
         })
       })
 
       if (response.ok) {
-        const [conversation] = await response.json()
+        const data = await response.json()
+        const conversation = Array.isArray(data) ? data[0] : data
         setConversationId(conversation.id)
         localStorage.setItem('support_conversation_id', conversation.id)
         return conversation.id
+      } else {
+        const errorText = await response.text()
+        console.error('Error creating conversation:', response.status, errorText)
       }
     } catch (err) {
       console.error('Error creating conversation:', err)
