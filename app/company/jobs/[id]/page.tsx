@@ -106,7 +106,7 @@ export default function JobDetailPage() {
 
           if (profilesRes.ok) {
             const profiles = await profilesRes.json()
-            const profileMap = new Map(profiles.map((p: any) => [p.user_id, p]))
+            const profileMap = new Map<string, any>(profiles.map((p: any) => [p.user_id, p]))
 
             appsData.forEach((app: Application) => {
               const profile = profileMap.get(app.creator_id)
