@@ -161,20 +161,18 @@ CREATE TRIGGER update_conversation_on_message
     FOR EACH ROW
     EXECUTE FUNCTION update_support_conversation_timestamps();
 
--- 10. Agregar admin inicial
--- Ejecutar esto DESPUÉS de que el usuario fmassuh133@gmail.com exista:
-/*
+-- 10. Agregar admin inicial (fmassuh133@gmail.com)
+-- EJECUTA ESTO para agregar el admin:
 INSERT INTO public.support_admins (user_id, email, role, is_active)
-SELECT id, 'fmassuh133@gmail.com', 'admin', true
+SELECT id, email, 'admin', true
 FROM auth.users
 WHERE email = 'fmassuh133@gmail.com'
-ON CONFLICT (user_id) DO NOTHING;
-*/
+ON CONFLICT (user_id) DO UPDATE SET is_active = true, role = 'admin';
 
--- Para agregar manualmente (reemplaza USER_ID con el ID real):
--- INSERT INTO public.support_admins (user_id, email, role, is_active)
--- VALUES ('USER_ID_HERE', 'fmassuh133@gmail.com', 'admin', true);
-
--- 11. Verificar
+-- 11. Verificar instalacion
 SELECT 'Tablas creadas:' as info;
-SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'support%';
+SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name LIKE 'support%';
+
+-- 12. Verificar admin
+SELECT 'Admin configurado:' as info;
+SELECT email, role, is_active FROM public.support_admins;

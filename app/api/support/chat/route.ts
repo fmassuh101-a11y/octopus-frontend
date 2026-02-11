@@ -93,12 +93,12 @@ export async function POST(request: NextRequest) {
         temperature: 0.7,
         topK: 40,
         topP: 0.95,
-        maxOutputTokens: 512,
+        maxOutputTokens: 1024,
       }
     }
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: {
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
     const data = await response.json()
 
     if (!response.ok) {
-      console.error('Gemini API error:', response.status, JSON.stringify(data))
+      console.error('Gemini API error:', response.status, data?.error?.message || JSON.stringify(data))
 
       // Handle quota exceeded error with helpful fallback
       if (response.status === 429 || data.error?.status === 'RESOURCE_EXHAUSTED') {
