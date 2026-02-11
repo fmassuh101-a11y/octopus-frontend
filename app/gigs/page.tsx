@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
@@ -38,10 +38,7 @@ export default function GigsPage() {
   const [showVerificationModal, setShowVerificationModal] = useState(false)
 
   useEffect(() => {
-    checkAuth()
-    loadGigs()
-    loadAppliedGigs()
-    checkVerification()
+    loadAllData()
   }, [])
 
   // Countdown effect for success toast
@@ -55,95 +52,69 @@ export default function GigsPage() {
     }
   }, [showSuccessToast, countdown])
 
-  const checkAuth = () => {
+  // OPTIMIZED: Load all data in parallel
+  const loadAllData = async () => {
+    const token = localStorage.getItem('sb-access-token')
     const userStr = localStorage.getItem('sb-user')
+
+    // Set user immediately from localStorage (no API call needed)
     if (userStr) {
       setUser(JSON.parse(userStr))
     }
-  }
 
-  // Check if user has verified at least one social account
-  const checkVerification = async () => {
+    const headers = {
+      'Authorization': token ? `Bearer ${token}` : '',
+      'apikey': SUPABASE_ANON_KEY
+    }
+
     try {
-      const token = localStorage.getItem('sb-access-token')
-      const userStr = localStorage.getItem('sb-user')
-      if (!token || !userStr) return
+      // PARALLEL: Load gigs, applied gigs, and verification status at once
+      const userData = userStr ? JSON.parse(userStr) : null
 
-      const userData = JSON.parse(userStr)
+      const promises: Promise<any>[] = [
+        // Always load gigs
+        fetch(`${SUPABASE_URL}/rest/v1/gigs?select=*&status=eq.active&order=created_at.desc`, { headers })
+      ]
 
-      // Check Supabase for verification status
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=bio`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'apikey': SUPABASE_ANON_KEY
-        }
-      })
+      // Only load user-specific data if logged in
+      if (token && userData) {
+        promises.push(
+          fetch(`${SUPABASE_URL}/rest/v1/applications?select=gig_id&creator_id=eq.${userData.id}`, { headers }),
+          fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=bio`, { headers })
+        )
+      }
 
-      if (response.ok) {
-        const profiles = await response.json()
+      const results = await Promise.all(promises)
+
+      // Process gigs
+      if (results[0].ok) {
+        const gigsData = await results[0].json()
+        setGigs(gigsData)
+      }
+
+      // Process applied gigs (if logged in)
+      if (results[1]?.ok) {
+        const appliedData = await results[1].json()
+        setAppliedGigs(new Set(appliedData.map((a: any) => a.gig_id)))
+      }
+
+      // Process verification status (if logged in)
+      if (results[2]?.ok) {
+        const profiles = await results[2].json()
         if (profiles.length > 0 && profiles[0].bio) {
           try {
             const bioData = JSON.parse(profiles[0].bio)
-            // User is verified if they have tiktokConnected=true AND at least one account
             const hasTikTok = bioData.tiktokConnected && bioData.tiktokAccounts?.length > 0
             setIsVerified(hasTikTok)
-            console.log('[Gigs] Verification status:', hasTikTok)
           } catch (e) {
-            console.log('[Gigs] Could not parse bio')
             setIsVerified(false)
           }
         }
       }
     } catch (err) {
-      console.error('[Gigs] Error checking verification:', err)
-    }
-  }
-
-  const loadGigs = async () => {
-    try {
-      const token = localStorage.getItem('sb-access-token')
-
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/gigs?select=*&status=eq.active&order=created_at.desc`, {
-        headers: {
-          'Authorization': token ? `Bearer ${token}` : '',
-          'apikey': SUPABASE_ANON_KEY
-        }
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setGigs(data)
-      } else {
-        setGigs([])
-      }
-    } catch (err) {
-      console.error('Error loading gigs:', err)
-      setGigs([])
+      console.error('Error loading data:', err)
     } finally {
       setLoading(false)
-    }
-  }
-
-  const loadAppliedGigs = async () => {
-    try {
-      const token = localStorage.getItem('sb-access-token')
-      const userStr = localStorage.getItem('sb-user')
-      if (!token || !userStr) return
-
-      const userData = JSON.parse(userStr)
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/applications?select=gig_id&creator_id=eq.${userData.id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'apikey': SUPABASE_ANON_KEY
-        }
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setAppliedGigs(new Set(data.map((a: any) => a.gig_id)))
-      }
-    } catch (err) {
-      console.error('Error loading applied gigs:', err)
     }
   }
 
@@ -209,22 +180,25 @@ export default function GigsPage() {
     }
   }
 
-  const filteredGigs = gigs.filter(gig => {
-    const matchesSearch = !searchQuery ||
-      gig.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      gig.company_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      gig.category?.toLowerCase().includes(searchQuery.toLowerCase())
-    return matchesSearch
-  })
+  // OPTIMIZED: Memoize filtered and sorted gigs
+  const sortedGigs = useMemo(() => {
+    const filtered = gigs.filter(gig => {
+      if (!searchQuery) return true
+      const query = searchQuery.toLowerCase()
+      return gig.title?.toLowerCase().includes(query) ||
+        gig.company_name?.toLowerCase().includes(query) ||
+        gig.category?.toLowerCase().includes(query)
+    })
 
-  const sortedGigs = [...filteredGigs].sort((a, b) => {
-    if (filter === 'mejor_pago') {
-      const priceA = parseInt(a.budget?.replace(/\D/g, '') || '0')
-      const priceB = parseInt(b.budget?.replace(/\D/g, '') || '0')
-      return priceB - priceA
-    }
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  })
+    return [...filtered].sort((a, b) => {
+      if (filter === 'mejor_pago') {
+        const priceA = parseInt(a.budget?.replace(/\D/g, '') || '0')
+        const priceB = parseInt(b.budget?.replace(/\D/g, '') || '0')
+        return priceB - priceA
+      }
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    })
+  }, [gigs, searchQuery, filter])
 
   const getGradient = (index: number) => {
     const gradients = [
@@ -259,10 +233,37 @@ export default function GigsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-neutral-400">Cargando oportunidades...</p>
+      <div className="min-h-screen bg-neutral-950">
+        {/* Skeleton Header */}
+        <div className="bg-neutral-900 sticky top-0 z-20 border-b border-neutral-800">
+          <div className="px-4 py-3 pl-16">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex-1 h-12 bg-neutral-800 rounded-full animate-pulse" />
+              <div className="w-11 h-11 bg-neutral-800 rounded-full animate-pulse" />
+            </div>
+            <div className="flex gap-2">
+              {[1,2,3].map(i => (
+                <div key={i} className="h-10 w-24 bg-neutral-800 rounded-full animate-pulse" />
+              ))}
+            </div>
+          </div>
+        </div>
+        {/* Skeleton Cards */}
+        <div className="px-4 py-4 pb-28">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1,2,3,4,5,6].map(i => (
+              <div key={i} className="bg-neutral-900 rounded-2xl overflow-hidden border border-neutral-800">
+                <div className="h-52 bg-neutral-800 animate-pulse" />
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="h-6 w-20 bg-neutral-800 rounded animate-pulse" />
+                    <div className="h-4 w-16 bg-neutral-800 rounded animate-pulse" />
+                  </div>
+                  <div className="h-12 bg-neutral-800 rounded-xl animate-pulse" />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     )

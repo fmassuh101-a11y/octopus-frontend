@@ -45,20 +45,19 @@ export default function CreatorDashboard() {
       const userData = JSON.parse(userStr)
       setUser(userData)
 
-      // Fetch profile
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=*`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'apikey': SUPABASE_ANON_KEY
-        }
-      })
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'apikey': SUPABASE_ANON_KEY
+      }
+
+      // Fetch profile first (needed to check user_type)
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=*`, { headers })
 
       if (response.ok) {
         const profiles = await response.json()
 
         if (profiles.length > 0) {
           const profileData = profiles[0]
-          setProfile(profileData)
 
           if (profileData.user_type !== 'creator') {
             if (profileData.user_type === 'company') {
@@ -70,17 +69,22 @@ export default function CreatorDashboard() {
           }
 
           // Parse bio data
+          let finalProfile = profileData
           if (profileData.bio) {
             try {
               const bioData = JSON.parse(profileData.bio)
-              setProfile({ ...profileData, ...bioData })
+              finalProfile = { ...profileData, ...bioData }
             } catch (e) {}
           }
+          setProfile(finalProfile)
 
-          // Fetch wallet
-          const walletRes = await fetch(`${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${userData.id}&select=*`, {
-            headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY }
-          })
+          // PARALLEL FETCH: wallet + applications (all for stats) in one go
+          const [walletRes, appsRes] = await Promise.all([
+            fetch(`${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${userData.id}&select=*`, { headers }),
+            fetch(`${SUPABASE_URL}/rest/v1/applications?creator_id=eq.${userData.id}&select=id,status,created_at,gig:gigs(title,budget_min,budget_max)&order=created_at.desc`, { headers })
+          ])
+
+          // Process wallet
           if (walletRes.ok) {
             const wallets = await walletRes.json()
             if (wallets.length > 0) {
@@ -88,28 +92,17 @@ export default function CreatorDashboard() {
             }
           }
 
-          // Fetch applications
-          const appsRes = await fetch(
-            `${SUPABASE_URL}/rest/v1/applications?creator_id=eq.${userData.id}&select=id,status,created_at,gig:gigs(title,budget_min,budget_max)&order=created_at.desc&limit=5`,
-            { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
-          )
+          // Process applications (get all, then slice for display)
           if (appsRes.ok) {
-            const apps = await appsRes.json()
-            setApplications(apps)
+            const allApps = await appsRes.json()
+            setApplications(allApps.slice(0, 5)) // Recent 5 for display
 
-            // Calculate stats
-            const allAppsRes = await fetch(
-              `${SUPABASE_URL}/rest/v1/applications?creator_id=eq.${userData.id}&select=status`,
-              { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
-            )
-            if (allAppsRes.ok) {
-              const allApps = await allAppsRes.json()
-              setStats({
-                pending: allApps.filter((a: any) => a.status === 'pending').length,
-                accepted: allApps.filter((a: any) => a.status === 'accepted').length,
-                completed: allApps.filter((a: any) => a.status === 'completed').length
-              })
-            }
+            // Calculate stats from same data (no extra fetch!)
+            setStats({
+              pending: allApps.filter((a: any) => a.status === 'pending').length,
+              accepted: allApps.filter((a: any) => a.status === 'accepted').length,
+              completed: allApps.filter((a: any) => a.status === 'completed').length
+            })
           }
 
           setLoading(false)
@@ -145,10 +138,58 @@ export default function CreatorDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-white/60">Cargando...</p>
+      <div className="min-h-screen bg-black text-white pb-24">
+        {/* Skeleton Header */}
+        <div className="px-4 pt-6 pb-4">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <div className="h-4 w-20 bg-white/10 rounded animate-pulse mb-2" />
+              <div className="h-7 w-32 bg-white/10 rounded animate-pulse" />
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/10 rounded-full animate-pulse" />
+              <div className="w-10 h-10 bg-white/10 rounded-full animate-pulse" />
+            </div>
+          </div>
+          {/* Skeleton Balance Card */}
+          <div className="bg-emerald-600/30 rounded-3xl p-6 animate-pulse">
+            <div className="h-4 w-28 bg-white/20 rounded mb-4" />
+            <div className="h-12 w-40 bg-white/20 rounded mb-4" />
+            <div className="flex gap-6">
+              <div className="h-10 w-24 bg-white/20 rounded" />
+              <div className="h-10 w-24 bg-white/20 rounded" />
+            </div>
+          </div>
+        </div>
+        {/* Skeleton Stats */}
+        <div className="px-4 mb-6">
+          <div className="grid grid-cols-3 gap-3">
+            {[1,2,3].map(i => (
+              <div key={i} className="bg-white/5 rounded-2xl p-4 animate-pulse">
+                <div className="h-8 w-12 bg-white/10 rounded mx-auto mb-2" />
+                <div className="h-3 w-16 bg-white/10 rounded mx-auto" />
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* Skeleton Quick Actions */}
+        <div className="px-4 mb-6">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-violet-500/30 rounded-2xl p-5 h-32 animate-pulse" />
+            <div className="bg-white/5 rounded-2xl p-5 h-32 animate-pulse" />
+          </div>
+        </div>
+        {/* Skeleton Applications */}
+        <div className="px-4">
+          <div className="h-6 w-36 bg-white/10 rounded mb-4 animate-pulse" />
+          <div className="space-y-3">
+            {[1,2,3].map(i => (
+              <div key={i} className="bg-white/5 rounded-2xl p-4 animate-pulse">
+                <div className="h-5 w-3/4 bg-white/10 rounded mb-3" />
+                <div className="h-4 w-1/2 bg-white/10 rounded" />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     )

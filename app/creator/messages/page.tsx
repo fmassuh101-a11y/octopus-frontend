@@ -102,21 +102,17 @@ export default function CreatorMessagesPage() {
       })
 
       const companyIds = Array.from(companyAppsMap.keys())
+      const allAppIds = applications.map((a: any) => a.id)
+      const headers = { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY }
 
-      const companiesRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?user_id=in.(${companyIds.join(',')})&select=user_id,full_name`,
-        { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
-      )
+      // PARALLEL: Fetch companies and messages at the same time
+      const [companiesRes, messagesRes] = await Promise.all([
+        fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=in.(${companyIds.join(',')})&select=user_id,full_name`, { headers }),
+        fetch(`${SUPABASE_URL}/rest/v1/messages?conversation_id=in.(${allAppIds.join(',')})&select=conversation_id,content,created_at,sender_type,read_at&order=created_at.desc&limit=100`, { headers })
+      ])
 
       const companies = companiesRes.ok ? await companiesRes.json() : []
       const companyMap = new Map<string, string>(companies.map((c: any) => [c.user_id, c.full_name || 'Empresa']))
-
-      // Get all messages for all applications
-      const allAppIds = applications.map((a: any) => a.id)
-      const messagesRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/messages?conversation_id=in.(${allAppIds.join(',')})&select=conversation_id,content,created_at,sender_type,read_at&order=created_at.desc`,
-        { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
-      )
       const allMessages = messagesRes.ok ? await messagesRes.json() : []
 
       // Map messages to companies
@@ -328,8 +324,22 @@ export default function CreatorMessagesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-neutral-950 pb-20">
+        <div className="border-b border-neutral-800 px-4 py-4">
+          <div className="h-7 w-28 bg-neutral-800 rounded animate-pulse" />
+        </div>
+        <div className="divide-y divide-neutral-800">
+          {[1,2,3,4,5].map(i => (
+            <div key={i} className="px-4 py-3 flex items-center gap-3">
+              <div className="w-12 h-12 bg-neutral-800 rounded-full animate-pulse" />
+              <div className="flex-1">
+                <div className="h-5 w-32 bg-neutral-800 rounded animate-pulse mb-2" />
+                <div className="h-4 w-48 bg-neutral-800 rounded animate-pulse" />
+              </div>
+              <div className="h-4 w-10 bg-neutral-800 rounded animate-pulse" />
+            </div>
+          ))}
+        </div>
       </div>
     )
   }
