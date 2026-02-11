@@ -19,6 +19,16 @@ interface ChatMessage {
   timestamp: Date
 }
 
+interface SavedChat {
+  id: string
+  name: string
+  messages: ChatMessage[]
+  isEscalated: boolean
+  conversationId: string | null
+  createdAt: Date
+  updatedAt: Date
+}
+
 export default function SupportChatWidget() {
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -27,9 +37,13 @@ export default function SupportChatWidget() {
   const [user, setUser] = useState<any>(null)
   const [conversationId, setConversationId] = useState<string | null>(null)
   const [isEscalated, setIsEscalated] = useState(false)
+  const [savedChats, setSavedChats] = useState<SavedChat[]>([])
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null)
+  const [showChatList, setShowChatList] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  // Load user and saved chats on mount
   useEffect(() => {
     const loadUserData = async () => {
       const userStr = localStorage.getItem('sb-user')
@@ -50,6 +64,7 @@ export default function SupportChatWidget() {
             const profiles = await profileRes.json()
             if (profiles.length > 0) {
               setUser({ ...userData, ...profiles[0] })
+              loadSavedChats(userData.id)
               return
             }
           }
@@ -57,10 +72,116 @@ export default function SupportChatWidget() {
           console.error('Error loading profile:', err)
         }
         setUser(userData)
+        loadSavedChats(userData.id)
       }
     }
     loadUserData()
   }, [])
+
+  // Load saved chats from localStorage
+  const loadSavedChats = (userId: string) => {
+    const saved = localStorage.getItem(`octopus-chats-${userId}`)
+    if (saved) {
+      const chats = JSON.parse(saved).map((chat: any) => ({
+        ...chat,
+        createdAt: new Date(chat.createdAt),
+        updatedAt: new Date(chat.updatedAt),
+        messages: chat.messages.map((m: any) => ({
+          ...m,
+          timestamp: new Date(m.timestamp)
+        }))
+      }))
+      setSavedChats(chats)
+    }
+  }
+
+  // Save chats to localStorage
+  const saveChatsToStorage = (chats: SavedChat[]) => {
+    if (!user?.id) return
+    localStorage.setItem(`octopus-chats-${user.id}`, JSON.stringify(chats))
+  }
+
+  // Save current chat
+  const saveCurrentChat = (newMessages?: ChatMessage[]) => {
+    if (!user?.id) return
+
+    const messagesToSave = newMessages || messages
+    if (messagesToSave.length <= 1) return // Don't save empty chats
+
+    const chatName = generateChatName(messagesToSave)
+
+    let updatedChats: SavedChat[]
+
+    if (currentChatId) {
+      // Update existing chat
+      updatedChats = savedChats.map(chat =>
+        chat.id === currentChatId
+          ? { ...chat, messages: messagesToSave, updatedAt: new Date(), isEscalated, conversationId }
+          : chat
+      )
+    } else {
+      // Create new chat
+      const newChat: SavedChat = {
+        id: `chat-${Date.now()}`,
+        name: chatName,
+        messages: messagesToSave,
+        isEscalated,
+        conversationId,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+      setCurrentChatId(newChat.id)
+      updatedChats = [newChat, ...savedChats]
+    }
+
+    setSavedChats(updatedChats)
+    saveChatsToStorage(updatedChats)
+  }
+
+  // Generate chat name from first user message
+  const generateChatName = (msgs: ChatMessage[]): string => {
+    const firstUserMsg = msgs.find(m => m.type === 'user')
+    if (firstUserMsg) {
+      const text = firstUserMsg.content.slice(0, 30)
+      return text.length < firstUserMsg.content.length ? `${text}...` : text
+    }
+    return `Chat ${new Date().toLocaleDateString('es-ES')}`
+  }
+
+  // Load a saved chat
+  const loadChat = (chat: SavedChat) => {
+    setMessages(chat.messages)
+    setCurrentChatId(chat.id)
+    setIsEscalated(chat.isEscalated)
+    setConversationId(chat.conversationId)
+    setShowChatList(false)
+  }
+
+  // Start new chat
+  const startNewChat = () => {
+    // Save current chat before starting new one
+    if (messages.length > 1) {
+      saveCurrentChat()
+    }
+
+    setMessages([])
+    setCurrentChatId(null)
+    setIsEscalated(false)
+    setConversationId(null)
+    setShowChatList(false)
+  }
+
+  // Delete a chat
+  const deleteChat = (chatId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    const updatedChats = savedChats.filter(c => c.id !== chatId)
+    setSavedChats(updatedChats)
+    saveChatsToStorage(updatedChats)
+
+    if (currentChatId === chatId) {
+      startNewChat()
+    }
+  }
 
   useEffect(() => {
     scrollToBottom()
@@ -127,7 +248,9 @@ export default function SupportChatWidget() {
               content: latestAgent.content,
               timestamp: new Date(latestAgent.created_at)
             }
-            setMessages(prev => [...prev, agentMsg])
+            const newMessages = [...messages, agentMsg]
+            setMessages(newMessages)
+            saveCurrentChat(newMessages)
           }
         }
       }
@@ -171,7 +294,8 @@ export default function SupportChatWidget() {
       content: message,
       timestamp: new Date()
     }
-    setMessages(prev => [...prev, userMsg])
+    const newMessages = [...messages, userMsg]
+    setMessages(newMessages)
     setInputValue('')
     setIsTyping(true)
 
@@ -181,6 +305,7 @@ export default function SupportChatWidget() {
 
     if (isEscalated) {
       setIsTyping(false)
+      saveCurrentChat(newMessages)
       return
     }
 
@@ -193,7 +318,9 @@ export default function SupportChatWidget() {
       content: aiResponse,
       timestamp: new Date()
     }
-    setMessages(prev => [...prev, botMsg])
+    const finalMessages = [...newMessages, botMsg]
+    setMessages(finalMessages)
+    saveCurrentChat(finalMessages)
 
     if (conversationId) {
       await saveMessageToDb(aiResponse, 'bot')
@@ -218,7 +345,8 @@ export default function SupportChatWidget() {
       content: message,
       timestamp: new Date()
     }
-    setMessages(prev => [...prev, userMsg])
+    const newMessages = [...messages, userMsg]
+    setMessages(newMessages)
     setIsTyping(true)
 
     const aiResponse = await sendToAI(message)
@@ -230,7 +358,9 @@ export default function SupportChatWidget() {
       content: aiResponse,
       timestamp: new Date()
     }
-    setMessages(prev => [...prev, botMsg])
+    const finalMessages = [...newMessages, botMsg]
+    setMessages(finalMessages)
+    saveCurrentChat(finalMessages)
   }
 
   const handleEscalateToAgent = async () => {
@@ -263,7 +393,9 @@ export default function SupportChatWidget() {
       content: 'Te hemos conectado con soporte. Un agente revisara tu caso y te respondera en las proximas horas. Puedes seguir escribiendo.',
       timestamp: new Date()
     }
-    setMessages(prev => [...prev, escalateMsg])
+    const newMessages = [...messages, escalateMsg]
+    setMessages(newMessages)
+    saveCurrentChat(newMessages)
   }
 
   const createConversation = async (): Promise<string | null> => {
@@ -334,9 +466,20 @@ export default function SupportChatWidget() {
     return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
   }
 
+  const formatDate = (date: Date) => {
+    const now = new Date()
+    const diff = now.getTime() - date.getTime()
+    const days = Math.floor(diff / 86400000)
+
+    if (days === 0) return 'Hoy'
+    if (days === 1) return 'Ayer'
+    if (days < 7) return `Hace ${days} dias`
+    return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+  }
+
   return (
     <>
-      {/* Chat Button - positioned above bottom nav */}
+      {/* Chat Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="fixed bottom-24 right-4 w-14 h-14 bg-neutral-900 rounded-full shadow-xl flex items-center justify-center text-white hover:bg-neutral-800 transition-all z-40 border border-neutral-700"
@@ -352,21 +495,92 @@ export default function SupportChatWidget() {
         )}
       </button>
 
-      {/* Chat Window - positioned above bottom nav */}
+      {/* Chat Window */}
       {isOpen && (
-        <div className="fixed bottom-40 right-4 w-[360px] max-w-[calc(100vw-2rem)] h-[450px] max-h-[calc(100vh-12rem)] bg-neutral-950 rounded-2xl shadow-2xl flex flex-col overflow-hidden z-40 border border-neutral-800">
+        <div className="fixed bottom-40 right-4 w-[360px] max-w-[calc(100vw-2rem)] h-[500px] max-h-[calc(100vh-12rem)] bg-neutral-950 rounded-2xl shadow-2xl flex flex-col overflow-hidden z-40 border border-neutral-800">
           {/* Header */}
-          <div className="bg-neutral-900 px-5 py-4 border-b border-neutral-800">
+          <div className="bg-neutral-900 px-4 py-3 border-b border-neutral-800">
             <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-white text-sm">Soporte Octopus</h3>
-                <p className="text-xs text-neutral-400 mt-0.5">
-                  {isEscalated ? 'Conectado con agente' : 'Asistente virtual'}
-                </p>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setShowChatList(!showChatList)}
+                  className="p-1.5 hover:bg-neutral-800 rounded-lg transition-colors"
+                  title="Ver chats"
+                >
+                  <svg className="w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                </button>
+                <div>
+                  <h3 className="font-semibold text-white text-sm">Soporte Octopus</h3>
+                  <p className="text-xs text-neutral-400">
+                    {isEscalated ? 'Conectado con agente' : 'Asistente virtual'}
+                  </p>
+                </div>
               </div>
-              <div className={`w-2 h-2 rounded-full ${isEscalated ? 'bg-emerald-500' : 'bg-emerald-500'}`}></div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={startNewChat}
+                  className="p-1.5 hover:bg-neutral-800 rounded-lg transition-colors"
+                  title="Nuevo chat"
+                >
+                  <svg className="w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                </button>
+                <div className={`w-2 h-2 rounded-full ${isEscalated ? 'bg-emerald-500' : 'bg-emerald-500'}`}></div>
+              </div>
             </div>
           </div>
+
+          {/* Chat List Sidebar */}
+          {showChatList && (
+            <div className="absolute top-[52px] left-0 right-0 bottom-0 bg-neutral-950 z-10 flex flex-col">
+              <div className="p-3 border-b border-neutral-800">
+                <h4 className="text-sm font-medium text-white">Tus conversaciones</h4>
+              </div>
+              <div className="flex-1 overflow-y-auto">
+                {savedChats.length === 0 ? (
+                  <div className="p-4 text-center text-neutral-500 text-sm">
+                    No tienes conversaciones guardadas
+                  </div>
+                ) : (
+                  savedChats.map(chat => (
+                    <button
+                      key={chat.id}
+                      onClick={() => loadChat(chat)}
+                      className={`w-full p-3 text-left hover:bg-neutral-900 border-b border-neutral-800/50 flex items-start justify-between gap-2 ${
+                        currentChatId === chat.id ? 'bg-neutral-900' : ''
+                      }`}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-white truncate">{chat.name}</p>
+                        <p className="text-xs text-neutral-500 mt-0.5">
+                          {formatDate(chat.updatedAt)} {chat.isEscalated && '• Con agente'}
+                        </p>
+                      </div>
+                      <button
+                        onClick={(e) => deleteChat(chat.id, e)}
+                        className="p-1 hover:bg-neutral-800 rounded text-neutral-500 hover:text-red-400"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </button>
+                  ))
+                )}
+              </div>
+              <div className="p-3 border-t border-neutral-800">
+                <button
+                  onClick={() => setShowChatList(false)}
+                  className="w-full py-2 text-sm text-neutral-400 hover:text-white transition-colors"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-neutral-950">
