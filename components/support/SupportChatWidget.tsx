@@ -241,7 +241,7 @@ export default function SupportChatWidget() {
   }
 
   const checkForAgentMessages = async () => {
-    if (!conversationId) return
+    if (!conversationId || isResolved) return
 
     try {
       const token = localStorage.getItem('sb-access-token')
@@ -260,16 +260,20 @@ export default function SupportChatWidget() {
 
       if (statusRes.ok) {
         const convData = await statusRes.json()
-        if (convData.length > 0 && convData[0].status === 'resolved' && !isResolved) {
+        if (convData.length > 0 && convData[0].status === 'resolved') {
+          // Check if we already showed the resolved message
+          setMessages(prev => {
+            const alreadyResolved = prev.some(m => m.id.startsWith('resolved-'))
+            if (alreadyResolved) return prev
+            return [...prev, {
+              id: `resolved-${Date.now()}`,
+              type: 'system' as const,
+              content: 'El agente ha marcado esta conversacion como resuelta.',
+              timestamp: new Date()
+            }]
+          })
           setIsResolved(true)
           setShowRating(true)
-          const resolvedMsg: ChatMessage = {
-            id: `resolved-${Date.now()}`,
-            type: 'system',
-            content: 'El agente ha marcado esta conversacion como resuelta.',
-            timestamp: new Date()
-          }
-          setMessages(prev => [...prev, resolvedMsg])
           return
         }
       }
@@ -288,22 +292,22 @@ export default function SupportChatWidget() {
         const agentMessages = await response.json()
         if (agentMessages.length > 0) {
           const latestAgent = agentMessages[0]
-          const exists = messages.some(m => m.id === latestAgent.id)
-          if (!exists) {
+          setMessages(prev => {
+            const exists = prev.some(m => m.id === latestAgent.id)
+            if (exists) return prev
             const agentMsg: ChatMessage = {
               id: latestAgent.id,
               type: 'agent',
               content: latestAgent.content,
               timestamp: new Date(latestAgent.created_at)
             }
-            const newMessages = [...messages, agentMsg]
-            setMessages(newMessages)
-            saveCurrentChat(newMessages)
+            const newMessages = [...prev, agentMsg]
             // Show notification if chat is closed
             if (!isOpen) {
               setHasNewMessage(true)
             }
-          }
+            return newMessages
+          })
         }
       }
     } catch (err) {
@@ -799,7 +803,7 @@ export default function SupportChatWidget() {
             <div className="px-4 py-2 border-t border-neutral-800 bg-neutral-900">
               <button
                 onClick={() => setShowEndConfirm(true)}
-                className="w-full py-2 text-sm text-neutral-400 hover:text-neutral-300 transition-colors"
+                className="w-full py-2 text-xs text-red-400/70 hover:text-red-400 transition-colors"
               >
                 Finalizar conversacion
               </button>
@@ -890,32 +894,41 @@ export default function SupportChatWidget() {
 
           {/* Input */}
           <div className="p-4 border-t border-neutral-800 bg-neutral-900">
-            <div className="flex gap-2">
-              <input
-                ref={inputRef}
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault()
-                    handleSendMessage()
-                  }
-                }}
-                placeholder={isEscalated ? "Escribe al agente..." : "Escribe tu mensaje..."}
-                disabled={isTyping}
-                className="flex-1 px-4 py-2.5 bg-neutral-800 border border-neutral-700 rounded-lg text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500 disabled:opacity-50"
-              />
+            {isResolved && ratingSubmitted ? (
               <button
-                onClick={handleSendMessage}
-                disabled={!inputValue.trim() || isTyping}
-                className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-emerald-500 transition-colors"
+                onClick={startNewChat}
+                className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                </svg>
+                Iniciar nueva conversacion
               </button>
-            </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      handleSendMessage()
+                    }
+                  }}
+                  placeholder={isEscalated ? "Escribe al agente..." : "Escribe tu mensaje..."}
+                  disabled={isTyping || isResolved}
+                  className="flex-1 px-4 py-2.5 bg-neutral-800 border border-neutral-700 rounded-lg text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500 disabled:opacity-50"
+                />
+                <button
+                  onClick={handleSendMessage}
+                  disabled={!inputValue.trim() || isTyping || isResolved}
+                  className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-emerald-500 transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
