@@ -24,6 +24,7 @@ interface SavedChat {
   name: string
   messages: ChatMessage[]
   isEscalated: boolean
+  isResolved: boolean
   conversationId: string | null
   createdAt: Date
   updatedAt: Date
@@ -40,6 +41,13 @@ export default function SupportChatWidget() {
   const [savedChats, setSavedChats] = useState<SavedChat[]>([])
   const [currentChatId, setCurrentChatId] = useState<string | null>(null)
   const [showChatList, setShowChatList] = useState(false)
+  const [hasNewMessage, setHasNewMessage] = useState(false)
+  const [showRating, setShowRating] = useState(false)
+  const [selectedRating, setSelectedRating] = useState(0)
+  const [hoverRating, setHoverRating] = useState(0)
+  const [isResolved, setIsResolved] = useState(false)
+  const [showEndConfirm, setShowEndConfirm] = useState(false)
+  const [ratingSubmitted, setRatingSubmitted] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -116,7 +124,7 @@ export default function SupportChatWidget() {
       // Update existing chat
       updatedChats = savedChats.map(chat =>
         chat.id === currentChatId
-          ? { ...chat, messages: messagesToSave, updatedAt: new Date(), isEscalated, conversationId }
+          ? { ...chat, messages: messagesToSave, updatedAt: new Date(), isEscalated, isResolved, conversationId }
           : chat
       )
     } else {
@@ -126,6 +134,7 @@ export default function SupportChatWidget() {
         name: chatName,
         messages: messagesToSave,
         isEscalated,
+        isResolved,
         conversationId,
         createdAt: new Date(),
         updatedAt: new Date()
@@ -153,8 +162,14 @@ export default function SupportChatWidget() {
     setMessages(chat.messages)
     setCurrentChatId(chat.id)
     setIsEscalated(chat.isEscalated)
+    setIsResolved(chat.isResolved || false)
     setConversationId(chat.conversationId)
     setShowChatList(false)
+    setShowRating(false)
+    setSelectedRating(0)
+    setHoverRating(0)
+    setRatingSubmitted(chat.isResolved || false)
+    setShowEndConfirm(false)
   }
 
   // Start new chat
@@ -169,6 +184,12 @@ export default function SupportChatWidget() {
     setIsEscalated(false)
     setConversationId(null)
     setShowChatList(false)
+    setShowRating(false)
+    setSelectedRating(0)
+    setHoverRating(0)
+    setIsResolved(false)
+    setRatingSubmitted(false)
+    setShowEndConfirm(false)
   }
 
   // Delete a chat
@@ -226,6 +247,33 @@ export default function SupportChatWidget() {
       const token = localStorage.getItem('sb-access-token')
       if (!token) return
 
+      // Check conversation status
+      const statusRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/support_conversations?id=eq.${conversationId}&select=status`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'apikey': SUPABASE_ANON_KEY
+          }
+        }
+      )
+
+      if (statusRes.ok) {
+        const convData = await statusRes.json()
+        if (convData.length > 0 && convData[0].status === 'resolved' && !isResolved) {
+          setIsResolved(true)
+          setShowRating(true)
+          const resolvedMsg: ChatMessage = {
+            id: `resolved-${Date.now()}`,
+            type: 'system',
+            content: 'El agente ha marcado esta conversacion como resuelta.',
+            timestamp: new Date()
+          }
+          setMessages(prev => [...prev, resolvedMsg])
+          return
+        }
+      }
+
       const response = await fetch(
         `${SUPABASE_URL}/rest/v1/support_messages?conversation_id=eq.${conversationId}&sender_type=eq.agent&order=created_at.desc&limit=1`,
         {
@@ -251,12 +299,90 @@ export default function SupportChatWidget() {
             const newMessages = [...messages, agentMsg]
             setMessages(newMessages)
             saveCurrentChat(newMessages)
+            // Show notification if chat is closed
+            if (!isOpen) {
+              setHasNewMessage(true)
+            }
           }
         }
       }
     } catch (err) {
       console.error('Error checking agent messages:', err)
     }
+  }
+
+  const handleEndConversation = async () => {
+    setShowEndConfirm(false)
+
+    if (conversationId) {
+      try {
+        const token = localStorage.getItem('sb-access-token')
+        if (token) {
+          await fetch(
+            `${SUPABASE_URL}/rest/v1/support_conversations?id=eq.${conversationId}`,
+            {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                'apikey': SUPABASE_ANON_KEY
+              },
+              body: JSON.stringify({ status: 'resolved', resolved_at: new Date().toISOString() })
+            }
+          )
+        }
+      } catch (err) {
+        console.error('Error ending conversation:', err)
+      }
+    }
+
+    setIsResolved(true)
+    setShowRating(true)
+    const endMsg: ChatMessage = {
+      id: `end-${Date.now()}`,
+      type: 'system',
+      content: 'Conversacion finalizada.',
+      timestamp: new Date()
+    }
+    setMessages(prev => [...prev, endMsg])
+  }
+
+  const submitRating = async () => {
+    if (selectedRating === 0) return
+
+    if (conversationId) {
+      try {
+        const token = localStorage.getItem('sb-access-token')
+        if (token) {
+          await fetch(
+            `${SUPABASE_URL}/rest/v1/support_conversations?id=eq.${conversationId}`,
+            {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                'apikey': SUPABASE_ANON_KEY
+              },
+              body: JSON.stringify({ rating: selectedRating })
+            }
+          )
+        }
+      } catch (err) {
+        console.error('Error saving rating:', err)
+      }
+    }
+
+    setRatingSubmitted(true)
+    setShowRating(false)
+
+    const thankMsg: ChatMessage = {
+      id: `thank-${Date.now()}`,
+      type: 'system',
+      content: `Gracias por tu calificacion de ${selectedRating} estrella${selectedRating > 1 ? 's' : ''}.`,
+      timestamp: new Date()
+    }
+    setMessages(prev => [...prev, thankMsg])
+    saveCurrentChat()
   }
 
   const sendToAI = async (userMessage: string): Promise<string> => {
@@ -381,9 +507,10 @@ export default function SupportChatWidget() {
       return
     }
 
+    // Save all previous messages to DB with the new conversation ID
     for (const msg of messages) {
       if (msg.type === 'user' || msg.type === 'bot') {
-        await saveMessageToDb(msg.content, msg.type)
+        await saveMessageToDbDirect(convId, msg.content, msg.type)
       }
     }
 
@@ -438,7 +565,10 @@ export default function SupportChatWidget() {
 
   const saveMessageToDb = async (content: string, senderType: 'user' | 'bot' | 'agent') => {
     if (!conversationId) return
+    await saveMessageToDbDirect(conversationId, content, senderType)
+  }
 
+  const saveMessageToDbDirect = async (convId: string, content: string, senderType: 'user' | 'bot' | 'agent') => {
     try {
       const token = localStorage.getItem('sb-access-token')
       if (!token) return
@@ -451,7 +581,7 @@ export default function SupportChatWidget() {
           'apikey': SUPABASE_ANON_KEY
         },
         body: JSON.stringify({
-          conversation_id: conversationId,
+          conversation_id: convId,
           sender_type: senderType,
           sender_id: senderType === 'user' ? user?.id : null,
           content
@@ -479,9 +609,9 @@ export default function SupportChatWidget() {
 
   return (
     <>
-      {/* Chat Button */}
+      {/* Chat Button with notification badge */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => { setIsOpen(!isOpen); setHasNewMessage(false) }}
         className="fixed bottom-24 right-4 w-14 h-14 bg-neutral-900 rounded-full shadow-xl flex items-center justify-center text-white hover:bg-neutral-800 transition-all z-40 border border-neutral-700"
       >
         {isOpen ? (
@@ -492,6 +622,11 @@ export default function SupportChatWidget() {
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
           </svg>
+        )}
+        {hasNewMessage && !isOpen && (
+          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-xs font-bold animate-pulse">
+            !
+          </span>
         )}
       </button>
 
@@ -656,6 +791,100 @@ export default function SupportChatWidget() {
               >
                 Hablar con un agente
               </button>
+            </div>
+          )}
+
+          {/* End Conversation Button */}
+          {isEscalated && !isResolved && !showRating && (
+            <div className="px-4 py-2 border-t border-neutral-800 bg-neutral-900">
+              <button
+                onClick={() => setShowEndConfirm(true)}
+                className="w-full py-2 text-sm text-neutral-400 hover:text-neutral-300 transition-colors"
+              >
+                Finalizar conversacion
+              </button>
+            </div>
+          )}
+
+          {/* End Confirmation Dialog */}
+          {showEndConfirm && (
+            <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-20 p-4">
+              <div className="bg-neutral-900 rounded-xl p-5 max-w-xs w-full border border-neutral-700">
+                <h4 className="text-white font-semibold text-center mb-2">Finalizar conversacion?</h4>
+                <p className="text-neutral-400 text-sm text-center mb-4">
+                  Seguro que quieres finalizar esta conversacion de soporte?
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowEndConfirm(false)}
+                    className="flex-1 py-2.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleEndConversation}
+                    className="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Finalizar
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Rating UI */}
+          {showRating && !ratingSubmitted && (
+            <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-20 p-4">
+              <div className="bg-neutral-900 rounded-xl p-5 max-w-xs w-full border border-neutral-700">
+                <h4 className="text-white font-semibold text-center mb-2">Como fue tu experiencia?</h4>
+                <p className="text-neutral-400 text-sm text-center mb-4">
+                  Califica tu atencion de soporte
+                </p>
+                <div className="flex justify-center gap-2 mb-5">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      onClick={() => setSelectedRating(star)}
+                      onMouseEnter={() => setHoverRating(star)}
+                      onMouseLeave={() => setHoverRating(0)}
+                      className="p-1 transition-transform hover:scale-110"
+                    >
+                      <svg
+                        className={`w-10 h-10 ${
+                          star <= (hoverRating || selectedRating)
+                            ? 'text-yellow-400 fill-yellow-400'
+                            : 'text-neutral-600'
+                        } transition-colors`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.5}
+                          d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+                        />
+                      </svg>
+                    </button>
+                  ))}
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => { setShowRating(false); setRatingSubmitted(true) }}
+                    className="flex-1 py-2.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Omitir
+                  </button>
+                  <button
+                    onClick={submitRating}
+                    disabled={selectedRating === 0}
+                    className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Enviar
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
