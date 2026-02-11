@@ -50,6 +50,7 @@ export default function SupportChatWidget() {
   const [ratingSubmitted, setRatingSubmitted] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const resolvedShownRef = useRef(false)
 
   // Load user and saved chats on mount
   useEffect(() => {
@@ -170,6 +171,7 @@ export default function SupportChatWidget() {
     setHoverRating(0)
     setRatingSubmitted(chat.isResolved || false)
     setShowEndConfirm(false)
+    resolvedShownRef.current = chat.isResolved || false
   }
 
   // Start new chat
@@ -190,6 +192,7 @@ export default function SupportChatWidget() {
     setIsResolved(false)
     setRatingSubmitted(false)
     setShowEndConfirm(false)
+    resolvedShownRef.current = false
   }
 
   // Delete a chat
@@ -227,21 +230,21 @@ export default function SupportChatWidget() {
   }, [isOpen, messages.length])
 
   useEffect(() => {
-    if (!conversationId || !isEscalated) return
+    if (!conversationId || !isEscalated || isResolved) return
 
     const interval = setInterval(async () => {
       await checkForAgentMessages()
     }, 8000)
 
     return () => clearInterval(interval)
-  }, [conversationId, isEscalated])
+  }, [conversationId, isEscalated, isResolved])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
   const checkForAgentMessages = async () => {
-    if (!conversationId || isResolved) return
+    if (!conversationId || isResolved || resolvedShownRef.current) return
 
     try {
       const token = localStorage.getItem('sb-access-token')
@@ -260,18 +263,14 @@ export default function SupportChatWidget() {
 
       if (statusRes.ok) {
         const convData = await statusRes.json()
-        if (convData.length > 0 && convData[0].status === 'resolved') {
-          // Check if we already showed the resolved message
-          setMessages(prev => {
-            const alreadyResolved = prev.some(m => m.id.startsWith('resolved-'))
-            if (alreadyResolved) return prev
-            return [...prev, {
-              id: `resolved-${Date.now()}`,
-              type: 'system' as const,
-              content: 'El agente ha marcado esta conversacion como resuelta.',
-              timestamp: new Date()
-            }]
-          })
+        if (convData.length > 0 && convData[0].status === 'resolved' && !resolvedShownRef.current) {
+          resolvedShownRef.current = true
+          setMessages(prev => [...prev, {
+            id: `resolved-${Date.now()}`,
+            type: 'system' as const,
+            content: 'El agente ha marcado esta conversacion como resuelta.',
+            timestamp: new Date()
+          }])
           setIsResolved(true)
           setShowRating(true)
           return
