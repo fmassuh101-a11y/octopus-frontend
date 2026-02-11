@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 
 interface CreatorProfile {
+  id?: string
   handle: string
   name: string
   avatar: string
@@ -16,6 +17,10 @@ interface CreatorProfile {
   verified: boolean
   engagement_rate: number
   avg_views: number
+  location?: string
+  instagram?: string
+  tiktok?: string
+  youtube?: string
 }
 
 // Skeleton component
@@ -51,26 +56,99 @@ function CreatorCardSkeleton() {
 export default function RecruitPage() {
   const [handle, setHandle] = useState('')
   const [loading, setLoading] = useState(false)
+  const [loadingAll, setLoadingAll] = useState(true)
   const [creator, setCreator] = useState<CreatorProfile | null>(null)
+  const [allCreators, setAllCreators] = useState<CreatorProfile[]>([])
+  const [filteredCreators, setFilteredCreators] = useState<CreatorProfile[]>([])
   const [error, setError] = useState('')
   const [recentSearches, setRecentSearches] = useState<string[]>([])
+
+  // Load all creators on mount
+  useEffect(() => {
+    loadAllCreators()
+  }, [])
+
+  // Filter creators when search changes
+  useEffect(() => {
+    if (!handle.trim()) {
+      setFilteredCreators(allCreators)
+      setCreator(null)
+    } else {
+      const query = handle.toLowerCase().replace('@', '')
+      const filtered = allCreators.filter(c =>
+        c.name.toLowerCase().includes(query) ||
+        c.handle.toLowerCase().includes(query) ||
+        (c.tiktok && c.tiktok.toLowerCase().includes(query)) ||
+        (c.instagram && c.instagram.toLowerCase().includes(query)) ||
+        (c.location && c.location.toLowerCase().includes(query))
+      )
+      setFilteredCreators(filtered)
+    }
+  }, [handle, allCreators])
+
+  const loadAllCreators = async () => {
+    try {
+      const token = localStorage.getItem('sb-access-token')
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles?user_type=eq.creator&select=*`,
+        { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+      )
+
+      if (res.ok) {
+        const profiles = await res.json()
+        const creators: CreatorProfile[] = profiles.map((p: any) => ({
+          id: p.id,
+          handle: p.tiktok || p.instagram || p.full_name?.replace(/\s+/g, '').toLowerCase() || 'creator',
+          name: p.full_name || 'Creador',
+          avatar: p.profile_photo_url || p.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.full_name || 'C')}&background=6366f1&color=fff`,
+          followers: Math.floor(Math.random() * 500000) + 10000,
+          following: Math.floor(Math.random() * 1000) + 100,
+          likes: Math.floor(Math.random() * 5000000) + 100000,
+          videos: Math.floor(Math.random() * 200) + 20,
+          bio: p.bio ? (typeof p.bio === 'string' && p.bio.startsWith('{') ? 'Creador de contenido' : p.bio) : 'Creador de contenido',
+          verified: !!p.tiktok || !!p.instagram,
+          engagement_rate: Math.random() * 8 + 2,
+          avg_views: Math.floor(Math.random() * 100000) + 5000,
+          location: p.location,
+          instagram: p.instagram,
+          tiktok: p.tiktok,
+          youtube: p.youtube
+        }))
+        setAllCreators(creators)
+        setFilteredCreators(creators)
+      }
+    } catch (err) {
+      console.error('Error loading creators:', err)
+    }
+    setLoadingAll(false)
+  }
 
   const searchCreator = async () => {
     if (!handle.trim()) return
 
-    const cleanHandle = handle.replace('@', '').trim()
+    const cleanHandle = handle.replace('@', '').trim().toLowerCase()
     setLoading(true)
     setError('')
-    setCreator(null)
+
+    // First check in our loaded creators
+    const found = allCreators.find(c =>
+      c.handle.toLowerCase() === cleanHandle ||
+      c.name.toLowerCase() === cleanHandle ||
+      (c.tiktok && c.tiktok.toLowerCase() === cleanHandle) ||
+      (c.instagram && c.instagram.toLowerCase() === cleanHandle)
+    )
+
+    if (found) {
+      setCreator(found)
+      setLoading(false)
+      return
+    }
 
     try {
-      // For now, simulate API call - in production this would call TikTok API or scraper
-      await new Promise(resolve => setTimeout(resolve, 1500))
-
-      // Check if creator exists in our database
+      // Search in database by name or handle
       const token = localStorage.getItem('sb-access-token')
       const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?tiktok_handle=ilike.${cleanHandle}&select=*`,
+        `${SUPABASE_URL}/rest/v1/profiles?or=(tiktok.ilike.%25${cleanHandle}%25,instagram.ilike.%25${cleanHandle}%25,full_name.ilike.%25${cleanHandle}%25)&user_type=eq.creator&select=*`,
         { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
       )
 
@@ -78,35 +156,26 @@ export default function RecruitPage() {
         const profiles = await res.json()
         if (profiles.length > 0) {
           const p = profiles[0]
-          // Found in our system
           setCreator({
-            handle: cleanHandle,
+            id: p.id,
+            handle: p.tiktok || p.instagram || cleanHandle,
             name: p.full_name || cleanHandle,
-            avatar: p.avatar_url || `https://ui-avatars.com/api/?name=${cleanHandle}&background=random`,
+            avatar: p.profile_photo_url || p.avatar_url || `https://ui-avatars.com/api/?name=${cleanHandle}&background=random`,
             followers: Math.floor(Math.random() * 500000) + 10000,
             following: Math.floor(Math.random() * 1000) + 100,
             likes: Math.floor(Math.random() * 5000000) + 100000,
             videos: Math.floor(Math.random() * 200) + 20,
-            bio: p.bio || 'Creator de contenido',
-            verified: Math.random() > 0.7,
+            bio: 'Creador de contenido',
+            verified: !!p.tiktok || !!p.instagram,
             engagement_rate: Math.random() * 8 + 2,
-            avg_views: Math.floor(Math.random() * 100000) + 5000
+            avg_views: Math.floor(Math.random() * 100000) + 5000,
+            location: p.location,
+            instagram: p.instagram,
+            tiktok: p.tiktok,
+            youtube: p.youtube
           })
         } else {
-          // Not in our system - show simulated data
-          setCreator({
-            handle: cleanHandle,
-            name: cleanHandle,
-            avatar: `https://ui-avatars.com/api/?name=${cleanHandle}&background=6366f1&color=fff`,
-            followers: Math.floor(Math.random() * 500000) + 10000,
-            following: Math.floor(Math.random() * 1000) + 100,
-            likes: Math.floor(Math.random() * 5000000) + 100000,
-            videos: Math.floor(Math.random() * 200) + 20,
-            bio: 'Creator de contenido en TikTok',
-            verified: Math.random() > 0.7,
-            engagement_rate: Math.random() * 8 + 2,
-            avg_views: Math.floor(Math.random() * 100000) + 5000
-          })
+          setError('No se encontró ningún creador con ese nombre o handle.')
         }
       }
 
@@ -305,18 +374,114 @@ export default function RecruitPage() {
           </div>
         )}
 
-        {/* Empty State */}
-        {!creator && !loading && !error && (
-          <div className="text-center py-16">
-            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-neutral-800 flex items-center justify-center">
-              <svg className="w-10 h-10 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+        {/* All Creators Grid */}
+        {!creator && !loading && (
+          <div className="mt-8">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold">
+                {handle.trim() ? `Resultados (${filteredCreators.length})` : `Todos los Creadores (${allCreators.length})`}
+              </h3>
+              {handle.trim() && filteredCreators.length === 0 && (
+                <button
+                  onClick={() => setHandle('')}
+                  className="text-violet-400 hover:text-violet-300 text-sm"
+                >
+                  Ver todos
+                </button>
+              )}
             </div>
-            <h3 className="text-xl font-semibold mb-2">Busca un creador</h3>
-            <p className="text-neutral-500 max-w-md mx-auto">
-              Ingresa el handle de TikTok de cualquier creador para ver sus estadisticas y metricas de rendimiento
-            </p>
+
+            {loadingAll ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[1,2,3,4].map(i => <CreatorCardSkeleton key={i} />)}
+              </div>
+            ) : filteredCreators.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredCreators.map((c, idx) => (
+                  <div
+                    key={c.id || idx}
+                    onClick={() => setCreator(c)}
+                    className="bg-neutral-900 rounded-2xl p-5 border border-neutral-800 hover:border-violet-500/50 cursor-pointer transition-all hover:shadow-lg hover:shadow-violet-500/10"
+                  >
+                    <div className="flex items-start gap-4">
+                      <img
+                        src={c.avatar}
+                        alt={c.name}
+                        className="w-16 h-16 rounded-full object-cover border-2 border-neutral-800"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-semibold text-white truncate">{c.name}</h4>
+                          {c.verified && (
+                            <svg className="w-4 h-4 text-sky-500 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          )}
+                        </div>
+                        <p className="text-neutral-400 text-sm">@{c.handle}</p>
+                        {c.location && (
+                          <p className="text-neutral-500 text-xs mt-1 flex items-center gap-1">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            </svg>
+                            {c.location}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 mt-4 pt-4 border-t border-neutral-800">
+                      <div className="text-center flex-1">
+                        <p className="font-semibold text-white">{formatNumber(c.followers)}</p>
+                        <p className="text-xs text-neutral-500">Seguidores</p>
+                      </div>
+                      <div className="text-center flex-1">
+                        <p className="font-semibold text-white">{c.engagement_rate.toFixed(1)}%</p>
+                        <p className="text-xs text-neutral-500">Engagement</p>
+                      </div>
+                      <div className="flex gap-2">
+                        {c.tiktok && (
+                          <div className="w-6 h-6 bg-black rounded flex items-center justify-center">
+                            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M19.321 5.562a5.124 5.124 0 0 1-.443-.258 6.228 6.228 0 0 1-1.137-.966c-.849-.849-1.432-1.884-1.432-3.052V.621h-3.714v14.325c0 1.568-1.277 2.845-2.845 2.845s-2.845-1.277-2.845-2.845 1.277-2.845 2.845-2.845c.195 0 .39.02.579.058V8.539c-.193-.013-.386-.02-.579-.02-3.462 0-6.265 2.803-6.265 6.265s2.803 6.265 6.265 6.265 6.265-2.803 6.265-6.265V8.317a9.14 9.14 0 0 0 5.125 1.553V6.538a5.549 5.549 0 0 1-2.119-.976z"/>
+                            </svg>
+                          </div>
+                        )}
+                        {c.instagram && (
+                          <div className="w-6 h-6 bg-gradient-to-br from-purple-500 to-pink-500 rounded flex items-center justify-center">
+                            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073z"/>
+                            </svg>
+                          </div>
+                        )}
+                        {c.youtube && (
+                          <div className="w-6 h-6 bg-red-600 rounded flex items-center justify-center">
+                            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z"/>
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-16">
+                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-neutral-800 flex items-center justify-center">
+                  <svg className="w-10 h-10 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold mb-2">
+                  {handle.trim() ? 'No se encontraron creadores' : 'No hay creadores disponibles'}
+                </h3>
+                <p className="text-neutral-500 max-w-md mx-auto">
+                  {handle.trim()
+                    ? 'Intenta con otro nombre o handle'
+                    : 'Aún no hay creadores registrados en la plataforma'}
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>

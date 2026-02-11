@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { countries } from '@/lib/data/countries'
 
 export default function CreatorPhonePage() {
   const router = useRouter()
@@ -47,43 +48,6 @@ export default function CreatorPhonePage() {
       router.push('/onboarding/creator/level')
     }
   }
-
-  const countries = [
-    // Américas
-    { code: '+1', name: 'Estados Unidos', flag: '🇺🇸', minLength: 10, maxLength: 10, format: '(XXX) XXX-XXXX', searchKeys: ['us', 'usa', 'united', 'states', 'estados unidos'] },
-    { code: '+1', name: 'Canadá', flag: '🇨🇦', minLength: 10, maxLength: 10, format: '(XXX) XXX-XXXX', searchKeys: ['ca', 'canada', 'canadá'] },
-    { code: '+52', name: 'México', flag: '🇲🇽', minLength: 10, maxLength: 10, format: 'XX XXXX XXXX', searchKeys: ['mx', 'mexico', 'méxico'] },
-    { code: '+54', name: 'Argentina', flag: '🇦🇷', minLength: 8, maxLength: 11, format: 'XX XXXX XXXX', searchKeys: ['ar', 'argentina'] },
-    { code: '+55', name: 'Brasil', flag: '🇧🇷', minLength: 10, maxLength: 11, format: '(XX) XXXXX-XXXX', searchKeys: ['br', 'brazil', 'brasil'] },
-    { code: '+56', name: 'Chile', flag: '🇨🇱', minLength: 8, maxLength: 9, format: 'X XXXX XXXX', searchKeys: ['cl', 'chile'] },
-    { code: '+57', name: 'Colombia', flag: '🇨🇴', minLength: 10, maxLength: 10, format: 'XXX XXX XXXX', searchKeys: ['co', 'colombia'] },
-    { code: '+51', name: 'Perú', flag: '🇵🇪', minLength: 9, maxLength: 9, format: 'XXX XXX XXX', searchKeys: ['pe', 'peru', 'perú'] },
-    { code: '+58', name: 'Venezuela', flag: '🇻🇪', minLength: 10, maxLength: 10, format: 'XXX XXX XXXX', searchKeys: ['ve', 'venezuela'] },
-    { code: '+506', name: 'Costa Rica', flag: '🇨🇷', minLength: 8, maxLength: 8, format: 'XXXX XXXX', searchKeys: ['cr', 'costa', 'rica'] },
-    { code: '+503', name: 'El Salvador', flag: '🇸🇻', minLength: 8, maxLength: 8, format: 'XXXX XXXX', searchKeys: ['sv', 'salvador'] },
-    { code: '+504', name: 'Honduras', flag: '🇭🇳', minLength: 8, maxLength: 8, format: 'XXXX XXXX', searchKeys: ['hn', 'honduras'] },
-    { code: '+502', name: 'Guatemala', flag: '🇬🇹', minLength: 8, maxLength: 8, format: 'XXXX XXXX', searchKeys: ['gt', 'guatemala'] },
-    { code: '+505', name: 'Nicaragua', flag: '🇳🇮', minLength: 8, maxLength: 8, format: 'XXXX XXXX', searchKeys: ['ni', 'nicaragua'] },
-    { code: '+507', name: 'Panamá', flag: '🇵🇦', minLength: 7, maxLength: 8, format: 'XXXX XXXX', searchKeys: ['pa', 'panama', 'panamá'] },
-    { code: '+593', name: 'Ecuador', flag: '🇪🇨', minLength: 8, maxLength: 9, format: 'XX XXX XXXX', searchKeys: ['ec', 'ecuador'] },
-    { code: '+591', name: 'Bolivia', flag: '🇧🇴', minLength: 8, maxLength: 8, format: 'XXXX XXXX', searchKeys: ['bo', 'bolivia'] },
-    { code: '+595', name: 'Paraguay', flag: '🇵🇾', minLength: 8, maxLength: 9, format: 'XXX XXX XXX', searchKeys: ['py', 'paraguay'] },
-    { code: '+598', name: 'Uruguay', flag: '🇺🇾', minLength: 8, maxLength: 9, format: 'XX XXX XXXX', searchKeys: ['uy', 'uruguay'] },
-    { code: '+53', name: 'Cuba', flag: '🇨🇺', minLength: 8, maxLength: 8, format: 'XXXX XXXX', searchKeys: ['cu', 'cuba'] },
-    // Europa
-    { code: '+34', name: 'España', flag: '🇪🇸', minLength: 9, maxLength: 9, format: 'XXX XXX XXX', searchKeys: ['es', 'spain', 'españa'] },
-    { code: '+33', name: 'Francia', flag: '🇫🇷', minLength: 9, maxLength: 10, format: 'XX XX XX XX XX', searchKeys: ['fr', 'france', 'francia'] },
-    { code: '+49', name: 'Alemania', flag: '🇩🇪', minLength: 10, maxLength: 12, format: 'XXX XXXXXXXX', searchKeys: ['de', 'germany', 'deutschland', 'alemania'] },
-    { code: '+44', name: 'Reino Unido', flag: '🇬🇧', minLength: 10, maxLength: 10, format: 'XXXX XXXXXX', searchKeys: ['uk', 'gb', 'britain', 'england', 'reino unido'] },
-    { code: '+39', name: 'Italia', flag: '🇮🇹', minLength: 9, maxLength: 11, format: 'XXX XXX XXXX', searchKeys: ['it', 'italy', 'italia'] },
-    // Asia
-    { code: '+81', name: 'Japón', flag: '🇯🇵', minLength: 10, maxLength: 11, format: 'XXX XXXX XXXX', searchKeys: ['jp', 'japan', 'japón'] },
-    { code: '+82', name: 'Corea del Sur', flag: '🇰🇷', minLength: 9, maxLength: 10, format: 'XXX XXXX XXXX', searchKeys: ['kr', 'korea', 'corea'] },
-    { code: '+86', name: 'China', flag: '🇨🇳', minLength: 11, maxLength: 11, format: 'XXX XXXX XXXX', searchKeys: ['cn', 'china'] },
-    { code: '+91', name: 'India', flag: '🇮🇳', minLength: 10, maxLength: 10, format: 'XXXXX XXXXX', searchKeys: ['in', 'india'] },
-    // Oceanía
-    { code: '+61', name: 'Australia', flag: '🇦🇺', minLength: 9, maxLength: 9, format: 'XXX XXX XXX', searchKeys: ['au', 'australia'] }
-  ]
 
   const getPhoneConfig = (countryCode: string) => {
     const country = countries.find(c => c.code === countryCode)

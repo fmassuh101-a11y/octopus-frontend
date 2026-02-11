@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { getCitiesFormatted } from '@/lib/data/countries'
 
 export default function CreatorLocationPage() {
   const router = useRouter()
@@ -9,64 +10,17 @@ export default function CreatorLocationPage() {
   const [selectedLocation, setSelectedLocation] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
 
-  // Comprehensive world cities database
-  const worldCities = [
-    // LATINOAMÉRICA
-    // México
-    'Ciudad de México, México', 'Guadalajara, Jalisco, México', 'Monterrey, Nuevo León, México',
-    'Puebla, México', 'Tijuana, México', 'León, México', 'Cancún, México', 'Mérida, México',
-    'Querétaro, México', 'San Luis Potosí, México', 'Aguascalientes, México', 'Chihuahua, México',
-    // Argentina
-    'Buenos Aires, Argentina', 'Córdoba, Argentina', 'Rosario, Argentina', 'Mendoza, Argentina',
-    'La Plata, Argentina', 'Mar del Plata, Argentina', 'Tucumán, Argentina', 'Salta, Argentina',
-    // Colombia
-    'Bogotá, Colombia', 'Medellín, Colombia', 'Cali, Colombia', 'Barranquilla, Colombia',
-    'Cartagena, Colombia', 'Bucaramanga, Colombia', 'Pereira, Colombia', 'Santa Marta, Colombia',
-    // Chile
-    'Santiago, Chile', 'Valparaíso, Chile', 'Concepción, Chile', 'La Serena, Chile',
-    'Antofagasta, Chile', 'Temuco, Chile', 'Viña del Mar, Chile', 'Iquique, Chile',
-    // Perú
-    'Lima, Perú', 'Arequipa, Perú', 'Cusco, Perú', 'Trujillo, Perú', 'Chiclayo, Perú',
-    // Venezuela
-    'Caracas, Venezuela', 'Maracaibo, Venezuela', 'Valencia, Venezuela', 'Barquisimeto, Venezuela',
-    // Ecuador
-    'Quito, Ecuador', 'Guayaquil, Ecuador', 'Cuenca, Ecuador', 'Manta, Ecuador',
-    // Otros Latinoamérica
-    'San José, Costa Rica', 'Panamá City, Panamá', 'Guatemala City, Guatemala',
-    'San Salvador, El Salvador', 'Tegucigalpa, Honduras', 'Managua, Nicaragua',
-    'Santo Domingo, República Dominicana', 'San Juan, Puerto Rico', 'La Habana, Cuba',
-    'Montevideo, Uruguay', 'Asunción, Paraguay', 'La Paz, Bolivia', 'Santa Cruz, Bolivia',
+  // Load existing data on component mount
+  useEffect(() => {
+    const existing = JSON.parse(localStorage.getItem('creatorOnboarding') || '{}')
+    if (existing.location) {
+      setSelectedLocation(existing.location)
+      setSearchQuery(existing.location)
+    }
+  }, [])
 
-    // ESPAÑA
-    'Madrid, España', 'Barcelona, España', 'Valencia, España', 'Sevilla, España',
-    'Bilbao, España', 'Málaga, España', 'Zaragoza, España', 'Palma de Mallorca, España',
-
-    // ESTADOS UNIDOS
-    'New York, USA', 'Los Angeles, USA', 'Chicago, USA', 'Houston, USA', 'Miami, USA',
-    'San Francisco, USA', 'Dallas, USA', 'Austin, USA', 'Seattle, USA', 'Denver, USA',
-    'Boston, USA', 'Phoenix, USA', 'San Diego, USA', 'Atlanta, USA', 'Washington DC, USA',
-
-    // CANADÁ
-    'Toronto, Canada', 'Vancouver, Canada', 'Montreal, Canada', 'Calgary, Canada', 'Ottawa, Canada',
-
-    // EUROPA
-    'London, UK', 'Paris, France', 'Berlin, Germany', 'Rome, Italy', 'Amsterdam, Netherlands',
-    'Brussels, Belgium', 'Vienna, Austria', 'Zurich, Switzerland', 'Lisbon, Portugal',
-    'Dublin, Ireland', 'Stockholm, Sweden', 'Oslo, Norway', 'Copenhagen, Denmark',
-    'Helsinki, Finland', 'Prague, Czech Republic', 'Warsaw, Poland', 'Budapest, Hungary',
-
-    // ASIA
-    'Tokyo, Japan', 'Seoul, South Korea', 'Beijing, China', 'Shanghai, China', 'Hong Kong',
-    'Singapore', 'Bangkok, Thailand', 'Dubai, UAE', 'Mumbai, India', 'New Delhi, India',
-    'Taipei, Taiwan', 'Manila, Philippines', 'Jakarta, Indonesia', 'Kuala Lumpur, Malaysia',
-
-    // OCEANÍA
-    'Sydney, Australia', 'Melbourne, Australia', 'Brisbane, Australia', 'Auckland, New Zealand',
-
-    // ÁFRICA
-    'Cape Town, South Africa', 'Johannesburg, South Africa', 'Cairo, Egypt', 'Lagos, Nigeria',
-    'Nairobi, Kenya', 'Casablanca, Morocco'
-  ]
+  // Get comprehensive world cities from data file
+  const worldCities = getCitiesFormatted()
 
   const filteredLocations = worldCities.filter(location =>
     location.toLowerCase().includes(searchQuery.toLowerCase())

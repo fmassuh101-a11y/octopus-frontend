@@ -18,8 +18,10 @@ export default function CreatorNamePage() {
 
   const handleNext = () => {
     if (firstName.trim() && lastName.trim()) {
-      // Guardar en localStorage temporalmente
+      // Preservar datos existentes y actualizar solo nombre
+      const existing = JSON.parse(localStorage.getItem('creatorOnboarding') || '{}')
       localStorage.setItem('creatorOnboarding', JSON.stringify({
+        ...existing,
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         step: 1
