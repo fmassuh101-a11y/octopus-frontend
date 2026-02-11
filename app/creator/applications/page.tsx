@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
@@ -76,14 +76,14 @@ export default function ApplicationsPage() {
     }
   }
 
-  const filteredApplications = applications.filter(app => {
-    if (filter === 'all') return true
-    return app.status === filter
-  })
-
-  const pendingCount = applications.filter(a => a.status === 'pending').length
-  const acceptedCount = applications.filter(a => a.status === 'accepted').length
-  const rejectedCount = applications.filter(a => a.status === 'rejected').length
+  // OPTIMIZED: Memoize filtered applications and counts
+  const { filteredApplications, pendingCount, acceptedCount, rejectedCount } = useMemo(() => {
+    const pending = applications.filter(a => a.status === 'pending').length
+    const accepted = applications.filter(a => a.status === 'accepted').length
+    const rejected = applications.filter(a => a.status === 'rejected').length
+    const filtered = filter === 'all' ? applications : applications.filter(app => app.status === filter)
+    return { filteredApplications: filtered, pendingCount: pending, acceptedCount: accepted, rejectedCount: rejected }
+  }, [applications, filter])
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -145,10 +145,47 @@ export default function ApplicationsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-10 h-10 border-4 border-gray-900 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-neutral-400">Cargando aplicaciones...</p>
+      <div className="min-h-screen bg-neutral-950">
+        {/* Skeleton Header */}
+        <div className="bg-neutral-900 border-b border-neutral-800 text-white">
+          <div className="max-w-4xl mx-auto px-4 py-8">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-10 h-10 bg-neutral-800 rounded-lg animate-pulse" />
+              <div>
+                <div className="h-7 w-40 bg-neutral-800 rounded animate-pulse mb-2" />
+                <div className="h-4 w-56 bg-neutral-800 rounded animate-pulse" />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4 mt-6">
+              {[1,2,3].map(i => (
+                <div key={i} className="bg-neutral-800 rounded-xl p-4 animate-pulse">
+                  <div className="h-8 w-12 bg-neutral-700 rounded mx-auto mb-2" />
+                  <div className="h-4 w-16 bg-neutral-700 rounded mx-auto" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        {/* Skeleton Filter Tabs */}
+        <div className="bg-neutral-900 border-b border-neutral-800 sticky top-0 z-10">
+          <div className="max-w-4xl mx-auto px-4 py-3 flex gap-2">
+            {[1,2,3,4].map(i => (
+              <div key={i} className="h-10 w-28 bg-neutral-800 rounded-full animate-pulse" />
+            ))}
+          </div>
+        </div>
+        {/* Skeleton Applications */}
+        <div className="max-w-4xl mx-auto px-4 py-6 space-y-4">
+          {[1,2,3,4].map(i => (
+            <div key={i} className="bg-neutral-900 rounded-2xl overflow-hidden border border-neutral-800 flex">
+              <div className="w-32 md:w-40 bg-neutral-800 animate-pulse" />
+              <div className="flex-1 p-4">
+                <div className="h-5 w-3/4 bg-neutral-800 rounded animate-pulse mb-2" />
+                <div className="h-4 w-1/2 bg-neutral-800 rounded animate-pulse mb-4" />
+                <div className="h-4 w-24 bg-neutral-800 rounded animate-pulse" />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     )

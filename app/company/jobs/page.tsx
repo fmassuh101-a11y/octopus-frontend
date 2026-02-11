@@ -238,10 +238,47 @@ export default function CompanyJobsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-neutral-400">Cargando trabajos...</p>
+      <div className="min-h-screen bg-neutral-950 text-white pb-24">
+        {/* Skeleton Header */}
+        <div className="bg-neutral-900 border-b border-neutral-800 sticky top-0 z-10 px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-neutral-800 rounded-xl animate-pulse" />
+              <div>
+                <div className="h-6 w-24 bg-neutral-800 rounded animate-pulse mb-1" />
+                <div className="h-3 w-36 bg-neutral-800 rounded animate-pulse" />
+              </div>
+            </div>
+            <div className="h-10 w-20 bg-blue-900 rounded-xl animate-pulse" />
+          </div>
+        </div>
+        {/* Skeleton Stats */}
+        <div className="px-4 py-4">
+          <div className="grid grid-cols-3 gap-3">
+            {[1,2,3].map(i => (
+              <div key={i} className="bg-neutral-900 rounded-2xl p-4 border border-neutral-800 animate-pulse">
+                <div className="h-4 w-16 bg-neutral-800 rounded mb-2" />
+                <div className="h-8 w-12 bg-neutral-800 rounded" />
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* Skeleton Search */}
+        <div className="px-4 pb-4">
+          <div className="h-12 bg-neutral-900 rounded-xl animate-pulse" />
+        </div>
+        {/* Skeleton Jobs */}
+        <div className="px-4 space-y-3">
+          {[1,2,3,4].map(i => (
+            <div key={i} className="bg-neutral-900 rounded-2xl p-4 border border-neutral-800">
+              <div className="h-5 w-3/4 bg-neutral-800 rounded animate-pulse mb-2" />
+              <div className="h-4 w-full bg-neutral-800 rounded animate-pulse mb-3" />
+              <div className="flex gap-4">
+                <div className="h-4 w-24 bg-neutral-800 rounded animate-pulse" />
+                <div className="h-4 w-16 bg-neutral-800 rounded animate-pulse" />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     )

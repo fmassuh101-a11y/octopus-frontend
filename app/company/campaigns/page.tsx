@@ -1,9 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { getCompanyGigs } from '../../../lib/database'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 
 interface Gig {
@@ -61,29 +60,24 @@ export default function CampaignsPage() {
       if (response.ok) {
         const data = await response.json()
 
-        // Fetch application counts for each gig
-        const gigsWithCounts = await Promise.all(data.map(async (gig: Gig) => {
+        // OPTIMIZED: Fetch all application counts in ONE query (not N+1)
+        const gigIds = data.map((g: Gig) => g.id)
+        if (gigIds.length > 0) {
           try {
             const countRes = await fetch(
-              `${SUPABASE_URL}/rest/v1/applications?gig_id=eq.${gig.id}&select=id`,
-              {
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'apikey': SUPABASE_ANON_KEY
-                }
-              }
+              `${SUPABASE_URL}/rest/v1/applications?gig_id=in.(${gigIds.join(',')})&select=gig_id`,
+              { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
             )
             if (countRes.ok) {
               const apps = await countRes.json()
-              return { ...gig, applications_count: apps.length }
+              const countMap = new Map<string, number>()
+              apps.forEach((a: any) => countMap.set(a.gig_id, (countMap.get(a.gig_id) || 0) + 1))
+              data.forEach((gig: Gig) => gig.applications_count = countMap.get(gig.id) || 0)
             }
-          } catch (e) {
-            console.log('Error counting apps:', e)
-          }
-          return { ...gig, applications_count: 0 }
-        }))
+          } catch (e) {}
+        }
 
-        setGigs(gigsWithCounts)
+        setGigs(data)
       } else {
         setGigs([])
       }
@@ -95,14 +89,17 @@ export default function CampaignsPage() {
     }
   }
 
-  const filteredGigs = gigs.filter(gig => {
-    if (filter === 'all') return showArchived ? true : gig.status !== 'closed'
-    return gig.status === filter
-  })
-
-  const activeCount = gigs.filter(g => g.status === 'active').length
-  const draftCount = gigs.filter(g => g.status === 'draft').length
-  const closedCount = gigs.filter(g => g.status === 'closed').length
+  // OPTIMIZED: Memoize filtered gigs and counts
+  const { filteredGigs, activeCount, draftCount, closedCount } = useMemo(() => {
+    const active = gigs.filter(g => g.status === 'active').length
+    const draft = gigs.filter(g => g.status === 'draft').length
+    const closed = gigs.filter(g => g.status === 'closed').length
+    const filtered = gigs.filter(gig => {
+      if (filter === 'all') return showArchived ? true : gig.status !== 'closed'
+      return gig.status === filter
+    })
+    return { filteredGigs: filtered, activeCount: active, draftCount: draft, closedCount: closed }
+  }, [gigs, filter, showArchived])
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr)
@@ -202,10 +199,41 @@ export default function CampaignsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando campanas...</p>
+      <div className="min-h-screen bg-gray-50">
+        {/* Skeleton Header */}
+        <header className="sticky top-0 z-50 bg-white border-b border-gray-100">
+          <div className="max-w-6xl mx-auto px-4 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-gray-200 rounded-lg animate-pulse" />
+                <div>
+                  <div className="h-7 w-32 bg-gray-200 rounded animate-pulse mb-2" />
+                  <div className="h-4 w-56 bg-gray-100 rounded animate-pulse" />
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="h-10 w-24 bg-gray-200 rounded-lg animate-pulse" />
+                <div className="h-10 w-32 bg-purple-200 rounded-lg animate-pulse" />
+              </div>
+            </div>
+            <div className="flex gap-2 mt-4">
+              {[1,2,3,4].map(i => (
+                <div key={i} className="h-10 w-28 bg-gray-200 rounded-lg animate-pulse" />
+              ))}
+            </div>
+          </div>
+        </header>
+        <div className="max-w-6xl mx-auto px-4 py-8 space-y-4">
+          {[1,2,3,4].map(i => (
+            <div key={i} className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+              <div className="h-5 w-1/2 bg-gray-200 rounded animate-pulse mb-2" />
+              <div className="h-4 w-3/4 bg-gray-100 rounded animate-pulse mb-3" />
+              <div className="flex gap-2">
+                <div className="h-6 w-16 bg-gray-100 rounded-full animate-pulse" />
+                <div className="h-6 w-20 bg-gray-100 rounded-full animate-pulse" />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     )

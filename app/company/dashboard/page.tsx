@@ -60,7 +60,6 @@ export default function CompanyDashboard() {
         const profiles = await response.json()
         if (profiles.length > 0) {
           const profileData = profiles[0]
-          setProfile(profileData)
 
           // Check if user is a company
           if (profileData.user_type !== 'company') {
@@ -71,37 +70,30 @@ export default function CompanyDashboard() {
           }
 
           // Parse bio data if it exists
+          let finalProfile = profileData
           if (profileData.bio) {
             try {
               const bioData = JSON.parse(profileData.bio)
-              setProfile({ ...profileData, ...bioData })
+              finalProfile = { ...profileData, ...bioData }
             } catch (e) {}
           }
+          setProfile(finalProfile)
 
-          // Fetch wallet balance
-          try {
-            const walletRes = await fetch(`${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${userData.id}&select=balance,pending_balance`, {
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'apikey': SUPABASE_ANON_KEY
-              }
-            })
+          // PARALLEL: Fetch wallet while profile is already loaded
+          fetch(`${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${userData.id}&select=balance,pending_balance`, {
+            headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY }
+          }).then(async walletRes => {
             if (walletRes.ok) {
               const wallets = await walletRes.json()
-              if (wallets.length > 0) {
-                setWallet(wallets[0])
-              }
+              if (wallets.length > 0) setWallet(wallets[0])
             }
-          } catch (e) {
-            console.log('[Dashboard] No wallet found')
-          }
+          }).catch(() => {})
+
         } else {
-          // No profile, go to select-type
           window.location.href = '/auth/select-type'
           return
         }
       } else {
-        // Error fetching, go to select-type to avoid loop
         window.location.href = '/auth/select-type'
         return
       }
@@ -123,10 +115,38 @@ export default function CompanyDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading dashboard...</p>
+      <div className="min-h-screen bg-gray-50 flex">
+        {/* Skeleton Sidebar */}
+        <div className="hidden lg:flex w-64 bg-white border-r border-gray-200 flex-col">
+          <div className="p-6 border-b border-gray-100">
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-gray-200 rounded-lg animate-pulse" />
+              <div className="h-6 w-24 bg-gray-200 rounded animate-pulse" />
+            </div>
+          </div>
+          <div className="p-4 space-y-3">
+            {[1,2,3,4,5,6].map(i => (
+              <div key={i} className="h-10 bg-gray-100 rounded-lg animate-pulse" />
+            ))}
+          </div>
+        </div>
+        {/* Skeleton Main Content */}
+        <div className="flex-1 flex flex-col">
+          <div className="bg-white border-b border-gray-200 px-8 py-4">
+            <div className="h-8 w-64 bg-gray-200 rounded animate-pulse mb-2" />
+            <div className="h-4 w-96 bg-gray-100 rounded animate-pulse" />
+          </div>
+          <div className="p-8">
+            <div className="bg-gradient-to-r from-blue-200 to-purple-200 rounded-2xl p-8 mb-8 animate-pulse h-48" />
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <div className="h-6 w-48 bg-gray-200 rounded animate-pulse mb-6" />
+              <div className="space-y-3">
+                {[1,2,3,4,5].map(i => (
+                  <div key={i} className="h-12 bg-gray-100 rounded-lg animate-pulse" />
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     )

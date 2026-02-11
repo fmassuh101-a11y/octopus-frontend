@@ -641,10 +641,47 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-neutral-400">Cargando perfil...</p>
+      <div className="min-h-screen bg-neutral-950">
+        {/* Skeleton Header */}
+        <div className="bg-neutral-900 border-b border-neutral-800 sticky top-0 z-10 px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="w-10 h-10 bg-neutral-800 rounded-lg animate-pulse" />
+            <div className="h-6 w-24 bg-neutral-800 rounded animate-pulse" />
+            <div className="w-10 h-10 bg-neutral-800 rounded-lg animate-pulse" />
+          </div>
+        </div>
+        {/* Skeleton Profile Header */}
+        <div className="bg-neutral-900 px-4 py-6 border-b border-neutral-800">
+          <div className="flex items-center space-x-4">
+            <div className="w-20 h-20 bg-neutral-800 rounded-full animate-pulse" />
+            <div className="flex-1">
+              <div className="h-6 w-40 bg-neutral-800 rounded animate-pulse mb-2" />
+              <div className="h-4 w-32 bg-neutral-800 rounded animate-pulse mb-2" />
+              <div className="h-4 w-24 bg-neutral-800 rounded animate-pulse" />
+            </div>
+          </div>
+        </div>
+        {/* Skeleton Tabs */}
+        <div className="bg-neutral-900 border-b border-neutral-800 px-4">
+          <div className="flex space-x-6 py-3">
+            {[1,2,3,4,5].map(i => (
+              <div key={i} className="h-8 w-24 bg-neutral-800 rounded animate-pulse" />
+            ))}
+          </div>
+        </div>
+        {/* Skeleton Content */}
+        <div className="px-4 py-6 space-y-6">
+          <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800">
+            <div className="h-6 w-40 bg-neutral-800 rounded animate-pulse mb-4" />
+            <div className="space-y-4">
+              {[1,2,3,4].map(i => (
+                <div key={i} className="flex justify-between items-center py-3 border-b border-neutral-800">
+                  <div className="h-4 w-24 bg-neutral-800 rounded animate-pulse" />
+                  <div className="h-4 w-32 bg-neutral-800 rounded animate-pulse" />
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     )
