@@ -25,7 +25,7 @@ Para Creadores:
 - Reciben pago cuando la empresa aprueba el contenido
 - Pueden retirar dinero a PayPal, transferencia bancaria o crypto (USDT/USDC)
 - El retiro minimo es $10 USD
-- Octopus cobra 10% de comision en cada pago
+- Octopus cobra una pequena comision por cada transaccion
 
 Para Empresas:
 - Crean gigs especificando que contenido necesitan
@@ -43,7 +43,7 @@ Contratos:
 Pagos:
 - Los pagos se procesan en 3-5 dias habiles
 - Metodos: PayPal, transferencia bancaria, crypto
-- Comision de Octopus: 10%
+- Octopus cobra una pequena comision por transaccion
 - Retiro minimo: $10 USD
 
 Problemas comunes:
