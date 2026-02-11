@@ -203,59 +203,34 @@ export default function CreatorSocialsPage() {
       if (!saveResponse.ok) {
         const errorText = await saveResponse.text()
         console.error('Save error:', errorText)
-      }
 
-      // ALWAYS try to ensure user_type is set using UPSERT
-      console.log('Ensuring user_type is set via UPSERT...')
-      const upsertData = {
-        user_id: user.id,
-        user_type: 'creator',
-        full_name: profileData.full_name,
-        updated_at: new Date().toISOString()
-      }
-
-      const upsertResponse = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`,
-            'apikey': SUPABASE_ANON_KEY,
-            'Prefer': 'resolution=merge-duplicates,return=representation'
-          },
-          body: JSON.stringify(upsertData)
-        }
-      )
-
-      console.log('Upsert response status:', upsertResponse.status)
-      const upsertResult = await upsertResponse.text()
-      console.log('Upsert result:', upsertResult)
-
-      if (!upsertResponse.ok) {
-        console.error('Upsert failed:', upsertResult)
-        // Try one more time with just PATCH
-        const patchResponse = await fetch(
-          `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}`,
+        // If first save failed, try UPSERT with ALL profile data
+        console.log('First save failed, trying UPSERT with full data...')
+        const upsertResponse = await fetch(
+          `${SUPABASE_URL}/rest/v1/profiles`,
           {
-            method: 'PATCH',
+            method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${accessToken}`,
               'apikey': SUPABASE_ANON_KEY,
-              'Prefer': 'return=minimal'
+              'Prefer': 'resolution=merge-duplicates,return=representation'
             },
-            body: JSON.stringify({ user_type: 'creator' })
+            body: JSON.stringify(profileData)
           }
         )
-        if (!patchResponse.ok) {
-          throw new Error('No se pudo guardar tu tipo de usuario. Por favor intenta de nuevo.')
+
+        if (!upsertResponse.ok) {
+          const upsertError = await upsertResponse.text()
+          console.error('UPSERT also failed:', upsertError)
+          throw new Error('No se pudo guardar tu perfil. Por favor intenta de nuevo.')
         }
+        console.log('UPSERT succeeded')
       }
 
-      // VERIFY: Check that user_type was actually saved
+      // Verify profile was saved correctly
       const verifyResponse = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=user_type`,
+        `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=user_type,profile_photo_url`,
         {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
@@ -268,33 +243,9 @@ export default function CreatorSocialsPage() {
         const verifyData = await verifyResponse.json()
         console.log('Verification result:', verifyData)
         if (!verifyData[0] || verifyData[0].user_type !== 'creator') {
-          console.error('user_type NOT saved correctly!', verifyData)
-          // Last resort: direct insert
-          console.log('Trying direct INSERT as last resort...')
-          const insertResponse = await fetch(
-            `${SUPABASE_URL}/rest/v1/profiles`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${accessToken}`,
-                'apikey': SUPABASE_ANON_KEY,
-                'Prefer': 'return=minimal'
-              },
-              body: JSON.stringify({
-                user_id: user.id,
-                user_type: 'creator',
-                full_name: profileData.full_name || 'Usuario'
-              })
-            }
-          )
-          if (!insertResponse.ok) {
-            const insertError = await insertResponse.text()
-            console.error('Insert also failed:', insertError)
-            throw new Error('Error: No se pudo crear tu perfil. Contacta soporte.')
-          }
+          throw new Error('Error: El perfil no se guardó correctamente. Intenta de nuevo.')
         }
-        console.log('SUCCESS: user_type set')
+        console.log('SUCCESS: Profile saved correctly')
       }
 
       // IMPORTANT: Keep onboarding data in localStorage as backup
