@@ -28,6 +28,7 @@ interface Stats {
   totalGigs: number
   pendingWithdrawals: number
   totalPendingAmount: number
+  pendingSupportMessages: number
 }
 
 interface User {
@@ -641,7 +642,8 @@ export default function AdminDashboard() {
     totalCompanies: 0,
     totalGigs: 0,
     pendingWithdrawals: 0,
-    totalPendingAmount: 0
+    totalPendingAmount: 0,
+    pendingSupportMessages: 0
   })
   const [withdrawals, setWithdrawals] = useState<WithdrawalRequest[]>([])
   const [processingId, setProcessingId] = useState<string | null>(null)
@@ -685,7 +687,7 @@ export default function AdminDashboard() {
       console.log('[Admin] Loading dashboard data...')
 
       // Load stats
-      const [usersRes, gigsRes, withdrawalsRes] = await Promise.all([
+      const [usersRes, gigsRes, withdrawalsRes, supportRes] = await Promise.all([
         fetch(`${SUPABASE_URL}/rest/v1/profiles?select=user_type`, {
           headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY }
         }),
@@ -693,6 +695,9 @@ export default function AdminDashboard() {
           headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY }
         }),
         fetch(`${SUPABASE_URL}/rest/v1/withdrawal_requests?select=*&order=created_at.desc`, {
+          headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY }
+        }),
+        fetch(`${SUPABASE_URL}/rest/v1/support_conversations?select=id,status&status=in.(waiting_agent,in_progress)`, {
           headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY }
         })
       ])
@@ -702,6 +707,7 @@ export default function AdminDashboard() {
       const users = usersRes.ok ? await usersRes.json() : []
       const gigs = gigsRes.ok ? await gigsRes.json() : []
       const allWithdrawals = withdrawalsRes.ok ? await withdrawalsRes.json() : []
+      const supportConversations = supportRes.ok ? await supportRes.json() : []
 
       console.log('[Admin] All withdrawals from DB:', allWithdrawals)
       console.log('[Admin] Withdrawals count:', allWithdrawals.length)
@@ -719,7 +725,8 @@ export default function AdminDashboard() {
         totalCompanies: companies,
         totalGigs: gigs.length,
         pendingWithdrawals: onlyPending.length,
-        totalPendingAmount: totalPending
+        totalPendingAmount: totalPending,
+        pendingSupportMessages: supportConversations.length
       })
 
       // Load withdrawal details with user info
@@ -956,7 +963,7 @@ export default function AdminDashboard() {
         {activeTab === 'overview' && (
           <div className="space-y-8">
             {/* Stats Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               {[
                 { label: 'Total Usuarios', value: stats.totalUsers, icon: '👥', color: 'from-blue-500 to-cyan-500' },
                 { label: 'Creadores', value: stats.totalCreators, icon: '🎨', color: 'from-violet-500 to-purple-500' },
@@ -972,6 +979,19 @@ export default function AdminDashboard() {
                   <p className="text-sm text-neutral-500 mt-1">{stat.label}</p>
                 </div>
               ))}
+              {/* Support Messages Card */}
+              <Link href="/admin/support" className="bg-neutral-900 rounded-2xl p-5 border border-neutral-800 hover:border-sky-500/50 transition-colors">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-2xl">💬</span>
+                  {stats.pendingSupportMessages > 0 && (
+                    <span className="px-2 py-0.5 text-xs bg-red-500 text-white rounded-full animate-pulse">
+                      {stats.pendingSupportMessages}
+                    </span>
+                  )}
+                </div>
+                <p className="text-3xl font-bold">{stats.pendingSupportMessages}</p>
+                <p className="text-sm text-neutral-500 mt-1">Soporte Pendiente</p>
+              </Link>
             </div>
 
             {/* Pending Withdrawals Alert */}

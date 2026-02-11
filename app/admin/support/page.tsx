@@ -18,7 +18,7 @@ interface Conversation {
   created_at: string
   updated_at: string
   last_message_at: string
-  unread_count?: number
+  rating?: number
 }
 
 interface Message {
@@ -27,8 +27,6 @@ interface Message {
   sender_type: 'user' | 'bot' | 'agent'
   sender_id: string | null
   content: string
-  is_escalated: boolean
-  read_at: string | null
   created_at: string
 }
 
@@ -38,10 +36,9 @@ export default function AdminSupportPage() {
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
-  const [loadingMessages, setLoadingMessages] = useState(false)
   const [newMessage, setNewMessage] = useState('')
   const [sending, setSending] = useState(false)
-  const [filter, setFilter] = useState<'all' | 'open' | 'waiting_agent' | 'in_progress' | 'resolved'>('all')
+  const [filter, setFilter] = useState<'pending' | 'resolved'>('pending')
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const getToken = () => localStorage.getItem('sb-access-token')
@@ -53,146 +50,80 @@ export default function AdminSupportPage() {
   useEffect(() => {
     if (selectedConversation) {
       loadMessages(selectedConversation.id)
-      // Mark messages as read
-      markMessagesAsRead(selectedConversation.id)
     }
   }, [selectedConversation])
 
   useEffect(() => {
-    // Scroll to bottom when messages change
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
   // Poll for new messages
   useEffect(() => {
     if (!selectedConversation) return
-
-    const interval = setInterval(() => {
-      loadMessages(selectedConversation.id)
-    }, 5000)
-
+    const interval = setInterval(() => loadMessages(selectedConversation.id), 5000)
     return () => clearInterval(interval)
   }, [selectedConversation])
 
   // Poll for new conversations
   useEffect(() => {
     if (!isAdmin) return
-
-    const interval = setInterval(() => {
-      loadConversations()
-    }, 10000)
-
+    const interval = setInterval(() => loadConversations(), 10000)
     return () => clearInterval(interval)
-  }, [isAdmin])
+  }, [isAdmin, filter])
 
   const checkAdminAccess = async () => {
-    try {
-      const userStr = localStorage.getItem('sb-user')
-      if (!userStr) {
-        window.location.href = '/auth/login'
-        return
-      }
-
-      const user = JSON.parse(userStr)
-
-      if (user.email?.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
-        alert('Acceso denegado. Solo administradores.')
-        window.location.href = '/'
-        return
-      }
-
-      setIsAdmin(true)
-      await loadConversations()
-    } catch (err) {
-      console.error('Admin check error:', err)
-      window.location.href = '/'
+    const userStr = localStorage.getItem('sb-user')
+    if (!userStr) {
+      window.location.href = '/auth/login'
+      return
     }
+    const user = JSON.parse(userStr)
+    if (user.email?.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+      alert('Acceso denegado')
+      window.location.href = '/'
+      return
+    }
+    setIsAdmin(true)
+    await loadConversations()
   }
 
   const loadConversations = async () => {
     const token = getToken()
-    if (!token) {
-      setLoading(false)
-      return
-    }
+    if (!token) return
 
     try {
+      const statusFilter = filter === 'pending'
+        ? 'status=in.(waiting_agent,in_progress,open)'
+        : 'status=eq.resolved'
+
       const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/support_conversations?select=*&order=last_message_at.desc`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'apikey': SUPABASE_ANON_KEY
-          }
-        }
+        `${SUPABASE_URL}/rest/v1/support_conversations?${statusFilter}&order=last_message_at.desc`,
+        { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
       )
-
-      if (!res.ok) {
-        console.error('Error loading conversations:', res.status)
-        setLoading(false)
-        return
+      if (res.ok) {
+        const data = await res.json()
+        setConversations(data)
       }
-
-      const data = await res.json()
-      // Set conversations directly without counting unread (faster load)
-      setConversations(data.map((c: Conversation) => ({ ...c, unread_count: 0 })))
-      setLoading(false)
     } catch (err) {
       console.error('Error loading conversations:', err)
-      setLoading(false)
     }
+    setLoading(false)
   }
 
   const loadMessages = async (conversationId: string) => {
     const token = getToken()
     if (!token) return
 
-    setLoadingMessages(true)
-
     try {
       const res = await fetch(
         `${SUPABASE_URL}/rest/v1/support_messages?conversation_id=eq.${conversationId}&order=created_at.asc`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'apikey': SUPABASE_ANON_KEY
-          }
-        }
+        { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
       )
-
       if (res.ok) {
-        const data = await res.json()
-        setMessages(data)
+        setMessages(await res.json())
       }
     } catch (err) {
       console.error('Error loading messages:', err)
-    }
-
-    setLoadingMessages(false)
-  }
-
-  const markMessagesAsRead = async (conversationId: string) => {
-    const token = getToken()
-    if (!token) return
-
-    try {
-      await fetch(
-        `${SUPABASE_URL}/rest/v1/support_messages?conversation_id=eq.${conversationId}&read_at=is.null&sender_type=eq.user`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'apikey': SUPABASE_ANON_KEY,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=minimal'
-          },
-          body: JSON.stringify({
-            read_at: new Date().toISOString()
-          })
-        }
-      )
-    } catch (err) {
-      console.error('Error marking messages as read:', err)
     }
   }
 
@@ -202,14 +133,12 @@ export default function AdminSupportPage() {
     const token = getToken()
     const userStr = localStorage.getItem('sb-user')
     const user = userStr ? JSON.parse(userStr) : null
-
     if (!token || !user) return
 
     setSending(true)
 
     try {
-      // Send message
-      const messageRes = await fetch(`${SUPABASE_URL}/rest/v1/support_messages`, {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/support_messages`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -221,17 +150,16 @@ export default function AdminSupportPage() {
           conversation_id: selectedConversation.id,
           sender_type: 'agent',
           sender_id: user.id,
-          content: newMessage.trim(),
-          is_escalated: false
+          content: newMessage.trim()
         })
       })
 
-      if (messageRes.ok) {
-        const newMsg = await messageRes.json()
+      if (res.ok) {
+        const newMsg = await res.json()
         setMessages(prev => [...prev, newMsg[0]])
         setNewMessage('')
 
-        // Update conversation status to in_progress
+        // Update status to in_progress
         await fetch(
           `${SUPABASE_URL}/rest/v1/support_conversations?id=eq.${selectedConversation.id}`,
           {
@@ -239,59 +167,74 @@ export default function AdminSupportPage() {
             headers: {
               'Authorization': `Bearer ${token}`,
               'apikey': SUPABASE_ANON_KEY,
-              'Content-Type': 'application/json',
-              'Prefer': 'return=minimal'
+              'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-              status: 'in_progress',
-              assigned_agent_id: user.id,
-              updated_at: new Date().toISOString()
-            })
+            body: JSON.stringify({ status: 'in_progress' })
           }
-        )
-
-        // Update local state
-        setSelectedConversation(prev => prev ? { ...prev, status: 'in_progress' } : null)
-        setConversations(prev =>
-          prev.map(c => c.id === selectedConversation.id ? { ...c, status: 'in_progress' } : c)
         )
       }
     } catch (err) {
-      console.error('Error sending message:', err)
+      console.error('Error sending:', err)
     }
-
     setSending(false)
   }
 
-  const updateConversationStatus = async (conversationId: string, status: string) => {
+  const resolveConversation = async (id: string) => {
     const token = getToken()
     if (!token) return
 
     try {
       await fetch(
-        `${SUPABASE_URL}/rest/v1/support_conversations?id=eq.${conversationId}`,
+        `${SUPABASE_URL}/rest/v1/support_conversations?id=eq.${id}`,
         {
           method: 'PATCH',
           headers: {
             'Authorization': `Bearer ${token}`,
             'apikey': SUPABASE_ANON_KEY,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=minimal'
+            'Content-Type': 'application/json'
           },
-          body: JSON.stringify({
-            status,
-            resolved_at: status === 'resolved' ? new Date().toISOString() : null,
-            updated_at: new Date().toISOString()
-          })
+          body: JSON.stringify({ status: 'resolved', resolved_at: new Date().toISOString() })
         }
       )
-
-      setSelectedConversation(prev => prev ? { ...prev, status } : null)
-      setConversations(prev =>
-        prev.map(c => c.id === conversationId ? { ...c, status } : c)
-      )
+      setConversations(prev => prev.filter(c => c.id !== id))
+      if (selectedConversation?.id === id) {
+        setSelectedConversation(null)
+        setMessages([])
+      }
     } catch (err) {
-      console.error('Error updating status:', err)
+      console.error('Error resolving:', err)
+    }
+  }
+
+  const deleteConversation = async (id: string) => {
+    if (!confirm('Eliminar esta conversacion?')) return
+    const token = getToken()
+    if (!token) return
+
+    try {
+      // Delete messages first
+      await fetch(
+        `${SUPABASE_URL}/rest/v1/support_messages?conversation_id=eq.${id}`,
+        {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY }
+        }
+      )
+      // Delete conversation
+      await fetch(
+        `${SUPABASE_URL}/rest/v1/support_conversations?id=eq.${id}`,
+        {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY }
+        }
+      )
+      setConversations(prev => prev.filter(c => c.id !== id))
+      if (selectedConversation?.id === id) {
+        setSelectedConversation(null)
+        setMessages([])
+      }
+    } catch (err) {
+      console.error('Error deleting:', err)
     }
   }
 
@@ -299,318 +242,208 @@ export default function AdminSupportPage() {
     const d = new Date(date)
     const now = new Date()
     const diff = now.getTime() - d.getTime()
-    const minutes = Math.floor(diff / 60000)
+    const mins = Math.floor(diff / 60000)
     const hours = Math.floor(diff / 3600000)
-    const days = Math.floor(diff / 86400000)
 
-    if (minutes < 1) return 'Ahora'
-    if (minutes < 60) return `${minutes}m`
+    if (mins < 1) return 'Ahora'
+    if (mins < 60) return `${mins}m`
     if (hours < 24) return `${hours}h`
-    if (days < 7) return `${days}d`
     return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
   }
-
-  const getStatusBadge = (status: string) => {
-    const badges: Record<string, { bg: string; text: string; label: string }> = {
-      'open': { bg: 'bg-blue-500/20', text: 'text-blue-400', label: 'Nuevo' },
-      'waiting_agent': { bg: 'bg-amber-500/20', text: 'text-amber-400', label: 'Esperando agente' },
-      'in_progress': { bg: 'bg-green-500/20', text: 'text-green-400', label: 'En progreso' },
-      'resolved': { bg: 'bg-neutral-500/20', text: 'text-neutral-400', label: 'Resuelto' },
-      'closed': { bg: 'bg-neutral-700/20', text: 'text-neutral-500', label: 'Cerrado' }
-    }
-    return badges[status] || badges['open']
-  }
-
-  const getPriorityBadge = (priority: string) => {
-    const badges: Record<string, { bg: string; text: string }> = {
-      'low': { bg: 'bg-neutral-500/20', text: 'text-neutral-400' },
-      'normal': { bg: 'bg-blue-500/20', text: 'text-blue-400' },
-      'high': { bg: 'bg-orange-500/20', text: 'text-orange-400' },
-      'urgent': { bg: 'bg-red-500/20', text: 'text-red-400' }
-    }
-    return badges[priority] || badges['normal']
-  }
-
-  const filteredConversations = conversations.filter(c => {
-    if (filter === 'all') return true
-    return c.status === filter
-  })
 
   if (loading) {
     return (
       <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-10 h-10 border-4 border-sky-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-neutral-400">Cargando soporte...</p>
+        <div className="w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  if (!isAdmin) return null
+
+  // Chat view (when conversation selected)
+  if (selectedConversation) {
+    return (
+      <div className="min-h-screen bg-neutral-950 text-white flex flex-col">
+        {/* Header */}
+        <div className="bg-neutral-900 px-4 py-3 border-b border-neutral-800 flex items-center gap-3">
+          <button onClick={() => { setSelectedConversation(null); setMessages([]) }} className="p-2">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <div className="flex-1">
+            <p className="font-semibold">{selectedConversation.user_name}</p>
+            <p className="text-xs text-neutral-400">
+              {selectedConversation.user_type === 'creator' ? 'Creador' : 'Empresa'} • {selectedConversation.user_email}
+            </p>
+          </div>
+          <button
+            onClick={() => resolveConversation(selectedConversation.id)}
+            className="px-3 py-1.5 bg-green-500/20 text-green-400 rounded-lg text-sm"
+          >
+            Resolver
+          </button>
+        </div>
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {messages.map(msg => (
+            <div key={msg.id} className={`flex ${msg.sender_type === 'agent' ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-[80%] rounded-xl px-4 py-2.5 ${
+                msg.sender_type === 'agent'
+                  ? 'bg-sky-600 text-white'
+                  : msg.sender_type === 'bot'
+                  ? 'bg-neutral-700 text-neutral-200'
+                  : 'bg-neutral-800 text-white'
+              }`}>
+                <p className="text-xs opacity-70 mb-1">
+                  {msg.sender_type === 'agent' ? 'Tu' : msg.sender_type === 'bot' ? 'Bot' : selectedConversation.user_name}
+                </p>
+                <p className="text-sm">{msg.content}</p>
+                <p className="text-xs opacity-50 mt-1">
+                  {new Date(msg.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                </p>
+              </div>
+            </div>
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Input */}
+        <div className="p-4 border-t border-neutral-800 bg-neutral-900">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+              placeholder="Escribe tu respuesta..."
+              className="flex-1 px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-sm focus:outline-none focus:border-sky-500"
+            />
+            <button
+              onClick={sendMessage}
+              disabled={sending || !newMessage.trim()}
+              className="px-6 py-3 bg-sky-500 rounded-xl font-medium disabled:opacity-50"
+            >
+              {sending ? '...' : 'Enviar'}
+            </button>
+          </div>
+          {/* Quick responses */}
+          <div className="flex gap-2 mt-2 overflow-x-auto pb-2">
+            {['Hola, estoy revisando tu caso.', 'Gracias por contactarnos.', 'Problema resuelto.'].map(r => (
+              <button
+                key={r}
+                onClick={() => setNewMessage(r)}
+                className="px-3 py-1.5 bg-neutral-800 rounded-lg text-xs whitespace-nowrap text-neutral-400"
+              >
+                {r}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     )
   }
 
-  if (!isAdmin) {
-    return null
-  }
-
+  // Conversations list
   return (
     <div className="min-h-screen bg-neutral-950 text-white">
       {/* Header */}
-      <div className="bg-neutral-900 border-b border-neutral-800 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-violet-500 flex items-center justify-center">
-                <span className="text-xl">💬</span>
-              </div>
-              <div>
-                <h1 className="text-xl font-bold">Panel de Soporte</h1>
-                <p className="text-sm text-neutral-400">
-                  {conversations.filter(c => c.status === 'waiting_agent').length} conversaciones esperando respuesta
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Link
-                href="/admin"
-                className="px-4 py-2 text-neutral-400 hover:text-white transition-colors text-sm"
-              >
-                ← Admin Dashboard
-              </Link>
-            </div>
+      <div className="bg-neutral-900 px-4 py-4 border-b border-neutral-800">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <Link href="/admin" className="p-2 hover:bg-neutral-800 rounded-lg">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </Link>
+            <h1 className="text-xl font-bold">Soporte</h1>
           </div>
+          <span className="text-sm text-neutral-400">{conversations.length} mensajes</span>
+        </div>
+
+        {/* Filter tabs */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => { setFilter('pending'); loadConversations() }}
+            className={`flex-1 py-2 rounded-lg text-sm font-medium ${
+              filter === 'pending' ? 'bg-sky-500 text-white' : 'bg-neutral-800 text-neutral-400'
+            }`}
+          >
+            Pendientes
+          </button>
+          <button
+            onClick={() => { setFilter('resolved'); loadConversations() }}
+            className={`flex-1 py-2 rounded-lg text-sm font-medium ${
+              filter === 'resolved' ? 'bg-sky-500 text-white' : 'bg-neutral-800 text-neutral-400'
+            }`}
+          >
+            Resueltos
+          </button>
         </div>
       </div>
 
-      <div className="flex h-[calc(100vh-73px)]">
-        {/* Conversations List */}
-        <div className="w-96 border-r border-neutral-800 flex flex-col">
-          {/* Filters */}
-          <div className="p-4 border-b border-neutral-800">
-            <div className="flex gap-2 flex-wrap">
-              {[
-                { id: 'all', label: 'Todos' },
-                { id: 'waiting_agent', label: 'Esperando' },
-                { id: 'in_progress', label: 'En progreso' },
-                { id: 'resolved', label: 'Resueltos' }
-              ].map(f => (
-                <button
-                  key={f.id}
-                  onClick={() => setFilter(f.id as any)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                    filter === f.id
-                      ? 'bg-sky-500 text-white'
-                      : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700'
-                  }`}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
+      {/* Conversations List */}
+      <div className="divide-y divide-neutral-800">
+        {conversations.length === 0 ? (
+          <div className="p-12 text-center">
+            <span className="text-4xl mb-4 block">{filter === 'pending' ? '✅' : '📭'}</span>
+            <p className="text-neutral-500">
+              {filter === 'pending' ? 'No hay mensajes pendientes' : 'No hay mensajes resueltos'}
+            </p>
           </div>
-
-          {/* Conversations */}
-          <div className="flex-1 overflow-y-auto">
-            {filteredConversations.length === 0 ? (
-              <div className="p-8 text-center">
-                <span className="text-4xl mb-4 block">📭</span>
-                <p className="text-neutral-500">No hay conversaciones</p>
-              </div>
-            ) : (
-              filteredConversations.map(conv => (
-                <button
-                  key={conv.id}
-                  onClick={() => setSelectedConversation(conv)}
-                  className={`w-full p-4 text-left border-b border-neutral-800/50 hover:bg-neutral-900 transition-colors ${
-                    selectedConversation?.id === conv.id ? 'bg-neutral-900' : ''
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
-                        conv.user_type === 'creator'
-                          ? 'bg-violet-500/30 text-violet-300'
-                          : 'bg-emerald-500/30 text-emerald-300'
-                      }`}>
-                        {conv.user_name?.charAt(0) || '?'}
-                      </div>
-                      <div>
-                        <p className="font-medium text-sm">{conv.user_name || 'Usuario'}</p>
-                        <p className="text-xs text-neutral-500">
-                          {conv.user_type === 'creator' ? 'Creador' : 'Empresa'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {conv.unread_count && conv.unread_count > 0 && (
-                        <span className="px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">
-                          {conv.unread_count}
-                        </span>
-                      )}
-                      <span className="text-xs text-neutral-500">
-                        {formatTime(conv.last_message_at || conv.updated_at)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <p className="text-sm text-neutral-300 truncate mb-2">
-                    {conv.subject || 'Sin asunto'}
-                  </p>
-
-                  <div className="flex items-center gap-2">
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusBadge(conv.status).bg} ${getStatusBadge(conv.status).text}`}>
-                      {getStatusBadge(conv.status).label}
-                    </span>
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${getPriorityBadge(conv.priority).bg} ${getPriorityBadge(conv.priority).text}`}>
-                      {conv.priority}
-                    </span>
-                  </div>
-                </button>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Chat Area */}
-        <div className="flex-1 flex flex-col">
-          {selectedConversation ? (
-            <>
-              {/* Chat Header */}
-              <div className="p-4 border-b border-neutral-800 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
-                    selectedConversation.user_type === 'creator'
-                      ? 'bg-violet-500/30 text-violet-300'
-                      : 'bg-emerald-500/30 text-emerald-300'
-                  }`}>
-                    {selectedConversation.user_name?.charAt(0) || '?'}
-                  </div>
-                  <div>
-                    <p className="font-semibold">{selectedConversation.user_name || 'Usuario'}</p>
-                    <p className="text-sm text-neutral-400">
-                      {selectedConversation.user_email} • {selectedConversation.user_type === 'creator' ? 'Creador' : 'Empresa'}
-                    </p>
-                  </div>
+        ) : (
+          conversations.map(conv => (
+            <div key={conv.id} className="p-4 hover:bg-neutral-900/50">
+              <div className="flex items-start gap-3">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
+                  conv.user_type === 'creator' ? 'bg-violet-500/30 text-violet-300' : 'bg-emerald-500/30 text-emerald-300'
+                }`}>
+                  {conv.user_name?.charAt(0) || '?'}
                 </div>
-
-                <div className="flex items-center gap-2">
-                  {selectedConversation.status !== 'resolved' && (
-                    <button
-                      onClick={() => updateConversationStatus(selectedConversation.id, 'resolved')}
-                      className="px-4 py-2 bg-green-500/20 text-green-400 rounded-lg text-sm font-medium hover:bg-green-500/30 transition-colors"
-                    >
-                      Marcar como resuelto
-                    </button>
-                  )}
-                  {selectedConversation.status === 'resolved' && (
-                    <button
-                      onClick={() => updateConversationStatus(selectedConversation.id, 'in_progress')}
-                      className="px-4 py-2 bg-amber-500/20 text-amber-400 rounded-lg text-sm font-medium hover:bg-amber-500/30 transition-colors"
-                    >
-                      Reabrir
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {loadingMessages ? (
-                  <div className="flex justify-center py-8">
-                    <div className="w-6 h-6 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
+                <div className="flex-1 min-w-0" onClick={() => setSelectedConversation(conv)}>
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium truncate">{conv.user_name}</p>
+                    <span className="text-xs text-neutral-500">{formatTime(conv.last_message_at || conv.created_at)}</span>
                   </div>
-                ) : (
-                  <>
-                    {messages.map(message => (
-                      <div
-                        key={message.id}
-                        className={`flex ${message.sender_type === 'agent' ? 'justify-end' : 'justify-start'}`}
-                      >
-                        <div className={`max-w-[70%] ${
-                          message.sender_type === 'agent'
-                            ? 'bg-sky-500 text-white'
-                            : message.sender_type === 'bot'
-                            ? 'bg-neutral-700 text-neutral-200'
-                            : 'bg-neutral-800 text-white'
-                        } rounded-2xl px-4 py-3`}>
-                          {message.sender_type !== 'agent' && (
-                            <p className="text-xs text-neutral-400 mb-1">
-                              {message.sender_type === 'bot' ? 'Bot' : selectedConversation.user_name}
-                            </p>
-                          )}
-                          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                          <p className={`text-xs mt-1 ${
-                            message.sender_type === 'agent' ? 'text-sky-200' : 'text-neutral-500'
-                          }`}>
-                            {new Date(message.created_at).toLocaleTimeString('es-ES', {
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                    <div ref={messagesEndRef} />
-                  </>
-                )}
-              </div>
-
-              {/* Message Input */}
-              <div className="p-4 border-t border-neutral-800">
-                <div className="flex gap-3">
-                  <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault()
-                        sendMessage()
-                      }
-                    }}
-                    placeholder="Escribe tu respuesta..."
-                    className="flex-1 bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 focus:outline-none focus:border-sky-500"
-                  />
-                  <button
-                    onClick={sendMessage}
-                    disabled={sending || !newMessage.trim()}
-                    className="px-6 py-3 bg-sky-500 text-white rounded-xl font-medium hover:bg-sky-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {sending ? (
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      'Enviar'
+                  <p className="text-sm text-neutral-400 truncate">{conv.subject || 'Solicitud de soporte'}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs text-neutral-500">
+                      {conv.user_type === 'creator' ? 'Creador' : 'Empresa'}
+                    </span>
+                    {conv.rating && (
+                      <span className="text-xs text-yellow-400">{'★'.repeat(conv.rating)}</span>
                     )}
-                  </button>
+                  </div>
                 </div>
-
-                {/* Quick Responses */}
-                <div className="flex gap-2 mt-3 flex-wrap">
-                  {[
-                    'Hola, estoy revisando tu caso.',
-                    'Gracias por contactarnos.',
-                    'Ya fue resuelto tu problema.',
-                    'Necesito más información para ayudarte.'
-                  ].map(response => (
+                <div className="flex flex-col gap-1">
+                  {filter === 'pending' ? (
                     <button
-                      key={response}
-                      onClick={() => setNewMessage(response)}
-                      className="px-3 py-1.5 bg-neutral-800 text-neutral-400 rounded-lg text-xs hover:bg-neutral-700 transition-colors"
+                      onClick={() => resolveConversation(conv.id)}
+                      className="p-2 text-green-400 hover:bg-green-500/20 rounded-lg"
+                      title="Resolver"
                     >
-                      {response}
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
                     </button>
-                  ))}
+                  ) : (
+                    <button
+                      onClick={() => deleteConversation(conv.id)}
+                      className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg"
+                      title="Eliminar"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  )}
                 </div>
-              </div>
-            </>
-          ) : (
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-center">
-                <span className="text-6xl mb-4 block">💬</span>
-                <h3 className="text-xl font-semibold mb-2">Panel de Soporte</h3>
-                <p className="text-neutral-500">Selecciona una conversación para responder</p>
               </div>
             </div>
-          )}
-        </div>
+          ))
+        )}
       </div>
     </div>
   )

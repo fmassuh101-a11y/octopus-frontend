@@ -594,19 +594,19 @@ export default function SupportChatWidget() {
                     msg.type === 'user'
                       ? 'bg-emerald-600 text-white'
                       : msg.type === 'agent'
-                      ? 'bg-emerald-700 text-white'
+                      ? 'bg-sky-600 text-white'
                       : msg.type === 'system'
                       ? 'bg-neutral-800 text-neutral-300 text-center w-full'
                       : 'bg-neutral-800 text-neutral-200'
                   }`}
                 >
                   {msg.type === 'agent' && (
-                    <p className="text-xs text-emerald-200 mb-1 font-medium">Agente</p>
+                    <p className="text-xs text-sky-200 mb-1 font-medium">Soporte Octopus</p>
                   )}
                   <p className="text-sm leading-relaxed">{msg.content}</p>
                   <p className={`text-xs mt-1.5 ${
                     msg.type === 'user' ? 'text-emerald-200' :
-                    msg.type === 'agent' ? 'text-emerald-200' : 'text-neutral-500'
+                    msg.type === 'agent' ? 'text-sky-200' : 'text-neutral-500'
                   }`}>
                     {formatTime(msg.timestamp)}
                   </p>
