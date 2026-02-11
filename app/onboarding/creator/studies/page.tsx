@@ -19,6 +19,12 @@ export default function CreatorStudiesPage() {
   }, [])
 
   const careers = [
+    // NO ESTUDIO / OTRAS SITUACIONES
+    'No estudio actualmente',
+    'Egresado / Graduado',
+    'Trabajando',
+    'Buscando oportunidades',
+
     // NEGOCIOS Y ADMINISTRACIÓN
     'Administración de Empresas',
     'Contaduría Pública',

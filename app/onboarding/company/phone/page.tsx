@@ -2,11 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { countries } from '@/lib/data/countries'
 
 export default function CompanyPhonePage() {
   const [phoneNumber, setPhoneNumber] = useState('')
   const [countryCode, setCountryCode] = useState('+56')
   const [formData, setFormData] = useState<any>({})
+  const [showCountrySearch, setShowCountrySearch] = useState(false)
+  const [countrySearchQuery, setCountrySearchQuery] = useState('')
 
   useEffect(() => {
     const token = localStorage.getItem('sb-access-token')
@@ -21,8 +24,14 @@ export default function CompanyPhonePage() {
     if (existing.countryCode) setCountryCode(existing.countryCode)
   }, [])
 
+  // Only allow numbers in phone input
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '') // Remove all non-digits
+    setPhoneNumber(value)
+  }
+
   const handleContinue = () => {
-    if (!phoneNumber) return
+    if (!phoneNumber || phoneNumber.length < 7) return
 
     localStorage.setItem('companyOnboarding', JSON.stringify({
       ...formData,
@@ -32,6 +41,14 @@ export default function CompanyPhonePage() {
 
     window.location.href = '/onboarding/company/about'
   }
+
+  const filteredCountries = countries.filter(country =>
+    country.name.toLowerCase().includes(countrySearchQuery.toLowerCase()) ||
+    country.code.includes(countrySearchQuery) ||
+    country.searchKeys.some(key => key.includes(countrySearchQuery.toLowerCase()))
+  )
+
+  const selectedCountry = countries.find(c => c.code === countryCode) || countries.find(c => c.code === '+56')
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-50 flex">
@@ -65,32 +82,67 @@ export default function CompanyPhonePage() {
         <p className="text-gray-500 mb-8">Ingresa tu número de contacto. Nunca lo compartiremos con nadie.</p>
 
         {/* Form */}
-        <div>
+        <div className="relative">
           <label className="block text-sm font-semibold text-gray-700 mb-2">Teléfono *</label>
           <div className="flex">
-            <select
-              value={countryCode}
-              onChange={(e) => setCountryCode(e.target.value)}
-              className="px-4 py-3.5 border border-gray-200 rounded-l-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-slate-500 font-medium"
+            <button
+              type="button"
+              onClick={() => setShowCountrySearch(!showCountrySearch)}
+              className="px-4 py-3.5 border border-gray-200 rounded-l-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-slate-500 font-medium flex items-center gap-2 min-w-[120px]"
             >
-              <option value="+56">🇨🇱 +56</option>
-              <option value="+52">🇲🇽 +52</option>
-              <option value="+57">🇨🇴 +57</option>
-              <option value="+54">🇦🇷 +54</option>
-              <option value="+55">🇧🇷 +55</option>
-              <option value="+51">🇵🇪 +51</option>
-              <option value="+593">🇪🇨 +593</option>
-              <option value="+1">🇺🇸 +1</option>
-              <option value="+34">🇪🇸 +34</option>
-            </select>
+              <span>{selectedCountry?.flag}</span>
+              <span>{selectedCountry?.code}</span>
+              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
             <input
               type="tel"
+              inputMode="numeric"
+              pattern="[0-9]*"
               value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              placeholder="9 1234 5678"
+              onChange={handlePhoneChange}
+              placeholder="912345678"
               className="flex-1 px-4 py-3.5 border border-l-0 border-gray-200 rounded-r-xl focus:outline-none focus:ring-2 focus:ring-slate-500 bg-white shadow-sm"
             />
           </div>
+
+          {/* Country Search Dropdown */}
+          {showCountrySearch && (
+            <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-xl mt-2 shadow-xl z-20 max-h-80 overflow-hidden">
+              <div className="p-3 border-b border-gray-100">
+                <input
+                  type="text"
+                  value={countrySearchQuery}
+                  onChange={(e) => setCountrySearchQuery(e.target.value)}
+                  placeholder="Buscar país..."
+                  className="w-full p-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
+                  autoFocus
+                />
+              </div>
+              <div className="max-h-60 overflow-y-auto">
+                {filteredCountries.map((country, index) => (
+                  <button
+                    key={`${country.code}-${country.name}-${index}`}
+                    onClick={() => {
+                      setCountryCode(country.code)
+                      setShowCountrySearch(false)
+                      setCountrySearchQuery('')
+                    }}
+                    className="w-full p-3 text-left hover:bg-slate-50 flex items-center gap-3 border-b border-gray-50 last:border-b-0"
+                  >
+                    <span className="text-xl">{country.flag}</span>
+                    <span className="flex-1 font-medium text-gray-900">{country.name}</span>
+                    <span className="text-gray-500">{country.code}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {phoneNumber && phoneNumber.length < 7 && (
+            <p className="text-red-500 text-sm mt-2">El número debe tener al menos 7 dígitos</p>
+          )}
         </div>
 
         {/* Buttons */}

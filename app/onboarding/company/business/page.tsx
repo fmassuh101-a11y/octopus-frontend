@@ -8,6 +8,7 @@ export default function CompanyBusinessPage() {
   const [website, setWebsite] = useState('')
   const [appStoreUrl, setAppStoreUrl] = useState('')
   const [user, setUser] = useState<any>(null)
+  const [errors, setErrors] = useState<{companyName?: string, website?: string, appStoreUrl?: string}>({})
 
   useEffect(() => {
     const userStr = localStorage.getItem('sb-user')
@@ -24,15 +25,67 @@ export default function CompanyBusinessPage() {
     if (existing.appStoreUrl) setAppStoreUrl(existing.appStoreUrl)
   }, [])
 
+  // Validate URL format
+  const isValidUrl = (url: string): boolean => {
+    if (!url) return false
+    // Add https:// if no protocol specified
+    const urlToCheck = url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`
+    try {
+      const parsed = new URL(urlToCheck)
+      // Must have a valid domain with at least one dot
+      return parsed.hostname.includes('.') && parsed.hostname.length > 3
+    } catch {
+      return false
+    }
+  }
+
+  // Validate company name (at least 2 characters, no random letters)
+  const isValidCompanyName = (name: string): boolean => {
+    if (!name || name.length < 2) return false
+    // Must have at least one vowel (indicates real word)
+    const hasVowel = /[aeiouáéíóúAEIOUÁÉÍÓÚ]/.test(name)
+    return hasVowel
+  }
+
+  const validateForm = () => {
+    const newErrors: typeof errors = {}
+
+    if (!isValidCompanyName(companyName)) {
+      newErrors.companyName = 'Ingresa un nombre de empresa válido'
+    }
+
+    if (!isValidUrl(website)) {
+      newErrors.website = 'Ingresa una URL válida (ej: www.tuempresa.com)'
+    }
+
+    if (appStoreUrl && !isValidUrl(appStoreUrl)) {
+      newErrors.appStoreUrl = 'Ingresa una URL válida de App Store'
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
   const handleContinue = () => {
-    if (!companyName || !website) return
+    if (!validateForm()) return
+
+    // Format website with https:// if needed
+    let formattedWebsite = website
+    if (!website.startsWith('http://') && !website.startsWith('https://')) {
+      formattedWebsite = `https://${website}`
+    }
+
+    let formattedAppStoreUrl = appStoreUrl
+    if (appStoreUrl && !appStoreUrl.startsWith('http://') && !appStoreUrl.startsWith('https://')) {
+      formattedAppStoreUrl = `https://${appStoreUrl}`
+    }
 
     const data = JSON.parse(localStorage.getItem('companyOnboarding') || '{}')
     localStorage.setItem('companyOnboarding', JSON.stringify({
       ...data,
-      companyName,
-      website,
-      appStoreUrl
+      companyName: companyName.trim(),
+      website: formattedWebsite,
+      appStoreUrl: formattedAppStoreUrl
     }))
 
     window.location.href = '/onboarding/company/phone'
@@ -76,32 +129,45 @@ export default function CompanyBusinessPage() {
             <input
               type="text"
               value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
-              placeholder="Ej: Octopus"
-              className="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent bg-white shadow-sm"
+              onChange={(e) => {
+                setCompanyName(e.target.value)
+                if (errors.companyName) setErrors({...errors, companyName: undefined})
+              }}
+              placeholder="Ej: Octopus, Nike, Apple"
+              className={`w-full px-4 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent bg-white shadow-sm ${errors.companyName ? 'border-red-500' : 'border-gray-200'}`}
             />
+            {errors.companyName && <p className="text-red-500 text-sm mt-1">{errors.companyName}</p>}
           </div>
 
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Sitio web *</label>
             <input
-              type="text"
+              type="url"
               value={website}
-              onChange={(e) => setWebsite(e.target.value)}
-              placeholder="https://www.tuempresa.com"
-              className="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent bg-white shadow-sm"
+              onChange={(e) => {
+                setWebsite(e.target.value)
+                if (errors.website) setErrors({...errors, website: undefined})
+              }}
+              placeholder="www.tuempresa.com"
+              className={`w-full px-4 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent bg-white shadow-sm ${errors.website ? 'border-red-500' : 'border-gray-200'}`}
             />
+            {errors.website && <p className="text-red-500 text-sm mt-1">{errors.website}</p>}
+            <p className="text-gray-400 text-xs mt-1">Ejemplo: www.miempresa.com o https://miempresa.com</p>
           </div>
 
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">URL de App Store (opcional)</label>
             <input
-              type="text"
+              type="url"
               value={appStoreUrl}
-              onChange={(e) => setAppStoreUrl(e.target.value)}
-              placeholder="https://apps.apple.com/app/tu-app"
-              className="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent bg-white shadow-sm"
+              onChange={(e) => {
+                setAppStoreUrl(e.target.value)
+                if (errors.appStoreUrl) setErrors({...errors, appStoreUrl: undefined})
+              }}
+              placeholder="apps.apple.com/app/tu-app"
+              className={`w-full px-4 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent bg-white shadow-sm ${errors.appStoreUrl ? 'border-red-500' : 'border-gray-200'}`}
             />
+            {errors.appStoreUrl && <p className="text-red-500 text-sm mt-1">{errors.appStoreUrl}</p>}
           </div>
         </div>
 

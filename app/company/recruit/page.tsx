@@ -101,18 +101,20 @@ export default function RecruitPage() {
           handle: p.tiktok || p.instagram || p.full_name?.replace(/\s+/g, '').toLowerCase() || 'creator',
           name: p.full_name || 'Creador',
           avatar: p.profile_photo_url || p.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.full_name || 'C')}&background=6366f1&color=fff`,
-          followers: Math.floor(Math.random() * 500000) + 10000,
-          following: Math.floor(Math.random() * 1000) + 100,
-          likes: Math.floor(Math.random() * 5000000) + 100000,
-          videos: Math.floor(Math.random() * 200) + 20,
-          bio: p.bio ? (typeof p.bio === 'string' && p.bio.startsWith('{') ? 'Creador de contenido' : p.bio) : 'Creador de contenido',
+          followers: 0, // Real data - will be fetched from TikTok API when verified
+          following: 0,
+          likes: 0,
+          videos: 0,
+          bio: p.bio ? (typeof p.bio === 'string' && p.bio.startsWith('{') ? '' : p.bio) : '',
           verified: !!p.tiktok || !!p.instagram,
-          engagement_rate: Math.random() * 8 + 2,
-          avg_views: Math.floor(Math.random() * 100000) + 5000,
+          engagement_rate: 0,
+          avg_views: 0,
           location: p.location,
           instagram: p.instagram,
           tiktok: p.tiktok,
-          youtube: p.youtube
+          youtube: p.youtube,
+          studies: p.studies,
+          academic_level: p.academic_level
         }))
         setAllCreators(creators)
         setFilteredCreators(creators)
@@ -161,14 +163,14 @@ export default function RecruitPage() {
             handle: p.tiktok || p.instagram || cleanHandle,
             name: p.full_name || cleanHandle,
             avatar: p.profile_photo_url || p.avatar_url || `https://ui-avatars.com/api/?name=${cleanHandle}&background=random`,
-            followers: Math.floor(Math.random() * 500000) + 10000,
-            following: Math.floor(Math.random() * 1000) + 100,
-            likes: Math.floor(Math.random() * 5000000) + 100000,
-            videos: Math.floor(Math.random() * 200) + 20,
-            bio: 'Creador de contenido',
+            followers: 0,
+            following: 0,
+            likes: 0,
+            videos: 0,
+            bio: p.bio || '',
             verified: !!p.tiktok || !!p.instagram,
-            engagement_rate: Math.random() * 8 + 2,
-            avg_views: Math.floor(Math.random() * 100000) + 5000,
+            engagement_rate: 0,
+            avg_views: 0,
             location: p.location,
             instagram: p.instagram,
             tiktok: p.tiktok,
@@ -430,15 +432,13 @@ export default function RecruitPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-4 mt-4 pt-4 border-t border-neutral-800">
-                      <div className="text-center flex-1">
-                        <p className="font-semibold text-white">{formatNumber(c.followers)}</p>
-                        <p className="text-xs text-neutral-500">Seguidores</p>
-                      </div>
-                      <div className="text-center flex-1">
-                        <p className="font-semibold text-white">{c.engagement_rate.toFixed(1)}%</p>
-                        <p className="text-xs text-neutral-500">Engagement</p>
-                      </div>
-                      <div className="flex gap-2">
+                      {c.location && (
+                        <div className="text-center flex-1">
+                          <p className="font-semibold text-white text-sm truncate">{c.location}</p>
+                          <p className="text-xs text-neutral-500">Ubicación</p>
+                        </div>
+                      )}
+                      <div className="flex gap-2 ml-auto">
                         {c.tiktok && (
                           <div className="w-6 h-6 bg-black rounded flex items-center justify-center">
                             <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
