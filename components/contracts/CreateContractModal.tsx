@@ -130,6 +130,27 @@ export default function CreateContractModal({
       const token = localStorage.getItem('sb-access-token')
       if (!token) throw new Error('No autorizado')
 
+      // Check if there's already a contract for this creator from this company
+      const existingRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/contracts?company_id=eq.${companyId}&creator_id=eq.${creatorId}&status=neq.cancelled&status=neq.rejected&select=id,title,status`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'apikey': SUPABASE_ANON_KEY
+          }
+        }
+      )
+
+      if (existingRes.ok) {
+        const existingContracts = await existingRes.json()
+        if (existingContracts.length > 0) {
+          const existing = existingContracts[0]
+          setError(`Ya tienes un contrato activo con este creador: "${existing.title}" (${existing.status}). Solo puedes tener 1 contrato por persona.`)
+          setLoading(false)
+          return
+        }
+      }
+
       const contractData = {
         application_id: applicationId,
         gig_id: gigId,

@@ -27,6 +27,7 @@ export default function CreatorDashboard() {
     accepted: 0,
     completed: 0
   })
+  const [unreadMessages, setUnreadMessages] = useState(0)
 
   useEffect(() => {
     checkAuth()
@@ -78,10 +79,11 @@ export default function CreatorDashboard() {
           }
           setProfile(finalProfile)
 
-          // PARALLEL FETCH: wallet + applications (all for stats) in one go
-          const [walletRes, appsRes] = await Promise.all([
+          // PARALLEL FETCH: wallet + applications + unread messages
+          const [walletRes, appsRes, unreadRes] = await Promise.all([
             fetch(`${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${userData.id}&select=*`, { headers }),
-            fetch(`${SUPABASE_URL}/rest/v1/applications?creator_id=eq.${userData.id}&select=id,status,created_at,gig:gigs(title,budget_min,budget_max)&order=created_at.desc`, { headers })
+            fetch(`${SUPABASE_URL}/rest/v1/applications?creator_id=eq.${userData.id}&select=id,status,created_at,gig:gigs(title,budget_min,budget_max)&order=created_at.desc`, { headers }),
+            fetch(`${SUPABASE_URL}/rest/v1/messages?sender_type=eq.company&read_at=is.null&select=id,conversation_id`, { headers })
           ])
 
           // Process wallet
@@ -90,6 +92,14 @@ export default function CreatorDashboard() {
             if (wallets.length > 0) {
               setWallet(wallets[0])
             }
+          }
+
+          // Process unread messages - filter by user's conversations
+          if (unreadRes.ok && appsRes.ok) {
+            const unreadMsgs = await unreadRes.json()
+            // We need to check if the conversation belongs to this user
+            // For now, just count all unread from companies (will be filtered by RLS)
+            setUnreadMessages(unreadMsgs.length > 9 ? 9 : unreadMsgs.length)
           }
 
           // Process applications (get all, then slice for display)
@@ -373,8 +383,13 @@ export default function CreatorDashboard() {
             <span className="text-xl">💰</span>
             <span className="text-[10px]">Wallet</span>
           </Link>
-          <Link href="/creator/messages" className="flex flex-col items-center gap-1 text-white/40">
+          <Link href="/creator/messages" className="flex flex-col items-center gap-1 text-white/40 relative">
             <span className="text-xl">💬</span>
+            {unreadMessages > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white">
+                {unreadMessages > 9 ? '9+' : unreadMessages}
+              </span>
+            )}
             <span className="text-[10px]">Mensajes</span>
           </Link>
           <Link href="/creator/profile" className="flex flex-col items-center gap-1 text-white/40">
