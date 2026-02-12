@@ -9,6 +9,7 @@ interface Conversation {
   company_id: string
   company_name: string
   application_ids: string[] // All applications with this company
+  gig_id?: string
   last_message?: string
   last_message_time?: string
   unread_count: number
@@ -23,6 +24,11 @@ interface Message {
   created_at: string
   sender_type: 'creator' | 'company'
   read_at?: string
+  metadata?: {
+    type?: 'video_delivery'
+    video_url?: string
+    delivery_id?: string
+  }
 }
 
 export default function CreatorMessagesPage() {
@@ -35,6 +41,10 @@ export default function CreatorMessagesPage() {
   const [newMessage, setNewMessage] = useState('')
   const [user, setUser] = useState<any>(null)
   const [sending, setSending] = useState(false)
+  const [showVideoModal, setShowVideoModal] = useState(false)
+  const [videoUrl, setVideoUrl] = useState('')
+  const [videoNotes, setVideoNotes] = useState('')
+  const [sendingVideo, setSendingVideo] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -71,7 +81,7 @@ export default function CreatorMessagesPage() {
   const loadConversations = async (userId: string, token: string) => {
     try {
       const appsResponse = await fetch(
-        `${SUPABASE_URL}/rest/v1/applications?creator_id=eq.${userId}&status=eq.accepted&select=id,company_id,gig_id`,
+        `${SUPABASE_URL}/rest/v1/applications?creator_id=eq.${userId}&status=eq.accepted&select=id,company_id,gig_id,contract_id`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -94,15 +104,16 @@ export default function CreatorMessagesPage() {
       }
 
       // Group applications by company_id (1 conversation per company)
-      const companyAppsMap = new Map<string, string[]>()
+      const companyAppsMap = new Map<string, { ids: string[], gig_id?: string }>()
       applications.forEach((app: any) => {
-        const existing = companyAppsMap.get(app.company_id) || []
-        existing.push(app.id)
+        const existing = companyAppsMap.get(app.company_id) || { ids: [], gig_id: undefined }
+        existing.ids.push(app.id)
+        if (!existing.gig_id) existing.gig_id = app.gig_id
         companyAppsMap.set(app.company_id, existing)
       })
 
       const companyIds = Array.from(companyAppsMap.keys())
-      const allAppIds = applications.map((a: any) => a.id)
+      const allAppIds = Array.from(companyAppsMap.values()).flatMap(v => v.ids)
       const headers = { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY }
 
       // PARALLEL: Fetch companies and messages at the same time
@@ -141,12 +152,13 @@ export default function CreatorMessagesPage() {
       })
 
       // Build conversations (1 per company)
-      const convs: Conversation[] = Array.from(companyAppsMap.entries()).map(([companyId, appIds]) => {
+      const convs: Conversation[] = Array.from(companyAppsMap.entries()).map(([companyId, appData]) => {
         const lastMsg = companyLastMessage.get(companyId)
         return {
           company_id: companyId,
           company_name: companyMap.get(companyId) || 'Empresa',
-          application_ids: appIds,
+          application_ids: appData.ids,
+          gig_id: appData.gig_id,
           last_message: lastMsg?.content,
           last_message_time: lastMsg?.time,
           unread_count: companyUnread.get(companyId) || 0,
@@ -273,6 +285,96 @@ export default function CreatorMessagesPage() {
     }
   }
 
+  const sendVideoDelivery = async () => {
+    if (!videoUrl.trim() || !selectedConversation || !user) return
+
+    setSendingVideo(true)
+    try {
+      const token = localStorage.getItem('sb-access-token')
+      const conversationId = selectedConversation.application_ids[0]
+
+      // Create delivery in content_deliveries table
+      const deliveryRes = await fetch(`${SUPABASE_URL}/rest/v1/content_deliveries`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'apikey': SUPABASE_ANON_KEY,
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify({
+          application_id: conversationId,
+          creator_id: user.id,
+          company_id: selectedConversation.company_id,
+          gig_id: selectedConversation.gig_id || conversationId,
+          title: `Entrega de contenido`,
+          description: videoNotes || null,
+          video_url: videoUrl,
+          status: 'submitted',
+          submitted_at: new Date().toISOString(),
+          revision_count: 0,
+          max_revisions: 3
+        })
+      })
+
+      let deliveryId = null
+      if (deliveryRes.ok) {
+        const [delivery] = await deliveryRes.json()
+        deliveryId = delivery?.id
+      }
+
+      // Send message with elegant card
+      const messageContent = `🎬 He enviado una entrega de contenido\n\n📎 ${videoUrl}${videoNotes ? `\n\n💬 "${videoNotes}"` : ''}`
+
+      const tempId = `temp-${Date.now()}`
+      const tempMsg: Message = {
+        id: tempId,
+        conversation_id: conversationId,
+        sender_id: user.id,
+        sender_type: 'creator',
+        content: messageContent,
+        created_at: new Date().toISOString(),
+        metadata: {
+          type: 'video_delivery',
+          video_url: videoUrl,
+          delivery_id: deliveryId
+        }
+      }
+      setMessages(prev => [...prev, tempMsg])
+
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'apikey': SUPABASE_ANON_KEY,
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify({
+          conversation_id: conversationId,
+          sender_id: user.id,
+          sender_type: 'creator',
+          content: messageContent
+        })
+      })
+
+      if (response.ok) {
+        const newMsg = await response.json()
+        setMessages(prev => prev.map(m => m.id === tempId ? { ...newMsg[0], metadata: tempMsg.metadata } : m))
+      }
+
+      setShowVideoModal(false)
+      setVideoUrl('')
+      setVideoNotes('')
+
+    } catch (err) {
+      console.error('Error sending video:', err)
+      alert('Error al enviar el video')
+    } finally {
+      setSendingVideo(false)
+    }
+  }
+
   const selectConversation = async (conv: Conversation) => {
     setSelectedConversation(conv)
     setConversations(prev => prev.map(c =>
@@ -393,21 +495,118 @@ export default function CreatorMessagesPage() {
                   <div className="space-y-2">
                     {group.messages.map((msg) => {
                       const isMe = msg.sender_type === 'creator'
+                      const isContractMessage = msg.content.includes('contrato:') || msg.content.includes('Te he enviado un contrato')
+                      const isCancelledContract = msg.content.includes('ha sido cancelado')
+                      const isAcceptedContract = msg.content.includes('He aceptado el contrato')
+                      const isVideoDelivery = msg.content.includes('🎬 He enviado una entrega')
+
+                      // Extract video URL from message
+                      const videoUrlMatch = msg.content.match(/📎 (https?:\/\/[^\s\n]+)/)
+                      const extractedVideoUrl = videoUrlMatch ? videoUrlMatch[1] : null
+
                       return (
                         <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`max-w-[75%] ${isMe ? 'bg-emerald-500 text-white' : 'bg-neutral-950 border border-neutral-800 text-white'} rounded-2xl px-4 py-2 shadow-sm`}>
-                            <p className="text-[15px] leading-relaxed">{msg.content}</p>
-                            <div className={`flex items-center gap-2 mt-1 ${isMe ? 'justify-end' : ''}`}>
-                              <span className={`text-[11px] ${isMe ? 'text-neutral-500' : 'text-neutral-500'}`}>
-                                {formatMessageTime(msg.created_at)}
-                              </span>
-                              {isMe && (
-                                <span className={`text-[10px] ${msg.read_at ? 'text-emerald-400' : 'text-neutral-400'}`}>
-                                  {msg.read_at ? '✓✓ Visto' : '✓ Enviado'}
-                                </span>
+                          {/* Video Delivery Card - Elegant Design */}
+                          {isVideoDelivery && isMe ? (
+                            <div className="max-w-[85%] bg-gradient-to-br from-neutral-900 to-neutral-800 border border-yellow-500/30 rounded-2xl overflow-hidden shadow-lg">
+                              {/* Header */}
+                              <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 px-4 py-3 border-b border-yellow-500/20">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center">
+                                    <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                      <path d="M8 5v14l11-7z"/>
+                                    </svg>
+                                  </div>
+                                  <div>
+                                    <p className="font-semibold text-white text-sm">Entrega de Contenido</p>
+                                    <p className="text-xs text-yellow-400">Video enviado para revisión</p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Video Link */}
+                              {extractedVideoUrl && (
+                                <a
+                                  href={extractedVideoUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="block px-4 py-3 hover:bg-neutral-800/50 transition-colors"
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 bg-neutral-700 rounded-lg flex items-center justify-center">
+                                      <svg className="w-4 h-4 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                      </svg>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm text-yellow-400 truncate">{extractedVideoUrl}</p>
+                                    </div>
+                                    <svg className="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                    </svg>
+                                  </div>
+                                </a>
                               )}
+
+                              {/* Footer */}
+                              <div className="px-4 py-2 bg-neutral-900/50 flex items-center justify-between">
+                                <span className="text-[11px] text-neutral-500">{formatMessageTime(msg.created_at)}</span>
+                                <span className="text-[10px] text-yellow-400 flex items-center gap-1">
+                                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                                  </svg>
+                                  Enviado
+                                </span>
+                              </div>
                             </div>
-                          </div>
+                          ) : (
+                            <div
+                              className={`max-w-[75%] ${isMe ? 'bg-emerald-500 text-white' : 'bg-neutral-950 border border-neutral-800 text-white'} rounded-2xl px-4 py-2 shadow-sm ${isContractMessage && !isMe ? 'cursor-pointer hover:border-violet-500' : ''}`}
+                              onClick={() => {
+                                if (isContractMessage && !isMe && !isCancelledContract && !isAcceptedContract) {
+                                  router.push('/creator/contracts')
+                                }
+                              }}
+                            >
+                              {/* Contract notification icon */}
+                              {isContractMessage && !isMe && (
+                                <div className="flex items-center gap-2 mb-2">
+                                  {isCancelledContract ? (
+                                    <span className="text-red-400 text-lg">❌</span>
+                                  ) : isAcceptedContract ? (
+                                    <span className="text-green-400 text-lg">✅</span>
+                                  ) : (
+                                    <span className="text-amber-400 text-lg">📋</span>
+                                  )}
+                                </div>
+                              )}
+                              <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+
+                              {/* CTA button for pending contracts */}
+                              {isContractMessage && !isMe && !isCancelledContract && !isAcceptedContract && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    router.push('/creator/contracts')
+                                  }}
+                                  className="mt-2 w-full py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg transition-colors"
+                                >
+                                  Ver Contrato
+                                </button>
+                              )}
+
+                              <div className={`flex items-center gap-2 mt-1 ${isMe ? 'justify-end' : ''}`}>
+                                <span className={`text-[11px] ${isMe ? 'text-neutral-500' : 'text-neutral-500'}`}>
+                                  {formatMessageTime(msg.created_at)}
+                                </span>
+                                {isMe && (
+                                  <span className={`text-[10px] ${msg.read_at ? 'text-emerald-400' : 'text-neutral-400'}`}>
+                                    {msg.read_at ? '✓✓ Visto' : '✓ Enviado'}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )
                     })}
@@ -422,29 +621,43 @@ export default function CreatorMessagesPage() {
         {/* Input */}
         <div className="border-t border-neutral-800 bg-neutral-950 px-4 py-3">
           {canSendMessage ? (
-            <div className="flex items-center gap-3">
-              <input
-                ref={inputRef}
-                type="text"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage())}
-                placeholder="Escribe un mensaje..."
-                className="flex-1 px-4 py-2.5 border border-neutral-700 rounded-full focus:outline-none focus:border-emerald-500 text-sm"
-              />
+            <div className="space-y-3">
+              {/* Video Delivery Button */}
               <button
-                onClick={sendMessage}
-                disabled={!newMessage.trim() || sending}
-                className="w-10 h-10 bg-emerald-500 text-white rounded-full flex items-center justify-center disabled:bg-neutral-700 disabled:cursor-not-allowed"
+                onClick={() => setShowVideoModal(true)}
+                className="w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-xl text-yellow-400 hover:from-yellow-500/30 hover:to-orange-500/30 transition-all"
               >
-                {sending ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-                  </svg>
-                )}
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+                <span className="font-medium">Entregar Video</span>
               </button>
+
+              {/* Regular Message Input */}
+              <div className="flex items-center gap-3">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage())}
+                  placeholder="Escribe un mensaje..."
+                  className="flex-1 px-4 py-2.5 bg-neutral-900 border border-neutral-700 rounded-full focus:outline-none focus:border-emerald-500 text-sm text-white placeholder-neutral-500"
+                />
+                <button
+                  onClick={sendMessage}
+                  disabled={!newMessage.trim() || sending}
+                  className="w-10 h-10 bg-emerald-500 text-white rounded-full flex items-center justify-center disabled:bg-neutral-700 disabled:cursor-not-allowed"
+                >
+                  {sending ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                    </svg>
+                  )}
+                </button>
+              </div>
             </div>
           ) : (
             <div className="flex items-center justify-center gap-2 py-2 text-neutral-500 text-sm">
@@ -455,6 +668,101 @@ export default function CreatorMessagesPage() {
             </div>
           )}
         </div>
+
+        {/* Video Delivery Modal */}
+        {showVideoModal && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+              {/* Modal Header */}
+              <div className="px-6 py-5 border-b border-neutral-800 bg-gradient-to-r from-yellow-500/10 to-orange-500/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-white">Entregar Video</h2>
+                    <p className="text-sm text-neutral-400">Envia tu contenido a {selectedConversation?.company_name}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 space-y-5">
+                {/* Video URL Input */}
+                <div>
+                  <label className="block text-sm font-medium text-neutral-300 mb-2">
+                    Link del video *
+                  </label>
+                  <input
+                    type="url"
+                    value={videoUrl}
+                    onChange={(e) => setVideoUrl(e.target.value)}
+                    placeholder="https://drive.google.com/..."
+                    className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-yellow-500 transition-colors"
+                  />
+                  <p className="text-xs text-neutral-500 mt-2">
+                    Google Drive, Dropbox, WeTransfer, etc.
+                  </p>
+                </div>
+
+                {/* Notes */}
+                <div>
+                  <label className="block text-sm font-medium text-neutral-300 mb-2">
+                    Notas (opcional)
+                  </label>
+                  <textarea
+                    value={videoNotes}
+                    onChange={(e) => setVideoNotes(e.target.value)}
+                    placeholder="Cualquier comentario sobre la entrega..."
+                    rows={3}
+                    className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-yellow-500 transition-colors resize-none"
+                  />
+                </div>
+
+                {/* Info */}
+                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
+                  <p className="text-sm text-yellow-400">
+                    La empresa recibirá una notificación y podrá revisar tu contenido.
+                  </p>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="px-6 py-4 border-t border-neutral-800 flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowVideoModal(false)
+                    setVideoUrl('')
+                    setVideoNotes('')
+                  }}
+                  className="flex-1 py-3 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl font-medium transition-colors border border-neutral-700"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={sendVideoDelivery}
+                  disabled={!videoUrl.trim() || sendingVideo}
+                  className="flex-1 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-black rounded-xl font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-yellow-500/20"
+                >
+                  {sendingVideo ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                      Enviando...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"/>
+                      </svg>
+                      Enviar Entrega
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     )
   }
@@ -462,7 +770,12 @@ export default function CreatorMessagesPage() {
   // Conversation List
   return (
     <div className="min-h-screen bg-neutral-950 pb-20">
-      <div className="border-b border-neutral-800 px-4 py-4">
+      <div className="border-b border-neutral-800 px-4 py-4 flex items-center gap-3">
+        <Link href="/creator/dashboard" className="p-2 -ml-2 hover:bg-neutral-800 rounded-xl">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </Link>
         <h1 className="text-xl font-bold text-white">Mensajes</h1>
       </div>
 
@@ -482,7 +795,7 @@ export default function CreatorMessagesPage() {
             <button
               key={conv.company_id}
               onClick={() => selectConversation(conv)}
-              className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-neutral-800 text-left ${conv.unread_count > 0 ? 'bg-blue-50' : ''}`}
+              className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-neutral-800 text-left ${conv.unread_count > 0 ? 'bg-neutral-800/50' : ''}`}
             >
               <div className="relative">
                 <div className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center">

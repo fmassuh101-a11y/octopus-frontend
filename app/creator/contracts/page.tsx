@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import LegalContractDocument from '@/components/contracts/LegalContractDocument'
+import CreateDeliveryModal from '@/components/deliveries/CreateDeliveryModal'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 
 interface Contract {
@@ -31,6 +32,9 @@ interface Contract {
   creator_signed_at?: string
   company_signed_at?: string
   company_id?: string
+  creator_id?: string
+  gig_id?: string
+  application_id?: string
   company_name?: string
   gig_title?: string
 }
@@ -60,6 +64,8 @@ export default function CreatorContractsPage() {
   const [user, setUser] = useState<any>(null)
   const [creatorName, setCreatorName] = useState('Creador')
   const [showAcceptModal, setShowAcceptModal] = useState(false)
+  const [showDeliveryModal, setShowDeliveryModal] = useState(false)
+  const [contractForDelivery, setContractForDelivery] = useState<Contract | null>(null)
   const [handles, setHandles] = useState<Record<string, string>>({})
   const [accepting, setAccepting] = useState(false)
   const [filter, setFilter] = useState<'all' | 'pending' | 'active'>('all')
@@ -443,6 +449,23 @@ export default function CreatorContractsPage() {
                     Fecha límite: {formatDate(contract.content_due_date)}
                   </div>
                 )}
+
+                {/* CTA for accepted contracts */}
+                {contract.status === 'accepted' && (
+                  <div
+                    className="mt-3 flex items-center gap-2 text-violet-400 bg-violet-500/10 border border-violet-500/30 rounded-xl px-3 py-2"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setContractForDelivery(contract)
+                      setShowDeliveryModal(true)
+                    }}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    <span className="text-sm font-medium">Entregar Contenido</span>
+                  </div>
+                )}
               </button>
             )
           })
@@ -450,7 +473,7 @@ export default function CreatorContractsPage() {
       </div>
 
       {/* Legal Contract Document View */}
-      {selectedContract && !showAcceptModal && (
+      {selectedContract && !showAcceptModal && !showDeliveryModal && (
         <LegalContractDocument
           contract={selectedContract}
           companyName={selectedContract.company_name || 'Empresa'}
@@ -458,7 +481,38 @@ export default function CreatorContractsPage() {
           onAccept={() => setShowAcceptModal(true)}
           onReject={() => handleRejectContract(selectedContract.id)}
           onClose={() => setSelectedContract(null)}
+          onDeliverContent={selectedContract.status === 'accepted' ? () => {
+            setContractForDelivery(selectedContract)
+            setShowDeliveryModal(true)
+          } : undefined}
           showActions={true}
+        />
+      )}
+
+      {/* Create Delivery Modal */}
+      {showDeliveryModal && contractForDelivery && user && (
+        <CreateDeliveryModal
+          contract={{
+            id: contractForDelivery.id,
+            title: contractForDelivery.title,
+            application_id: contractForDelivery.application_id || contractForDelivery.id,
+            gig_id: contractForDelivery.gig_id || contractForDelivery.id,
+            company_id: contractForDelivery.company_id || '',
+            creator_id: user.id,
+            payment_amount: contractForDelivery.payment_amount,
+            payment_currency: contractForDelivery.payment_currency,
+            deliverables: contractForDelivery.deliverables,
+          }}
+          onClose={() => {
+            setShowDeliveryModal(false)
+            setContractForDelivery(null)
+          }}
+          onCreated={(delivery) => {
+            setShowDeliveryModal(false)
+            setContractForDelivery(null)
+            setSelectedContract(null)
+            alert('Contenido entregado exitosamente! La empresa sera notificada.')
+          }}
         />
       )}
 
@@ -472,20 +526,46 @@ export default function CreatorContractsPage() {
             </div>
 
             <div className="p-6 space-y-4">
-              {Array.from(new Set(selectedContract.deliverables.map((d: any) => d.platform))).map((platform: string) => (
-                <div key={platform}>
-                  <label className="block text-sm font-medium text-neutral-300 mb-2">
-                    {PLATFORM_ICONS[platform]} {platform.charAt(0).toUpperCase() + platform.slice(1)}
-                  </label>
-                  <input
-                    type="text"
-                    value={handles[platform] || ''}
-                    onChange={(e) => setHandles({ ...handles, [platform]: e.target.value })}
-                    placeholder="@tu_usuario"
-                    className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-violet-500"
-                  />
-                </div>
-              ))}
+              {Array.from(new Set(selectedContract.deliverables.map((d: any) => d.platform))).map((platform: string) => {
+                const platformUrls: Record<string, string> = {
+                  tiktok: 'https://www.tiktok.com/@',
+                  instagram: 'https://www.instagram.com/',
+                  youtube: 'https://www.youtube.com/@',
+                }
+                const handleValue = handles[platform] || ''
+                const cleanHandle = handleValue.replace('@', '')
+                const verifyUrl = platformUrls[platform] ? `${platformUrls[platform]}${cleanHandle}` : null
+
+                return (
+                  <div key={platform}>
+                    <label className="block text-sm font-medium text-neutral-300 mb-2">
+                      {PLATFORM_ICONS[platform]} {platform.charAt(0).toUpperCase() + platform.slice(1)}
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={handleValue}
+                        onChange={(e) => setHandles({ ...handles, [platform]: e.target.value })}
+                        placeholder="tu_usuario"
+                        className="flex-1 px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-violet-500"
+                      />
+                      {verifyUrl && cleanHandle && (
+                        <a
+                          href={verifyUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-neutral-400 hover:text-white hover:border-violet-500 transition-colors flex items-center gap-2"
+                          title={`Verificar @${cleanHandle} en ${platform}`}
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                          </svg>
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
 
               <div className="bg-violet-500/10 border border-violet-500/30 rounded-xl p-4">
                 <p className="text-sm text-violet-300">
@@ -526,10 +606,6 @@ export default function CreatorContractsPage() {
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-800">
         <div className="flex justify-around py-3">
-          <Link href="/gigs" className="flex flex-col items-center gap-1 px-4 py-1 text-neutral-500 hover:text-neutral-300">
-            <span className="text-xl">💼</span>
-            <span className="text-xs">Trabajos</span>
-          </Link>
           <Link href="/creator/dashboard" className="flex flex-col items-center gap-1 px-4 py-1 text-neutral-500 hover:text-neutral-300">
             <span className="text-xl">📊</span>
             <span className="text-xs">Panel</span>
@@ -538,6 +614,10 @@ export default function CreatorContractsPage() {
             <span className="text-xl">📋</span>
             <span className="text-xs">Contratos</span>
           </div>
+          <Link href="/creator/deliveries" className="flex flex-col items-center gap-1 px-4 py-1 text-neutral-500 hover:text-neutral-300">
+            <span className="text-xl">📦</span>
+            <span className="text-xs">Entregas</span>
+          </Link>
           <Link href="/creator/messages" className="flex flex-col items-center gap-1 px-4 py-1 text-neutral-500 hover:text-neutral-300">
             <span className="text-xl">💬</span>
             <span className="text-xs">Mensajes</span>
