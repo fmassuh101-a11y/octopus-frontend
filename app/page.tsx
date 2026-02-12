@@ -267,8 +267,20 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="border-t border-white/10 py-8">
-        <div className="max-w-7xl mx-auto px-6 text-center text-white/40 text-sm">
-          © 2024 Octopus. Todos los derechos reservados.
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="text-white/40 text-sm">
+              © 2024 Octopus. Todos los derechos reservados.
+            </div>
+            <div className="flex items-center gap-6 text-sm">
+              <a href="/terms" className="text-white/40 hover:text-white/70 transition">
+                Terminos de Servicio
+              </a>
+              <a href="/privacy" className="text-white/40 hover:text-white/70 transition">
+                Politica de Privacidad
+              </a>
+            </div>
+          </div>
         </div>
       </footer>
     </div>
