@@ -87,6 +87,8 @@ export default function HomePage() {
       }
 
       // Exchange code for token via our API
+      console.log('[TikTok Callback] Calling /api/tiktok/callback with code:', code?.substring(0, 20) + '...')
+
       const response = await fetch('/api/tiktok/callback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -96,7 +98,9 @@ export default function HomePage() {
         })
       })
 
+      console.log('[TikTok Callback] API response status:', response.status)
       const data = await response.json()
+      console.log('[TikTok Callback] API response data:', data.success ? 'success' : data.error)
 
       if (data.success && data.data) {
         const tiktokData = data.data
