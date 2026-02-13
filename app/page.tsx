@@ -106,6 +106,7 @@ export default function HomePage() {
         }
 
         // Get current profile from Supabase
+        console.log('[TikTok Callback] Fetching profile for user:', user.id)
         const profileRes = await fetch(
           `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=*`,
           {
@@ -116,15 +117,24 @@ export default function HomePage() {
           }
         )
 
+        console.log('[TikTok Callback] Profile response status:', profileRes.status)
+
         if (profileRes.ok) {
           const profiles = await profileRes.json()
+          console.log('[TikTok Callback] Profiles found:', profiles.length)
+
           if (profiles.length > 0) {
             const profile = profiles[0]
             let bioData: any = {}
 
+            console.log('[TikTok Callback] Current bio type:', typeof profile.bio)
+            console.log('[TikTok Callback] Current bio value:', profile.bio?.substring?.(0, 100) || profile.bio)
+
             try {
               bioData = profile.bio ? JSON.parse(profile.bio) : {}
+              console.log('[TikTok Callback] Bio parsed successfully')
             } catch (e) {
+              console.log('[TikTok Callback] Bio is not JSON, starting fresh')
               bioData = {}
             }
 
@@ -144,6 +154,9 @@ export default function HomePage() {
             bioData.tiktokConnected = true
 
             // Save to Supabase
+            console.log('[TikTok Callback] Saving to Supabase...')
+            console.log('[TikTok Callback] bioData to save:', JSON.stringify(bioData).substring(0, 200))
+
             const saveRes = await fetch(
               `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}`,
               {
@@ -161,10 +174,14 @@ export default function HomePage() {
               }
             )
 
+            console.log('[TikTok Callback] Save response status:', saveRes.status)
+
             if (saveRes.ok) {
-              console.log('[TikTok] Account saved to Supabase!')
+              console.log('[TikTok Callback] Account saved to Supabase!')
             } else {
-              console.error('[TikTok] Failed to save to Supabase:', saveRes.status)
+              const errorText = await saveRes.text()
+              console.error('[TikTok Callback] Failed to save:', saveRes.status, errorText)
+              throw new Error('Failed to save to Supabase: ' + saveRes.status)
             }
           }
         }
@@ -180,8 +197,9 @@ export default function HomePage() {
         console.error('[TikTok] API error:', data.error)
         window.location.href = `/creator/profile?section=verification&error=${encodeURIComponent(data.error || 'unknown')}`
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('[TikTok] Callback error:', error)
+      alert('Error en callback TikTok: ' + (error?.message || error))
       window.location.href = '/creator/profile?section=verification&error=callback_failed'
     }
   }
