@@ -72,8 +72,8 @@ export async function POST(request: NextRequest) {
     console.log('Redirect URI:', redirect_uri)
     console.log('Code (first 10 chars):', code?.substring(0, 10))
 
-    // Build the request body
-    const finalRedirectUri = redirect_uri || `${process.env.NEXT_PUBLIC_APP_URL}/auth/tiktok/callback`
+    // Build the request body - MUST match exactly what's registered in TikTok
+    const finalRedirectUri = redirect_uri || 'https://octopus-frontend-tau.vercel.app/'
     const bodyParams = new URLSearchParams({
       client_key: clientKey,
       client_secret: clientSecret,

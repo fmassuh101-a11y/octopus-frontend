@@ -1,18 +1,30 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ftvqoudlmojdxwjxljzr.supabase.co'
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
 
 export default function HomePage() {
+  const searchParams = useSearchParams()
   const [mounted, setMounted] = useState(false)
   const [hasSession, setHasSession] = useState(false)
   const [userType, setUserType] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [tiktokProcessing, setTiktokProcessing] = useState(false)
 
   useEffect(() => {
     setMounted(true)
+
+    // Check for TikTok OAuth callback
+    const code = searchParams.get('code')
+    const state = searchParams.get('state')
+    if (code && state) {
+      handleTikTokCallback(code, state)
+      return
+    }
+
     const token = localStorage.getItem('sb-access-token')
     const userStr = localStorage.getItem('sb-user')
     setHasSession(!!token)
@@ -20,7 +32,49 @@ export default function HomePage() {
     if (token && userStr) {
       checkUserProfile(token, JSON.parse(userStr))
     }
-  }, [])
+  }, [searchParams])
+
+  // Handle TikTok OAuth callback
+  const handleTikTokCallback = async (code: string, state: string) => {
+    setTiktokProcessing(true)
+
+    // Verify state matches
+    const savedState = localStorage.getItem('tiktok_oauth_state')
+    if (state !== savedState) {
+      console.error('[TikTok] State mismatch')
+      window.location.href = '/creator/profile?section=verification&error=state_mismatch'
+      return
+    }
+
+    try {
+      // Exchange code for token via our API
+      const response = await fetch('/api/tiktok/callback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code,
+          redirect_uri: 'https://octopus-frontend-tau.vercel.app/'
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success && data.data) {
+        // Save TikTok data to localStorage temporarily
+        localStorage.setItem('tiktok_account_data', JSON.stringify(data.data))
+        localStorage.removeItem('tiktok_oauth_state')
+
+        // Redirect to profile with success
+        window.location.href = '/creator/profile?section=verification&tiktok=connected'
+      } else {
+        console.error('[TikTok] API error:', data.error)
+        window.location.href = `/creator/profile?section=verification&error=${encodeURIComponent(data.error || 'unknown')}`
+      }
+    } catch (error) {
+      console.error('[TikTok] Callback error:', error)
+      window.location.href = '/creator/profile?section=verification&error=callback_failed'
+    }
+  }
 
   const checkUserProfile = async (token: string, user: any) => {
     try {
@@ -102,10 +156,13 @@ export default function HomePage() {
     window.location.reload()
   }
 
-  if (!mounted) {
+  if (!mounted || tiktokProcessing) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center">
+        <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin mb-4"></div>
+        {tiktokProcessing && (
+          <p className="text-white/60">Conectando con TikTok...</p>
+        )}
       </div>
     )
   }

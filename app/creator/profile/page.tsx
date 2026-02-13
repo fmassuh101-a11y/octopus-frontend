@@ -381,7 +381,8 @@ export default function ProfilePage() {
 
   // Handle TikTok OAuth connection
   const handleConnectTikTok = () => {
-    const redirectUri = encodeURIComponent(`${window.location.origin}/auth/tiktok/callback`)
+    // MUST match exactly what's registered in TikTok Developer Portal
+    const redirectUri = encodeURIComponent('https://octopus-frontend-tau.vercel.app/')
     const scope = encodeURIComponent('user.info.basic,user.info.profile,user.info.stats,video.list')
     const state = Math.random().toString(36).substring(7)
 
