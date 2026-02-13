@@ -15,24 +15,25 @@ export default function HomePage() {
   const [tiktokProcessing, setTiktokProcessing] = useState(false)
 
   useEffect(() => {
-    setMounted(true)
-
-    // Check for TikTok OAuth error (user cancelled)
+    // Check for TikTok OAuth error (user cancelled) BEFORE mounting
     const error = searchParams.get('error')
     if (error) {
       console.log('[TikTok] User cancelled or error:', error)
-      // Redirect back to profile/verification
       window.location.href = '/creator/profile?section=verification'
-      return
+      return // Don't mount, just redirect
     }
 
-    // Check for TikTok OAuth callback
+    // Check for TikTok OAuth callback BEFORE mounting
     const code = searchParams.get('code')
     const state = searchParams.get('state')
     if (code && state) {
+      setTiktokProcessing(true)
       handleTikTokCallback(code, state)
-      return
+      return // Don't mount normal page
     }
+
+    // Only mount if no OAuth params
+    setMounted(true)
 
     const token = localStorage.getItem('sb-access-token')
     const userStr = localStorage.getItem('sb-user')
@@ -165,13 +166,17 @@ export default function HomePage() {
     window.location.reload()
   }
 
+  // Show loading for OAuth processing or initial load
   if (!mounted || tiktokProcessing) {
     return (
       <div className="min-h-screen bg-black flex flex-col items-center justify-center">
-        <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin mb-4"></div>
-        {tiktokProcessing && (
-          <p className="text-white/60">Conectando con TikTok...</p>
-        )}
+        <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mb-6">
+          <span className="text-3xl">🐙</span>
+        </div>
+        <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin mb-4"></div>
+        <p className="text-white/60">
+          {tiktokProcessing ? 'Conectando con TikTok...' : 'Cargando...'}
+        </p>
       </div>
     )
   }
