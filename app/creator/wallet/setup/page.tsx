@@ -40,9 +40,9 @@ export default function WalletSetup() {
     try {
       console.log('[WalletSetup] Starting setup for user:', userId)
 
-      // First check if user already has whop_company_id
-      const userRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/users?id=eq.${userId}&select=id,email,full_name,whop_company_id`,
+      // First check if user already has whop_company_id in profiles
+      const profileRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userId}&select=*`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -51,17 +51,23 @@ export default function WalletSetup() {
         }
       )
 
-      if (!userRes.ok) {
-        throw new Error('Error al obtener datos del usuario')
+      if (!profileRes.ok) {
+        const errorText = await profileRes.text()
+        console.error('[WalletSetup] Profile query error:', errorText)
+        throw new Error('Error al obtener datos del perfil')
       }
 
-      const users = await userRes.json()
-      if (users.length === 0) {
-        throw new Error('Usuario no encontrado')
+      const profiles = await profileRes.json()
+      if (profiles.length === 0) {
+        throw new Error('Perfil no encontrado')
       }
 
-      const userData = users[0]
-      console.log('[WalletSetup] User data:', userData)
+      const profile = profiles[0]
+      console.log('[WalletSetup] Profile data:', profile)
+
+      // Get user email from sb-user localStorage
+      const userStr = localStorage.getItem('sb-user')
+      const userEmail = userStr ? JSON.parse(userStr).email : null
 
       // Call API to create Whop company and get KYC link
       const res = await fetch('/api/whop/setup-creator', {
@@ -71,9 +77,9 @@ export default function WalletSetup() {
         },
         body: JSON.stringify({
           userId: userId,
-          email: userData.email,
-          fullName: userData.full_name,
-          existingCompanyId: userData.whop_company_id
+          email: userEmail || profile.email,
+          fullName: profile.full_name,
+          existingCompanyId: profile.whop_company_id
         })
       })
 

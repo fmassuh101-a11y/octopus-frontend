@@ -61,10 +61,10 @@ export async function POST(request: NextRequest) {
 
     console.log("[Setup Creator] Company created:", company.id);
 
-    // Save whop_company_id to database using service role (bypasses RLS)
+    // Save whop_company_id to profiles table using service role (bypasses RLS)
     if (SUPABASE_SERVICE_KEY) {
       const updateRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/users?id=eq.${userId}`,
+        `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userId}`,
         {
           method: 'PATCH',
           headers: {
@@ -78,9 +78,10 @@ export async function POST(request: NextRequest) {
       );
 
       if (!updateRes.ok) {
-        console.error("[Setup Creator] Failed to save whop_company_id:", updateRes.status);
+        const errorText = await updateRes.text();
+        console.error("[Setup Creator] Failed to save whop_company_id:", updateRes.status, errorText);
       } else {
-        console.log("[Setup Creator] Saved whop_company_id to database");
+        console.log("[Setup Creator] Saved whop_company_id to profiles table");
       }
     } else {
       console.warn("[Setup Creator] No service key, cannot update database");

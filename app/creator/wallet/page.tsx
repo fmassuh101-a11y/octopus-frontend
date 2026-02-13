@@ -52,9 +52,9 @@ export default function CreatorWallet() {
       const user = JSON.parse(userStr)
       console.log('[CreatorWallet] User ID:', user.id)
 
-      // Query users table directly like dashboard does
+      // Query profiles table (same as dashboard)
       const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/users?id=eq.${user.id}&select=id,email,whop_company_id,role`,
+        `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=*`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -69,30 +69,33 @@ export default function CreatorWallet() {
         if (res.status === 401) {
           setError('Sesión expirada. Por favor inicia sesión de nuevo.')
         } else {
+          const errorText = await res.text()
+          console.error('[CreatorWallet] Error response:', errorText)
           setError(`Error del servidor (${res.status})`)
         }
         setLoading(false)
         return
       }
 
-      const users = await res.json()
-      console.log('[CreatorWallet] Users found:', users)
+      const profiles = await res.json()
+      console.log('[CreatorWallet] Profiles found:', profiles)
 
-      if (users.length === 0) {
-        setError('Usuario no encontrado en la base de datos')
+      if (profiles.length === 0) {
+        setError('Perfil no encontrado en la base de datos')
         setLoading(false)
         return
       }
 
-      const userData = users[0]
-      console.log('[CreatorWallet] User data:', userData)
+      const profile = profiles[0]
+      console.log('[CreatorWallet] Profile data:', profile)
 
-      if (!userData.whop_company_id) {
+      // Check if profile has whop_company_id
+      if (!profile.whop_company_id) {
         console.log('[CreatorWallet] No whop_company_id, needs setup')
         setNeedsSetup(true)
       } else {
-        console.log('[CreatorWallet] Has whop_company_id:', userData.whop_company_id)
-        setCompanyId(userData.whop_company_id)
+        console.log('[CreatorWallet] Has whop_company_id:', profile.whop_company_id)
+        setCompanyId(profile.whop_company_id)
       }
     } catch (err: any) {
       console.error('[CreatorWallet] Error:', err)
