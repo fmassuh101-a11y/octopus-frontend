@@ -23,7 +23,8 @@ function extractHashtags(text: string): string[] {
 
 // Helper to check if title has emojis
 function hasEmojis(text: string): boolean {
-  const emojiRegex = /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u
+  // eslint-disable-next-line no-misleading-character-class
+  const emojiRegex = /[\uD83C-\uDBFF\uDC00-\uDFFF]+/
   return emojiRegex.test(text)
 }
 

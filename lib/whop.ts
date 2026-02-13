@@ -27,8 +27,8 @@ console.log(`[Whop] Ambiente: ${WHOP_ENVIRONMENT}`);
 // ID de la compañía de Octopus en Whop (se configura después de crear cuenta)
 export const OCTOPUS_COMPANY_ID = process.env.WHOP_OCTOPUS_COMPANY_ID || "";
 
-// Porcentaje de comisión de Octopus (7%)
-export const OCTOPUS_FEE_PERCENT = 0.07;
+// Porcentaje de comisión de Octopus (4.7%)
+export const OCTOPUS_FEE_PERCENT = 0.047;
 
 // Moneda por defecto
 const DEFAULT_CURRENCY: Currency = "usd";
