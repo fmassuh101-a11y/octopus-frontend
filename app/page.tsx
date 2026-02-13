@@ -61,12 +61,30 @@ export default function HomePage() {
       const token = localStorage.getItem('sb-access-token')
       const userStr = localStorage.getItem('sb-user')
 
+      console.log('[TikTok Callback] Token exists:', !!token)
+      console.log('[TikTok Callback] User string exists:', !!userStr)
+
       if (!token || !userStr) {
+        alert('No hay sesión activa. Por favor inicia sesión primero.')
         window.location.href = '/auth/login'
         return
       }
 
-      const user = JSON.parse(userStr)
+      let user: any
+      try {
+        user = JSON.parse(userStr)
+        console.log('[TikTok Callback] User ID:', user?.id)
+      } catch (e) {
+        alert('Error al leer datos de usuario')
+        window.location.href = '/auth/login'
+        return
+      }
+
+      if (!user || !user.id) {
+        alert('Usuario inválido. Por favor inicia sesión de nuevo.')
+        window.location.href = '/auth/login'
+        return
+      }
 
       // Exchange code for token via our API
       const response = await fetch('/api/tiktok/callback', {
@@ -107,15 +125,18 @@ export default function HomePage() {
 
         // Get current profile from Supabase
         console.log('[TikTok Callback] Fetching profile for user:', user.id)
-        const profileRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=*`,
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'apikey': SUPABASE_ANON_KEY
-            }
+        console.log('[TikTok Callback] SUPABASE_URL:', SUPABASE_URL)
+        console.log('[TikTok Callback] Token length:', token?.length)
+
+        const profileUrl = `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=*`
+        console.log('[TikTok Callback] Profile URL:', profileUrl)
+
+        const profileRes = await fetch(profileUrl, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'apikey': SUPABASE_ANON_KEY
           }
-        )
+        })
 
         console.log('[TikTok Callback] Profile response status:', profileRes.status)
 
