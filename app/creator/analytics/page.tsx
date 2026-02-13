@@ -15,7 +15,7 @@ import {
 } from './components'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 
-const TIKTOK_CLIENT_KEY = 'sbawzx5ya0iuu4hs58'
+const TIKTOK_CLIENT_KEY = process.env.NEXT_PUBLIC_TIKTOK_CLIENT_KEY || 'aw5n2omdzbjx4xf8'
 
 export default function CreatorAnalyticsPage() {
   const [loading, setLoading] = useState(true)
@@ -74,7 +74,7 @@ export default function CreatorAnalyticsPage() {
       authUrl += `?client_key=${TIKTOK_CLIENT_KEY}`
       authUrl += '&scope=user.info.basic,user.info.profile,user.info.stats,video.list'
       authUrl += '&response_type=code'
-      authUrl += `&redirect_uri=${encodeURIComponent('https://octopus-frontend-tau.vercel.app/auth/tiktok/callback')}`
+      authUrl += `&redirect_uri=${encodeURIComponent('https://octopus-frontend-tau.vercel.app/')}`
       authUrl += `&state=${csrfState}`
 
       window.location.href = authUrl

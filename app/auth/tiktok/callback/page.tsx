@@ -59,7 +59,8 @@ export default function TikTokCallbackPage() {
       setStatus('Obteniendo datos de TikTok...')
 
       // Call our API route to exchange code for token and get user data
-      const redirectUri = `${window.location.origin}/auth/tiktok/callback`
+      // MUST match exactly what's registered in TikTok Developer Portal
+      const redirectUri = 'https://octopus-frontend-tau.vercel.app/'
       const response = await fetch('/api/tiktok/callback', {
         method: 'POST',
         headers: {
