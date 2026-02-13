@@ -389,7 +389,8 @@ export default function ProfilePage() {
     // Save state to localStorage for CSRF protection
     localStorage.setItem('tiktok_oauth_state', state)
 
-    const authUrl = `https://www.tiktok.com/v2/auth/authorize/?client_key=${TIKTOK_CLIENT_KEY}&response_type=code&scope=${scope}&redirect_uri=${redirectUri}&state=${state}`
+    // disable_auto_auth=1 forces TikTok to show login/account selection
+    const authUrl = `https://www.tiktok.com/v2/auth/authorize/?client_key=${TIKTOK_CLIENT_KEY}&response_type=code&scope=${scope}&redirect_uri=${redirectUri}&state=${state}&disable_auto_auth=1`
 
     window.location.href = authUrl
   }
