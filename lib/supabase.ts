@@ -31,4 +31,5 @@ export type Profile = {
   country?: string
   phone_number?: string
   experience_level?: string
+  whop_company_id?: string
 }

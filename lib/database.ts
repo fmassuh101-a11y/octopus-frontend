@@ -19,6 +19,7 @@ export interface DBProfile {
   tiktok?: string
   youtube?: string
   profile_photo_url?: string
+  whop_company_id?: string  // Whop sub-company ID for payouts
   created_at: string
   updated_at: string
 }
