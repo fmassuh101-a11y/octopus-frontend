@@ -47,9 +47,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create new sub-company in Whop with unique name
+    // Create new sub-company in Whop with minimal required fields
     console.log("[Setup Creator] Creating new sub-company...");
-    const uniqueTitle = `${fullName || 'Creator'}_${userId.slice(0, 8)}_${Date.now()}`;
+    const uniqueTitle = fullName || `Creator_${userId.slice(0, 8)}`;
+    const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://octopus-frontend-tau.vercel.app';
 
     let company;
     try {
@@ -69,7 +70,7 @@ export async function POST(request: NextRequest) {
         company = await whopClient.companies.create({
           email: email || `user_${userId}@octopus.app`,
           parent_company_id: OCTOPUS_COMPANY_ID,
-          title: `Creator_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+          title: `${uniqueTitle}_${Date.now()}`,
           metadata: {
             octopus_user_id: userId,
             type: "creator",
@@ -113,8 +114,8 @@ export async function POST(request: NextRequest) {
     const accountLink = await whopClient.accountLinks.create({
       company_id: company.id,
       use_case: "account_onboarding",
-      return_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://octopus-frontend-tau.vercel.app'}/creator/wallet`,
-      refresh_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://octopus-frontend-tau.vercel.app'}/creator/wallet/setup`,
+      return_url: `${APP_URL}/creator/wallet`,
+      refresh_url: `${APP_URL}/creator/wallet/setup`,
     });
 
     console.log("[Setup Creator] KYC link generated");
