@@ -11,6 +11,7 @@ export default function TestWhopSandbox() {
   const [results, setResults] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [lastCreatorId, setLastCreatorId] = useState<string | null>(null);
+  const [creatorEmail, setCreatorEmail] = useState("");
 
   // 1. Verificar conexión con Whop
   const testConnection = async () => {
@@ -28,6 +29,10 @@ export default function TestWhopSandbox() {
 
   // 2. Crear creador de prueba
   const createTestCreator = async () => {
+    if (!creatorEmail || !creatorEmail.includes("@")) {
+      setError("Ingresa un email válido para el creador de prueba");
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -35,8 +40,8 @@ export default function TestWhopSandbox() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: `Creador Prueba ${Date.now()}`,
-          email: `test${Date.now()}@gmail.com`,
+          name: `Creador Prueba`,
+          email: creatorEmail,
         }),
       });
       const data = await res.json();
@@ -111,14 +116,23 @@ export default function TestWhopSandbox() {
             <p className="text-sm text-gray-300">Confirmar que Whop API funciona</p>
           </button>
 
-          <button
-            onClick={createTestCreator}
-            disabled={loading}
-            className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 p-4 rounded-lg text-left"
-          >
-            <h3 className="font-bold text-lg">2. Crear Creador de Prueba</h3>
-            <p className="text-sm text-gray-300">Crear sub-company para un creador</p>
-          </button>
+          <div className="bg-green-600 p-4 rounded-lg">
+            <h3 className="font-bold text-lg mb-2">2. Crear Creador de Prueba</h3>
+            <input
+              type="email"
+              placeholder="tu@email.com"
+              value={creatorEmail}
+              onChange={(e) => setCreatorEmail(e.target.value)}
+              className="w-full p-2 rounded bg-gray-800 text-white mb-2"
+            />
+            <button
+              onClick={createTestCreator}
+              disabled={loading || !creatorEmail}
+              className="w-full bg-green-800 hover:bg-green-900 disabled:bg-gray-600 p-2 rounded"
+            >
+              Crear
+            </button>
+          </div>
 
           <button
             onClick={getOctopusBalance}
