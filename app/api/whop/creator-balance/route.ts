@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
     // Get company info from Whop (includes balance)
     let balance = 0
     let totalBalance = 0
-    let kycComplete = true // Default to true so users can see wallet
+    let kycComplete = false // Default to false - user must verify
     let payoutMethods: any[] = []
 
     try {
@@ -63,20 +63,20 @@ export async function GET(request: NextRequest) {
       if (company) {
         balance = (company as any).available_balance ? (company as any).available_balance / 100 : 0
         totalBalance = (company as any).total_balance ? (company as any).total_balance / 100 : balance
-        // Check various KYC/payout status fields
-        kycComplete = (company as any).payouts_enabled ?? (company as any).charges_enabled ?? true
+        // Check if payouts are enabled (indicates KYC complete)
+        kycComplete = (company as any).payouts_enabled === true
       }
     } catch (companyError) {
       console.error("[Creator Balance] Error fetching company:", companyError)
-      // If we can't fetch company, still show wallet with 0 balance
     }
 
-    // Get payout methods
+    // Get payout methods - if they have any, KYC is definitely complete
     try {
       const methods = await whopClient.payoutMethods.list({
         company_id: companyId
       })
       payoutMethods = methods.data || []
+      // If user has payout methods configured, they've completed KYC
       if (payoutMethods.length > 0) {
         kycComplete = true
       }
