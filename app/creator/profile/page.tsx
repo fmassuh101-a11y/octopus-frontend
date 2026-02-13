@@ -22,7 +22,6 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [activeSection, setActiveSection] = useState('account')
   const [showLogoutModal, setShowLogoutModal] = useState(false)
-  const [showTikTokModal, setShowTikTokModal] = useState(false)
 
   useEffect(() => {
     loadProfileData()
@@ -834,55 +833,6 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* TikTok Mobile Connect Modal */}
-      {showTikTokModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-neutral-900 rounded-2xl p-6 max-w-sm w-full shadow-xl">
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/>
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-white mb-2">Conectar TikTok</h3>
-              <p className="text-neutral-400 text-sm mb-4">
-                Para conectar tu cuenta correcta, primero cierra sesion en TikTok web:
-              </p>
-              <div className="bg-neutral-800 rounded-xl p-4 text-left text-sm text-neutral-300 mb-4">
-                <p className="mb-2">1. Toca el boton de abajo para cerrar sesion en TikTok</p>
-                <p className="mb-2">2. Inicia sesion con la cuenta que quieres conectar</p>
-                <p>3. Vuelve aqui y toca "Continuar"</p>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <button
-                onClick={openTikTokLogout}
-                className="w-full py-3 px-4 bg-black text-white rounded-xl font-semibold hover:bg-neutral-800 transition-colors flex items-center justify-center gap-2"
-              >
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/>
-                </svg>
-                Abrir TikTok (cerrar sesion)
-              </button>
-              <button
-                onClick={() => {
-                  setShowTikTokModal(false)
-                  startTikTokOAuth()
-                }}
-                className="w-full py-3 px-4 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition-colors"
-              >
-                Continuar con autorizacion
-              </button>
-              <button
-                onClick={() => setShowTikTokModal(false)}
-                className="w-full py-3 px-4 bg-neutral-800 text-neutral-400 rounded-xl font-semibold hover:bg-neutral-700 transition-colors"
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

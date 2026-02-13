@@ -26,7 +26,6 @@ export default function CreatorAnalyticsPage() {
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriodValue>('all')
   const [selectedVideo, setSelectedVideo] = useState<TikTokVideo | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
-  const [showTikTokModal, setShowTikTokModal] = useState(false)
 
   useEffect(() => {
     loadProfile()
