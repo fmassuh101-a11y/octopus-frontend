@@ -17,6 +17,15 @@ export default function HomePage() {
   useEffect(() => {
     setMounted(true)
 
+    // Check for TikTok OAuth error (user cancelled)
+    const error = searchParams.get('error')
+    if (error) {
+      console.log('[TikTok] User cancelled or error:', error)
+      // Redirect back to profile/verification
+      window.location.href = '/creator/profile?section=verification'
+      return
+    }
+
     // Check for TikTok OAuth callback
     const code = searchParams.get('code')
     const state = searchParams.get('state')
