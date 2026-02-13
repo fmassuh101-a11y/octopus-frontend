@@ -398,6 +398,72 @@ export default function ProfilePage() {
     }
   }
 
+  // Handle removing TikTok account
+  const handleRemoveTikTok = async () => {
+    if (!confirm('¿Seguro que quieres desconectar tu cuenta de TikTok?')) return
+
+    try {
+      const token = localStorage.getItem('sb-access-token')
+      const userStr = localStorage.getItem('sb-user')
+      if (!token || !userStr) return
+
+      const userData = JSON.parse(userStr)
+
+      // Get current profile
+      const profileRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=*`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'apikey': SUPABASE_ANON_KEY || ''
+          }
+        }
+      )
+
+      if (profileRes.ok) {
+        const profiles = await profileRes.json()
+        if (profiles.length > 0) {
+          const currentProfile = profiles[0]
+          let bioData: any = {}
+
+          try {
+            bioData = currentProfile.bio ? JSON.parse(currentProfile.bio) : {}
+          } catch (e) {
+            bioData = {}
+          }
+
+          // Remove TikTok data
+          bioData.tiktokAccounts = []
+          bioData.tiktokConnected = false
+
+          // Save to Supabase
+          await fetch(
+            `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}`,
+            {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                'apikey': SUPABASE_ANON_KEY || '',
+                'Prefer': 'return=minimal'
+              },
+              body: JSON.stringify({
+                bio: JSON.stringify(bioData),
+                updated_at: new Date().toISOString()
+              })
+            }
+          )
+
+          // Reload page to show updated state
+          window.location.reload()
+        }
+      }
+    } catch (error) {
+      console.error('[TikTok] Error removing account:', error)
+      alert('Error al desconectar la cuenta')
+    }
+  }
+
   // Verification Section - REAL OAuth verification
   const VerificationSection = () => {
     const data = { ...bioData, ...profile }
@@ -487,12 +553,23 @@ export default function ProfilePage() {
               </div>
 
               {isTiktokVerified ? (
-                <button
-                  onClick={handleConnectTikTok}
-                  className="px-4 py-2 text-sm font-medium text-neutral-400 bg-neutral-900 border border-gray-300 rounded-lg hover:bg-neutral-950 transition-colors"
-                >
-                  Reconectar
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleConnectTikTok}
+                    className="px-4 py-2 text-sm font-medium text-neutral-400 bg-neutral-900 border border-gray-300 rounded-lg hover:bg-neutral-950 transition-colors"
+                  >
+                    Reconectar
+                  </button>
+                  <button
+                    onClick={handleRemoveTikTok}
+                    className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                    title="Eliminar cuenta"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
               ) : (
                 <button
                   onClick={handleConnectTikTok}
