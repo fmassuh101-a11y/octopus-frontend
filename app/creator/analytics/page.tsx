@@ -69,16 +69,30 @@ export default function CreatorAnalyticsPage() {
     if (TIKTOK_CLIENT_KEY) {
       const csrfState = Math.random().toString(36).substring(2, 15)
       localStorage.setItem('tiktok_csrf_state', csrfState)
+      localStorage.setItem('tiktok_oauth_state', csrfState) // Also save for main page handler
 
-      let authUrl = 'https://www.tiktok.com/v2/auth/authorize/'
-      authUrl += `?client_key=${TIKTOK_CLIENT_KEY}`
-      authUrl += '&scope=user.info.basic,user.info.profile,user.info.stats,video.list'
-      authUrl += '&response_type=code'
-      authUrl += `&redirect_uri=${encodeURIComponent('https://octopus-frontend-tau.vercel.app/')}`
-      authUrl += `&state=${csrfState}`
-      authUrl += '&disable_auto_auth=1&prompt=login'
+      const redirectUri = encodeURIComponent('https://octopus-frontend-tau.vercel.app/')
+      const scope = encodeURIComponent('user.info.basic,user.info.profile,user.info.stats,video.list')
 
-      window.location.href = authUrl
+      // Detect mobile
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+
+      // Web OAuth URL
+      const webAuthUrl = `https://www.tiktok.com/v2/auth/authorize/?client_key=${TIKTOK_CLIENT_KEY}&response_type=code&scope=${scope}&redirect_uri=${redirectUri}&state=${csrfState}&disable_auto_auth=1`
+
+      if (isMobile) {
+        // Try TikTok app deep link first
+        const appAuthUrl = `tiktok://authorize?client_key=${TIKTOK_CLIENT_KEY}&response_type=code&scope=${scope}&redirect_uri=${redirectUri}&state=${csrfState}`
+
+        window.location.href = appAuthUrl
+
+        // Fallback to web after 2 seconds if app doesn't open
+        setTimeout(() => {
+          window.location.href = webAuthUrl
+        }, 2000)
+      } else {
+        window.location.href = webAuthUrl
+      }
     } else {
       const demoUsername = prompt('Ingresa tu username de TikTok (sin @):')
       if (demoUsername) {

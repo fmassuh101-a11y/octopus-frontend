@@ -389,10 +389,26 @@ export default function ProfilePage() {
     // Save state to localStorage for CSRF protection
     localStorage.setItem('tiktok_oauth_state', state)
 
-    // Force TikTok to show fresh login - no cached session
-    const authUrl = `https://www.tiktok.com/v2/auth/authorize/?client_key=${TIKTOK_CLIENT_KEY}&response_type=code&scope=${scope}&redirect_uri=${redirectUri}&state=${state}&disable_auto_auth=1&prompt=login`
+    // Detect mobile
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
 
-    window.location.href = authUrl
+    // Base OAuth URL
+    const webAuthUrl = `https://www.tiktok.com/v2/auth/authorize/?client_key=${TIKTOK_CLIENT_KEY}&response_type=code&scope=${scope}&redirect_uri=${redirectUri}&state=${state}&disable_auto_auth=1`
+
+    if (isMobile) {
+      // Try to open TikTok app first, fallback to web
+      const appAuthUrl = `tiktok://authorize?client_key=${TIKTOK_CLIENT_KEY}&response_type=code&scope=${scope}&redirect_uri=${redirectUri}&state=${state}`
+
+      // Try app deep link, fallback to web after timeout
+      const appWindow = window.location.href = appAuthUrl
+
+      // If app doesn't open within 2 seconds, use web
+      setTimeout(() => {
+        window.location.href = webAuthUrl
+      }, 2000)
+    } else {
+      window.location.href = webAuthUrl
+    }
   }
 
   // Verification Section - REAL OAuth verification
