@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 
 interface WhopPayoutsPortalProps {
   companyId: string
@@ -21,102 +21,147 @@ export default function WhopPayoutsPortal({
 }: WhopPayoutsPortalProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const sessionRef = useRef<any>(null)
 
   useEffect(() => {
     initWhopElements()
+    return () => {
+      // Cleanup
+      if (sessionRef.current) {
+        sessionRef.current.destroy?.()
+      }
+    }
   }, [])
 
   const initWhopElements = async () => {
     try {
-      const accessToken = await fetchToken()
-      if (!accessToken) {
-        setError('No se pudo obtener el token')
-        setLoading(false)
-        return
-      }
-
       // Dynamically import Whop components
-      const whopModule = await import('@whop/embedded-components-vanilla-js')
-      const loadWhopElements = whopModule.loadWhopElements
+      const { loadWhopElements } = await import('@whop/embedded-components-vanilla-js')
 
-      // Load elements with proper options object
-      const elements = await loadWhopElements({
-        token: accessToken
+      // Load WhopElements (no token here, just appearance options)
+      const whopElements = await loadWhopElements({
+        appearance: {
+          theme: { appearance: 'light' }
+        }
       })
 
-      // Mount the appropriate elements based on props
-      const container = document.getElementById('whop-container')
-      if (!container) {
+      if (!whopElements) {
+        setError('No se pudo cargar Whop Elements')
         setLoading(false)
         return
       }
 
+      // Create PayoutsSession with token
+      const session = whopElements.createPayoutsSession({
+        token: fetchToken,
+        companyId,
+        redirectUrl
+      })
+
+      sessionRef.current = session
+
+      // Wait for session to be ready
+      session.on('ready', () => {
+        mountElements(session)
+      })
+
+      session.on('error', (err: any) => {
+        console.error('Whop session error:', err)
+        setError('Error en la sesión de pagos')
+        setLoading(false)
+      })
+
+    } catch (err) {
+      console.error('Error initializing Whop elements:', err)
+      setError('Error al cargar componentes de pago')
+      setLoading(false)
+    }
+  }
+
+  const mountElements = (session: any) => {
+    const container = document.getElementById('whop-container')
+    if (!container) {
+      setLoading(false)
+      return
+    }
+
+    try {
       if (showPayoutMethodsOnly) {
-        // Only show payout method form
-        const payoutMethodEl = elements.create('payoutMethod', {
-          companyId,
-          redirectUrl
+        // Only show add payout method form
+        container.innerHTML = '<div id="whop-add-payout"></div>'
+        const addPayoutEl = session.createElement('add-payout-method-element', {
+          onSuccess: () => {
+            onComplete?.()
+          }
         })
-        container.innerHTML = ''
-        payoutMethodEl.mount(container)
+        addPayoutEl.mount('#whop-add-payout')
+
       } else if (showWallet) {
         // Show full wallet: balance, withdraw button, history
         container.innerHTML = `
-          <div id="whop-balance" class="p-5"></div>
-          <div id="whop-withdraw" class="px-5 pb-4"></div>
-          <div class="border-t border-gray-100 mt-2">
-            <div class="px-5 py-3">
+          <div id="whop-balance" class="bg-white rounded-2xl shadow-sm overflow-hidden mb-4"></div>
+          <div id="whop-withdraw" class="bg-white rounded-2xl shadow-sm p-4 mb-4"></div>
+          <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <div class="px-5 py-3 border-b border-gray-100">
               <h3 class="font-semibold text-gray-900">Historial de retiros</h3>
             </div>
             <div id="whop-withdrawals"></div>
           </div>
         `
 
-        const balanceEl = elements.create('balance', { companyId })
-        const withdrawEl = elements.create('withdrawButton', {
-          companyId,
-          redirectUrl
-        })
-        const withdrawalsEl = elements.create('withdrawals', { companyId })
+        const balanceEl = session.createElement('balance-element', {})
+        const withdrawEl = session.createElement('withdraw-button-element', {})
+        const withdrawalsEl = session.createElement('withdrawals-element', {})
 
         balanceEl.mount('#whop-balance')
         withdrawEl.mount('#whop-withdraw')
         withdrawalsEl.mount('#whop-withdrawals')
+
       } else {
-        // KYC/Setup flow - show payout method form for onboarding
-        const payoutMethodEl = elements.create('payoutMethod', {
-          companyId,
-          redirectUrl
+        // KYC/Setup flow - show verify element and add payout method
+        container.innerHTML = `
+          <div id="whop-verify" class="mb-4"></div>
+          <div id="whop-add-payout"></div>
+        `
+
+        const verifyEl = session.createElement('verify-element', {
+          onVerified: () => {
+            // After verification, check if complete
+            checkCompletion()
+          }
         })
-        container.innerHTML = ''
-        payoutMethodEl.mount(container)
+        const addPayoutEl = session.createElement('add-payout-method-element', {
+          onSuccess: () => {
+            onComplete?.()
+          }
+        })
 
-        // Check for completion periodically
-        if (onComplete) {
-          const checkInterval = setInterval(async () => {
-            try {
-              // Check if user has added payout methods
-              const res = await fetch(`/api/whop/creator-balance?userId=${localStorage.getItem('sb-user') ? JSON.parse(localStorage.getItem('sb-user')!).id : ''}`)
-              const data = await res.json()
-              if (data.kycComplete) {
-                clearInterval(checkInterval)
-                onComplete()
-              }
-            } catch {
-              // Ignore errors
-            }
-          }, 5000)
-
-          // Cleanup on unmount
-          return () => clearInterval(checkInterval)
-        }
+        verifyEl.mount('#whop-verify')
+        addPayoutEl.mount('#whop-add-payout')
       }
 
       setLoading(false)
     } catch (err) {
-      console.error('Error initializing Whop elements:', err)
-      setError('Error al cargar componentes de pago')
+      console.error('Error mounting elements:', err)
+      setError('Error al mostrar formularios')
       setLoading(false)
+    }
+  }
+
+  const checkCompletion = async () => {
+    try {
+      const userStr = localStorage.getItem('sb-user')
+      if (!userStr) return
+
+      const userId = JSON.parse(userStr).id
+      const res = await fetch(`/api/whop/creator-balance?userId=${userId}`)
+      const data = await res.json()
+
+      if (data.kycComplete) {
+        onComplete?.()
+      }
+    } catch {
+      // Ignore
     }
   }
 
@@ -148,11 +193,7 @@ export default function WhopPayoutsPortal({
 
   return (
     <div id="whop-container" className="min-h-[200px]">
-      {loading && (
-        <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-        </div>
-      )}
+      {/* Whop elements will be mounted here */}
     </div>
   )
 }
