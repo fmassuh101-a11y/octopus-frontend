@@ -5,25 +5,29 @@ import Link from 'next/link'
 import dynamic from 'next/dynamic'
 
 const MINIMUM_PAYOUT = 10.20
-const APP_URL = 'https://octopus-frontend-tau.vercel.app'
 
 // Dynamically import Whop components to avoid SSR issues
-const WhopPayoutsPortal = dynamic(() => import('./WhopPayoutsPortal'), {
+const WhopPayoutsEmbed = dynamic(() => import('./WhopPayoutsEmbed'), {
   ssr: false,
   loading: () => (
-    <div className="flex items-center justify-center py-12">
-      <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+    <div className="animate-pulse">
+      <div className="h-20 bg-gray-200 rounded-xl mb-4" />
+      <div className="h-32 bg-gray-200 rounded-xl mb-4" />
+      <div className="h-12 bg-gray-200 rounded-xl" />
     </div>
   )
 })
 
 export default function CreatorWallet() {
   const [loading, setLoading] = useState(true)
+  const [actionLoading, setActionLoading] = useState(false)
   const [needsSetup, setNeedsSetup] = useState(false)
   const [needsKyc, setNeedsKyc] = useState(false)
-  const [companyId, setCompanyId] = useState<string | null>(null)
+  const [balance, setBalance] = useState(0)
+  const [totalBalance, setTotalBalance] = useState(0)
   const [userId, setUserId] = useState<string | null>(null)
-  const [showPayoutMethods, setShowPayoutMethods] = useState(false)
+  const [companyId, setCompanyId] = useState<string | null>(null)
+  const [showEmbedded, setShowEmbedded] = useState(false)
 
   useEffect(() => {
     checkStatus()
@@ -43,7 +47,6 @@ export default function CreatorWallet() {
       const user = JSON.parse(userStr)
       setUserId(user.id)
 
-      // Check balance/KYC status
       const res = await fetch(`/api/whop/creator-balance?userId=${user.id}`)
       const data = await res.json()
 
@@ -52,19 +55,22 @@ export default function CreatorWallet() {
       } else if (!data.kycComplete) {
         setNeedsKyc(true)
         setCompanyId(data.companyId)
+        setShowEmbedded(true)
       } else {
         setCompanyId(data.companyId)
+        setBalance(data.balance || 0)
+        setTotalBalance(data.totalBalance || 0)
+        setShowEmbedded(true)
       }
-
     } catch (err) {
       console.error('[Wallet] Error:', err)
     }
     setLoading(false)
   }
 
+  // Create Whop company and redirect to KYC
   const startSetup = async () => {
-    setLoading(true)
-
+    setActionLoading(true)
     try {
       const userStr = localStorage.getItem('sb-user')
       const token = localStorage.getItem('sb-access-token')
@@ -75,7 +81,6 @@ export default function CreatorWallet() {
 
       const user = JSON.parse(userStr)
 
-      // Get profile
       const profileRes = await fetch(
         `https://ftvqoudlmojdxwjxljzr.supabase.co/rest/v1/profiles?user_id=eq.${user.id}&select=*`,
         {
@@ -88,7 +93,6 @@ export default function CreatorWallet() {
       const profiles = await profileRes.json()
       const profile = profiles[0] || {}
 
-      // Create Whop company
       const res = await fetch('/api/whop/setup-creator', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -102,7 +106,10 @@ export default function CreatorWallet() {
 
       const data = await res.json()
 
-      if (data.companyId) {
+      if (data.kycUrl) {
+        // Open KYC in same window - will redirect back
+        window.location.href = data.kycUrl
+      } else if (data.companyId) {
         setCompanyId(data.companyId)
         setNeedsSetup(false)
         setNeedsKyc(true)
@@ -110,26 +117,14 @@ export default function CreatorWallet() {
     } catch (err) {
       console.error('[Wallet] Setup error:', err)
     }
-    setLoading(false)
+    setActionLoading(false)
   }
 
-  // Fetch token for Whop components
-  const fetchToken = useCallback(async () => {
-    if (!userId) return ''
-
-    const res = await fetch('/api/whop/access-token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId })
-    })
-    const data = await res.json()
-    return data.token || ''
-  }, [userId])
 
   if (loading) {
     return (
       <div className="min-h-screen bg-[#f8f9fa]">
-        <Header />
+        <Header title="Payouts" />
         <div className="flex items-center justify-center py-20">
           <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
         </div>
@@ -138,200 +133,103 @@ export default function CreatorWallet() {
     )
   }
 
-  // Need to create Whop account first
+  // Need to create Whop account
   if (needsSetup) {
     return (
       <div className="min-h-screen bg-[#f8f9fa]">
-        <Header />
+        <Header title="Payouts" />
 
-        <div className="mx-4 mt-6 bg-white rounded-2xl shadow-sm p-6">
-          <div className="text-center">
-            <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg">
-              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Configura tu Wallet</h2>
-            <p className="text-gray-500 mb-6">Para recibir pagos necesitas verificar tu identidad y agregar un método de pago</p>
-
-            <button
-              onClick={startSetup}
-              className="w-full py-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold rounded-xl transition-all shadow-md"
-            >
-              Comenzar
-            </button>
-          </div>
-        </div>
-
-        <BottomNav active="wallet" />
-      </div>
-    )
-  }
-
-  // Need KYC verification - Show embedded Whop components
-  if (needsKyc && companyId) {
-    return (
-      <div className="min-h-screen bg-[#f8f9fa]">
-        <Header title="Verificación" />
-
-        <div className="mx-4 mt-4">
-          <div className="bg-white rounded-2xl shadow-sm p-6 mb-4">
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Completa tu verificación</h2>
-            <p className="text-gray-500 text-sm">Agrega tu información de pago para poder recibir dinero</p>
+        <div className="px-4 pt-6">
+          {/* Balance Card - Shows 0 */}
+          <div className="bg-white rounded-2xl shadow-sm p-5 mb-4">
+            <p className="text-gray-500 text-sm mb-1">Balance disponible</p>
+            <p className="text-3xl font-bold text-gray-900">$0.00 <span className="text-lg font-normal text-gray-400">USD</span></p>
           </div>
 
-          {/* Whop Embedded Payout Portal */}
-          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-            <WhopPayoutsPortal
-              companyId={companyId}
-              fetchToken={fetchToken}
-              redirectUrl={`${APP_URL}/creator/wallet`}
-              onComplete={() => {
-                setNeedsKyc(false)
-                checkStatus()
-              }}
-            />
-          </div>
-        </div>
-
-        <BottomNav active="wallet" />
-      </div>
-    )
-  }
-
-  // Main Wallet - Verified user
-  return (
-    <div className="min-h-screen bg-[#f8f9fa]">
-      <Header
-        showMenu
-        onPayoutMethods={() => setShowPayoutMethods(true)}
-        onRefresh={checkStatus}
-      />
-
-      {/* Payout Methods Modal */}
-      {showPayoutMethods && companyId && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center">
-          <div className="bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl max-h-[90vh] overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-              <h3 className="font-bold text-gray-900">Métodos de pago</h3>
-              <button
-                onClick={() => setShowPayoutMethods(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg"
-              >
-                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          {/* Setup Card */}
+          <div className="bg-white rounded-2xl shadow-sm p-6">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
+              </div>
+              <h2 className="text-xl font-bold text-gray-900 mb-2">Configura tu wallet</h2>
+              <p className="text-gray-500 text-sm mb-6">Verifica tu identidad para poder recibir pagos de las marcas</p>
+
+              <button
+                onClick={startSetup}
+                disabled={actionLoading}
+                className="w-full py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold rounded-xl transition-colors"
+              >
+                {actionLoading ? 'Cargando...' : 'Verificar identidad'}
               </button>
             </div>
-            <div className="overflow-y-auto max-h-[70vh]">
-              <WhopPayoutsPortal
-                companyId={companyId}
-                fetchToken={fetchToken}
-                redirectUrl={`${APP_URL}/creator/wallet`}
-                showPayoutMethodsOnly
-              />
-            </div>
           </div>
         </div>
-      )}
 
-      {/* Whop Embedded Balance & Payouts */}
-      <div className="mx-4 mt-4">
-        {companyId && (
-          <WhopPayoutsPortal
-            companyId={companyId}
-            fetchToken={fetchToken}
-            redirectUrl={`${APP_URL}/creator/wallet`}
-            showWallet
-          />
-        )}
+        <BottomNav active="wallet" />
       </div>
+    )
+  }
 
-      {/* Fixed Bottom - Withdraw info */}
-      <div className="fixed bottom-16 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-200 px-4 py-3">
-        <p className="text-center text-gray-400 text-sm">
-          Mínimo para retirar: {MINIMUM_PAYOUT.toFixed(2)} US$
-        </p>
+  // Need KYC verification OR Verified - Show embedded Whop dashboard
+  if ((needsKyc || !needsSetup) && showEmbedded && userId && companyId) {
+    return (
+      <div className="min-h-screen bg-[#f8f9fa] pb-20">
+        <Header title="Verificación" />
+
+        <div className="px-4 pt-6">
+          {needsKyc && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-yellow-800">Completa tu verificación</h3>
+                  <p className="text-yellow-700 text-sm">Agrega tu información de pago para poder recibir dinero</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Whop Embedded Components */}
+          <WhopPayoutsEmbed userId={userId} companyId={companyId} />
+        </div>
+
+        <BottomNav active="wallet" />
       </div>
+    )
+  }
 
-      <div className="h-32" />
+  // Fallback - shouldn't reach here normally
+  return (
+    <div className="min-h-screen bg-[#f8f9fa]">
+      <Header title="Payouts" />
+      <div className="px-4 pt-6">
+        <div className="bg-white rounded-2xl shadow-sm p-6 text-center">
+          <p className="text-gray-500">Cargando...</p>
+        </div>
+      </div>
       <BottomNav active="wallet" />
     </div>
   )
 }
 
-function Header({
-  title = "Payouts",
-  showMenu,
-  onPayoutMethods,
-  onRefresh
-}: {
-  title?: string
-  showMenu?: boolean
-  onPayoutMethods?: () => void
-  onRefresh?: () => void
-}) {
-  const [menuOpen, setMenuOpen] = useState(false)
-
+function Header({ title }: { title: string }) {
   return (
-    <>
-      <div className="bg-white px-4 py-4 flex items-center justify-between shadow-sm sticky top-0 z-10">
-        <Link href="/creator/dashboard" className="p-2 -ml-2 rounded-lg hover:bg-gray-100 transition-colors">
-          <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </Link>
-        <h1 className="font-bold text-gray-900 text-lg">{title}</h1>
-        {showMenu ? (
-          <button
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="p-2 -mr-2 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-            </svg>
-          </button>
-        ) : (
-          <div className="w-10" />
-        )}
-      </div>
-
-      {menuOpen && (
-        <>
-          <div className="fixed inset-0 z-20" onClick={() => setMenuOpen(false)} />
-          <div className="absolute right-4 top-14 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-30 min-w-[180px]">
-            {onPayoutMethods && (
-              <button
-                onClick={() => {
-                  setMenuOpen(false)
-                  onPayoutMethods()
-                }}
-                className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3"
-              >
-                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                </svg>
-                Métodos de pago
-              </button>
-            )}
-            {onRefresh && (
-              <button
-                onClick={() => {
-                  setMenuOpen(false)
-                  onRefresh()
-                }}
-                className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3"
-              >
-                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Actualizar
-              </button>
-            )}
-          </div>
-        </>
-      )}
-    </>
+    <div className="bg-white px-4 py-4 flex items-center justify-between shadow-sm sticky top-0 z-10">
+      <Link href="/creator/dashboard" className="p-2 -ml-2 rounded-lg hover:bg-gray-100">
+        <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+      </Link>
+      <h1 className="font-bold text-gray-900 text-lg">{title}</h1>
+      <div className="w-10" />
+    </div>
   )
 }
 
@@ -366,8 +264,8 @@ function BottomNav({ active }: { active: string }) {
           <Link
             key={item.id}
             href={item.href}
-            className={`flex flex-col items-center py-2 px-4 transition-colors ${
-              active === item.id ? 'text-blue-600' : 'text-gray-400 hover:text-gray-600'
+            className={`flex flex-col items-center py-2 px-4 ${
+              active === item.id ? 'text-blue-600' : 'text-gray-400'
             }`}
           >
             {item.icon}
