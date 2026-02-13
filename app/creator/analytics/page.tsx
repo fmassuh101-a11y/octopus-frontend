@@ -65,40 +65,33 @@ export default function CreatorAnalyticsPage() {
     }
   }
 
+  const [showTikTokModal, setShowTikTokModal] = useState(false)
+
   const handleConnectTikTok = () => {
-    if (TIKTOK_CLIENT_KEY) {
-      const csrfState = Math.random().toString(36).substring(2, 15)
-      localStorage.setItem('tiktok_csrf_state', csrfState)
-      localStorage.setItem('tiktok_oauth_state', csrfState) // Also save for main page handler
+    // Detect mobile
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
 
-      const redirectUri = encodeURIComponent('https://octopus-frontend-tau.vercel.app/')
-      const scope = encodeURIComponent('user.info.basic,user.info.profile,user.info.stats,video.list')
-
-      // Detect mobile
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
-
-      // Web OAuth URL
-      const webAuthUrl = `https://www.tiktok.com/v2/auth/authorize/?client_key=${TIKTOK_CLIENT_KEY}&response_type=code&scope=${scope}&redirect_uri=${redirectUri}&state=${csrfState}&disable_auto_auth=1`
-
-      if (isMobile) {
-        // Try TikTok app deep link first
-        const appAuthUrl = `tiktok://authorize?client_key=${TIKTOK_CLIENT_KEY}&response_type=code&scope=${scope}&redirect_uri=${redirectUri}&state=${csrfState}`
-
-        window.location.href = appAuthUrl
-
-        // Fallback to web after 2 seconds if app doesn't open
-        setTimeout(() => {
-          window.location.href = webAuthUrl
-        }, 2000)
-      } else {
-        window.location.href = webAuthUrl
-      }
+    if (isMobile) {
+      setShowTikTokModal(true)
     } else {
-      const demoUsername = prompt('Ingresa tu username de TikTok (sin @):')
-      if (demoUsername) {
-        window.location.href = `/auth/tiktok/callback?code=demo_${Date.now()}&username=${demoUsername}&display_name=${demoUsername}`
-      }
+      startTikTokOAuth()
     }
+  }
+
+  const startTikTokOAuth = () => {
+    const csrfState = Math.random().toString(36).substring(2, 15)
+    localStorage.setItem('tiktok_csrf_state', csrfState)
+    localStorage.setItem('tiktok_oauth_state', csrfState)
+
+    const redirectUri = encodeURIComponent('https://octopus-frontend-tau.vercel.app/')
+    const scope = encodeURIComponent('user.info.basic,user.info.profile,user.info.stats,video.list')
+    const webAuthUrl = `https://www.tiktok.com/v2/auth/authorize/?client_key=${TIKTOK_CLIENT_KEY}&response_type=code&scope=${scope}&redirect_uri=${redirectUri}&state=${csrfState}&disable_auto_auth=1`
+
+    window.location.href = webAuthUrl
+  }
+
+  const openTikTokLogout = () => {
+    window.open('https://www.tiktok.com/logout', '_blank')
   }
 
   const handleRemoveAccount = async (accountId: string) => {

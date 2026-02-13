@@ -48,15 +48,26 @@ export default function HomePage() {
   const handleTikTokCallback = async (code: string, state: string) => {
     setTiktokProcessing(true)
 
-    // Verify state matches
-    const savedState = localStorage.getItem('tiktok_oauth_state')
+    // Verify state matches (check both possible keys)
+    const savedState = localStorage.getItem('tiktok_oauth_state') || localStorage.getItem('tiktok_csrf_state')
     if (state !== savedState) {
-      console.error('[TikTok] State mismatch')
+      console.error('[TikTok] State mismatch:', state, 'vs', savedState)
       window.location.href = '/creator/profile?section=verification&error=state_mismatch'
       return
     }
 
     try {
+      // Get user info for saving to Supabase
+      const token = localStorage.getItem('sb-access-token')
+      const userStr = localStorage.getItem('sb-user')
+
+      if (!token || !userStr) {
+        window.location.href = '/auth/login'
+        return
+      }
+
+      const user = JSON.parse(userStr)
+
       // Exchange code for token via our API
       const response = await fetch('/api/tiktok/callback', {
         method: 'POST',
@@ -70,12 +81,101 @@ export default function HomePage() {
       const data = await response.json()
 
       if (data.success && data.data) {
-        // Save TikTok data to localStorage temporarily
-        localStorage.setItem('tiktok_account_data', JSON.stringify(data.data))
-        localStorage.removeItem('tiktok_oauth_state')
+        const tiktokData = data.data
 
-        // Redirect to profile with success
-        window.location.href = '/creator/profile?section=verification&tiktok=connected'
+        // Build account data
+        const accountData = {
+          id: `tiktok_${tiktokData.openId}`,
+          openId: tiktokData.openId,
+          username: tiktokData.username || tiktokData.displayName || 'Usuario TikTok',
+          displayName: tiktokData.displayName || tiktokData.username || 'Usuario TikTok',
+          avatarUrl: tiktokData.avatarUrl,
+          bio: tiktokData.bio || '',
+          isVerified: tiktokData.isVerified || false,
+          followers: tiktokData.followers || 0,
+          following: tiktokData.following || 0,
+          likes: tiktokData.likes || 0,
+          videoCount: tiktokData.videoCount || 0,
+          avgViews: tiktokData.avgViews || 0,
+          engagementRate: tiktokData.engagementRate || 0,
+          recentVideos: tiktokData.recentVideos || [],
+          accessToken: tiktokData.accessToken,
+          refreshToken: tiktokData.refreshToken,
+          connectedAt: new Date().toISOString(),
+          lastUpdated: new Date().toISOString(),
+        }
+
+        // Get current profile from Supabase
+        const profileRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=*`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'apikey': SUPABASE_ANON_KEY
+            }
+          }
+        )
+
+        if (profileRes.ok) {
+          const profiles = await profileRes.json()
+          if (profiles.length > 0) {
+            const profile = profiles[0]
+            let bioData: any = {}
+
+            try {
+              bioData = profile.bio ? JSON.parse(profile.bio) : {}
+            } catch (e) {
+              bioData = {}
+            }
+
+            // Add/update TikTok account
+            const tiktokAccounts = bioData.tiktokAccounts || []
+            const existingIndex = tiktokAccounts.findIndex((a: any) =>
+              a.openId === accountData.openId || a.username === accountData.username
+            )
+
+            if (existingIndex >= 0) {
+              tiktokAccounts[existingIndex] = accountData
+            } else {
+              tiktokAccounts.push(accountData)
+            }
+
+            bioData.tiktokAccounts = tiktokAccounts
+            bioData.tiktokConnected = true
+
+            // Save to Supabase
+            const saveRes = await fetch(
+              `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}`,
+              {
+                method: 'PATCH',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`,
+                  'apikey': SUPABASE_ANON_KEY,
+                  'Prefer': 'return=minimal'
+                },
+                body: JSON.stringify({
+                  bio: JSON.stringify(bioData),
+                  updated_at: new Date().toISOString()
+                })
+              }
+            )
+
+            if (saveRes.ok) {
+              console.log('[TikTok] Account saved to Supabase!')
+            } else {
+              console.error('[TikTok] Failed to save to Supabase:', saveRes.status)
+            }
+          }
+        }
+
+        // Also save to localStorage as backup
+        localStorage.setItem('tiktok_account_data', JSON.stringify(accountData))
+        localStorage.removeItem('tiktok_oauth_state')
+        localStorage.removeItem('tiktok_csrf_state')
+
+        // Redirect to analytics with success
+        window.location.href = '/creator/analytics?tiktok=connected'
       } else {
         console.error('[TikTok] API error:', data.error)
         window.location.href = `/creator/profile?section=verification&error=${encodeURIComponent(data.error || 'unknown')}`
