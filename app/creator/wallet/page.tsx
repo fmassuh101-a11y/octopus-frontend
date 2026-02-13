@@ -29,6 +29,7 @@ export default function CreatorWallet() {
   const [needsSetup, setNeedsSetup] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'balance' | 'withdraw' | 'history'>('balance')
+  const [debugInfo, setDebugInfo] = useState<string>('')
 
   useEffect(() => {
     checkUserSetup()
@@ -36,19 +37,53 @@ export default function CreatorWallet() {
 
   const checkUserSetup = async () => {
     try {
+      setDebugInfo('Verificando sesión...')
+
+      // Get token from localStorage
+      const token = localStorage.getItem('sb-access-token')
+      if (!token) {
+        console.log('[CreatorWallet] No token in localStorage, redirecting')
+        window.location.href = '/auth/login?redirect=/creator/wallet'
+        return
+      }
+
       // Verificar si el usuario tiene whop_company_id
-      const res = await fetch('/api/whop/payout-session', { method: 'POST' })
+      const res = await fetch('/api/whop/payout-session', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
       const data = await res.json()
 
+      console.log('[CreatorWallet] Response:', res.status, data)
+      setDebugInfo(`Status: ${res.status}, Data: ${JSON.stringify(data)}`)
+
+      if (res.status === 401) {
+        // No está logueado - redirigir
+        console.log('[CreatorWallet] 401, redirecting to login')
+        window.location.href = '/auth/login?redirect=/creator/wallet'
+        return
+      }
+
+      // Check needsSetup first (can come with 200 or 400)
       if (data.needsSetup) {
+        console.log('[CreatorWallet] Needs setup - user has no whop_company_id')
         setNeedsSetup(true)
       } else if (data.companyId) {
+        console.log('[CreatorWallet] Company ID found:', data.companyId)
         setCompanyId(data.companyId)
-      } else {
+      } else if (!res.ok) {
+        console.log('[CreatorWallet] API Error:', data.error)
         setError(data.error || 'Error al verificar cuenta')
+      } else {
+        console.log('[CreatorWallet] Unknown state:', data)
+        setError('Error desconocido - intenta recargar')
       }
     } catch (err: any) {
+      console.error('[CreatorWallet] Exception:', err)
       setError(err.message)
+      setDebugInfo(`Error: ${err.message}`)
     }
     setLoading(false)
   }
@@ -67,10 +102,14 @@ export default function CreatorWallet() {
         <div className="text-center">
           <div className="w-10 h-10 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-white/40 text-sm">Cargando wallet...</p>
+          <p className="text-white/20 text-xs mt-2">{debugInfo}</p>
         </div>
       </div>
     )
   }
+
+  // Debug: mostrar estado actual
+  console.log('[CreatorWallet] Render state:', { loading, needsSetup, companyId, error })
 
   if (needsSetup) {
     return (

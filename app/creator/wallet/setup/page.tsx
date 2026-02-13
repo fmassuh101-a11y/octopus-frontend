@@ -15,8 +15,20 @@ export default function WalletSetup() {
     setStep('creating')
 
     try {
+      // Get token from localStorage
+      const token = localStorage.getItem('sb-access-token')
+      if (!token) {
+        window.location.href = '/auth/login?redirect=/creator/wallet/setup'
+        return
+      }
+
       // 1. Crear sub-company para el creador
-      const res = await fetch('/api/whop/setup-creator', { method: 'POST' })
+      const res = await fetch('/api/whop/setup-creator', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
       const data = await res.json()
 
       if (!res.ok) {
