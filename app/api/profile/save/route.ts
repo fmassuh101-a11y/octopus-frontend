@@ -1,0 +1,105 @@
+import { NextRequest, NextResponse } from 'next/server'
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ftvqoudlmojdxwjxljzr.supabase.co'
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+
+/**
+ * POST /api/profile/save
+ * Saves user profile using service role key (bypasses RLS)
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { userId, profileData } = body
+
+    if (!userId) {
+      return NextResponse.json({ error: 'userId is required' }, { status: 400 })
+    }
+
+    if (!SUPABASE_SERVICE_KEY) {
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 })
+    }
+
+    console.log('[SaveProfile] Saving profile for user:', userId)
+
+    // Check if profile exists
+    const checkRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userId}&select=id`,
+      {
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+          'apikey': SUPABASE_SERVICE_KEY
+        }
+      }
+    )
+
+    const existingProfiles = await checkRes.json()
+    const profileExists = existingProfiles && existingProfiles.length > 0
+
+    console.log('[SaveProfile] Profile exists:', profileExists)
+
+    // Prepare profile data
+    const dataToSave = {
+      user_id: userId,
+      ...profileData,
+      updated_at: new Date().toISOString()
+    }
+
+    let saveRes
+    if (profileExists) {
+      // Update existing profile
+      saveRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+            'apikey': SUPABASE_SERVICE_KEY,
+            'Prefer': 'return=representation'
+          },
+          body: JSON.stringify(dataToSave)
+        }
+      )
+    } else {
+      // Insert new profile
+      saveRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+            'apikey': SUPABASE_SERVICE_KEY,
+            'Prefer': 'return=representation'
+          },
+          body: JSON.stringify(dataToSave)
+        }
+      )
+    }
+
+    if (!saveRes.ok) {
+      const errorText = await saveRes.text()
+      console.error('[SaveProfile] Error:', saveRes.status, errorText)
+      return NextResponse.json(
+        { error: `Database error: ${errorText}` },
+        { status: saveRes.status }
+      )
+    }
+
+    const savedProfile = await saveRes.json()
+    console.log('[SaveProfile] Success:', savedProfile)
+
+    return NextResponse.json({
+      success: true,
+      profile: Array.isArray(savedProfile) ? savedProfile[0] : savedProfile
+    })
+
+  } catch (error) {
+    console.error('[SaveProfile] Exception:', error)
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    )
+  }
+}

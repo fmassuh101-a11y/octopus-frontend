@@ -150,103 +150,27 @@ export default function CreatorSocialsPage() {
         updated_at: new Date().toISOString()
       }
 
-      // Check if profile exists
-      const checkResponse = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=id`,
-        {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'apikey': SUPABASE_ANON_KEY
-          }
-        }
-      )
-
-      if (!checkResponse.ok) {
-        throw new Error('Error verificando perfil')
-      }
-
-      const profiles = await checkResponse.json()
-
-      let saveResponse
-      if (profiles && profiles.length > 0) {
-        // Update
-        saveResponse = await fetch(
-          `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}`,
-          {
-            method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${accessToken}`,
-              'apikey': SUPABASE_ANON_KEY,
-              'Prefer': 'return=minimal'
-            },
-            body: JSON.stringify(profileData)
-          }
-        )
-      } else {
-        // Insert
-        saveResponse = await fetch(
-          `${SUPABASE_URL}/rest/v1/profiles`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${accessToken}`,
-              'apikey': SUPABASE_ANON_KEY,
-              'Prefer': 'return=minimal'
-            },
-            body: JSON.stringify(profileData)
-          }
-        )
-      }
+      // Use API route to save profile (bypasses RLS issues)
+      console.log('Saving profile via API...')
+      const saveResponse = await fetch('/api/profile/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          profileData: profileData
+        })
+      })
 
       if (!saveResponse.ok) {
-        const errorText = await saveResponse.text()
-        console.error('Save error:', errorText)
-
-        // If first save failed, try UPSERT with ALL profile data
-        console.log('First save failed, trying UPSERT with full data...')
-        const upsertResponse = await fetch(
-          `${SUPABASE_URL}/rest/v1/profiles`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${accessToken}`,
-              'apikey': SUPABASE_ANON_KEY,
-              'Prefer': 'resolution=merge-duplicates,return=representation'
-            },
-            body: JSON.stringify(profileData)
-          }
-        )
-
-        if (!upsertResponse.ok) {
-          const upsertError = await upsertResponse.text()
-          console.error('UPSERT also failed:', upsertError)
-          throw new Error('No se pudo guardar tu perfil. Por favor intenta de nuevo.')
-        }
-        console.log('UPSERT succeeded')
+        const errorData = await saveResponse.json()
+        console.error('Save error:', errorData)
+        throw new Error(errorData.error || 'No se pudo guardar tu perfil. Por favor intenta de nuevo.')
       }
 
-      // Verify profile was saved correctly
-      const verifyResponse = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=user_type,profile_photo_url`,
-        {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'apikey': SUPABASE_ANON_KEY
-          }
-        }
-      )
-
-      if (verifyResponse.ok) {
-        const verifyData = await verifyResponse.json()
-        console.log('Verification result:', verifyData)
-        if (!verifyData[0] || verifyData[0].user_type !== 'creator') {
-          throw new Error('Error: El perfil no se guardó correctamente. Intenta de nuevo.')
-        }
-        console.log('SUCCESS: Profile saved correctly')
-      }
+      const saveResult = await saveResponse.json()
+      console.log('Profile saved successfully:', saveResult)
 
       // IMPORTANT: Keep onboarding data in localStorage as backup
       localStorage.setItem('creatorOnboarding', JSON.stringify(allData))

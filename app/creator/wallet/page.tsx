@@ -40,7 +40,13 @@ export default function CreatorWallet() {
       )
 
       if (!res.ok) {
-        setError('Error al cargar perfil')
+        const errorText = await res.text()
+        console.error('[Wallet] Profile fetch error:', res.status, errorText)
+        if (res.status === 401) {
+          setError('Sesión expirada. Por favor inicia sesión de nuevo.')
+        } else {
+          setError(`Error al cargar perfil (${res.status})`)
+        }
         setLoading(false)
         return
       }
@@ -268,12 +274,20 @@ export default function CreatorWallet() {
                 </svg>
               </div>
               <p className="text-red-400 mb-4">{error || 'Error al cargar'}</p>
-              <button
-                onClick={() => window.location.reload()}
-                className="bg-red-500/20 hover:bg-red-500/30 text-red-400 px-6 py-2.5 rounded-xl text-sm font-medium transition-colors"
-              >
-                Reintentar
-              </button>
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={() => window.location.reload()}
+                  className="bg-red-500/20 hover:bg-red-500/30 text-red-400 px-6 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                >
+                  Reintentar
+                </button>
+                <Link
+                  href="/auth/login"
+                  className="bg-amber-500/20 hover:bg-amber-500/30 text-amber-500 px-6 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                >
+                  Iniciar sesión
+                </Link>
+              </div>
             </div>
           </div>
         </div>
