@@ -76,7 +76,7 @@ export default function CreatorAnalyticsPage() {
       authUrl += '&response_type=code'
       authUrl += `&redirect_uri=${encodeURIComponent('https://octopus-frontend-tau.vercel.app/')}`
       authUrl += `&state=${csrfState}`
-      authUrl += '&disable_auto_auth=1'
+      authUrl += '&disable_auto_auth=1&prompt=login'
 
       window.location.href = authUrl
     } else {
