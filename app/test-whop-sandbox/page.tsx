@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
+  Elements,
   PayoutsSession,
   BalanceElement,
   WithdrawButtonElement,
   StatusBannerElement,
 } from "@whop/embedded-components-react-js";
+import { loadWhopElements } from "@whop/embedded-components-vanilla-js";
+import type { WhopElements } from "@whop/embedded-components-vanilla-js/types";
 
 /**
  * Página de prueba para el sandbox de Whop
@@ -14,19 +17,31 @@ import {
  */
 export default function TestWhopSandbox() {
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [companyId, setCompanyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [whopElements, setWhopElements] = useState<WhopElements | null>(null);
 
-  // Modo: sandbox para pruebas, production para real
-  const environment = "sandbox";
+  // Cargar WhopElements con environment sandbox
+  useEffect(() => {
+    loadWhopElements({
+      environment: "sandbox",
+      appearance: {
+        theme: {
+          appearance: "dark",
+          accentColor: "blue",
+        },
+      },
+    }).then((elements) => {
+      setWhopElements(elements);
+    });
+  }, []);
 
   const getAccessToken = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      // Para pruebas, usamos un token de prueba
-      // En producción, esto vendría del endpoint /api/whop/payout-session
       const response = await fetch("/api/whop/payout-session", {
         method: "POST",
       });
@@ -38,6 +53,7 @@ export default function TestWhopSandbox() {
 
       const data = await response.json();
       setAccessToken(data.accessToken);
+      setCompanyId(data.companyId);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error desconocido");
     } finally {
@@ -45,12 +61,20 @@ export default function TestWhopSandbox() {
     }
   };
 
+  if (!whopElements) {
+    return (
+      <div className="min-h-screen bg-gray-900 text-white p-8 flex items-center justify-center">
+        <p>Cargando componentes de Whop...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
       <div className="max-w-2xl mx-auto">
         <h1 className="text-3xl font-bold mb-2">Test Whop Sandbox</h1>
         <p className="text-gray-400 mb-8">
-          Ambiente: <span className="text-yellow-400 font-mono">{environment}</span>
+          Ambiente: <span className="text-yellow-400 font-mono">sandbox</span>
         </p>
 
         {!accessToken ? (
@@ -82,36 +106,39 @@ export default function TestWhopSandbox() {
               </p>
             </div>
           </div>
-        ) : (
-          <PayoutsSession
-            accessToken={accessToken}
-            environment={environment}
-          >
-            <div className="space-y-6">
-              <div className="bg-gray-800 rounded-lg p-6">
-                <h2 className="text-xl font-semibold mb-4">Balance (Sandbox)</h2>
-                <BalanceElement />
-              </div>
+        ) : accessToken && companyId ? (
+          <Elements elements={whopElements}>
+            <PayoutsSession token={accessToken} companyId={companyId} redirectUrl={typeof window !== 'undefined' ? window.location.href : ''}>
+              <div className="space-y-6">
+                <div className="bg-gray-800 rounded-lg p-6">
+                  <h2 className="text-xl font-semibold mb-4">Balance (Sandbox)</h2>
+                  <BalanceElement />
+                </div>
 
-              <div className="bg-gray-800 rounded-lg p-6">
-                <h2 className="text-xl font-semibold mb-4">Estado de Cuenta</h2>
-                <StatusBannerElement />
-              </div>
+                <div className="bg-gray-800 rounded-lg p-6">
+                  <h2 className="text-xl font-semibold mb-4">Estado de Cuenta</h2>
+                  <StatusBannerElement />
+                </div>
 
-              <div className="bg-gray-800 rounded-lg p-6">
-                <h2 className="text-xl font-semibold mb-4">Acciones</h2>
-                <div className="flex gap-4">
-                  <WithdrawButtonElement />
+                <div className="bg-gray-800 rounded-lg p-6">
+                  <h2 className="text-xl font-semibold mb-4">Acciones</h2>
+                  <div className="flex gap-4">
+                    <WithdrawButtonElement />
+                  </div>
+                </div>
+
+                <div className="bg-green-500/20 border border-green-500 rounded-lg p-4">
+                  <p className="text-green-400">
+                    Ambiente Sandbox activo - Todo el dinero es falso
+                  </p>
                 </div>
               </div>
-
-              <div className="bg-green-500/20 border border-green-500 rounded-lg p-4">
-                <p className="text-green-400">
-                  ✅ Ambiente Sandbox activo - Todo el dinero es falso
-                </p>
-              </div>
-            </div>
-          </PayoutsSession>
+            </PayoutsSession>
+          </Elements>
+        ) : (
+          <div className="bg-red-500/20 border border-red-500 rounded-lg p-4">
+            <p className="text-red-400">Error: No se pudo obtener el companyId</p>
+          </div>
         )}
       </div>
     </div>
