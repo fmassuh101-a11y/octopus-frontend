@@ -29,7 +29,6 @@ export default function CreatorWallet() {
   const [needsSetup, setNeedsSetup] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'balance' | 'withdraw' | 'history'>('balance')
-  const [debugInfo, setDebugInfo] = useState<string>('')
 
   useEffect(() => {
     checkUserSetup()
@@ -37,53 +36,58 @@ export default function CreatorWallet() {
 
   const checkUserSetup = async () => {
     try {
-      setDebugInfo('Verificando sesión...')
-
-      // Get token from localStorage
+      // Get auth from localStorage (same pattern as dashboard)
       const token = localStorage.getItem('sb-access-token')
-      if (!token) {
-        console.log('[CreatorWallet] No token in localStorage, redirecting')
-        window.location.href = '/auth/login?redirect=/creator/wallet'
+      const userStr = localStorage.getItem('sb-user')
+
+      console.log('[CreatorWallet] Auth check:', { hasToken: !!token, hasUser: !!userStr })
+
+      if (!token || !userStr) {
+        setError('No has iniciado sesión. Por favor inicia sesión primero.')
+        setLoading(false)
         return
       }
 
-      // Verificar si el usuario tiene whop_company_id
+      const user = JSON.parse(userStr)
+      console.log('[CreatorWallet] User ID:', user.id)
+
+      // Call API with userId in body
       const res = await fetch('/api/whop/payout-session', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ userId: user.id })
       })
-      const data = await res.json()
 
-      console.log('[CreatorWallet] Response:', res.status, data)
-      setDebugInfo(`Status: ${res.status}, Data: ${JSON.stringify(data)}`)
+      const data = await res.json()
+      console.log('[CreatorWallet] API Response:', res.status, data)
 
       if (res.status === 401) {
-        // No está logueado - redirigir
-        console.log('[CreatorWallet] 401, redirecting to login')
-        window.location.href = '/auth/login?redirect=/creator/wallet'
+        setError('Sesión expirada. Por favor inicia sesión de nuevo.')
+        setLoading(false)
         return
       }
 
-      // Check needsSetup first (can come with 200 or 400)
+      if (!res.ok && !data.needsSetup) {
+        setError(data.error || `Error del servidor (${res.status})`)
+        setLoading(false)
+        return
+      }
+
       if (data.needsSetup) {
-        console.log('[CreatorWallet] Needs setup - user has no whop_company_id')
+        console.log('[CreatorWallet] Needs setup')
         setNeedsSetup(true)
       } else if (data.companyId) {
-        console.log('[CreatorWallet] Company ID found:', data.companyId)
+        console.log('[CreatorWallet] Company ID:', data.companyId)
         setCompanyId(data.companyId)
-      } else if (!res.ok) {
-        console.log('[CreatorWallet] API Error:', data.error)
-        setError(data.error || 'Error al verificar cuenta')
       } else {
-        console.log('[CreatorWallet] Unknown state:', data)
-        setError('Error desconocido - intenta recargar')
+        setError('Respuesta inesperada del servidor')
       }
     } catch (err: any) {
-      console.error('[CreatorWallet] Exception:', err)
-      setError(err.message)
-      setDebugInfo(`Error: ${err.message}`)
+      console.error('[CreatorWallet] Error:', err)
+      setError(`Error: ${err.message}`)
     }
     setLoading(false)
   }
@@ -102,14 +106,10 @@ export default function CreatorWallet() {
         <div className="text-center">
           <div className="w-10 h-10 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-white/40 text-sm">Cargando wallet...</p>
-          <p className="text-white/20 text-xs mt-2">{debugInfo}</p>
         </div>
       </div>
     )
   }
-
-  // Debug: mostrar estado actual
-  console.log('[CreatorWallet] Render state:', { loading, needsSetup, companyId, error })
 
   if (needsSetup) {
     return (
@@ -149,12 +149,20 @@ export default function CreatorWallet() {
           <Header />
           <div className="mt-8 bg-red-500/10 border border-red-500/30 rounded-xl p-6 text-center">
             <p className="text-red-400 mb-4">{error || 'Error al cargar wallet'}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="bg-red-500/20 hover:bg-red-500/30 text-red-400 px-6 py-2 rounded-lg"
-            >
-              Reintentar
-            </button>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => window.location.reload()}
+                className="bg-red-500/20 hover:bg-red-500/30 text-red-400 px-6 py-2 rounded-lg"
+              >
+                Reintentar
+              </button>
+              <Link
+                href="/auth/login"
+                className="bg-white/10 hover:bg-white/20 text-white px-6 py-2 rounded-lg"
+              >
+                Iniciar sesión
+              </Link>
+            </div>
           </div>
         </div>
         <BottomNav />
@@ -319,14 +327,14 @@ function BottomNav() {
     <div className="fixed bottom-0 left-0 right-0 bg-[#0a0a0a]/95 backdrop-blur-xl border-t border-white/5">
       <div className="flex justify-around py-3">
         {[
-          { href: '/gigs', label: 'Trabajos', active: false },
-          { href: '/creator/dashboard', label: 'Panel', active: false },
-          { href: '/creator/wallet', label: 'Wallet', active: true },
-          { href: '/creator/messages', label: 'Mensajes', active: false },
-          { href: '/profile', label: 'Perfil', active: false },
+          { href: '/gigs', label: 'Trabajos', icon: '💼', active: false },
+          { href: '/creator/dashboard', label: 'Panel', icon: '📊', active: false },
+          { href: '/creator/wallet', label: 'Wallet', icon: '💰', active: true },
+          { href: '/creator/messages', label: 'Mensajes', icon: '💬', active: false },
+          { href: '/creator/profile', label: 'Perfil', icon: '👤', active: false },
         ].map((item) => (
           <Link key={item.href} href={item.href} className={`flex flex-col items-center gap-1 ${item.active ? 'text-emerald-400' : 'text-white/30'}`}>
-            <div className="w-5 h-5 bg-current rounded opacity-50" />
+            <span className="text-xl">{item.icon}</span>
             <span className="text-[10px]">{item.label}</span>
           </Link>
         ))}

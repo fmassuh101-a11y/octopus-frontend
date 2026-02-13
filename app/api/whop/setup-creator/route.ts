@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient as createServerClient } from "@/lib/supabase/server";
-import { createClient } from "@supabase/supabase-js";
 import { whopClient, OCTOPUS_COMPANY_ID } from "@/lib/whop";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ftvqoudlmojdxwjxljzr.supabase.co'
@@ -8,68 +6,69 @@ const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGci
 
 /**
  * POST /api/whop/setup-creator
+ * Body: { userId: string }
+ * Headers: Authorization: Bearer <token>
+ *
  * Crea una sub-company en Whop para el creador y genera link de KYC
  */
 export async function POST(request: NextRequest) {
   try {
     console.log("[Setup Creator] Starting...");
 
-    // Try to get token from Authorization header first
+    // Get token from header
     const authHeader = request.headers.get('authorization');
-    let userId: string | null = null;
-    let userEmail: string | null = null;
-
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.replace('Bearer ', '');
-      console.log("[Setup Creator] Using token from header");
-
-      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-        global: {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      });
-
-      const { data: { user }, error } = await supabase.auth.getUser(token);
-      if (user && !error) {
-        userId = user.id;
-        userEmail = user.email || null;
-        console.log("[Setup Creator] User from header:", userId);
-      }
-    }
-
-    // Fallback to server-side cookies
-    if (!userId) {
-      const supabase = await createServerClient();
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (user && !authError) {
-        userId = user.id;
-        userEmail = user.email || null;
-      }
-    }
-
-    if (!userId) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    // 2. Obtener datos del usuario
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    const { data: userData, error: userError } = await supabase
-      .from("users")
-      .select("id, email, full_name, whop_company_id")
-      .eq("id", userId)
-      .single();
+    const token = authHeader.replace('Bearer ', '');
 
-    if (userError) {
-      console.log("[Setup Creator] User query error:", userError);
+    // Get userId from body
+    let userId: string;
+    try {
+      const body = await request.json();
+      userId = body.userId;
+    } catch {
+      return NextResponse.json({ error: "userId requerido" }, { status: 400 });
+    }
+
+    if (!userId) {
+      return NextResponse.json({ error: "userId requerido" }, { status: 400 });
+    }
+
+    console.log("[Setup Creator] User ID:", userId);
+
+    // Get user data from Supabase
+    const userRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/users?id=eq.${userId}&select=id,email,full_name,whop_company_id`,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'apikey': SUPABASE_ANON_KEY
+        }
+      }
+    );
+
+    if (!userRes.ok) {
+      console.log("[Setup Creator] User query failed:", userRes.status);
       return NextResponse.json({ error: "Error al obtener usuario" }, { status: 500 });
     }
 
-    // 3. Si ya tiene whop_company_id, verificar si necesita KYC
+    const users = await userRes.json();
+    if (users.length === 0) {
+      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
+    }
+
+    const userData = users[0];
+    console.log("[Setup Creator] User data:", {
+      id: userData.id,
+      email: userData.email,
+      whop_company_id: userData.whop_company_id
+    });
+
+    // If already has whop_company_id, just generate KYC link
     if (userData.whop_company_id) {
-      console.log("[Setup Creator] Already has whop_company_id:", userData.whop_company_id);
-      // Generar link de KYC por si no lo ha completado
+      console.log("[Setup Creator] Already has company, generating KYC link...");
       const accountLink = await whopClient.accountLinks.create({
         company_id: userData.whop_company_id,
         use_case: "account_onboarding",
@@ -85,10 +84,10 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 4. Crear sub-company en Whop
+    // Create new sub-company in Whop
     console.log("[Setup Creator] Creating new sub-company...");
     const company = await whopClient.companies.create({
-      email: userData.email || userEmail || `user_${userId}@octopus.app`,
+      email: userData.email || `user_${userId}@octopus.app`,
       parent_company_id: OCTOPUS_COMPANY_ID,
       title: userData.full_name || `Creator ${userId.slice(0, 8)}`,
       metadata: {
@@ -96,26 +95,41 @@ export async function POST(request: NextRequest) {
         type: "creator",
       },
     });
+
     console.log("[Setup Creator] Company created:", company.id);
 
-    // 5. Guardar whop_company_id en la base de datos
-    const { error: updateError } = await supabase
-      .from("users")
-      .update({ whop_company_id: company.id })
-      .eq("id", userId);
+    // Save whop_company_id to database
+    const updateRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/users?id=eq.${userId}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'apikey': SUPABASE_ANON_KEY,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({ whop_company_id: company.id })
+      }
+    );
 
-    if (updateError) {
-      console.error("[Setup Creator] Error guardando whop_company_id:", updateError);
-      // Continuar aunque falle - el ID ya está creado en Whop
+    if (!updateRes.ok) {
+      console.error("[Setup Creator] Failed to save whop_company_id:", updateRes.status);
+      // Continue anyway - company was created in Whop
+    } else {
+      console.log("[Setup Creator] Saved whop_company_id to database");
     }
 
-    // 6. Crear link de KYC
+    // Generate KYC link
+    console.log("[Setup Creator] Generating KYC link...");
     const accountLink = await whopClient.accountLinks.create({
       company_id: company.id,
       use_case: "account_onboarding",
       return_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://octopus-frontend-tau.vercel.app'}/creator/wallet`,
       refresh_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://octopus-frontend-tau.vercel.app'}/creator/wallet/setup`,
     });
+
+    console.log("[Setup Creator] KYC link generated");
 
     return NextResponse.json({
       success: true,

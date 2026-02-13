@@ -5,9 +5,19 @@ import Link from 'next/link'
 
 export default function WalletSetup() {
   const [loading, setLoading] = useState(false)
-  const [step, setStep] = useState<'start' | 'creating' | 'kyc' | 'done'>('start')
+  const [step, setStep] = useState<'start' | 'creating' | 'kyc' | 'done' | 'error'>('start')
   const [error, setError] = useState<string | null>(null)
   const [kycUrl, setKycUrl] = useState<string | null>(null)
+
+  // Check auth on mount
+  useEffect(() => {
+    const token = localStorage.getItem('sb-access-token')
+    const userStr = localStorage.getItem('sb-user')
+    if (!token || !userStr) {
+      setError('No has iniciado sesión')
+      setStep('error')
+    }
+  }, [])
 
   const startSetup = async () => {
     setLoading(true)
@@ -15,21 +25,29 @@ export default function WalletSetup() {
     setStep('creating')
 
     try {
-      // Get token from localStorage
+      // Get auth from localStorage
       const token = localStorage.getItem('sb-access-token')
-      if (!token) {
-        window.location.href = '/auth/login?redirect=/creator/wallet/setup'
-        return
+      const userStr = localStorage.getItem('sb-user')
+
+      if (!token || !userStr) {
+        throw new Error('No has iniciado sesión')
       }
 
-      // 1. Crear sub-company para el creador
+      const user = JSON.parse(userStr)
+      console.log('[WalletSetup] Starting setup for user:', user.id)
+
+      // Call API
       const res = await fetch('/api/whop/setup-creator', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ userId: user.id })
       })
+
       const data = await res.json()
+      console.log('[WalletSetup] API Response:', res.status, data)
 
       if (!res.ok) {
         throw new Error(data.error || 'Error al crear cuenta')
@@ -40,10 +58,13 @@ export default function WalletSetup() {
         setStep('kyc')
       } else if (data.alreadySetup) {
         setStep('done')
+      } else {
+        throw new Error('Respuesta inesperada del servidor')
       }
     } catch (err: any) {
+      console.error('[WalletSetup] Error:', err)
       setError(err.message)
-      setStep('start')
+      setStep('error')
     }
     setLoading(false)
   }
@@ -54,21 +75,43 @@ export default function WalletSetup() {
     }
   }
 
+  if (step === 'error') {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] text-white">
+        <div className="px-5 pt-5">
+          <Header />
+          <div className="max-w-md mx-auto mt-8">
+            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 text-center">
+              <p className="text-red-400 mb-4">{error || 'Error desconocido'}</p>
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={() => {
+                    setError(null)
+                    setStep('start')
+                  }}
+                  className="bg-red-500/20 hover:bg-red-500/30 text-red-400 px-6 py-2 rounded-lg"
+                >
+                  Reintentar
+                </button>
+                <Link
+                  href="/creator/wallet"
+                  className="bg-white/10 hover:bg-white/20 text-white px-6 py-2 rounded-lg"
+                >
+                  Volver
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       <div className="px-5 pt-5">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <Link href="/creator/wallet" className="w-10 h-10 bg-white/5 hover:bg-white/10 rounded-xl flex items-center justify-center border border-white/5">
-            <svg className="w-5 h-5 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
-            </svg>
-          </Link>
-          <span className="text-xs text-white/40 uppercase tracking-wider">Configurar Pagos</span>
-          <div className="w-10" />
-        </div>
+        <Header />
 
-        {/* Content */}
         <div className="max-w-md mx-auto">
           {step === 'start' && (
             <div className="text-center">
@@ -106,12 +149,6 @@ export default function WalletSetup() {
                   </li>
                 </ul>
               </div>
-
-              {error && (
-                <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6">
-                  <p className="text-red-400 text-sm">{error}</p>
-                </div>
-              )}
 
               <button
                 onClick={startSetup}
@@ -198,6 +235,20 @@ export default function WalletSetup() {
           )}
         </div>
       </div>
+    </div>
+  )
+}
+
+function Header() {
+  return (
+    <div className="flex items-center justify-between mb-8">
+      <Link href="/creator/wallet" className="w-10 h-10 bg-white/5 hover:bg-white/10 rounded-xl flex items-center justify-center border border-white/5">
+        <svg className="w-5 h-5 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
+        </svg>
+      </Link>
+      <span className="text-xs text-white/40 uppercase tracking-wider">Configurar Pagos</span>
+      <div className="w-10" />
     </div>
   )
 }
