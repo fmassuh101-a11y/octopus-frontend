@@ -21,39 +21,35 @@ export default function WhopPayoutsPortal({
 }: WhopPayoutsPortalProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [token, setToken] = useState<string | null>(null)
 
   useEffect(() => {
-    loadToken()
+    initWhopElements()
   }, [])
 
-  const loadToken = async () => {
+  const initWhopElements = async () => {
     try {
-      const t = await fetchToken()
-      if (t) {
-        setToken(t)
-        // Load Whop embedded components
-        initWhopElements(t)
-      } else {
+      const accessToken = await fetchToken()
+      if (!accessToken) {
         setError('No se pudo obtener el token')
+        setLoading(false)
+        return
       }
-    } catch (err) {
-      console.error('Error loading token:', err)
-      setError('Error al cargar')
-    }
-    setLoading(false)
-  }
 
-  const initWhopElements = async (accessToken: string) => {
-    try {
       // Dynamically import Whop components
-      const { loadWhopElements } = await import('@whop/embedded-components-vanilla-js')
+      const whopModule = await import('@whop/embedded-components-vanilla-js')
+      const loadWhopElements = whopModule.loadWhopElements
 
-      const elements = await loadWhopElements(accessToken)
+      // Load elements with proper options object
+      const elements = await loadWhopElements({
+        token: accessToken
+      })
 
       // Mount the appropriate elements based on props
       const container = document.getElementById('whop-container')
-      if (!container) return
+      if (!container) {
+        setLoading(false)
+        return
+      }
 
       if (showPayoutMethodsOnly) {
         // Only show payout method form
@@ -90,18 +86,37 @@ export default function WhopPayoutsPortal({
         // KYC/Setup flow - show payout method form for onboarding
         const payoutMethodEl = elements.create('payoutMethod', {
           companyId,
-          redirectUrl,
-          onSuccess: () => {
-            onComplete?.()
-          }
+          redirectUrl
         })
         container.innerHTML = ''
         payoutMethodEl.mount(container)
+
+        // Check for completion periodically
+        if (onComplete) {
+          const checkInterval = setInterval(async () => {
+            try {
+              // Check if user has added payout methods
+              const res = await fetch(`/api/whop/creator-balance?userId=${localStorage.getItem('sb-user') ? JSON.parse(localStorage.getItem('sb-user')!).id : ''}`)
+              const data = await res.json()
+              if (data.kycComplete) {
+                clearInterval(checkInterval)
+                onComplete()
+              }
+            } catch {
+              // Ignore errors
+            }
+          }, 5000)
+
+          // Cleanup on unmount
+          return () => clearInterval(checkInterval)
+        }
       }
+
+      setLoading(false)
     } catch (err) {
       console.error('Error initializing Whop elements:', err)
-      // Fallback to simpler implementation
       setError('Error al cargar componentes de pago')
+      setLoading(false)
     }
   }
 
@@ -118,7 +133,11 @@ export default function WhopPayoutsPortal({
       <div className="p-6 text-center">
         <p className="text-red-500 mb-4">{error}</p>
         <button
-          onClick={loadToken}
+          onClick={() => {
+            setLoading(true)
+            setError(null)
+            initWhopElements()
+          }}
           className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm"
         >
           Reintentar
@@ -129,9 +148,11 @@ export default function WhopPayoutsPortal({
 
   return (
     <div id="whop-container" className="min-h-[200px]">
-      <div className="flex items-center justify-center py-12">
-        <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-      </div>
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
     </div>
   )
 }
