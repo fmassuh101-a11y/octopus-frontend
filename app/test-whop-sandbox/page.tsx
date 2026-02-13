@@ -1,157 +1,185 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import {
-  Elements,
-  PayoutsSession,
-  BalanceElement,
-  WithdrawButtonElement,
-  StatusBannerElement,
-  AddPayoutMethodElement,
-} from "@whop/embedded-components-react-js";
-import { loadWhopElements } from "@whop/embedded-components-vanilla-js";
-import type { WhopElements } from "@whop/embedded-components-vanilla-js/types";
+import { useState } from "react";
 
 /**
- * Página de prueba para el sandbox de Whop
- * NO requiere login - usa el company ID de Octopus directamente
+ * Página de prueba COMPLETA para Whop
+ * Permite probar todo el flujo de pagos
  */
 export default function TestWhopSandbox() {
-  const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [companyId, setCompanyId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [results, setResults] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [whopElements, setWhopElements] = useState<WhopElements | null>(null);
+  const [lastCreatorId, setLastCreatorId] = useState<string | null>(null);
 
-  // Cargar WhopElements y token automáticamente
-  useEffect(() => {
-    // Cargar WhopElements con environment sandbox
-    loadWhopElements({
-      environment: "sandbox",
-      appearance: {
-        theme: {
-          appearance: "dark",
-          accentColor: "blue",
-        },
-      },
-    }).then((elements) => {
-      setWhopElements(elements);
-    });
+  // 1. Verificar conexión con Whop
+  const testConnection = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/whop/test");
+      const data = await res.json();
+      setResults({ action: "Conexión", data });
+    } catch (err: any) {
+      setError(err.message);
+    }
+    setLoading(false);
+  };
 
-    // Obtener token de prueba automáticamente
-    fetch("/api/whop/test-token", { method: "POST" })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          setAccessToken(data.accessToken);
-          setCompanyId(data.companyId);
-        } else {
-          setError(data.error || "Error al obtener token");
-        }
-      })
-      .catch((err) => {
-        setError(err.message || "Error de conexión");
-      })
-      .finally(() => {
-        setLoading(false);
+  // 2. Crear creador de prueba
+  const createTestCreator = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/whop/test-create-company", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: `Creador Prueba ${Date.now()}`,
+          email: `test${Date.now()}@gmail.com`,
+        }),
       });
-  }, []);
+      const data = await res.json();
+      if (data.success && data.creator?.whop_company_id) {
+        setLastCreatorId(data.creator.whop_company_id);
+      }
+      setResults({ action: "Crear Creador", data });
+    } catch (err: any) {
+      setError(err.message);
+    }
+    setLoading(false);
+  };
 
-  if (loading || !whopElements) {
-    return (
-      <div className="min-h-screen bg-gray-900 text-white p-8 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p>Cargando Whop Sandbox...</p>
-        </div>
-      </div>
-    );
-  }
+  // 3. Ver balance de Octopus
+  const getOctopusBalance = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/whop/balance");
+      const data = await res.json();
+      setResults({ action: "Balance Octopus", data });
+    } catch (err: any) {
+      setError(err.message);
+    }
+    setLoading(false);
+  };
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-900 text-white p-8">
-        <div className="max-w-2xl mx-auto">
-          <h1 className="text-3xl font-bold mb-4">Test Whop Sandbox</h1>
-          <div className="bg-red-500/20 border border-red-500 rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-red-400 mb-2">Error</h2>
-            <p className="text-red-300">{error}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="mt-4 bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg"
-            >
-              Reintentar
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!accessToken || !companyId) {
-    return (
-      <div className="min-h-screen bg-gray-900 text-white p-8">
-        <div className="max-w-2xl mx-auto">
-          <h1 className="text-3xl font-bold mb-4">Test Whop Sandbox</h1>
-          <div className="bg-yellow-500/20 border border-yellow-500 rounded-lg p-6">
-            <p className="text-yellow-300">No se pudo obtener el token. Verifica la configuración de Whop.</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // 4. Simular transferencia a creador
+  const simulateTransfer = async () => {
+    if (!lastCreatorId) {
+      setError("Primero crea un creador de prueba (botón 2)");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/whop/test-transfer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: 100, // $100 de prueba
+          creatorCompanyId: lastCreatorId,
+        }),
+      });
+      const data = await res.json();
+      setResults({ action: "Transferencia", data });
+    } catch (err: any) {
+      setError(err.message);
+    }
+    setLoading(false);
+  };
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
-      <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold mb-2">Test Whop Sandbox</h1>
-        <p className="text-gray-400 mb-2">
-          Ambiente: <span className="text-yellow-400 font-mono">sandbox</span>
-        </p>
-        <p className="text-gray-500 text-sm mb-8">
-          Company ID: <span className="font-mono">{companyId}</span>
-        </p>
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-3xl font-bold mb-2">Test Whop - Panel de Pruebas</h1>
+        <p className="text-yellow-400 mb-2">Ambiente: sandbox</p>
+        {lastCreatorId && (
+          <p className="text-green-400 text-sm mb-4">
+            Último creador: <span className="font-mono">{lastCreatorId}</span>
+          </p>
+        )}
 
-        <Elements elements={whopElements}>
-          <PayoutsSession
-            token={accessToken}
-            companyId={companyId}
-            redirectUrl={typeof window !== 'undefined' ? window.location.href : ''}
+        {/* Acciones de Prueba */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          <button
+            onClick={testConnection}
+            disabled={loading}
+            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 p-4 rounded-lg text-left"
           >
-            <div className="space-y-6">
-              {/* Balance */}
-              <div className="bg-gray-800 rounded-lg p-6">
-                <h2 className="text-xl font-semibold mb-4">Balance</h2>
-                <BalanceElement />
-              </div>
+            <h3 className="font-bold text-lg">1. Verificar Conexión</h3>
+            <p className="text-sm text-gray-300">Confirmar que Whop API funciona</p>
+          </button>
 
-              {/* Estado de Cuenta */}
-              <div className="bg-gray-800 rounded-lg p-6">
-                <h2 className="text-xl font-semibold mb-4">Estado de Cuenta</h2>
-                <StatusBannerElement />
-              </div>
+          <button
+            onClick={createTestCreator}
+            disabled={loading}
+            className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 p-4 rounded-lg text-left"
+          >
+            <h3 className="font-bold text-lg">2. Crear Creador de Prueba</h3>
+            <p className="text-sm text-gray-300">Crear sub-company para un creador</p>
+          </button>
 
-              {/* Métodos de Pago */}
-              <div className="bg-gray-800 rounded-lg p-6">
-                <h2 className="text-xl font-semibold mb-4">Agregar Método de Retiro</h2>
-                <AddPayoutMethodElement />
-              </div>
+          <button
+            onClick={getOctopusBalance}
+            disabled={loading}
+            className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 p-4 rounded-lg text-left"
+          >
+            <h3 className="font-bold text-lg">3. Ver Balance Octopus</h3>
+            <p className="text-sm text-gray-300">Ver fondos disponibles en la plataforma</p>
+          </button>
 
-              {/* Botón de Retiro */}
-              <div className="bg-gray-800 rounded-lg p-6">
-                <h2 className="text-xl font-semibold mb-4">Retirar Fondos</h2>
-                <WithdrawButtonElement />
-              </div>
+          <button
+            onClick={simulateTransfer}
+            disabled={loading}
+            className="bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 p-4 rounded-lg text-left"
+          >
+            <h3 className="font-bold text-lg">4. Simular Transferencia</h3>
+            <p className="text-sm text-gray-300">Transferir $100 a creador de prueba</p>
+          </button>
+        </div>
 
-              {/* Indicador Sandbox */}
-              <div className="bg-green-500/20 border border-green-500 rounded-lg p-4">
-                <p className="text-green-400 text-center">
-                  🧪 Ambiente Sandbox - Todo el dinero es falso
-                </p>
-              </div>
+        {/* Loading */}
+        {loading && (
+          <div className="bg-gray-800 rounded-lg p-6 mb-4">
+            <div className="flex items-center gap-3">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+              <p>Procesando...</p>
             </div>
-          </PayoutsSession>
-        </Elements>
+          </div>
+        )}
+
+        {/* Error */}
+        {error && (
+          <div className="bg-red-500/20 border border-red-500 rounded-lg p-6 mb-4">
+            <h3 className="font-bold text-red-400 mb-2">Error</h3>
+            <p className="text-red-300">{error}</p>
+          </div>
+        )}
+
+        {/* Resultados */}
+        {results && (
+          <div className="bg-gray-800 rounded-lg p-6">
+            <h3 className="font-bold text-lg mb-4 text-green-400">
+              Resultado: {results.action}
+            </h3>
+            <pre className="bg-gray-900 p-4 rounded-lg overflow-auto text-sm">
+              {JSON.stringify(results.data, null, 2)}
+            </pre>
+          </div>
+        )}
+
+        {/* Info del Flujo */}
+        <div className="mt-8 bg-gray-800/50 rounded-lg p-6">
+          <h3 className="font-bold text-lg mb-4">Flujo de Pagos Octopus</h3>
+          <div className="space-y-2 text-sm text-gray-400">
+            <p>1. <span className="text-white">Empresa paga</span> → Checkout (tarjeta, sin cuenta Whop)</p>
+            <p>2. <span className="text-white">Dinero llega a Octopus</span> → Balance de la plataforma</p>
+            <p>3. <span className="text-white">Octopus transfiere al creador</span> → Menos 4.7% comisión</p>
+            <p>4. <span className="text-white">Creador ve su balance</span> → En su wallet de Octopus</p>
+            <p>5. <span className="text-white">Creador retira</span> → A banco/PayPal/crypto (Whop cobra 2.7%+$0.30)</p>
+          </div>
+        </div>
       </div>
     </div>
   );
