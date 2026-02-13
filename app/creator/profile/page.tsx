@@ -400,16 +400,30 @@ export default function ProfilePage() {
 
   // Handle removing TikTok account
   const handleRemoveTikTok = async () => {
-    if (!confirm('¿Seguro que quieres desconectar tu cuenta de TikTok?')) return
+    console.log('[TikTok] handleRemoveTikTok called')
+
+    if (!confirm('¿Seguro que quieres desconectar tu cuenta de TikTok?')) {
+      console.log('[TikTok] User cancelled')
+      return
+    }
 
     try {
       const token = localStorage.getItem('sb-access-token')
       const userStr = localStorage.getItem('sb-user')
-      if (!token || !userStr) return
+
+      console.log('[TikTok] Token:', token ? 'exists' : 'missing')
+      console.log('[TikTok] User:', userStr ? 'exists' : 'missing')
+
+      if (!token || !userStr) {
+        alert('Error: No hay sesión activa')
+        return
+      }
 
       const userData = JSON.parse(userStr)
+      console.log('[TikTok] User ID:', userData.id)
 
       // Get current profile
+      console.log('[TikTok] Fetching profile...')
       const profileRes = await fetch(
         `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=*`,
         {
@@ -420,8 +434,12 @@ export default function ProfilePage() {
         }
       )
 
+      console.log('[TikTok] Profile response:', profileRes.status)
+
       if (profileRes.ok) {
         const profiles = await profileRes.json()
+        console.log('[TikTok] Profiles found:', profiles.length)
+
         if (profiles.length > 0) {
           const currentProfile = profiles[0]
           let bioData: any = {}
@@ -432,12 +450,15 @@ export default function ProfilePage() {
             bioData = {}
           }
 
+          console.log('[TikTok] Current TikTok accounts:', bioData.tiktokAccounts?.length || 0)
+
           // Remove TikTok data
           bioData.tiktokAccounts = []
           bioData.tiktokConnected = false
 
           // Save to Supabase
-          await fetch(
+          console.log('[TikTok] Saving to Supabase...')
+          const saveRes = await fetch(
             `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}`,
             {
               method: 'PATCH',
@@ -454,13 +475,27 @@ export default function ProfilePage() {
             }
           )
 
-          // Reload page to show updated state
-          window.location.reload()
+          console.log('[TikTok] Save response:', saveRes.status)
+
+          if (saveRes.ok) {
+            alert('Cuenta de TikTok eliminada correctamente')
+            window.location.reload()
+          } else {
+            const errorText = await saveRes.text()
+            console.error('[TikTok] Save error:', errorText)
+            alert('Error al guardar: ' + saveRes.status)
+          }
+        } else {
+          alert('No se encontró el perfil')
         }
+      } else {
+        const errorText = await profileRes.text()
+        console.error('[TikTok] Profile fetch error:', errorText)
+        alert('Error al obtener perfil: ' + profileRes.status)
       }
     } catch (error) {
       console.error('[TikTok] Error removing account:', error)
-      alert('Error al desconectar la cuenta')
+      alert('Error: ' + error)
     }
   }
 
