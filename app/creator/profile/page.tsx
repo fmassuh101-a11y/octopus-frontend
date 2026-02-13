@@ -22,6 +22,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [activeSection, setActiveSection] = useState('account')
   const [showLogoutModal, setShowLogoutModal] = useState(false)
+  const [showTikTokModal, setShowTikTokModal] = useState(false)
 
   useEffect(() => {
     loadProfileData()
@@ -380,8 +381,6 @@ export default function ProfilePage() {
   )
 
   // Handle TikTok OAuth connection
-  const [showTikTokModal, setShowTikTokModal] = useState(false)
-
   const handleConnectTikTok = () => {
     // Detect mobile
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
