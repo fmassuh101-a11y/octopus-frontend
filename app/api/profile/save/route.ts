@@ -2,33 +2,41 @@ import { NextRequest, NextResponse } from 'next/server'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ftvqoudlmojdxwjxljzr.supabase.co'
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
 
 /**
  * POST /api/profile/save
- * Saves user profile using service role key (bypasses RLS)
+ * Saves user profile - uses service key if available, falls back to user token
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { userId, profileData } = body
+    const { userId, profileData, userToken } = body
 
     if (!userId) {
       return NextResponse.json({ error: 'userId is required' }, { status: 400 })
     }
 
+    // Use service key if available, otherwise fall back to user's token
+    let authKey = SUPABASE_SERVICE_KEY
+    let useServiceKey = true
+
     if (!SUPABASE_SERVICE_KEY) {
-      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 })
+      // No service key - use user's token if provided, else anon key
+      authKey = userToken || SUPABASE_ANON_KEY
+      useServiceKey = false
+      console.log('[SaveProfile] No service key, using', userToken ? 'user token' : 'anon key')
     }
 
-    console.log('[SaveProfile] Saving profile for user:', userId)
+    console.log('[SaveProfile] Saving profile for user:', userId, 'Using service key:', useServiceKey)
 
     // Check if profile exists
     const checkRes = await fetch(
       `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userId}&select=id`,
       {
         headers: {
-          'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-          'apikey': SUPABASE_SERVICE_KEY
+          'Authorization': `Bearer ${authKey}`,
+          'apikey': authKey
         }
       }
     )
@@ -54,24 +62,24 @@ export async function POST(request: NextRequest) {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-            'apikey': SUPABASE_SERVICE_KEY,
+            'Authorization': `Bearer ${authKey}`,
+            'apikey': authKey,
             'Prefer': 'return=representation'
           },
           body: JSON.stringify(dataToSave)
         }
       )
     } else {
-      // Insert new profile
+      // Insert new profile - use upsert to handle RLS
       saveRes = await fetch(
         `${SUPABASE_URL}/rest/v1/profiles`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-            'apikey': SUPABASE_SERVICE_KEY,
-            'Prefer': 'return=representation'
+            'Authorization': `Bearer ${authKey}`,
+            'apikey': authKey,
+            'Prefer': 'resolution=merge-duplicates,return=representation'
           },
           body: JSON.stringify(dataToSave)
         }

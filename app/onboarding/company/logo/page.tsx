@@ -141,7 +141,8 @@ export default function CompanyLogoPage() {
         },
         body: JSON.stringify({
           userId: user.id,
-          profileData: profileData
+          profileData: profileData,
+          userToken: accessToken
         })
       })
 
