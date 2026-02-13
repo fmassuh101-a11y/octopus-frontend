@@ -131,12 +131,19 @@ export default function HomePage() {
         const profileUrl = `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=*`
         console.log('[TikTok Callback] Profile URL:', profileUrl)
 
-        const profileRes = await fetch(profileUrl, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'apikey': SUPABASE_ANON_KEY
-          }
-        })
+        // Validate token is a string
+        if (typeof token !== 'string' || token.length < 10) {
+          throw new Error('Token inválido: ' + typeof token)
+        }
+
+        const headers: Record<string, string> = {
+          'Authorization': `Bearer ${token}`,
+          'apikey': String(SUPABASE_ANON_KEY)
+        }
+
+        console.log('[TikTok Callback] Headers prepared, making fetch...')
+
+        const profileRes = await fetch(profileUrl, { headers })
 
         console.log('[TikTok Callback] Profile response status:', profileRes.status)
 
@@ -178,22 +185,25 @@ export default function HomePage() {
             console.log('[TikTok Callback] Saving to Supabase...')
             console.log('[TikTok Callback] bioData to save:', JSON.stringify(bioData).substring(0, 200))
 
-            const saveRes = await fetch(
-              `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}`,
-              {
-                method: 'PATCH',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}`,
-                  'apikey': SUPABASE_ANON_KEY,
-                  'Prefer': 'return=minimal'
-                },
-                body: JSON.stringify({
-                  bio: JSON.stringify(bioData),
-                  updated_at: new Date().toISOString()
-                })
-              }
-            )
+            const saveUrl = `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}`
+            const saveBody = JSON.stringify({
+              bio: JSON.stringify(bioData),
+              updated_at: new Date().toISOString()
+            })
+
+            console.log('[TikTok Callback] Save URL:', saveUrl)
+            console.log('[TikTok Callback] Save body length:', saveBody.length)
+
+            const saveRes = await fetch(saveUrl, {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                'apikey': String(SUPABASE_ANON_KEY),
+                'Prefer': 'return=minimal'
+              },
+              body: saveBody
+            })
 
             console.log('[TikTok Callback] Save response status:', saveRes.status)
 
