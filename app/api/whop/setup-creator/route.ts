@@ -47,17 +47,38 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create new sub-company in Whop
+    // Create new sub-company in Whop with unique name
     console.log("[Setup Creator] Creating new sub-company...");
-    const company = await whopClient.companies.create({
-      email: email || `user_${userId}@octopus.app`,
-      parent_company_id: OCTOPUS_COMPANY_ID,
-      title: fullName || `Creator ${userId.slice(0, 8)}`,
-      metadata: {
-        octopus_user_id: userId,
-        type: "creator",
-      },
-    });
+    const uniqueTitle = `${fullName || 'Creator'}_${userId.slice(0, 8)}_${Date.now()}`;
+
+    let company;
+    try {
+      company = await whopClient.companies.create({
+        email: email || `user_${userId}@octopus.app`,
+        parent_company_id: OCTOPUS_COMPANY_ID,
+        title: uniqueTitle,
+        metadata: {
+          octopus_user_id: userId,
+          type: "creator",
+        },
+      });
+    } catch (createError: any) {
+      // If company already exists, try to find it by listing child companies
+      if (createError?.message?.includes('same name') || createError?.error?.message?.includes('same name')) {
+        console.log("[Setup Creator] Company name conflict, trying with timestamp...");
+        company = await whopClient.companies.create({
+          email: email || `user_${userId}@octopus.app`,
+          parent_company_id: OCTOPUS_COMPANY_ID,
+          title: `Creator_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+          metadata: {
+            octopus_user_id: userId,
+            type: "creator",
+          },
+        });
+      } else {
+        throw createError;
+      }
+    }
 
     console.log("[Setup Creator] Company created:", company.id);
 
