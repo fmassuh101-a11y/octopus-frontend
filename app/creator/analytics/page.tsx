@@ -66,15 +66,22 @@ export default function CreatorAnalyticsPage() {
   }
 
   const handleConnectTikTok = () => {
-    const state = Math.random().toString(36).substring(2, 15)
-    localStorage.setItem('tiktok_csrf_state', state)
-    localStorage.setItem('tiktok_oauth_state', state)
+    console.log('[TikTok] handleConnectTikTok called')
+    try {
+      const state = Math.random().toString(36).substring(2, 15)
+      localStorage.setItem('tiktok_csrf_state', state)
+      localStorage.setItem('tiktok_oauth_state', state)
 
-    const redirectUri = encodeURIComponent('https://octopus-frontend-tau.vercel.app/')
-    const scope = encodeURIComponent('user.info.basic,user.info.profile,user.info.stats,video.list')
-    const webAuthUrl = `https://www.tiktok.com/v2/auth/authorize/?client_key=${TIKTOK_CLIENT_KEY}&response_type=code&scope=${scope}&redirect_uri=${redirectUri}&state=${state}&disable_auto_auth=1`
+      const redirectUri = encodeURIComponent('https://octopus-frontend-tau.vercel.app/')
+      const scope = encodeURIComponent('user.info.basic,user.info.profile,user.info.stats,video.list')
+      const webAuthUrl = `https://www.tiktok.com/v2/auth/authorize/?client_key=${TIKTOK_CLIENT_KEY}&response_type=code&scope=${scope}&redirect_uri=${redirectUri}&state=${state}&disable_auto_auth=1`
 
-    window.location.href = webAuthUrl
+      console.log('[TikTok] Redirecting to:', webAuthUrl)
+      window.location.href = webAuthUrl
+    } catch (error) {
+      console.error('[TikTok] Error:', error)
+      alert('Error: ' + error)
+    }
   }
 
   const handleRemoveAccount = async (accountId: string) => {

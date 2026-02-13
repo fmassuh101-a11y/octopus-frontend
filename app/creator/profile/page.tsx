@@ -381,14 +381,21 @@ export default function ProfilePage() {
 
   // Handle TikTok OAuth connection - go directly to TikTok
   const handleConnectTikTok = () => {
-    const redirectUri = encodeURIComponent('https://octopus-frontend-tau.vercel.app/')
-    const scope = encodeURIComponent('user.info.basic,user.info.profile,user.info.stats,video.list')
-    const state = Math.random().toString(36).substring(7)
+    console.log('[TikTok] handleConnectTikTok called from profile')
+    try {
+      const redirectUri = encodeURIComponent('https://octopus-frontend-tau.vercel.app/')
+      const scope = encodeURIComponent('user.info.basic,user.info.profile,user.info.stats,video.list')
+      const state = Math.random().toString(36).substring(7)
 
-    localStorage.setItem('tiktok_oauth_state', state)
+      localStorage.setItem('tiktok_oauth_state', state)
 
-    const webAuthUrl = `https://www.tiktok.com/v2/auth/authorize/?client_key=${TIKTOK_CLIENT_KEY}&response_type=code&scope=${scope}&redirect_uri=${redirectUri}&state=${state}&disable_auto_auth=1`
-    window.location.href = webAuthUrl
+      const webAuthUrl = `https://www.tiktok.com/v2/auth/authorize/?client_key=${TIKTOK_CLIENT_KEY}&response_type=code&scope=${scope}&redirect_uri=${redirectUri}&state=${state}&disable_auto_auth=1`
+      console.log('[TikTok] Redirecting to:', webAuthUrl)
+      window.location.href = webAuthUrl
+    } catch (error) {
+      console.error('[TikTok] Error:', error)
+      alert('Error: ' + error)
+    }
   }
 
   // Verification Section - REAL OAuth verification
