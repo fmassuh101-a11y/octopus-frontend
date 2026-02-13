@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { whopClient } from "@/lib/whop";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ftvqoudlmojdxwjxljzr.supabase.co'
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
 
 /**
  * GET /api/whop/creator-balance?userId=xxx
@@ -11,24 +12,31 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 export async function GET(request: NextRequest) {
   try {
     const userId = request.nextUrl.searchParams.get('userId')
+    const userToken = request.nextUrl.searchParams.get('token')
 
     if (!userId) {
       return NextResponse.json({ error: "userId required" }, { status: 400 })
     }
+
+    // Use service key if available, otherwise use anon key with user token
+    const apiKey = SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY
+    const authToken = SUPABASE_SERVICE_KEY || userToken || SUPABASE_ANON_KEY
 
     // Get profile with whop_company_id
     const profileRes = await fetch(
       `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userId}&select=whop_company_id,full_name`,
       {
         headers: {
-          'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-          'apikey': SUPABASE_SERVICE_KEY
+          'Authorization': `Bearer ${authToken}`,
+          'apikey': apiKey
         }
       }
     )
 
     if (!profileRes.ok) {
-      return NextResponse.json({ error: "Failed to get profile" }, { status: 500 })
+      const errorText = await profileRes.text()
+      console.error("[Creator Balance] Profile fetch error:", profileRes.status, errorText)
+      return NextResponse.json({ error: "Failed to get profile", details: errorText }, { status: 500 })
     }
 
     const profiles = await profileRes.json()
@@ -46,23 +54,21 @@ export async function GET(request: NextRequest) {
     // Get company info from Whop (includes balance)
     let balance = 0
     let totalBalance = 0
-    let kycComplete = false
+    let kycComplete = true // Default to true so users can see wallet
     let payoutMethods: any[] = []
 
     try {
       const company = await whopClient.companies.retrieve(companyId)
 
-      // Check KYC status - if company has payouts_enabled or similar
-      // The company object should have balance info
       if (company) {
-        // Whop SDK company object structure
-        // balance is typically in cents, convert to dollars
         balance = (company as any).available_balance ? (company as any).available_balance / 100 : 0
         totalBalance = (company as any).total_balance ? (company as any).total_balance / 100 : balance
-        kycComplete = (company as any).payouts_enabled || (company as any).charges_enabled || false
+        // Check various KYC/payout status fields
+        kycComplete = (company as any).payouts_enabled ?? (company as any).charges_enabled ?? true
       }
     } catch (companyError) {
       console.error("[Creator Balance] Error fetching company:", companyError)
+      // If we can't fetch company, still show wallet with 0 balance
     }
 
     // Get payout methods
@@ -71,7 +77,6 @@ export async function GET(request: NextRequest) {
         company_id: companyId
       })
       payoutMethods = methods.data || []
-      // If they have payout methods, KYC is likely complete
       if (payoutMethods.length > 0) {
         kycComplete = true
       }

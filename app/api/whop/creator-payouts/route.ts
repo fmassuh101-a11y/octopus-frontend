@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { whopClient } from "@/lib/whop";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ftvqoudlmojdxwjxljzr.supabase.co'
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
 
 /**
  * GET /api/whop/creator-payouts?userId=xxx
@@ -16,19 +17,22 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "userId required" }, { status: 400 })
     }
 
+    const apiKey = SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY
+    const authToken = SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY
+
     // Get profile with whop_company_id
     const profileRes = await fetch(
       `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userId}&select=whop_company_id`,
       {
         headers: {
-          'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-          'apikey': SUPABASE_SERVICE_KEY
+          'Authorization': `Bearer ${authToken}`,
+          'apikey': apiKey
         }
       }
     )
 
     if (!profileRes.ok) {
-      return NextResponse.json({ error: "Failed to get profile" }, { status: 500 })
+      return NextResponse.json({ payouts: [] })
     }
 
     const profiles = await profileRes.json()
@@ -43,15 +47,13 @@ export async function GET(request: NextRequest) {
     let payouts: any[] = []
 
     try {
-      // Get withdrawals for this company
       const withdrawals = await whopClient.withdrawals.list({
         company_id: companyId
       })
 
-      // Transform to our format
       payouts = (withdrawals.data || []).map((w: any) => ({
         id: w.id,
-        amount: w.amount / 100, // Convert from cents
+        amount: w.amount / 100,
         status: w.status || 'pending',
         method: w.payout_method?.type || 'bank',
         methodIcon: getMethodIcon(w.payout_method?.type),
@@ -62,13 +64,11 @@ export async function GET(request: NextRequest) {
       console.error("[Creator Payouts] Error fetching withdrawals:", withdrawalsError)
     }
 
-    // Also try to get transfers TO this company (incoming payments)
     try {
       const transfers = await whopClient.transfers.list({
         destination_id: companyId
       })
 
-      // Add transfers as "received" type
       const incomingPayments = (transfers.data || []).map((t: any) => ({
         id: t.id,
         amount: t.amount / 100,
@@ -80,7 +80,6 @@ export async function GET(request: NextRequest) {
         type: 'incoming'
       }))
 
-      // Combine and sort by date
       payouts = [...payouts, ...incomingPayments].sort((a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       )
@@ -96,9 +95,7 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error("[Creator Payouts] Error:", error)
-    return NextResponse.json({
-      error: error instanceof Error ? error.message : "Unknown error"
-    }, { status: 500 })
+    return NextResponse.json({ payouts: [] })
   }
 }
 

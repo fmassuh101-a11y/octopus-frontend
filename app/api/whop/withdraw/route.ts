@@ -2,15 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { whopClient } from "@/lib/whop";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ftvqoudlmojdxwjxljzr.supabase.co'
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://octopus-frontend-tau.vercel.app'
 
 /**
  * POST /api/whop/withdraw
  * Body: { userId, action: 'portal' | 'withdraw', amount?, payoutMethodId? }
- *
- * action: 'portal' - Returns URL to Whop payout portal where user can withdraw
- * action: 'withdraw' - Initiates direct withdrawal (requires amount and payoutMethodId)
  */
 export async function POST(request: NextRequest) {
   try {
@@ -21,13 +19,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "userId required" }, { status: 400 })
     }
 
+    const apiKey = SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY
+    const authToken = SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY
+
     // Get profile with whop_company_id
     const profileRes = await fetch(
       `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userId}&select=whop_company_id`,
       {
         headers: {
-          'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-          'apikey': SUPABASE_SERVICE_KEY
+          'Authorization': `Bearer ${authToken}`,
+          'apikey': apiKey
         }
       }
     )
@@ -47,7 +48,6 @@ export async function POST(request: NextRequest) {
     const companyId = profiles[0].whop_company_id
 
     if (action === 'portal') {
-      // Generate payout portal link - user can manage their payout methods and withdraw
       const accountLink = await whopClient.accountLinks.create({
         company_id: companyId,
         use_case: "payouts_portal",
@@ -62,7 +62,6 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === 'withdraw') {
-      // Direct withdrawal
       if (!amount || amount <= 0) {
         return NextResponse.json({ error: "Invalid amount" }, { status: 400 })
       }
@@ -72,7 +71,7 @@ export async function POST(request: NextRequest) {
 
       const withdrawal = await whopClient.withdrawals.create({
         company_id: companyId,
-        amount: Math.round(amount * 100), // Convert to cents
+        amount: Math.round(amount * 100),
         currency: 'usd',
         payout_method_id: payoutMethodId,
         platform_covers_fees: false
