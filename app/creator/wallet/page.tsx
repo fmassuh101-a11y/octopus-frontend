@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 
-// Minimum payout amount in USD
 const MINIMUM_PAYOUT = 10.20
 
 type PayoutStatus = 'completed' | 'canceled' | 'pending'
@@ -16,77 +14,77 @@ interface Payout {
   method: string
   methodIcon: 'bank' | 'paypal' | 'bitcoin' | 'crypto'
   date: string
+  type?: 'incoming' | 'withdrawal'
 }
 
 export default function CreatorWallet() {
   const [loading, setLoading] = useState(true)
-  const [companyId, setCompanyId] = useState<string | null>(null)
+  const [withdrawing, setWithdrawing] = useState(false)
   const [needsSetup, setNeedsSetup] = useState(false)
+  const [needsKyc, setNeedsKyc] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [balance, setBalance] = useState(0)
   const [totalBalance, setTotalBalance] = useState(0)
   const [payouts, setPayouts] = useState<Payout[]>([])
   const [showMenu, setShowMenu] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
 
   useEffect(() => {
-    checkUserSetup()
+    loadWalletData()
   }, [])
 
-  const checkUserSetup = async () => {
+  const loadWalletData = async () => {
     try {
-      const token = localStorage.getItem('sb-access-token')
-      const userStr = localStorage.getItem('sb-user')
+      setLoading(true)
+      setError(null)
 
-      if (!token || !userStr) {
+      const userStr = localStorage.getItem('sb-user')
+      if (!userStr) {
         setError('No has iniciado sesión')
         setLoading(false)
         return
       }
 
       const user = JSON.parse(userStr)
+      setUserId(user.id)
 
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=*`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'apikey': SUPABASE_ANON_KEY
-          }
-        }
-      )
+      // Fetch balance and KYC status
+      const balanceRes = await fetch(`/api/whop/creator-balance?userId=${user.id}`)
+      const balanceData = await balanceRes.json()
 
-      if (!res.ok) {
-        const errorText = await res.text()
-        console.error('[Wallet] Profile fetch error:', res.status, errorText)
-        if (res.status === 401) {
-          setError('Sesión expirada. Por favor inicia sesión de nuevo.')
-        } else {
-          setError(`Error al cargar perfil (${res.status})`)
-        }
-        setLoading(false)
-        return
-      }
-
-      const profiles = await res.json()
-      if (profiles.length === 0) {
-        setError('Perfil no encontrado')
-        setLoading(false)
-        return
-      }
-
-      const profile = profiles[0]
-
-      if (!profile.whop_company_id) {
+      if (balanceData.needsSetup) {
         setNeedsSetup(true)
-      } else {
-        setCompanyId(profile.whop_company_id)
-        // TODO: Fetch real balance and payouts from Whop API
-        setBalance(0)
-        setTotalBalance(0)
-        setPayouts([])
+        setLoading(false)
+        return
       }
+
+      if (balanceData.error) {
+        setError(balanceData.error)
+        setLoading(false)
+        return
+      }
+
+      // Check KYC status
+      if (!balanceData.kycComplete) {
+        setNeedsKyc(true)
+        setLoading(false)
+        return
+      }
+
+      setBalance(balanceData.balance || 0)
+      setTotalBalance(balanceData.totalBalance || 0)
+
+      // Fetch payouts
+      const payoutsRes = await fetch(`/api/whop/creator-payouts?userId=${user.id}`)
+      const payoutsData = await payoutsRes.json()
+
+      if (payoutsData.payouts) {
+        setPayouts(payoutsData.payouts)
+      }
+
     } catch (err: any) {
-      setError(err.message)
+      console.error('[Wallet] Error:', err)
+      setError(err.message || 'Error al cargar wallet')
     }
     setLoading(false)
   }
@@ -102,12 +100,13 @@ export default function CreatorWallet() {
 
       const user = JSON.parse(userStr)
 
+      // Get profile for full name
       const profileRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=*`,
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ftvqoudlmojdxwjxljzr.supabase.co'}/rest/v1/profiles?user_id=eq.${user.id}&select=*`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
-            'apikey': SUPABASE_ANON_KEY
+            'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
           }
         }
       )
@@ -132,13 +131,43 @@ export default function CreatorWallet() {
       }
 
       if (data.kycUrl) {
-        // Open KYC in same window for better mobile experience
         window.location.href = data.kycUrl
       }
     } catch (err: any) {
       setError(err.message)
       setLoading(false)
     }
+  }
+
+  const handleWithdraw = async () => {
+    if (!userId || balance < MINIMUM_PAYOUT) return
+
+    setWithdrawing(true)
+    setError(null)
+
+    try {
+      const res = await fetch('/api/whop/withdraw', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          action: 'portal'
+        })
+      })
+
+      const data = await res.json()
+
+      if (data.error) {
+        throw new Error(data.error)
+      }
+
+      if (data.portalUrl) {
+        window.location.href = data.portalUrl
+      }
+    } catch (err: any) {
+      setError(err.message)
+    }
+    setWithdrawing(false)
   }
 
   const canWithdraw = balance >= MINIMUM_PAYOUT
@@ -151,20 +180,11 @@ export default function CreatorWallet() {
     )
   }
 
-  // Needs Setup - Show setup prompt
+  // Needs Setup - No Whop company yet
   if (needsSetup) {
     return (
       <div className="min-h-screen bg-[#f5f5f5]">
-        {/* Header */}
-        <div className="bg-white px-4 py-4 flex items-center justify-between border-b border-gray-200">
-          <Link href="/creator/dashboard" className="p-2 -ml-2">
-            <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </Link>
-          <h1 className="font-semibold text-gray-900">Payouts</h1>
-          <div className="w-10" />
-        </div>
+        <Header showMenu={showMenu} setShowMenu={setShowMenu} />
 
         <div className="p-6">
           {error && (
@@ -181,15 +201,52 @@ export default function CreatorWallet() {
                 </svg>
               </div>
               <h2 className="text-xl font-semibold text-gray-900 mb-2">Configura tu cuenta de pagos</h2>
-              <p className="text-gray-500 text-sm">Verifica tu identidad para poder recibir pagos</p>
+              <p className="text-gray-500 text-sm">Para recibir pagos necesitas verificar tu identidad</p>
             </div>
 
             <button
               onClick={startSetup}
-              disabled={loading}
-              className="w-full py-4 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white font-semibold rounded-xl transition-colors"
+              className="w-full py-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl transition-colors"
             >
-              {loading ? 'Cargando...' : 'Comenzar verificación'}
+              Comenzar verificación
+            </button>
+          </div>
+        </div>
+
+        <BottomNav active="wallet" />
+      </div>
+    )
+  }
+
+  // Needs KYC - Has Whop company but not verified
+  if (needsKyc) {
+    return (
+      <div className="min-h-screen bg-[#f5f5f5]">
+        <Header showMenu={showMenu} setShowMenu={setShowMenu} />
+
+        <div className="p-6">
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+              <p className="text-red-600 text-sm text-center">{error}</p>
+            </div>
+          )}
+
+          <div className="bg-white rounded-2xl p-6 shadow-sm">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-yellow-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Verificación pendiente</h2>
+              <p className="text-gray-500 text-sm">Completa la verificación de identidad para poder recibir pagos</p>
+            </div>
+
+            <button
+              onClick={startSetup}
+              className="w-full py-4 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold rounded-xl transition-colors"
+            >
+              Completar verificación
             </button>
           </div>
         </div>
@@ -200,24 +257,16 @@ export default function CreatorWallet() {
   }
 
   // Error state
-  if (error) {
+  if (error && !balance && !payouts.length) {
     return (
       <div className="min-h-screen bg-[#f5f5f5]">
-        <div className="bg-white px-4 py-4 flex items-center justify-between border-b border-gray-200">
-          <Link href="/creator/dashboard" className="p-2 -ml-2">
-            <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </Link>
-          <h1 className="font-semibold text-gray-900">Payouts</h1>
-          <div className="w-10" />
-        </div>
+        <Header showMenu={showMenu} setShowMenu={setShowMenu} />
         <div className="p-6">
           <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
             <p className="text-red-600 mb-4">{error}</p>
             <div className="flex gap-3 justify-center">
               <button
-                onClick={() => window.location.reload()}
+                onClick={loadWalletData}
                 className="bg-red-100 hover:bg-red-200 text-red-700 px-5 py-2 rounded-lg text-sm font-medium"
               >
                 Reintentar
@@ -239,33 +288,36 @@ export default function CreatorWallet() {
   // Main Wallet - Sideshift Style
   return (
     <div className="min-h-screen bg-[#f5f5f5] pb-32">
-      {/* Header */}
-      <div className="bg-white px-4 py-4 flex items-center justify-between border-b border-gray-200 sticky top-0 z-10">
-        <Link href="/creator/dashboard" className="p-2 -ml-2">
-          <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </Link>
-        <h1 className="font-semibold text-gray-900">Payouts</h1>
-        <button
-          onClick={() => setShowMenu(!showMenu)}
-          className="p-2 -mr-2"
-        >
-          <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-          </svg>
-        </button>
-      </div>
+      <Header showMenu={showMenu} setShowMenu={setShowMenu} />
 
       {/* Menu Dropdown */}
       {showMenu && (
         <div className="absolute right-4 top-14 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-20">
-          <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">
-            Configuración
+          <button
+            onClick={() => {
+              setShowMenu(false)
+              startSetup()
+            }}
+            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+          >
+            Métodos de pago
           </button>
-          <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">
-            Ayuda
+          <button
+            onClick={() => {
+              setShowMenu(false)
+              loadWalletData()
+            }}
+            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+          >
+            Actualizar
           </button>
+        </div>
+      )}
+
+      {/* Error banner */}
+      {error && (
+        <div className="mx-4 mt-2 bg-red-50 border border-red-200 rounded-xl p-3">
+          <p className="text-red-600 text-sm text-center">{error}</p>
         </div>
       )}
 
@@ -313,14 +365,15 @@ export default function CreatorWallet() {
       {/* Fixed Bottom - Withdraw Button */}
       <div className="fixed bottom-16 left-0 right-0 bg-white border-t border-gray-200 px-5 py-4">
         <button
-          disabled={!canWithdraw}
+          onClick={handleWithdraw}
+          disabled={!canWithdraw || withdrawing}
           className={`w-full py-4 rounded-xl font-semibold text-base transition-colors ${
-            canWithdraw
+            canWithdraw && !withdrawing
               ? 'bg-blue-500 hover:bg-blue-600 text-white'
               : 'bg-gray-100 text-gray-400 cursor-not-allowed'
           }`}
         >
-          Withdraw
+          {withdrawing ? 'Abriendo portal...' : 'Withdraw'}
         </button>
         <p className="text-center text-gray-400 text-sm mt-2">
           Minimum payout amount: {MINIMUM_PAYOUT.toFixed(2)} US$
@@ -328,6 +381,27 @@ export default function CreatorWallet() {
       </div>
 
       <BottomNav active="wallet" />
+    </div>
+  )
+}
+
+function Header({ showMenu, setShowMenu }: { showMenu: boolean; setShowMenu: (v: boolean) => void }) {
+  return (
+    <div className="bg-white px-4 py-4 flex items-center justify-between border-b border-gray-200 sticky top-0 z-10">
+      <Link href="/creator/dashboard" className="p-2 -ml-2">
+        <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+      </Link>
+      <h1 className="font-semibold text-gray-900">Payouts</h1>
+      <button
+        onClick={() => setShowMenu(!showMenu)}
+        className="p-2 -mr-2"
+      >
+        <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+        </svg>
+      </button>
     </div>
   )
 }
@@ -364,11 +438,13 @@ function PayoutItem({ payout }: { payout: Payout }) {
     crypto: '💰'
   }
 
+  const statusLabel = payout.type === 'incoming' ? 'received' : payout.status
+
   return (
     <button className="w-full flex items-center justify-between px-5 py-4 border-b border-gray-100 hover:bg-gray-50 transition-colors">
       <div className="flex-1 text-left">
         <p className="font-semibold text-gray-900">
-          {payout.amount.toFixed(2)} US$ <span className="font-normal text-gray-500">{payout.status}</span>
+          {payout.type === 'incoming' ? '+' : ''}{payout.amount.toFixed(2)} US$ <span className="font-normal text-gray-500">{statusLabel}</span>
         </p>
         <div className="flex items-center gap-2 mt-1">
           <span className="text-lg">{methodIcons[payout.methodIcon]}</span>
@@ -378,8 +454,8 @@ function PayoutItem({ payout }: { payout: Payout }) {
       </div>
 
       <div className="flex items-center gap-2">
-        <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${statusColors[payout.status]}`}>
-          {statusIcons[payout.status]}
+        <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${statusColors[payout.status] || statusColors.pending}`}>
+          {statusIcons[payout.status] || statusIcons.pending}
         </div>
         <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
