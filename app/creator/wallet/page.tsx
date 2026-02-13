@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import {
   Elements,
   PayoutsSession,
@@ -51,39 +52,47 @@ export default function CreatorWallet() {
       const user = JSON.parse(userStr)
       console.log('[CreatorWallet] User ID:', user.id)
 
-      // Call API with userId in body
-      const res = await fetch('/api/whop/payout-session', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ userId: user.id })
-      })
+      // Query users table directly like dashboard does
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/users?id=eq.${user.id}&select=id,email,whop_company_id,role`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'apikey': SUPABASE_ANON_KEY
+          }
+        }
+      )
 
-      const data = await res.json()
-      console.log('[CreatorWallet] API Response:', res.status, data)
+      console.log('[CreatorWallet] Supabase response:', res.status)
 
-      if (res.status === 401) {
-        setError('Sesión expirada. Por favor inicia sesión de nuevo.')
+      if (!res.ok) {
+        if (res.status === 401) {
+          setError('Sesión expirada. Por favor inicia sesión de nuevo.')
+        } else {
+          setError(`Error del servidor (${res.status})`)
+        }
         setLoading(false)
         return
       }
 
-      if (!res.ok && !data.needsSetup) {
-        setError(data.error || `Error del servidor (${res.status})`)
+      const users = await res.json()
+      console.log('[CreatorWallet] Users found:', users)
+
+      if (users.length === 0) {
+        setError('Usuario no encontrado en la base de datos')
         setLoading(false)
         return
       }
 
-      if (data.needsSetup) {
-        console.log('[CreatorWallet] Needs setup')
+      const userData = users[0]
+      console.log('[CreatorWallet] User data:', userData)
+
+      if (!userData.whop_company_id) {
+        console.log('[CreatorWallet] No whop_company_id, needs setup')
         setNeedsSetup(true)
-      } else if (data.companyId) {
-        console.log('[CreatorWallet] Company ID:', data.companyId)
-        setCompanyId(data.companyId)
       } else {
-        setError('Respuesta inesperada del servidor')
+        console.log('[CreatorWallet] Has whop_company_id:', userData.whop_company_id)
+        setCompanyId(userData.whop_company_id)
       }
     } catch (err: any) {
       console.error('[CreatorWallet] Error:', err)
@@ -95,9 +104,14 @@ export default function CreatorWallet() {
   // Función para obtener token (se pasa a PayoutsSession)
   const getToken = async () => {
     if (!companyId) return null
-    const res = await fetch(`/api/whop/token?companyId=${companyId}`)
-    const data = await res.json()
-    return data.token
+    try {
+      const res = await fetch(`/api/whop/token?companyId=${companyId}`)
+      const data = await res.json()
+      return data.token
+    } catch (err) {
+      console.error('[CreatorWallet] Error getting token:', err)
+      return null
+    }
   }
 
   if (loading) {

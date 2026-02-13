@@ -2,48 +2,79 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 
 export default function WalletSetup() {
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState<'start' | 'creating' | 'kyc' | 'done' | 'error'>('start')
   const [error, setError] = useState<string | null>(null)
   const [kycUrl, setKycUrl] = useState<string | null>(null)
+  const [userId, setUserId] = useState<string | null>(null)
+  const [token, setToken] = useState<string | null>(null)
 
   // Check auth on mount
   useEffect(() => {
-    const token = localStorage.getItem('sb-access-token')
+    const t = localStorage.getItem('sb-access-token')
     const userStr = localStorage.getItem('sb-user')
-    if (!token || !userStr) {
+    if (!t || !userStr) {
       setError('No has iniciado sesión')
       setStep('error')
+    } else {
+      setToken(t)
+      const user = JSON.parse(userStr)
+      setUserId(user.id)
     }
   }, [])
 
   const startSetup = async () => {
+    if (!userId || !token) {
+      setError('No has iniciado sesión')
+      setStep('error')
+      return
+    }
+
     setLoading(true)
     setError(null)
     setStep('creating')
 
     try {
-      // Get auth from localStorage
-      const token = localStorage.getItem('sb-access-token')
-      const userStr = localStorage.getItem('sb-user')
+      console.log('[WalletSetup] Starting setup for user:', userId)
 
-      if (!token || !userStr) {
-        throw new Error('No has iniciado sesión')
+      // First check if user already has whop_company_id
+      const userRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/users?id=eq.${userId}&select=id,email,full_name,whop_company_id`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'apikey': SUPABASE_ANON_KEY
+          }
+        }
+      )
+
+      if (!userRes.ok) {
+        throw new Error('Error al obtener datos del usuario')
       }
 
-      const user = JSON.parse(userStr)
-      console.log('[WalletSetup] Starting setup for user:', user.id)
+      const users = await userRes.json()
+      if (users.length === 0) {
+        throw new Error('Usuario no encontrado')
+      }
 
-      // Call API
+      const userData = users[0]
+      console.log('[WalletSetup] User data:', userData)
+
+      // Call API to create Whop company and get KYC link
       const res = await fetch('/api/whop/setup-creator', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ userId: user.id })
+        body: JSON.stringify({
+          userId: userId,
+          email: userData.email,
+          fullName: userData.full_name,
+          existingCompanyId: userData.whop_company_id
+        })
       })
 
       const data = await res.json()
