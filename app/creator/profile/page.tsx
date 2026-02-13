@@ -380,20 +380,8 @@ export default function ProfilePage() {
     </div>
   )
 
-  // Handle TikTok OAuth connection
+  // Handle TikTok OAuth connection - go directly to TikTok
   const handleConnectTikTok = () => {
-    // Detect mobile
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
-
-    if (isMobile) {
-      // Show modal with instructions for mobile
-      setShowTikTokModal(true)
-    } else {
-      startTikTokOAuth()
-    }
-  }
-
-  const startTikTokOAuth = () => {
     const redirectUri = encodeURIComponent('https://octopus-frontend-tau.vercel.app/')
     const scope = encodeURIComponent('user.info.basic,user.info.profile,user.info.stats,video.list')
     const state = Math.random().toString(36).substring(7)
@@ -402,11 +390,6 @@ export default function ProfilePage() {
 
     const webAuthUrl = `https://www.tiktok.com/v2/auth/authorize/?client_key=${TIKTOK_CLIENT_KEY}&response_type=code&scope=${scope}&redirect_uri=${redirectUri}&state=${state}&disable_auto_auth=1`
     window.location.href = webAuthUrl
-  }
-
-  const openTikTokLogout = () => {
-    // Open TikTok logout in new tab, then user comes back
-    window.open('https://www.tiktok.com/logout', '_blank')
   }
 
   // Verification Section - REAL OAuth verification

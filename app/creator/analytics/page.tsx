@@ -67,30 +67,15 @@ export default function CreatorAnalyticsPage() {
   }
 
   const handleConnectTikTok = () => {
-    // Detect mobile
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
-
-    if (isMobile) {
-      setShowTikTokModal(true)
-    } else {
-      startTikTokOAuth()
-    }
-  }
-
-  const startTikTokOAuth = () => {
-    const csrfState = Math.random().toString(36).substring(2, 15)
-    localStorage.setItem('tiktok_csrf_state', csrfState)
-    localStorage.setItem('tiktok_oauth_state', csrfState)
+    const state = Math.random().toString(36).substring(2, 15)
+    localStorage.setItem('tiktok_csrf_state', state)
+    localStorage.setItem('tiktok_oauth_state', state)
 
     const redirectUri = encodeURIComponent('https://octopus-frontend-tau.vercel.app/')
     const scope = encodeURIComponent('user.info.basic,user.info.profile,user.info.stats,video.list')
-    const webAuthUrl = `https://www.tiktok.com/v2/auth/authorize/?client_key=${TIKTOK_CLIENT_KEY}&response_type=code&scope=${scope}&redirect_uri=${redirectUri}&state=${csrfState}&disable_auto_auth=1`
+    const webAuthUrl = `https://www.tiktok.com/v2/auth/authorize/?client_key=${TIKTOK_CLIENT_KEY}&response_type=code&scope=${scope}&redirect_uri=${redirectUri}&state=${state}&disable_auto_auth=1`
 
     window.location.href = webAuthUrl
-  }
-
-  const openTikTokLogout = () => {
-    window.open('https://www.tiktok.com/logout', '_blank')
   }
 
   const handleRemoveAccount = async (accountId: string) => {
