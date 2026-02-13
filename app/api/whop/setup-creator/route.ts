@@ -26,11 +26,11 @@ export async function POST(request: NextRequest) {
 
     // If already has whop_company_id, just generate KYC link
     if (existingCompanyId) {
-      console.log("[Setup Creator] Already has company, generating KYC link...");
+      console.log("[Setup Creator] Already has company, generating payouts portal link...");
       try {
         const accountLink = await whopClient.accountLinks.create({
           company_id: existingCompanyId,
-          use_case: "account_onboarding",
+          use_case: "payouts_portal",
           return_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://octopus-frontend-tau.vercel.app'}/creator/wallet`,
           refresh_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://octopus-frontend-tau.vercel.app'}/creator/wallet/setup`,
         });
@@ -109,11 +109,11 @@ export async function POST(request: NextRequest) {
       console.warn("[Setup Creator] No service key, cannot update database");
     }
 
-    // Generate KYC link
-    console.log("[Setup Creator] Generating KYC link...");
+    // Generate payouts portal link (includes KYC but simpler flow)
+    console.log("[Setup Creator] Generating payouts portal link...");
     const accountLink = await whopClient.accountLinks.create({
       company_id: company.id,
-      use_case: "account_onboarding",
+      use_case: "payouts_portal",
       return_url: `${APP_URL}/creator/wallet`,
       refresh_url: `${APP_URL}/creator/wallet/setup`,
     });
