@@ -54,9 +54,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing authorization code' }, { status: 400 })
     }
 
-    // Hardcoded credentials - DO NOT use env variable to avoid mismatch
-    const clientKey = 'sbawzx5ya0iuu4hs58'
-    const clientSecret = '7of3cvjDDs94MTS2VGq96xSyMUNvl34G'
+    // Use production credentials from environment variables
+    const clientKey = process.env.NEXT_PUBLIC_TIKTOK_CLIENT_KEY || 'aw5n2omdzbjx4xf8'
+    const clientSecret = process.env.TIKTOK_CLIENT_SECRET || 'j7W4sVsZbf9NcaXn3sayT47kZBDFgJwE'
 
     if (!clientKey || !clientSecret) {
       return NextResponse.json({ error: 'TikTok credentials not configured' }, { status: 500 })
