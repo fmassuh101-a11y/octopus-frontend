@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
-  WhopElementsProvider,
+  PayoutsSession,
   BalanceElement,
   WithdrawButtonElement,
   StatusBannerElement,
@@ -83,7 +83,7 @@ export default function TestWhopSandbox() {
             </div>
           </div>
         ) : (
-          <WhopElementsProvider
+          <PayoutsSession
             accessToken={accessToken}
             environment={environment}
           >
@@ -111,7 +111,7 @@ export default function TestWhopSandbox() {
                 </p>
               </div>
             </div>
-          </WhopElementsProvider>
+          </PayoutsSession>
         )}
       </div>
     </div>
