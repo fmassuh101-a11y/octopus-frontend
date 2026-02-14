@@ -58,43 +58,66 @@ export default function HomePage() {
     }
 
     try {
-      // Use Supabase client to get fresh session instead of potentially stale localStorage
-      console.log('[TikTok Callback] Getting fresh session from Supabase...')
-      const session = await refreshSessionIfNeeded()
+      // Try multiple methods to get session - Supabase client may store it differently than old code
+      console.log('[TikTok Callback] Getting session...')
 
-      if (!session) {
-        console.log('[TikTok Callback] No session found, trying getSession...')
-        const { data: { session: currentSession } } = await supabase.auth.getSession()
-        if (!currentSession) {
-          alert('No hay sesión activa. Por favor inicia sesión primero.')
-          window.location.href = '/auth/login'
-          return
-        }
-        // Use currentSession
-        await syncSessionToStorage()
+      let token: string | null = null
+      let user: any = null
+
+      // Method 1: Try Supabase client first
+      const { data: { session: supabaseSession } } = await supabase.auth.getSession()
+
+      if (supabaseSession) {
+        console.log('[TikTok Callback] Found session in Supabase client')
+        token = supabaseSession.access_token
+        user = supabaseSession.user
       }
 
-      // Get the token directly from Supabase
-      const { data: { session: activeSession } } = await supabase.auth.getSession()
+      // Method 2: Fallback to old localStorage keys if Supabase client has no session
+      if (!token || !user) {
+        console.log('[TikTok Callback] No Supabase session, trying localStorage fallback...')
+        const oldToken = localStorage.getItem('sb-access-token')
+        const oldUserStr = localStorage.getItem('sb-user')
 
-      if (!activeSession) {
-        alert('Sesión expirada. Por favor inicia sesión de nuevo.')
+        if (oldToken && oldUserStr) {
+          console.log('[TikTok Callback] Found session in localStorage')
+          token = oldToken
+          try {
+            user = JSON.parse(oldUserStr)
+          } catch (e) {
+            console.error('[TikTok Callback] Failed to parse user from localStorage')
+          }
+        }
+      }
+
+      // Method 3: Check octopus-auth key directly (Supabase storage key)
+      if (!token || !user) {
+        console.log('[TikTok Callback] Trying octopus-auth key...')
+        const octopusAuth = localStorage.getItem('octopus-auth')
+        if (octopusAuth) {
+          try {
+            const authData = JSON.parse(octopusAuth)
+            if (authData.access_token && authData.user) {
+              console.log('[TikTok Callback] Found session in octopus-auth')
+              token = authData.access_token
+              user = authData.user
+            }
+          } catch (e) {
+            console.error('[TikTok Callback] Failed to parse octopus-auth')
+          }
+        }
+      }
+
+      if (!token || !user || !user.id) {
+        console.log('[TikTok Callback] No session found anywhere')
+        alert('No hay sesión activa. Por favor inicia sesión primero.')
         window.location.href = '/auth/login'
         return
       }
-
-      const token = activeSession.access_token
-      const user = activeSession.user
 
       console.log('[TikTok Callback] Token exists:', !!token)
       console.log('[TikTok Callback] User exists:', !!user)
       console.log('[TikTok Callback] User ID:', user?.id)
-
-      if (!user || !user.id) {
-        alert('Usuario inválido. Por favor inicia sesión de nuevo.')
-        window.location.href = '/auth/login'
-        return
-      }
 
       // Exchange code for token via our API
       console.log('[TikTok Callback] Calling /api/tiktok/callback with code:', code?.substring(0, 20) + '...')
@@ -137,26 +160,37 @@ export default function HomePage() {
           lastUpdated: new Date().toISOString(),
         }
 
-        // Use Supabase client directly (more reliable than raw REST API)
+        // Use REST API directly with the token we found
         console.log('[TikTok Callback] Fetching profile for user:', user.id)
 
-        // Get current profile
-        const { data: profiles, error: fetchError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', user.id)
+        // Clean token for use in headers
+        const cleanToken = token.trim().replace(/[\r\n\t]/g, '')
+        const cleanApiKey = SUPABASE_ANON_KEY.trim().replace(/[\r\n\t]/g, '')
 
-        if (fetchError) {
-          console.error('[TikTok Callback] Supabase fetch error:', fetchError)
-          if (fetchError.message?.includes('JWT') || fetchError.code === 'PGRST301') {
+        // Get current profile using REST API
+        const profileUrl = `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=*`
+        const profileRes = await fetch(profileUrl, {
+          headers: {
+            'Authorization': `Bearer ${cleanToken}`,
+            'apikey': cleanApiKey
+          }
+        })
+
+        console.log('[TikTok Callback] Profile response status:', profileRes.status)
+
+        if (!profileRes.ok) {
+          if (profileRes.status === 401) {
             alert('Sesión expirada. Por favor inicia sesión de nuevo.')
-            await supabase.auth.signOut()
+            localStorage.removeItem('sb-access-token')
+            localStorage.removeItem('sb-user')
             window.location.href = '/auth/login'
             return
           }
-          throw new Error('Error al obtener perfil: ' + fetchError.message)
+          const errorText = await profileRes.text()
+          throw new Error('Error al obtener perfil: ' + profileRes.status + ' - ' + errorText)
         }
 
+        const profiles = await profileRes.json()
         console.log('[TikTok Callback] Profiles found:', profiles?.length || 0)
 
         if (profiles && profiles.length > 0) {
@@ -188,20 +222,30 @@ export default function HomePage() {
           bioData.tiktokAccounts = tiktokAccounts
           bioData.tiktokConnected = true
 
-          // Save to Supabase using client
+          // Save to Supabase using REST API
           console.log('[TikTok Callback] Saving to Supabase...')
 
-          const { error: saveError } = await supabase
-            .from('profiles')
-            .update({
+          const saveUrl = `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}`
+          const saveRes = await fetch(saveUrl, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${cleanToken}`,
+              'apikey': cleanApiKey,
+              'Prefer': 'return=minimal'
+            },
+            body: JSON.stringify({
               bio: JSON.stringify(bioData),
               updated_at: new Date().toISOString()
             })
-            .eq('user_id', user.id)
+          })
 
-          if (saveError) {
-            console.error('[TikTok Callback] Save error:', saveError)
-            throw new Error('Error al guardar: ' + saveError.message)
+          console.log('[TikTok Callback] Save response status:', saveRes.status)
+
+          if (!saveRes.ok) {
+            const errorText = await saveRes.text()
+            console.error('[TikTok Callback] Save error:', saveRes.status, errorText)
+            throw new Error('Error al guardar: ' + saveRes.status)
           }
 
           console.log('[TikTok Callback] Account saved to Supabase!')
