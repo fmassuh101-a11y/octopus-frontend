@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { supabase } from '@/lib/supabase'
 
 const TIKTOK_CLIENT_KEY = process.env.NEXT_PUBLIC_TIKTOK_CLIENT_KEY || 'aw5n2omdzbjx4xf8'
 
@@ -36,16 +37,16 @@ export default function ProfilePage() {
     console.log('[Profile] Loading profile data...')
 
     try {
-      const token = localStorage.getItem('sb-access-token')
-      const userStr = localStorage.getItem('sb-user')
+      // Get session from Supabase client
+      const { data: { session } } = await supabase.auth.getSession()
 
-      if (!token || !userStr) {
-        console.log('[Profile] No token, redirecting to login')
+      if (!session) {
+        console.log('[Profile] No session, redirecting to login')
         window.location.href = '/auth/login'
         return
       }
 
-      const userData = JSON.parse(userStr)
+      const userData = session.user
       setUser(userData)
       console.log('[Profile] User loaded:', userData.email, userData.id)
 
@@ -54,51 +55,55 @@ export default function ProfilePage() {
 
       // FIRST: Try Supabase (this is the source of truth)
       try {
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=*`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'apikey': SUPABASE_ANON_KEY || ''
+        const { data: profiles, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', userData.id)
+
+        if (error) {
+          console.error('[Profile] Supabase error:', error)
+          if (error.message?.includes('JWT') || error.code === 'PGRST301') {
+            console.log('[Profile] JWT expired, redirecting to login')
+            alert('Tu sesión ha expirado. Por favor inicia sesión de nuevo.')
+            await supabase.auth.signOut()
+            window.location.href = '/auth/login'
+            return
           }
-        })
+        }
 
-        console.log('[Profile] Supabase response:', response.status)
+        console.log('[Profile] Profiles found:', profiles?.length || 0)
 
-        if (response.ok) {
-          const profiles = await response.json()
-          console.log('[Profile] Profiles found:', profiles.length)
+        if (profiles && profiles.length > 0) {
+          const profileData = profiles[0]
+          console.log('[Profile] Profile from Supabase:', profileData)
 
-          if (profiles.length > 0) {
-            const profileData = profiles[0]
-            console.log('[Profile] Profile from Supabase:', profileData)
+          // Map database fields to expected format
+          finalProfile = {
+            ...profileData,
+            // Map snake_case to camelCase for compatibility
+            phoneNumber: profileData.phone_number,
+            academicLevel: profileData.academic_level,
+            linkedInUrl: profileData.linkedin_url,
+            profilePhoto: profileData.profile_photo_url || profileData.avatar_url,
+            firstName: profileData.full_name?.split(' ')[0] || '',
+            lastName: profileData.full_name?.split(' ').slice(1).join(' ') || ''
+          }
 
-            // Map database fields to expected format
-            finalProfile = {
-              ...profileData,
-              // Map snake_case to camelCase for compatibility
-              phoneNumber: profileData.phone_number,
-              academicLevel: profileData.academic_level,
-              linkedInUrl: profileData.linkedin_url,
-              profilePhoto: profileData.profile_photo_url || profileData.avatar_url,
-              firstName: profileData.full_name?.split(' ')[0] || '',
-              lastName: profileData.full_name?.split(' ').slice(1).join(' ') || ''
-            }
+          finalBioData = { ...finalProfile }
 
-            finalBioData = { ...finalProfile }
+          // Parse bio data if it exists (for backward compatibility)
+          if (profileData.bio) {
+            try {
+              const parsedBio = JSON.parse(profileData.bio)
+              console.log('[Profile] Parsed bio from Supabase:', parsedBio)
+              // Merge but prefer direct database fields
+              finalBioData = { ...parsedBio, ...finalBioData }
+              finalProfile = { ...parsedBio, ...finalProfile }
 
-            // Parse bio data if it exists (for backward compatibility)
-            if (profileData.bio) {
-              try {
-                const parsedBio = JSON.parse(profileData.bio)
-                console.log('[Profile] Parsed bio from Supabase:', parsedBio)
-                // Merge but prefer direct database fields
-                finalBioData = { ...parsedBio, ...finalBioData }
-                finalProfile = { ...parsedBio, ...finalProfile }
-
-                // Also save to localStorage for faster loading next time
-                localStorage.setItem('creatorOnboarding', JSON.stringify(finalBioData))
-              } catch (e) {
-                console.log('[Profile] Bio is not JSON, using as-is')
-              }
+              // Also save to localStorage for faster loading next time
+              localStorage.setItem('creatorOnboarding', JSON.stringify(finalBioData))
+            } catch (e) {
+              console.log('[Profile] Bio is not JSON, using as-is')
             }
           }
         }
@@ -398,7 +403,7 @@ export default function ProfilePage() {
     }
   }
 
-  // Handle removing TikTok account
+  // Handle removing TikTok account - using Supabase client
   const handleRemoveTikTok = async () => {
     console.log('[TikTok] handleRemoveTikTok called')
 
@@ -408,94 +413,77 @@ export default function ProfilePage() {
     }
 
     try {
-      const token = localStorage.getItem('sb-access-token')
-      const userStr = localStorage.getItem('sb-user')
+      // Get current session from Supabase
+      const { data: { session } } = await supabase.auth.getSession()
 
-      console.log('[TikTok] Token:', token ? 'exists' : 'missing')
-      console.log('[TikTok] User:', userStr ? 'exists' : 'missing')
-
-      if (!token || !userStr) {
-        alert('Error: No hay sesión activa')
+      if (!session) {
+        alert('Tu sesión ha expirado. Por favor inicia sesión de nuevo.')
+        window.location.href = '/auth/login'
         return
       }
 
-      const userData = JSON.parse(userStr)
-      console.log('[TikTok] User ID:', userData.id)
+      console.log('[TikTok] User ID:', session.user.id)
 
-      // Get current profile
+      // Get current profile using Supabase client
       console.log('[TikTok] Fetching profile...')
-      const profileRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=*`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'apikey': SUPABASE_ANON_KEY || ''
-          }
+      const { data: profiles, error: fetchError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', session.user.id)
+
+      if (fetchError) {
+        console.error('[TikTok] Fetch error:', fetchError)
+        if (fetchError.message?.includes('JWT') || fetchError.code === 'PGRST301') {
+          alert('Sesión expirada. Por favor inicia sesión de nuevo.')
+          await supabase.auth.signOut()
+          window.location.href = '/auth/login'
+          return
         }
-      )
-
-      console.log('[TikTok] Profile response:', profileRes.status)
-
-      if (profileRes.ok) {
-        const profiles = await profileRes.json()
-        console.log('[TikTok] Profiles found:', profiles.length)
-
-        if (profiles.length > 0) {
-          const currentProfile = profiles[0]
-          let bioData: any = {}
-
-          try {
-            bioData = currentProfile.bio ? JSON.parse(currentProfile.bio) : {}
-          } catch (e) {
-            bioData = {}
-          }
-
-          console.log('[TikTok] Current TikTok accounts:', bioData.tiktokAccounts?.length || 0)
-
-          // Remove TikTok data
-          bioData.tiktokAccounts = []
-          bioData.tiktokConnected = false
-
-          // Save to Supabase
-          console.log('[TikTok] Saving to Supabase...')
-          const saveRes = await fetch(
-            `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}`,
-            {
-              method: 'PATCH',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-                'apikey': SUPABASE_ANON_KEY || '',
-                'Prefer': 'return=minimal'
-              },
-              body: JSON.stringify({
-                bio: JSON.stringify(bioData),
-                updated_at: new Date().toISOString()
-              })
-            }
-          )
-
-          console.log('[TikTok] Save response:', saveRes.status)
-
-          if (saveRes.ok) {
-            alert('Cuenta de TikTok eliminada correctamente')
-            window.location.reload()
-          } else {
-            const errorText = await saveRes.text()
-            console.error('[TikTok] Save error:', errorText)
-            alert('Error al guardar: ' + saveRes.status)
-          }
-        } else {
-          alert('No se encontró el perfil')
-        }
-      } else {
-        const errorText = await profileRes.text()
-        console.error('[TikTok] Profile fetch error:', errorText)
-        alert('Error al obtener perfil: ' + profileRes.status)
+        throw new Error(fetchError.message)
       }
-    } catch (error) {
+
+      console.log('[TikTok] Profiles found:', profiles?.length || 0)
+
+      if (profiles && profiles.length > 0) {
+        const currentProfile = profiles[0]
+        let bioData: any = {}
+
+        try {
+          bioData = currentProfile.bio ? JSON.parse(currentProfile.bio) : {}
+        } catch (e) {
+          bioData = {}
+        }
+
+        console.log('[TikTok] Current TikTok accounts:', bioData.tiktokAccounts?.length || 0)
+
+        // Remove TikTok data
+        bioData.tiktokAccounts = []
+        bioData.tiktokConnected = false
+
+        // Save to Supabase using client
+        console.log('[TikTok] Saving to Supabase...')
+        const { error: saveError } = await supabase
+          .from('profiles')
+          .update({
+            bio: JSON.stringify(bioData),
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', session.user.id)
+
+        if (saveError) {
+          console.error('[TikTok] Save error:', saveError)
+          throw new Error(saveError.message)
+        }
+
+        console.log('[TikTok] Account removed successfully')
+        alert('Cuenta de TikTok eliminada correctamente')
+        window.location.reload()
+      } else {
+        alert('No se encontró el perfil')
+      }
+    } catch (error: any) {
       console.error('[TikTok] Error removing account:', error)
-      alert('Error: ' + error)
+      alert('Error: ' + (error.message || error))
     }
   }
 

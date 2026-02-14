@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { supabase, syncSessionToStorage, refreshSessionIfNeeded } from '@/lib/supabase'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ftvqoudlmojdxwjxljzr.supabase.co'
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
@@ -57,28 +58,37 @@ export default function HomePage() {
     }
 
     try {
-      // Get user info for saving to Supabase
-      const token = localStorage.getItem('sb-access-token')
-      const userStr = localStorage.getItem('sb-user')
+      // Use Supabase client to get fresh session instead of potentially stale localStorage
+      console.log('[TikTok Callback] Getting fresh session from Supabase...')
+      const session = await refreshSessionIfNeeded()
+
+      if (!session) {
+        console.log('[TikTok Callback] No session found, trying getSession...')
+        const { data: { session: currentSession } } = await supabase.auth.getSession()
+        if (!currentSession) {
+          alert('No hay sesión activa. Por favor inicia sesión primero.')
+          window.location.href = '/auth/login'
+          return
+        }
+        // Use currentSession
+        await syncSessionToStorage()
+      }
+
+      // Get the token directly from Supabase
+      const { data: { session: activeSession } } = await supabase.auth.getSession()
+
+      if (!activeSession) {
+        alert('Sesión expirada. Por favor inicia sesión de nuevo.')
+        window.location.href = '/auth/login'
+        return
+      }
+
+      const token = activeSession.access_token
+      const user = activeSession.user
 
       console.log('[TikTok Callback] Token exists:', !!token)
-      console.log('[TikTok Callback] User string exists:', !!userStr)
-
-      if (!token || !userStr) {
-        alert('No hay sesión activa. Por favor inicia sesión primero.')
-        window.location.href = '/auth/login'
-        return
-      }
-
-      let user: any
-      try {
-        user = JSON.parse(userStr)
-        console.log('[TikTok Callback] User ID:', user?.id)
-      } catch (e) {
-        alert('Error al leer datos de usuario')
-        window.location.href = '/auth/login'
-        return
-      }
+      console.log('[TikTok Callback] User exists:', !!user)
+      console.log('[TikTok Callback] User ID:', user?.id)
 
       if (!user || !user.id) {
         alert('Usuario inválido. Por favor inicia sesión de nuevo.')
@@ -127,98 +137,74 @@ export default function HomePage() {
           lastUpdated: new Date().toISOString(),
         }
 
-        // Get current profile from Supabase
+        // Use Supabase client directly (more reliable than raw REST API)
         console.log('[TikTok Callback] Fetching profile for user:', user.id)
-        console.log('[TikTok Callback] SUPABASE_URL:', SUPABASE_URL)
-        console.log('[TikTok Callback] Token length:', token?.length)
 
-        const profileUrl = `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=*`
-        console.log('[TikTok Callback] Profile URL:', profileUrl)
+        // Get current profile
+        const { data: profiles, error: fetchError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', user.id)
 
-        // Validate token is a string
-        if (typeof token !== 'string' || token.length < 10) {
-          throw new Error('Token inválido: ' + typeof token)
+        if (fetchError) {
+          console.error('[TikTok Callback] Supabase fetch error:', fetchError)
+          if (fetchError.message?.includes('JWT') || fetchError.code === 'PGRST301') {
+            alert('Sesión expirada. Por favor inicia sesión de nuevo.')
+            await supabase.auth.signOut()
+            window.location.href = '/auth/login'
+            return
+          }
+          throw new Error('Error al obtener perfil: ' + fetchError.message)
         }
 
-        const headers: Record<string, string> = {
-          'Authorization': `Bearer ${token}`,
-          'apikey': String(SUPABASE_ANON_KEY)
-        }
+        console.log('[TikTok Callback] Profiles found:', profiles?.length || 0)
 
-        console.log('[TikTok Callback] Headers prepared, making fetch...')
+        if (profiles && profiles.length > 0) {
+          const profile = profiles[0]
+          let bioData: any = {}
 
-        const profileRes = await fetch(profileUrl, { headers })
+          console.log('[TikTok Callback] Current bio type:', typeof profile.bio)
 
-        console.log('[TikTok Callback] Profile response status:', profileRes.status)
+          try {
+            bioData = profile.bio ? JSON.parse(profile.bio) : {}
+            console.log('[TikTok Callback] Bio parsed successfully')
+          } catch (e) {
+            console.log('[TikTok Callback] Bio is not JSON, starting fresh')
+            bioData = {}
+          }
 
-        if (profileRes.ok) {
-          const profiles = await profileRes.json()
-          console.log('[TikTok Callback] Profiles found:', profiles.length)
+          // Add/update TikTok account
+          const tiktokAccounts = bioData.tiktokAccounts || []
+          const existingIndex = tiktokAccounts.findIndex((a: any) =>
+            a.openId === accountData.openId || a.username === accountData.username
+          )
 
-          if (profiles.length > 0) {
-            const profile = profiles[0]
-            let bioData: any = {}
+          if (existingIndex >= 0) {
+            tiktokAccounts[existingIndex] = accountData
+          } else {
+            tiktokAccounts.push(accountData)
+          }
 
-            console.log('[TikTok Callback] Current bio type:', typeof profile.bio)
-            console.log('[TikTok Callback] Current bio value:', profile.bio?.substring?.(0, 100) || profile.bio)
+          bioData.tiktokAccounts = tiktokAccounts
+          bioData.tiktokConnected = true
 
-            try {
-              bioData = profile.bio ? JSON.parse(profile.bio) : {}
-              console.log('[TikTok Callback] Bio parsed successfully')
-            } catch (e) {
-              console.log('[TikTok Callback] Bio is not JSON, starting fresh')
-              bioData = {}
-            }
+          // Save to Supabase using client
+          console.log('[TikTok Callback] Saving to Supabase...')
 
-            // Add/update TikTok account
-            const tiktokAccounts = bioData.tiktokAccounts || []
-            const existingIndex = tiktokAccounts.findIndex((a: any) =>
-              a.openId === accountData.openId || a.username === accountData.username
-            )
-
-            if (existingIndex >= 0) {
-              tiktokAccounts[existingIndex] = accountData
-            } else {
-              tiktokAccounts.push(accountData)
-            }
-
-            bioData.tiktokAccounts = tiktokAccounts
-            bioData.tiktokConnected = true
-
-            // Save to Supabase
-            console.log('[TikTok Callback] Saving to Supabase...')
-            console.log('[TikTok Callback] bioData to save:', JSON.stringify(bioData).substring(0, 200))
-
-            const saveUrl = `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}`
-            const saveBody = JSON.stringify({
+          const { error: saveError } = await supabase
+            .from('profiles')
+            .update({
               bio: JSON.stringify(bioData),
               updated_at: new Date().toISOString()
             })
+            .eq('user_id', user.id)
 
-            console.log('[TikTok Callback] Save URL:', saveUrl)
-            console.log('[TikTok Callback] Save body length:', saveBody.length)
-
-            const saveRes = await fetch(saveUrl, {
-              method: 'PATCH',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-                'apikey': String(SUPABASE_ANON_KEY),
-                'Prefer': 'return=minimal'
-              },
-              body: saveBody
-            })
-
-            console.log('[TikTok Callback] Save response status:', saveRes.status)
-
-            if (saveRes.ok) {
-              console.log('[TikTok Callback] Account saved to Supabase!')
-            } else {
-              const errorText = await saveRes.text()
-              console.error('[TikTok Callback] Failed to save:', saveRes.status, errorText)
-              throw new Error('Failed to save to Supabase: ' + saveRes.status)
-            }
+          if (saveError) {
+            console.error('[TikTok Callback] Save error:', saveError)
+            throw new Error('Error al guardar: ' + saveError.message)
           }
+
+          console.log('[TikTok Callback] Account saved to Supabase!')
         }
 
         // Also save to localStorage as backup
