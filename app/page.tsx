@@ -58,66 +58,44 @@ export default function HomePage() {
     }
 
     try {
-      // Try multiple methods to get session - Supabase client may store it differently than old code
-      console.log('[TikTok Callback] Getting session...')
+      // SIMPLE APPROACH: Just use localStorage directly, no Supabase client complexity
+      console.log('[TikTok Callback] Getting session from localStorage...')
 
-      let token: string | null = null
-      let user: any = null
+      // Get tokens from localStorage (where login stores them)
+      const token = localStorage.getItem('sb-access-token')
+      const userStr = localStorage.getItem('sb-user')
+      const refreshToken = localStorage.getItem('sb-refresh-token')
 
-      // Method 1: Try Supabase client first
-      const { data: { session: supabaseSession } } = await supabase.auth.getSession()
+      console.log('[TikTok Callback] Token exists:', !!token)
+      console.log('[TikTok Callback] User exists:', !!userStr)
+      console.log('[TikTok Callback] Refresh token exists:', !!refreshToken)
 
-      if (supabaseSession) {
-        console.log('[TikTok Callback] Found session in Supabase client')
-        token = supabaseSession.access_token
-        user = supabaseSession.user
-      }
-
-      // Method 2: Fallback to old localStorage keys if Supabase client has no session
-      if (!token || !user) {
-        console.log('[TikTok Callback] No Supabase session, trying localStorage fallback...')
-        const oldToken = localStorage.getItem('sb-access-token')
-        const oldUserStr = localStorage.getItem('sb-user')
-
-        if (oldToken && oldUserStr) {
-          console.log('[TikTok Callback] Found session in localStorage')
-          token = oldToken
-          try {
-            user = JSON.parse(oldUserStr)
-          } catch (e) {
-            console.error('[TikTok Callback] Failed to parse user from localStorage')
-          }
-        }
-      }
-
-      // Method 3: Check octopus-auth key directly (Supabase storage key)
-      if (!token || !user) {
-        console.log('[TikTok Callback] Trying octopus-auth key...')
-        const octopusAuth = localStorage.getItem('octopus-auth')
-        if (octopusAuth) {
-          try {
-            const authData = JSON.parse(octopusAuth)
-            if (authData.access_token && authData.user) {
-              console.log('[TikTok Callback] Found session in octopus-auth')
-              token = authData.access_token
-              user = authData.user
-            }
-          } catch (e) {
-            console.error('[TikTok Callback] Failed to parse octopus-auth')
-          }
-        }
-      }
-
-      if (!token || !user || !user.id) {
-        console.log('[TikTok Callback] No session found anywhere')
+      if (!token || !userStr) {
+        console.log('[TikTok Callback] No session in localStorage')
         alert('No hay sesión activa. Por favor inicia sesión primero.')
         window.location.href = '/auth/login'
         return
       }
 
-      console.log('[TikTok Callback] Token exists:', !!token)
-      console.log('[TikTok Callback] User exists:', !!user)
-      console.log('[TikTok Callback] User ID:', user?.id)
+      let user: any
+      try {
+        user = JSON.parse(userStr)
+      } catch (e) {
+        console.error('[TikTok Callback] Failed to parse user')
+        alert('Error de sesión. Por favor inicia sesión de nuevo.')
+        window.location.href = '/auth/login'
+        return
+      }
+
+      if (!user || !user.id) {
+        console.log('[TikTok Callback] Invalid user data')
+        alert('Sesión inválida. Por favor inicia sesión de nuevo.')
+        window.location.href = '/auth/login'
+        return
+      }
+
+      console.log('[TikTok Callback] Token length:', token.length)
+      console.log('[TikTok Callback] User ID:', user.id)
 
       // Exchange code for token via our API
       console.log('[TikTok Callback] Calling /api/tiktok/callback with code:', code?.substring(0, 20) + '...')
@@ -178,14 +156,45 @@ export default function HomePage() {
 
         console.log('[TikTok Callback] Profile response status:', profileRes.status)
 
-        if (!profileRes.ok) {
-          if (profileRes.status === 401) {
-            alert('Sesión expirada. Por favor inicia sesión de nuevo.')
-            localStorage.removeItem('sb-access-token')
-            localStorage.removeItem('sb-user')
-            window.location.href = '/auth/login'
-            return
+        // Handle token expiration - try to refresh
+        if (profileRes.status === 401) {
+          console.log('[TikTok Callback] Token expired, attempting refresh...')
+
+          const refreshToken = localStorage.getItem('sb-refresh-token')
+          if (refreshToken) {
+            try {
+              // Try to refresh using Supabase client
+              const { data: refreshData, error: refreshError } = await supabase.auth.setSession({
+                access_token: token,
+                refresh_token: refreshToken
+              })
+
+              if (refreshData?.session && !refreshError) {
+                console.log('[TikTok Callback] Session refreshed!')
+
+                // Update localStorage with new tokens
+                localStorage.setItem('sb-access-token', refreshData.session.access_token)
+                localStorage.setItem('sb-refresh-token', refreshData.session.refresh_token || '')
+
+                // Redirect to self to retry with new token
+                window.location.href = window.location.href
+                return
+              }
+            } catch (e) {
+              console.error('[TikTok Callback] Refresh failed:', e)
+            }
           }
+
+          // Refresh failed, redirect to login
+          alert('Sesión expirada. Por favor inicia sesión de nuevo.')
+          localStorage.removeItem('sb-access-token')
+          localStorage.removeItem('sb-user')
+          localStorage.removeItem('sb-refresh-token')
+          window.location.href = '/auth/login'
+          return
+        }
+
+        if (!profileRes.ok) {
           const errorText = await profileRes.text()
           throw new Error('Error al obtener perfil: ' + profileRes.status + ' - ' + errorText)
         }
