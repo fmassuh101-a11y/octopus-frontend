@@ -385,32 +385,9 @@ export default function ProfilePage() {
   )
 
   // Handle TikTok OAuth connection - go directly to TikTok
-  const handleConnectTikTok = async () => {
+  const handleConnectTikTok = () => {
     console.log('[TikTok] handleConnectTikTok called from profile')
     try {
-      // IMPORTANT: Refresh token BEFORE going to TikTok
-      const refreshToken = localStorage.getItem('sb-refresh-token')
-      const currentToken = localStorage.getItem('sb-access-token')
-
-      if (refreshToken && currentToken) {
-        console.log('[TikTok] Refreshing token before OAuth...')
-        try {
-          const { data, error } = await supabase.auth.setSession({
-            access_token: currentToken,
-            refresh_token: refreshToken
-          })
-
-          if (data?.session && !error) {
-            console.log('[TikTok] Token refreshed successfully')
-            localStorage.setItem('sb-access-token', data.session.access_token)
-            localStorage.setItem('sb-refresh-token', data.session.refresh_token || '')
-            localStorage.setItem('sb-user', JSON.stringify(data.session.user))
-          }
-        } catch (e) {
-          console.log('[TikTok] Token refresh failed, continuing anyway:', e)
-        }
-      }
-
       const redirectUri = encodeURIComponent('https://octopus-frontend-tau.vercel.app/')
       const scope = encodeURIComponent('user.info.basic,user.info.profile,user.info.stats,video.list')
       const state = Math.random().toString(36).substring(7)
@@ -420,9 +397,9 @@ export default function ProfilePage() {
       const webAuthUrl = `https://www.tiktok.com/v2/auth/authorize/?client_key=${TIKTOK_CLIENT_KEY}&response_type=code&scope=${scope}&redirect_uri=${redirectUri}&state=${state}&disable_auto_auth=1`
       console.log('[TikTok] Redirecting to:', webAuthUrl)
       window.location.href = webAuthUrl
-    } catch (error) {
+    } catch (error: any) {
       console.error('[TikTok] Error:', error)
-      alert('Error: ' + error)
+      alert('Error: ' + (error?.message || String(error)))
     }
   }
 

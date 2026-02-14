@@ -66,32 +66,9 @@ export default function CreatorAnalyticsPage() {
     }
   }
 
-  const handleConnectTikTok = async () => {
+  const handleConnectTikTok = () => {
     console.log('[TikTok] handleConnectTikTok called')
     try {
-      // IMPORTANT: Refresh token BEFORE going to TikTok to ensure it's fresh when we return
-      const refreshToken = localStorage.getItem('sb-refresh-token')
-      const currentToken = localStorage.getItem('sb-access-token')
-
-      if (refreshToken && currentToken) {
-        console.log('[TikTok] Refreshing token before OAuth...')
-        try {
-          const { data, error } = await supabase.auth.setSession({
-            access_token: currentToken,
-            refresh_token: refreshToken
-          })
-
-          if (data?.session && !error) {
-            console.log('[TikTok] Token refreshed successfully')
-            localStorage.setItem('sb-access-token', data.session.access_token)
-            localStorage.setItem('sb-refresh-token', data.session.refresh_token || '')
-            localStorage.setItem('sb-user', JSON.stringify(data.session.user))
-          }
-        } catch (e) {
-          console.log('[TikTok] Token refresh failed, continuing anyway:', e)
-        }
-      }
-
       const state = Math.random().toString(36).substring(2, 15)
       localStorage.setItem('tiktok_csrf_state', state)
       localStorage.setItem('tiktok_oauth_state', state)
@@ -102,9 +79,9 @@ export default function CreatorAnalyticsPage() {
 
       console.log('[TikTok] Redirecting to:', webAuthUrl)
       window.location.href = webAuthUrl
-    } catch (error) {
+    } catch (error: any) {
       console.error('[TikTok] Error:', error)
-      alert('Error: ' + error)
+      alert('Error: ' + (error?.message || String(error)))
     }
   }
 

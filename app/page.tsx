@@ -156,36 +156,9 @@ export default function HomePage() {
 
         console.log('[TikTok Callback] Profile response status:', profileRes.status)
 
-        // Handle token expiration - try to refresh
+        // Handle token expiration - redirect to login
         if (profileRes.status === 401) {
-          console.log('[TikTok Callback] Token expired, attempting refresh...')
-
-          const refreshToken = localStorage.getItem('sb-refresh-token')
-          if (refreshToken) {
-            try {
-              // Try to refresh using Supabase client
-              const { data: refreshData, error: refreshError } = await supabase.auth.setSession({
-                access_token: token,
-                refresh_token: refreshToken
-              })
-
-              if (refreshData?.session && !refreshError) {
-                console.log('[TikTok Callback] Session refreshed!')
-
-                // Update localStorage with new tokens
-                localStorage.setItem('sb-access-token', refreshData.session.access_token)
-                localStorage.setItem('sb-refresh-token', refreshData.session.refresh_token || '')
-
-                // Redirect to self to retry with new token
-                window.location.href = window.location.href
-                return
-              }
-            } catch (e) {
-              console.error('[TikTok Callback] Refresh failed:', e)
-            }
-          }
-
-          // Refresh failed, redirect to login
+          console.log('[TikTok Callback] Token expired')
           alert('Sesión expirada. Por favor inicia sesión de nuevo.')
           localStorage.removeItem('sb-access-token')
           localStorage.removeItem('sb-user')
