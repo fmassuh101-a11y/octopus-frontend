@@ -2,13 +2,12 @@ import { createClient } from '@supabase/supabase-js'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config/supabase'
 
 // Create client with session persistence
+// IMPORTANT: Using default storage key so it matches what login pages use
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: false,
-    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-    storageKey: 'octopus-auth'
+    detectSessionInUrl: true
   }
 })
 
