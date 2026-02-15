@@ -151,15 +151,23 @@ export default function HomePage() {
 
       // Step 4: Save to Supabase using direct fetch (more reliable than client)
       console.log('[TikTok Callback] Fetching profile from Supabase...')
-      const profileResponse = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${session.user.id}&select=*`,
-        {
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'apikey': SUPABASE_ANON_KEY
-          }
+      console.log('[TikTok Callback] User ID:', session.user.id)
+
+      // Clean the access token (remove any whitespace/newlines)
+      const cleanToken = session.access_token?.trim()
+      if (!cleanToken) {
+        throw new Error('No valid access token')
+      }
+
+      const profileUrl = `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${session.user.id}&select=*`
+      console.log('[TikTok Callback] Profile URL:', profileUrl)
+
+      const profileResponse = await fetch(profileUrl, {
+        headers: {
+          'Authorization': `Bearer ${cleanToken}`,
+          'apikey': SUPABASE_ANON_KEY
         }
-      )
+      })
 
       if (!profileResponse.ok) {
         console.error('[TikTok Callback] Profile fetch error:', profileResponse.status)
@@ -201,7 +209,7 @@ export default function HomePage() {
           {
             method: 'PATCH',
             headers: {
-              'Authorization': `Bearer ${session.access_token}`,
+              'Authorization': `Bearer ${cleanToken}`,
               'apikey': SUPABASE_ANON_KEY,
               'Content-Type': 'application/json',
               'Prefer': 'return=minimal'
