@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 
 const ADMIN_EMAIL = 'fmassuh133@gmail.com'
@@ -15,45 +16,51 @@ export default function AuthCallback() {
 
   const handleCallback = async () => {
     try {
-      // Extract tokens from URL hash
-      const hash = window.location.hash.substring(1)
-      const hashParams = new URLSearchParams(hash)
-      const accessToken = hashParams.get('access_token')
-      const refreshToken = hashParams.get('refresh_token')
+      setStatus('Procesando autenticación...')
+
+      // First, let Supabase handle the OAuth callback automatically
+      // (detectSessionInUrl: true handles this)
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+
+      // If no session from automatic detection, try manual extraction
+      let accessToken = session?.access_token
+      let refreshToken = session?.refresh_token
+      let user = session?.user
 
       if (!accessToken) {
-        throw new Error('No access token found')
+        // Fallback: Extract tokens from URL hash manually
+        const hash = window.location.hash.substring(1)
+        const hashParams = new URLSearchParams(hash)
+        accessToken = hashParams.get('access_token') || undefined
+        refreshToken = hashParams.get('refresh_token') || undefined
+
+        if (!accessToken) {
+          throw new Error('No access token found')
+        }
+
+        // Set session in Supabase client
+        const { data, error: setError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken || ''
+        })
+
+        if (setError) {
+          throw setError
+        }
+
+        user = data.user || undefined
+      }
+
+      if (!user) {
+        throw new Error('No user found')
       }
 
       setStatus('Guardando sesión...')
 
-      // Get user info using the token
-      const userResponse = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'apikey': SUPABASE_ANON_KEY
-        }
-      })
-
-      if (!userResponse.ok) {
-        throw new Error('Error getting user info')
-      }
-
-      const user = await userResponse.json()
-
-      // Store in localStorage for the app to use
+      // Store in localStorage for app compatibility
       localStorage.setItem('sb-access-token', accessToken)
       localStorage.setItem('sb-refresh-token', refreshToken || '')
       localStorage.setItem('sb-user', JSON.stringify(user))
-
-      // Also set in Supabase's expected format
-      const sessionData = {
-        access_token: accessToken,
-        refresh_token: refreshToken || '',
-        user: user,
-        expires_at: Math.floor(Date.now() / 1000) + 3600
-      }
-      localStorage.setItem(`sb-ftvqoudlmojdxwjxljzr-auth-token`, JSON.stringify(sessionData))
 
       setStatus('¡Sesión guardada!')
 

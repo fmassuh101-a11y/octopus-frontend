@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { User } from '@supabase/supabase-js'
-import { supabase } from '../supabase'
+import { supabase, getStoredSession } from '../supabase'
 import { getCurrentUserProfile, type DBProfile } from '../database'
 
 interface AuthContextType {
@@ -173,6 +173,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const initAuth = async () => {
       try {
         console.log('🔄 [AuthContext] Initializing auth...')
+
+        // First, restore session from localStorage if available
+        const storedSession = getStoredSession()
+        if (storedSession) {
+          console.log('🔑 [AuthContext] Found stored session, restoring...')
+          await supabase.auth.setSession({
+            access_token: storedSession.access_token,
+            refresh_token: storedSession.refresh_token
+          })
+        }
 
         // Get current session
         const { data: { session }, error } = await supabase.auth.getSession()

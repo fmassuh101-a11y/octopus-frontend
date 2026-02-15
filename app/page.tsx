@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { supabase, syncSessionToStorage, refreshSessionIfNeeded } from '@/lib/supabase'
+import { supabase, getStoredSession, restoreSession } from '@/lib/supabase'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ftvqoudlmojdxwjxljzr.supabase.co'
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
@@ -60,16 +60,25 @@ export default function HomePage() {
     try {
       console.log('[TikTok Callback] Processing TikTok authorization...')
 
-      // Step 1: Get session from Supabase client (it should auto-load from storage now)
-      const { data: { session } } = await supabase.auth.getSession()
+      // Step 1: Get session from localStorage and restore to Supabase client
+      const storedSession = getStoredSession()
 
-      console.log('[TikTok Callback] Session found:', !!session)
+      console.log('[TikTok Callback] Stored session found:', !!storedSession)
 
-      if (!session) {
-        console.error('[TikTok Callback] No session found')
+      if (!storedSession) {
+        console.error('[TikTok Callback] No session in localStorage')
         alert('No hay sesión activa. Por favor inicia sesión.')
         window.location.href = '/auth/login'
         return
+      }
+
+      // Restore session to Supabase client
+      await restoreSession()
+
+      // Create a session-like object for use below
+      const session = {
+        user: storedSession.user,
+        access_token: storedSession.access_token
       }
 
       // Step 2: Exchange code for TikTok token

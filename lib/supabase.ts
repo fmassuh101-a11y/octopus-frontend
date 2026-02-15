@@ -1,67 +1,48 @@
 import { createClient } from '@supabase/supabase-js'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config/supabase'
 
-// Custom storage adapter that maps Supabase's keys to our custom keys
-const customStorage = {
-  getItem: (key: string): string | null => {
-    if (typeof window === 'undefined') return null
-
-    // When Supabase asks for its default key, return our custom stored session
-    const accessToken = localStorage.getItem('sb-access-token')
-    const refreshToken = localStorage.getItem('sb-refresh-token')
-    const userStr = localStorage.getItem('sb-user')
-
-    if (accessToken && userStr) {
-      try {
-        const user = JSON.parse(userStr)
-        return JSON.stringify({
-          access_token: accessToken,
-          refresh_token: refreshToken || '',
-          expires_in: 3600,
-          token_type: 'bearer',
-          user: user
-        })
-      } catch (e) {
-        return null
-      }
-    }
-    return null
-  },
-  setItem: (key: string, value: string): void => {
-    if (typeof window === 'undefined') return
-
-    try {
-      const data = JSON.parse(value)
-      if (data.access_token) {
-        localStorage.setItem('sb-access-token', data.access_token)
-      }
-      if (data.refresh_token) {
-        localStorage.setItem('sb-refresh-token', data.refresh_token)
-      }
-      if (data.user) {
-        localStorage.setItem('sb-user', JSON.stringify(data.user))
-      }
-    } catch (e) {
-      console.error('[Supabase Storage] Error setting item:', e)
-    }
-  },
-  removeItem: (key: string): void => {
-    if (typeof window === 'undefined') return
-    localStorage.removeItem('sb-access-token')
-    localStorage.removeItem('sb-refresh-token')
-    localStorage.removeItem('sb-user')
-  }
-}
-
-// Create client with custom storage that syncs with our localStorage keys
+// Supabase client with OAuth callback detection enabled
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: false,
-    storage: customStorage
+    detectSessionInUrl: true  // CRITICAL: Enables OAuth token detection from URL hash
   }
 })
+
+// Helper to get current session from localStorage
+export const getStoredSession = () => {
+  if (typeof window === 'undefined') return null
+
+  const accessToken = localStorage.getItem('sb-access-token')
+  const refreshToken = localStorage.getItem('sb-refresh-token')
+  const userStr = localStorage.getItem('sb-user')
+
+  if (!accessToken || !userStr) return null
+
+  try {
+    const user = JSON.parse(userStr)
+    return {
+      access_token: accessToken,
+      refresh_token: refreshToken || '',
+      user: user
+    }
+  } catch (e) {
+    return null
+  }
+}
+
+// Helper to set session in Supabase client from localStorage
+export const restoreSession = async () => {
+  const stored = getStoredSession()
+  if (stored) {
+    await supabase.auth.setSession({
+      access_token: stored.access_token,
+      refresh_token: stored.refresh_token
+    })
+  }
+  return stored
+}
 
 // Helper to sync session to our custom localStorage keys
 export const syncSessionToStorage = async () => {
