@@ -5,6 +5,27 @@ const TIKTOK_TOKEN_URL = 'https://open.tiktokapis.com/v2/oauth/token/'
 const TIKTOK_USER_INFO_URL = 'https://open.tiktokapis.com/v2/user/info/'
 const TIKTOK_VIDEO_LIST_URL = 'https://open.tiktokapis.com/v2/video/list/'
 
+// Helper function to fetch with timeout
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number = 15000): Promise<Response> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    })
+    clearTimeout(timeoutId)
+    return response
+  } catch (error: any) {
+    clearTimeout(timeoutId)
+    if (error.name === 'AbortError') {
+      throw new Error(`Request timeout after ${timeoutMs}ms`)
+    }
+    throw error
+  }
+}
+
 interface TikTokTokenResponse {
   access_token: string
   expires_in: number
@@ -85,14 +106,16 @@ export async function POST(request: NextRequest) {
     console.log('Token request URL:', TIKTOK_TOKEN_URL)
     console.log('Token request body (without secret):', bodyParams.toString().replace(clientSecret, '***'))
 
-    const tokenResponse = await fetch(TIKTOK_TOKEN_URL, {
+    console.log('>>> Sending token request to TikTok...')
+    const tokenResponse = await fetchWithTimeout(TIKTOK_TOKEN_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         'Cache-Control': 'no-cache',
       },
       body: bodyParams,
-    })
+    }, 15000)
+    console.log('>>> Token response received, status:', tokenResponse.status)
 
     const tokenText = await tokenResponse.text()
     console.log('TikTok token raw response:', tokenText)
@@ -190,12 +213,14 @@ export async function POST(request: NextRequest) {
     console.log('Access Token (first 20 chars):', tokenData.access_token?.substring(0, 20))
     console.log('Open ID:', tokenData.open_id)
 
-    const userResponse = await fetch(`${TIKTOK_USER_INFO_URL}?fields=${userFields.join(',')}`, {
+    console.log('>>> Fetching user info from TikTok...')
+    const userResponse = await fetchWithTimeout(`${TIKTOK_USER_INFO_URL}?fields=${userFields.join(',')}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${tokenData.access_token}`,
       },
-    })
+    }, 15000)
+    console.log('>>> User info response received, status:', userResponse.status)
 
     const userText = await userResponse.text()
     console.log('TikTok user raw response:', userText)
@@ -232,16 +257,18 @@ export async function POST(request: NextRequest) {
     console.log('=== TikTok Video List Request ===')
     let videos: TikTokVideo[] = []
     try {
-      const videoResponse = await fetch(`${TIKTOK_VIDEO_LIST_URL}?fields=id,title,video_description,duration,cover_image_url,share_url,create_time,like_count,comment_count,share_count,view_count`, {
+      console.log('>>> Fetching video list from TikTok...')
+      const videoResponse = await fetchWithTimeout(`${TIKTOK_VIDEO_LIST_URL}?fields=id,title,video_description,duration,cover_image_url,share_url,create_time,like_count,comment_count,share_count,view_count`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${tokenData.access_token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          max_count: 20, // Get last 20 videos for engagement calculation
+          max_count: 20,
         }),
-      })
+      }, 15000)
+      console.log('>>> Video list response received, status:', videoResponse.status)
 
       const videoText = await videoResponse.text()
       console.log('TikTok video raw response:', videoText)
