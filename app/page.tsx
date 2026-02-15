@@ -149,16 +149,25 @@ export default function HomePage() {
         lastUpdated: new Date().toISOString(),
       }
 
-      // Step 4: Save to Supabase using the Supabase client (handles auth automatically)
-      const { data: profiles, error: fetchError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', session.user.id)
+      // Step 4: Save to Supabase using direct fetch (more reliable than client)
+      console.log('[TikTok Callback] Fetching profile from Supabase...')
+      const profileResponse = await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${session.user.id}&select=*`,
+        {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'apikey': SUPABASE_ANON_KEY
+          }
+        }
+      )
 
-      if (fetchError) {
-        console.error('[TikTok Callback] Fetch error:', fetchError)
+      if (!profileResponse.ok) {
+        console.error('[TikTok Callback] Profile fetch error:', profileResponse.status)
         throw new Error('Error al obtener perfil')
       }
+
+      const profiles = await profileResponse.json()
+      console.log('[TikTok Callback] Got profiles:', profiles.length)
 
       if (profiles && profiles.length > 0) {
         const profile = profiles[0]
@@ -185,21 +194,31 @@ export default function HomePage() {
         bioData.tiktokAccounts = tiktokAccounts
         bioData.tiktokConnected = true
 
-        // Save to Supabase
-        const { error: saveError } = await supabase
-          .from('profiles')
-          .update({
-            bio: JSON.stringify(bioData),
-            updated_at: new Date().toISOString()
-          })
-          .eq('user_id', session.user.id)
+        // Save to Supabase using direct fetch
+        console.log('[TikTok Callback] Saving TikTok data to Supabase...')
+        const saveResponse = await fetch(
+          `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${session.user.id}`,
+          {
+            method: 'PATCH',
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`,
+              'apikey': SUPABASE_ANON_KEY,
+              'Content-Type': 'application/json',
+              'Prefer': 'return=minimal'
+            },
+            body: JSON.stringify({
+              bio: JSON.stringify(bioData),
+              updated_at: new Date().toISOString()
+            })
+          }
+        )
 
-        if (saveError) {
-          console.error('[TikTok Callback] Save error:', saveError)
+        if (!saveResponse.ok) {
+          console.error('[TikTok Callback] Save error:', saveResponse.status)
           throw new Error('Error al guardar')
         }
 
-        console.log('[TikTok Callback] Account saved to Supabase!')
+        console.log('[TikTok Callback] TikTok account saved successfully!')
       }
 
       // Cleanup
