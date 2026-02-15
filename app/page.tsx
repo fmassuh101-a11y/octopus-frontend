@@ -72,14 +72,16 @@ export default function HomePage() {
         return
       }
 
-      // Restore session to Supabase client
-      await restoreSession()
-
-      // Create a session-like object for use below
+      // Create a session-like object for use below (do this BEFORE restoreSession to avoid blocking)
       const session = {
         user: storedSession.user,
         access_token: storedSession.access_token
       }
+
+      // Restore session to Supabase client (in background, don't block)
+      console.log('[TikTok Callback] Restoring session to Supabase...')
+      restoreSession().catch(err => console.error('[TikTok Callback] restoreSession error:', err))
+      console.log('[TikTok Callback] Session restore initiated')
 
       // Step 2: Exchange code for TikTok token (with 30 second timeout)
       console.log('[TikTok Callback] Calling /api/tiktok/callback...')
