@@ -139,11 +139,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Clear localStorage items related to auth
     try {
+      // Clear Supabase session keys
+      localStorage.removeItem('sb-access-token')
+      localStorage.removeItem('sb-refresh-token')
+      localStorage.removeItem('sb-user')
+
+      // Clear app-specific keys
       localStorage.removeItem('user_type')
       localStorage.removeItem('octopus_session')
       localStorage.removeItem('octopus_profile')
       localStorage.removeItem('savedProfile')
       localStorage.removeItem('creatorOnboarding')
+      localStorage.removeItem('companyOnboarding')
+
+      // Clear TikTok state
+      localStorage.removeItem('tiktok_oauth_state')
+      localStorage.removeItem('tiktok_csrf_state')
+
       console.log('✅ [AuthContext] localStorage cleared')
     } catch (e) {
       console.warn('⚠️ [AuthContext] Error clearing localStorage:', e)

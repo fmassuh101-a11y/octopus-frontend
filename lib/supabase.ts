@@ -1,13 +1,65 @@
 import { createClient } from '@supabase/supabase-js'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config/supabase'
 
-// Create client with session persistence
-// IMPORTANT: Using default storage key so it matches what login pages use
+// Custom storage adapter that maps Supabase's keys to our custom keys
+const customStorage = {
+  getItem: (key: string): string | null => {
+    if (typeof window === 'undefined') return null
+
+    // When Supabase asks for its default key, return our custom stored session
+    const accessToken = localStorage.getItem('sb-access-token')
+    const refreshToken = localStorage.getItem('sb-refresh-token')
+    const userStr = localStorage.getItem('sb-user')
+
+    if (accessToken && userStr) {
+      try {
+        const user = JSON.parse(userStr)
+        return JSON.stringify({
+          access_token: accessToken,
+          refresh_token: refreshToken || '',
+          expires_in: 3600,
+          token_type: 'bearer',
+          user: user
+        })
+      } catch (e) {
+        return null
+      }
+    }
+    return null
+  },
+  setItem: (key: string, value: string): void => {
+    if (typeof window === 'undefined') return
+
+    try {
+      const data = JSON.parse(value)
+      if (data.access_token) {
+        localStorage.setItem('sb-access-token', data.access_token)
+      }
+      if (data.refresh_token) {
+        localStorage.setItem('sb-refresh-token', data.refresh_token)
+      }
+      if (data.user) {
+        localStorage.setItem('sb-user', JSON.stringify(data.user))
+      }
+    } catch (e) {
+      console.error('[Supabase Storage] Error setting item:', e)
+    }
+  },
+  removeItem: (key: string): void => {
+    if (typeof window === 'undefined') return
+    localStorage.removeItem('sb-access-token')
+    localStorage.removeItem('sb-refresh-token')
+    localStorage.removeItem('sb-user')
+  }
+}
+
+// Create client with custom storage that syncs with our localStorage keys
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: true
+    detectSessionInUrl: false,
+    storage: customStorage
   }
 })
 
