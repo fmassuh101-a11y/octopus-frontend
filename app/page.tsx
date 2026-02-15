@@ -81,17 +81,40 @@ export default function HomePage() {
         access_token: storedSession.access_token
       }
 
-      // Step 2: Exchange code for TikTok token
-      const response = await fetch('/api/tiktok/callback', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          code,
-          redirect_uri: 'https://octopus-frontend-tau.vercel.app/'
-        })
-      })
+      // Step 2: Exchange code for TikTok token (with 30 second timeout)
+      console.log('[TikTok Callback] Calling /api/tiktok/callback...')
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => {
+        console.log('[TikTok Callback] Request timeout after 30 seconds')
+        controller.abort()
+      }, 30000)
 
+      let response
+      try {
+        response = await fetch('/api/tiktok/callback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code,
+            redirect_uri: 'https://octopus-frontend-tau.vercel.app/'
+          }),
+          signal: controller.signal
+        })
+        clearTimeout(timeoutId)
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId)
+        if (fetchError.name === 'AbortError') {
+          console.error('[TikTok Callback] Request timed out')
+          alert('La conexión con TikTok tardó demasiado. Por favor intenta de nuevo.')
+          window.location.href = '/creator/analytics'
+          return
+        }
+        throw fetchError
+      }
+
+      console.log('[TikTok Callback] Response status:', response.status)
       const data = await response.json()
+      console.log('[TikTok Callback] Response data:', data)
 
       if (!data.success || !data.data) {
         console.error('[TikTok] API error:', data.error)
