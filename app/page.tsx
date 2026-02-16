@@ -149,27 +149,42 @@ export default function HomePage() {
         lastUpdated: new Date().toISOString(),
       }
 
-      // Step 4: Save to Supabase - wait for session to be set first
-      console.log('[TikTok Callback] Setting up Supabase session...')
+      // Step 4: Save to Supabase
+      console.log('[TikTok Callback] Preparing to save to Supabase...')
 
-      // Wait for Supabase client to have the session
+      // Validate tokens before using
+      const accessToken = storedSession.access_token
+      const refreshToken = storedSession.refresh_token || ''
+      const userId = storedSession.user?.id
+
+      console.log('[TikTok Callback] Token length:', accessToken?.length)
+      console.log('[TikTok Callback] User ID:', userId)
+
+      if (!accessToken || !userId) {
+        throw new Error('Invalid session data')
+      }
+
+      // Set session in Supabase client
       try {
-        await supabase.auth.setSession({
-          access_token: storedSession.access_token,
-          refresh_token: storedSession.refresh_token || ''
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken
         })
-        console.log('[TikTok Callback] Supabase session set')
+        if (sessionError) {
+          console.error('[TikTok Callback] Session error:', sessionError)
+        } else {
+          console.log('[TikTok Callback] Supabase session set successfully')
+        }
       } catch (sessionErr) {
         console.error('[TikTok Callback] Error setting session:', sessionErr)
-        // Continue anyway, might still work
       }
 
       // Now fetch profile using Supabase client
-      console.log('[TikTok Callback] Fetching profile...')
+      console.log('[TikTok Callback] Fetching profile for user:', userId)
       const { data: profiles, error: fetchError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('user_id', session.user.id)
+        .eq('user_id', userId)
 
       if (fetchError) {
         console.error('[TikTok Callback] Profile fetch error:', fetchError)
@@ -211,7 +226,7 @@ export default function HomePage() {
             bio: JSON.stringify(bioData),
             updated_at: new Date().toISOString()
           })
-          .eq('user_id', session.user.id)
+          .eq('user_id', userId)
 
         if (saveError) {
           console.error('[TikTok Callback] Save error:', saveError)
