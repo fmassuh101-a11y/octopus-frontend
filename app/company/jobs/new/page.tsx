@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
@@ -68,7 +68,13 @@ export default function NewJobPage() {
   const [formData, setFormData] = useState<JobFormData>(initialFormData)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
+  const [campaignId, setCampaignId] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search).get('campaign')
+    if (p) setCampaignId(p)
+  }, [])
 
   const updateFormData = (updates: Partial<JobFormData>) => {
     setFormData(prev => ({ ...prev, ...updates }))
@@ -176,6 +182,11 @@ export default function NewJobPage() {
         status: 'active'
       }
 
+      // Si viene de una campaña, lo enlazamos como formato
+      if (campaignId) {
+        gigData.campaign_id = campaignId
+      }
+
       // Agregar imagen si existe
       if (formData.jobImage) {
         gigData.image_url = formData.jobImage
@@ -197,7 +208,7 @@ export default function NewJobPage() {
         throw new Error(errorData || 'Error al crear la campana')
       }
 
-      router.push("/company/campaigns")
+      router.push(campaignId ? `/company/campaigns/${campaignId}` : "/company/campaigns")
     } catch (error: any) {
       console.error('Error creating gig:', error)
       setError(error.message || 'Error al crear la campana')

@@ -29,7 +29,7 @@ const PLANS = [
     key: 'pro',
     name: 'Pro',
     monthly: 99,
-    fee: '4.5%',
+    fee: '4.7%',
     trial: true,
     tagline: 'Para marcas que quieren contenido constante.',
     highlight: true,
@@ -40,14 +40,14 @@ const PLANS = [
       '3 miembros del equipo',
       'Analíticas de rendimiento',
       'Soporte funcional cuando lo necesites',
-      'Comisión reducida de 4.5% al depositar',
+      'Comisión reducida de 4.7% al depositar',
     ],
   },
   {
     key: 'scale',
     name: 'Scale',
     monthly: 499,
-    fee: '4.5%',
+    fee: '2.3%',
     trial: false,
     tagline: 'Para escalar contenido a gran volumen.',
     highlight: false,
@@ -60,7 +60,7 @@ const PLANS = [
       'Campañas destacadas (boost)',
       'Gerente de cuenta dedicado',
       'Soporte 24/7',
-      'Comisión reducida de 4.5% al depositar',
+      'Comisión mínima de 2.3% al depositar',
     ],
   },
   {
@@ -77,7 +77,7 @@ const PLANS = [
       'Miembros del equipo ilimitados',
       'Campañas "Listas para ti" (creadas por nuestro equipo)',
       'Estrategia y check-ins semanales',
-      'Comisión y condiciones a medida',
+      'Comisión a medida — ¡hasta 0%!',
     ],
   },
 ]
@@ -202,7 +202,7 @@ export default function CompanyPricing() {
         </div>
 
         <p className="text-center text-xs text-neutral-500 mt-8">
-          Los precios de suscripción no incluyen lo que pagas a los creadores. La comisión por pago depende de tu plan (Starter 7%, planes pagos 4.5%).
+          Los precios de suscripción no incluyen lo que pagas a los creadores. La comisión por pago baja según tu plan: Starter 7% · Pro 4.7% · Scale 2.3% · Enterprise hasta 0%.
         </p>
       </div>
     </div>
