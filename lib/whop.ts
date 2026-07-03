@@ -28,7 +28,7 @@ console.log(`[Whop] Ambiente: ${WHOP_ENVIRONMENT}`);
 export const OCTOPUS_COMPANY_ID = process.env.WHOP_OCTOPUS_COMPANY_ID || "";
 
 // Porcentaje de comisión de Octopus (4.7%)
-export const OCTOPUS_FEE_PERCENT = 0.047;
+export const OCTOPUS_FEE_PERCENT = 0.035; // 3.5% cut de Octopus en payouts Whop
 
 // Moneda por defecto
 const DEFAULT_CURRENCY: Currency = "usd";
