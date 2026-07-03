@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { getActiveCompany, getActiveCompanyId } from '@/lib/workspace'
+import { hasPermission } from '@/lib/permissions'
 import { Megaphone } from 'lucide-react'
 
 export default function NewCampaignPage() {
@@ -15,6 +16,7 @@ export default function NewCampaignPage() {
   const [error, setError] = useState('')
 
   const handleCreate = async () => {
+    if (!hasPermission('create_campaigns')) { setError('No tienes permiso para crear campañas en este espacio.'); return }
     if (!title.trim()) { setError('Ponle un nombre a tu campaña'); return }
     setSaving(true)
     setError('')

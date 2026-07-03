@@ -6,7 +6,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 
 const KEY = 'octopus-active-company'
 
-export interface Workspace { id: string; name: string; own: boolean }
+export interface Workspace { id: string; name: string; own: boolean; role?: string; permissions?: string[] }
 
 export function getActiveCompany(): { id: string; name: string } | null {
   if (typeof window === 'undefined') return null
@@ -30,12 +30,13 @@ export async function loadWorkspaces(
   const spaces: Workspace[] = [{ id: ownUserId, name: ownName || 'Mi cuenta', own: true }]
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/team_members?email=eq.${encodeURIComponent(email.toLowerCase())}&status=eq.accepted&select=company_id`,
+      `${SUPABASE_URL}/rest/v1/team_members?email=eq.${encodeURIComponent(email.toLowerCase())}&status=eq.accepted&select=company_id,role,permissions`,
       { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
     )
     if (res.ok) {
       const rows = await res.json()
-      const ids = Array.from(new Set(rows.map((r: any) => r.company_id))).filter((id): id is string => !!id && id !== ownUserId)
+      const byCompany = new Map(rows.filter((r: any) => r.company_id && r.company_id !== ownUserId).map((r: any) => [r.company_id, r]))
+      const ids = Array.from(byCompany.keys()) as string[]
       if (ids.length > 0) {
         const pRes = await fetch(
           `${SUPABASE_URL}/rest/v1/profiles?user_id=in.(${ids.join(',')})&select=user_id,company_name,full_name`,
@@ -43,7 +44,10 @@ export async function loadWorkspaces(
         )
         const profiles = pRes.ok ? await pRes.json() : []
         const nameOf = new Map(profiles.map((p: any) => [p.user_id, p.company_name || p.full_name || 'Empresa']))
-        ids.forEach(id => spaces.push({ id, name: (nameOf.get(id) as string) || 'Empresa', own: false }))
+        ids.forEach(id => {
+          const row: any = byCompany.get(id)
+          spaces.push({ id, name: (nameOf.get(id) as string) || 'Empresa', own: false, role: row?.role, permissions: Array.isArray(row?.permissions) ? row.permissions : [] })
+        })
       }
     }
   } catch (e) { console.error('loadWorkspaces', e) }

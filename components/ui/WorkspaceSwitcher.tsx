@@ -5,6 +5,7 @@ import { ChevronDown, Check, Building2, Gift } from 'lucide-react'
 import {
   Workspace, getActiveCompany, setActiveCompany, loadWorkspaces, loadPendingInvites, acceptInvite,
 } from '@/lib/workspace'
+import { setActivePerms } from '@/lib/permissions'
 
 export default function WorkspaceSwitcher() {
   const [open, setOpen] = useState(false)
@@ -33,8 +34,8 @@ export default function WorkspaceSwitcher() {
   }, [])
 
   const switchTo = (w: Workspace) => {
-    if (w.own) setActiveCompany(null)
-    else setActiveCompany({ id: w.id, name: w.name })
+    if (w.own) { setActiveCompany(null); setActivePerms(null) }
+    else { setActiveCompany({ id: w.id, name: w.name }); setActivePerms(w.permissions || []) }
     window.location.href = '/company/dashboard'
   }
 

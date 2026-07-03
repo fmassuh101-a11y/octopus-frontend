@@ -3,9 +3,10 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { getPlan, effectiveFee } from '@/lib/plans'
+import { ROLES, PERMISSIONS, defaultPermsForRole } from '@/lib/permissions'
 import { useRouter } from 'next/navigation'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
-import { Banknote, BarChart3, Bell, Briefcase, Crown, Users, Video } from 'lucide-react'
+import { Check, Banknote, BarChart3, Bell, Briefcase, Crown, Users, Video } from 'lucide-react'
 
 type SettingsTab = 'payment' | 'paymentMethods' | 'profile' | 'team' | 'notifications'
 
@@ -27,8 +28,36 @@ export default function CompanySettingsPage() {
   // Team members
   const [teamMembers, setTeamMembers] = useState<any[]>([])
   const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteRole, setInviteRole] = useState('editor')
   const [inviting, setInviting] = useState(false)
   const [teamMsg, setTeamMsg] = useState('')
+
+  const updateMemberRole = async (memberId: string, role: string) => {
+    const token = localStorage.getItem('sb-access-token')
+    const perms = defaultPermsForRole(role)
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/team_members?id=eq.${memberId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY },
+        body: JSON.stringify({ role, permissions: perms }),
+      })
+      if (res.ok) setTeamMembers(prev => prev.map(m => m.id === memberId ? { ...m, role, permissions: perms } : m))
+    } catch (e) { console.error(e) }
+  }
+
+  const toggleMemberPerm = async (member: any, permKey: string) => {
+    const token = localStorage.getItem('sb-access-token')
+    const current: string[] = Array.isArray(member.permissions) ? member.permissions : []
+    const next = current.includes(permKey) ? current.filter(p => p !== permKey) : [...current, permKey]
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/team_members?id=eq.${member.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY },
+        body: JSON.stringify({ role: 'custom', permissions: next }),
+      })
+      if (res.ok) setTeamMembers(prev => prev.map(m => m.id === member.id ? { ...m, role: 'custom', permissions: next } : m))
+    } catch (e) { console.error(e) }
+  }
 
   const loadTeam = async (companyId: string, token: string) => {
     try {
@@ -57,7 +86,7 @@ export default function CompanySettingsPage() {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/team_members`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY, 'Prefer': 'return=representation' },
-        body: JSON.stringify({ company_id: user.id, email: inviteEmail.trim().toLowerCase(), role: 'member', status: 'invited' }),
+        body: JSON.stringify({ company_id: user.id, email: inviteEmail.trim().toLowerCase(), role: inviteRole, permissions: defaultPermsForRole(inviteRole), status: 'invited' }),
       })
       if (!res.ok) throw new Error(await res.text())
       const created = await res.json()
@@ -545,7 +574,7 @@ export default function CompanySettingsPage() {
               </p>
             </div>
 
-            <div className="flex gap-2 mb-4">
+            <div className="flex flex-col sm:flex-row gap-2 mb-2">
               <input
                 type="email"
                 value={inviteEmail}
@@ -553,6 +582,13 @@ export default function CompanySettingsPage() {
                 placeholder="email@delcolaborador.com"
                 className="flex-1 px-4 py-2.5 rounded-xl border border-neutral-800 bg-neutral-900 text-white placeholder-neutral-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none"
               />
+              <select
+                value={inviteRole}
+                onChange={e => setInviteRole(e.target.value)}
+                className="px-3 py-2.5 rounded-xl border border-neutral-800 bg-neutral-900 text-white outline-none focus:border-emerald-500"
+              >
+                {ROLES.filter(r => r.key !== 'custom').map(r => <option key={r.key} value={r.key}>{r.name}</option>)}
+              </select>
               <button
                 onClick={inviteMember}
                 disabled={inviting}
@@ -561,16 +597,44 @@ export default function CompanySettingsPage() {
                 {inviting ? 'Invitando...' : 'Invitar'}
               </button>
             </div>
+            <p className="text-xs text-neutral-500 mb-4">{ROLES.find(r => r.key === inviteRole)?.desc}</p>
             {teamMsg && <p className={`text-sm mb-4 ${teamMsg.startsWith('✓') ? 'text-emerald-400' : 'text-amber-400'}`}>{teamMsg}</p>}
 
             {teamMembers.length > 0 && (
-              <div className="bg-neutral-900 rounded-xl border border-neutral-800 divide-y divide-neutral-800 mb-4">
+              <div className="space-y-3 mb-4">
                 {teamMembers.map(m => (
-                  <div key={m.id} className="flex items-center justify-between px-4 py-3">
-                    <span className="text-sm text-white">{m.email}</span>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400">
-                      {m.status === 'invited' ? 'Invitado' : m.status}
-                    </span>
+                  <div key={m.id} className="bg-neutral-900 rounded-xl border border-neutral-800 p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <p className="text-sm text-white font-medium">{m.email}</p>
+                        <span className="text-xs text-neutral-500">{m.status === 'invited' ? 'Invitado · pendiente' : 'Miembro activo'}</span>
+                      </div>
+                      <select
+                        value={m.role || 'editor'}
+                        onChange={e => updateMemberRole(m.id, e.target.value)}
+                        className="px-3 py-1.5 rounded-lg border border-neutral-800 bg-neutral-950 text-white text-sm outline-none focus:border-emerald-500"
+                      >
+                        {ROLES.map(r => <option key={r.key} value={r.key}>{r.name}</option>)}
+                      </select>
+                    </div>
+                    {/* Permisos granulares */}
+                    <div className="grid sm:grid-cols-2 gap-x-4 gap-y-1.5 pt-3 border-t border-neutral-800">
+                      {PERMISSIONS.map(p => {
+                        const on = Array.isArray(m.permissions) && m.permissions.includes(p.key)
+                        return (
+                          <button
+                            key={p.key}
+                            onClick={() => toggleMemberPerm(m, p.key)}
+                            className="flex items-center gap-2 text-left text-xs py-0.5"
+                          >
+                            <span className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 ${on ? 'bg-emerald-500' : 'bg-neutral-800 border border-neutral-700'}`}>
+                              {on && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+                            </span>
+                            <span className={on ? 'text-neutral-200' : 'text-neutral-500'}>{p.label}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
                   </div>
                 ))}
               </div>
