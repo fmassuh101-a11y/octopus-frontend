@@ -4,12 +4,13 @@ import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
-import { Lightbulb } from 'lucide-react'
+import { Lightbulb, Sparkles, Scissors } from 'lucide-react'
 
 type PaymentType = "fixed" | "hourly" | "cpm"
 type PaymentFrequency = "one_time" | "weekly" | "monthly"
 
 interface JobFormData {
+  campaignType: 'ugc' | 'clipping' | ''
   title: string
   jobType: string
   description: string
@@ -27,6 +28,7 @@ interface JobFormData {
 }
 
 const initialFormData: JobFormData = {
+  campaignType: "",
   title: "",
   jobType: "",
   description: "",
@@ -80,7 +82,7 @@ export default function NewJobPage() {
   const canProceed = () => {
     switch (currentStep) {
       case 1:
-        return formData.title.trim() && formData.jobType && formData.description.trim()
+        return formData.campaignType && formData.title.trim() && formData.jobType && formData.description.trim()
       case 2:
         if (formData.paymentType === "fixed") return formData.fixedAmount
         if (formData.paymentType === "hourly") return formData.hourlyRate
@@ -174,7 +176,7 @@ export default function NewJobPage() {
         title: formData.title,
         description: formData.description,
         budget: getBudgetString(),
-        category: formData.jobType,
+        category: formData.campaignType || formData.jobType,
         requirements: getRequirementsString(),
         status: 'active'
       }
@@ -331,6 +333,45 @@ export default function NewJobPage() {
                     <div>
                       <h2 className="text-2xl font-bold text-white mb-2">Detalles del trabajo</h2>
                       <p className="text-neutral-500">Describe que tipo de contenido necesitas</p>
+                    </div>
+
+                    {/* Tipo de campaña: UGC vs Clipping */}
+                    <div>
+                      <label className="block text-sm font-semibold text-neutral-200 mb-2">
+                        Tipo de campana *
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => updateFormData({ campaignType: 'ugc', paymentType: 'fixed' })}
+                          className={`text-left p-4 rounded-xl border transition-all ${
+                            formData.campaignType === 'ugc'
+                              ? 'border-emerald-500 bg-emerald-500/10 ring-2 ring-emerald-500/20'
+                              : 'border-neutral-800 bg-neutral-900 hover:border-neutral-700'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 mb-1">
+                            <Sparkles className="w-5 h-5 text-emerald-400" />
+                            <span className="font-semibold text-white">UGC</span>
+                          </div>
+                          <p className="text-xs text-neutral-400">El creador produce contenido original para tu marca. Pago fijo por entrega.</p>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateFormData({ campaignType: 'clipping', paymentType: 'cpm' })}
+                          className={`text-left p-4 rounded-xl border transition-all ${
+                            formData.campaignType === 'clipping'
+                              ? 'border-emerald-500 bg-emerald-500/10 ring-2 ring-emerald-500/20'
+                              : 'border-neutral-800 bg-neutral-900 hover:border-neutral-700'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 mb-1">
+                            <Scissors className="w-5 h-5 text-emerald-400" />
+                            <span className="font-semibold text-white">Clipping</span>
+                          </div>
+                          <p className="text-xs text-neutral-400">Das tu contenido y el creador hace clips en su cuenta. Pago por 1.000 views.</p>
+                        </button>
+                      </div>
                     </div>
 
                     <div className="space-y-5">
