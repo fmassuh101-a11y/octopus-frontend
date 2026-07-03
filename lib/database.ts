@@ -346,7 +346,7 @@ export async function applyToGig(gigId: string, proposalText: string) {
     .insert({
       gig_id: gigId,
       creator_id: user.id,
-      proposal_text: proposalText
+      message: proposalText
     })
     .select()
     .single()
