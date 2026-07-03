@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { Camera, Clapperboard, Music2, Youtube } from 'lucide-react'
 
 interface Contract {
   id: string
@@ -114,10 +115,10 @@ export default function CreateDeliveryModal({ contract, onClose, onCreated }: Cr
   }
 
   const PLATFORMS = [
-    { id: 'tiktok', label: 'TikTok', icon: '🎵' },
-    { id: 'instagram', label: 'Instagram', icon: '📸' },
-    { id: 'youtube', label: 'YouTube', icon: '▶️' },
-    { id: 'ugc', label: 'UGC', icon: '🎬' },
+    { id: 'tiktok', label: 'TikTok', icon: Music2 },
+    { id: 'instagram', label: 'Instagram', icon: Camera },
+    { id: 'youtube', label: 'YouTube', icon: Youtube },
+    { id: 'ugc', label: 'UGC', icon: Clapperboard },
   ]
 
   const CONTENT_TYPES = [
@@ -158,7 +159,7 @@ export default function CreateDeliveryModal({ contract, onClose, onCreated }: Cr
               type="text"
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
-              className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-violet-500"
+              className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
               placeholder="Ej: Video TikTok - Unboxing producto"
             />
           </div>
@@ -172,10 +173,10 @@ export default function CreateDeliveryModal({ contract, onClose, onCreated }: Cr
               <select
                 value={form.platform}
                 onChange={(e) => setForm({ ...form, platform: e.target.value })}
-                className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white focus:outline-none focus:border-violet-500"
+                className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white focus:outline-none focus:border-emerald-500"
               >
                 {PLATFORMS.map(p => (
-                  <option key={p.id} value={p.id}>{p.icon} {p.label}</option>
+                  <option key={p.id} value={p.id}>{p.label}</option>
                 ))}
               </select>
             </div>
@@ -186,7 +187,7 @@ export default function CreateDeliveryModal({ contract, onClose, onCreated }: Cr
               <select
                 value={form.content_type}
                 onChange={(e) => setForm({ ...form, content_type: e.target.value })}
-                className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white focus:outline-none focus:border-violet-500"
+                className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white focus:outline-none focus:border-emerald-500"
               >
                 {CONTENT_TYPES.map(t => (
                   <option key={t.id} value={t.id}>{t.label}</option>
@@ -204,7 +205,7 @@ export default function CreateDeliveryModal({ contract, onClose, onCreated }: Cr
               type="url"
               value={form.video_url}
               onChange={(e) => setForm({ ...form, video_url: e.target.value })}
-              className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-violet-500"
+              className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
               placeholder="https://drive.google.com/... o https://dropbox.com/..."
               required
             />
@@ -222,7 +223,7 @@ export default function CreateDeliveryModal({ contract, onClose, onCreated }: Cr
               type="url"
               value={form.thumbnail_url}
               onChange={(e) => setForm({ ...form, thumbnail_url: e.target.value })}
-              className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-violet-500"
+              className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
               placeholder="https://..."
             />
           </div>
@@ -235,7 +236,7 @@ export default function CreateDeliveryModal({ contract, onClose, onCreated }: Cr
             <textarea
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-violet-500 resize-none"
+              className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500 resize-none"
               placeholder="Cualquier contexto o nota sobre el contenido..."
               rows={3}
             />
@@ -255,8 +256,8 @@ export default function CreateDeliveryModal({ contract, onClose, onCreated }: Cr
           </div>
 
           {/* Info */}
-          <div className="bg-violet-500/10 border border-violet-500/30 rounded-xl p-4">
-            <p className="text-sm text-violet-300">
+          <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4">
+            <p className="text-sm text-emerald-300">
               Asegurate de que el link sea publico. La empresa tendra hasta 3 rondas de revision.
             </p>
           </div>
@@ -274,7 +275,7 @@ export default function CreateDeliveryModal({ contract, onClose, onCreated }: Cr
           <button
             onClick={handleSubmit}
             disabled={loading || !form.video_url.trim()}
-            className="flex-1 py-3 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {loading ? (
               <>

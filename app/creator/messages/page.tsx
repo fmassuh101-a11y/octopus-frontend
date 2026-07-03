@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { CheckCircle2, ClipboardList, XCircle } from 'lucide-react'
 
 interface Conversation {
   company_id: string
@@ -324,7 +325,7 @@ export default function CreatorMessagesPage() {
       }
 
       // Send message with elegant card
-      const messageContent = `🎬 He enviado una entrega de contenido\n\n📎 ${videoUrl}${videoNotes ? `\n\n💬 "${videoNotes}"` : ''}`
+      const messageContent = `He enviado una entrega de contenido\n\n${videoUrl}${videoNotes ? `\n\n"${videoNotes}"` : ''}`
 
       const tempId = `temp-${Date.now()}`
       const tempMsg: Message = {
@@ -488,7 +489,7 @@ export default function CreatorMessagesPage() {
               {dateGroups.map((group, groupIndex) => (
                 <div key={groupIndex}>
                   <div className="flex justify-center mb-4">
-                    <span className="px-3 py-1 bg-neutral-950 border border-neutral-800 rounded-full text-xs text-neutral-400 shadow-sm">
+                    <span className="px-3 py-1 bg-neutral-950 border border-neutral-800 rounded-full text-xs text-neutral-400 shadow-sm text-white placeholder-neutral-500">
                       {formatDateSeparator(group.date)}
                     </span>
                   </div>
@@ -498,10 +499,10 @@ export default function CreatorMessagesPage() {
                       const isContractMessage = msg.content.includes('contrato:') || msg.content.includes('Te he enviado un contrato')
                       const isCancelledContract = msg.content.includes('ha sido cancelado')
                       const isAcceptedContract = msg.content.includes('He aceptado el contrato')
-                      const isVideoDelivery = msg.content.includes('🎬 He enviado una entrega')
+                      const isVideoDelivery = msg.content.includes('He enviado una entrega')
 
                       // Extract video URL from message
-                      const videoUrlMatch = msg.content.match(/📎 (https?:\/\/[^\s\n]+)/)
+                      const videoUrlMatch = msg.content.match(/(https?:\/\/[^\s\n]+)/)
                       const extractedVideoUrl = videoUrlMatch ? videoUrlMatch[1] : null
 
                       return (
@@ -561,7 +562,7 @@ export default function CreatorMessagesPage() {
                             </div>
                           ) : (
                             <div
-                              className={`max-w-[75%] ${isMe ? 'bg-emerald-500 text-white' : 'bg-neutral-950 border border-neutral-800 text-white'} rounded-2xl px-4 py-2 shadow-sm ${isContractMessage && !isMe ? 'cursor-pointer hover:border-violet-500' : ''}`}
+                              className={`max-w-[75%] ${isMe ? 'bg-emerald-500 text-white' : 'bg-neutral-950 border border-neutral-800'} rounded-2xl px-4 py-2 shadow-sm ${isContractMessage && !isMe ? 'cursor-pointer hover:border-emerald-500' : ''} placeholder-neutral-500`}
                               onClick={() => {
                                 if (isContractMessage && !isMe && !isCancelledContract && !isAcceptedContract) {
                                   router.push('/creator/contracts')
@@ -572,11 +573,11 @@ export default function CreatorMessagesPage() {
                               {isContractMessage && !isMe && (
                                 <div className="flex items-center gap-2 mb-2">
                                   {isCancelledContract ? (
-                                    <span className="text-red-400 text-lg">❌</span>
+                                    <XCircle className="w-5 h-5" strokeWidth={2} />
                                   ) : isAcceptedContract ? (
-                                    <span className="text-green-400 text-lg">✅</span>
+                                    <CheckCircle2 className="w-5 h-5" strokeWidth={2} />
                                   ) : (
-                                    <span className="text-amber-400 text-lg">📋</span>
+                                    <ClipboardList className="w-5 h-5" strokeWidth={2} />
                                   )}
                                 </div>
                               )}
@@ -589,7 +590,7 @@ export default function CreatorMessagesPage() {
                                     e.stopPropagation()
                                     router.push('/creator/contracts')
                                   }}
-                                  className="mt-2 w-full py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg transition-colors"
+                                  className="mt-2 w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-lg transition-colors"
                                 >
                                   Ver Contrato
                                 </button>
@@ -601,7 +602,7 @@ export default function CreatorMessagesPage() {
                                 </span>
                                 {isMe && (
                                   <span className={`text-[10px] ${msg.read_at ? 'text-emerald-400' : 'text-neutral-400'}`}>
-                                    {msg.read_at ? '✓✓ Visto' : '✓ Enviado'}
+                                    {msg.read_at ? 'Visto' : 'Enviado'}
                                   </span>
                                 )}
                               </div>
@@ -672,7 +673,7 @@ export default function CreatorMessagesPage() {
         {/* Video Delivery Modal */}
         {showVideoModal && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl text-white placeholder-neutral-500">
               {/* Modal Header */}
               <div className="px-6 py-5 border-b border-neutral-800 bg-gradient-to-r from-yellow-500/10 to-orange-500/10">
                 <div className="flex items-center gap-3">
@@ -743,7 +744,7 @@ export default function CreatorMessagesPage() {
                 <button
                   onClick={sendVideoDelivery}
                   disabled={!videoUrl.trim() || sendingVideo}
-                  className="flex-1 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-black rounded-xl font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-yellow-500/20"
+                  className="flex-1 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-white rounded-xl font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-yellow-500/20"
                 >
                   {sendingVideo ? (
                     <>
@@ -795,7 +796,7 @@ export default function CreatorMessagesPage() {
             <button
               key={conv.company_id}
               onClick={() => selectConversation(conv)}
-              className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-neutral-800 text-left ${conv.unread_count > 0 ? 'bg-neutral-800/50' : ''}`}
+              className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-neutral-800 text-left ${conv.unread_count > 0 ? 'bg-neutral-800/50' : ''} text-white placeholder-neutral-500`}
             >
               <div className="relative">
                 <div className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center">
@@ -842,7 +843,7 @@ export default function CreatorMessagesPage() {
             </svg>
             <span className="text-xs mt-1">Contratos</span>
           </Link>
-          <div className="flex flex-col items-center py-2 px-4 text-black">
+          <div className="flex flex-col items-center py-2 px-4 text-white">
             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
             <span className="text-xs mt-1 font-medium">Mensajes</span>
           </div>

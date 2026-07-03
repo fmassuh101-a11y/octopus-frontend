@@ -3,9 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-
-const SUPABASE_URL = 'https://ftvqoudlmojdxwjxljzr.supabase.co'
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 
 interface Job {
   id: string
@@ -241,7 +239,7 @@ export default function JobDetailPage() {
                     job.status === 'active' ? 'bg-green-500/20 text-green-400' :
                     job.status === 'draft' ? 'bg-yellow-500/20 text-yellow-400' :
                     'bg-neutral-700 text-neutral-400'
-                  }`}>
+                  } text-white placeholder-neutral-500`}>
                     {job.status === 'active' ? 'Activo' : job.status === 'draft' ? 'Borrador' : 'Archivado'}
                   </span>
                   <span className="text-xs text-neutral-500">{applications.length} aplicantes</span>
@@ -268,21 +266,21 @@ export default function JobDetailPage() {
           <button
             onClick={() => setActiveTab('details')}
             className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition ${
-              activeTab === 'details' ? 'bg-white text-black' : 'text-neutral-400 hover:text-white'
-            }`}
+              activeTab === 'details' ? 'bg-neutral-900 text-white' : 'text-neutral-400 hover:text-white'
+            } placeholder-neutral-500`}
           >
             Detalles
           </button>
           <button
             onClick={() => setActiveTab('applicants')}
             className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 ${
-              activeTab === 'applicants' ? 'bg-white text-black' : 'text-neutral-400 hover:text-white'
-            }`}
+              activeTab === 'applicants' ? 'bg-neutral-900' : 'text-neutral-400 hover:text-white'
+            } placeholder-neutral-500`}
           >
             Aplicantes
             <span className={`px-2 py-0.5 rounded-full text-xs ${
-              activeTab === 'applicants' ? 'bg-black text-white' : 'bg-neutral-700'
-            }`}>
+              activeTab === 'applicants' ? 'bg-black' : 'bg-neutral-700'
+            } text-white placeholder-neutral-500`}>
               {applications.length}
             </span>
           </button>
@@ -294,7 +292,7 @@ export default function JobDetailPage() {
         {activeTab === 'details' ? (
           <div className="space-y-4">
             {/* Job Info Card */}
-            <div className="bg-neutral-900 rounded-2xl p-5 border border-neutral-800">
+            <div className="bg-neutral-900 rounded-2xl p-5 border border-neutral-800 text-white placeholder-neutral-500">
               <h2 className="text-lg font-semibold mb-4">Informacion del Trabajo</h2>
 
               <div className="space-y-4">
@@ -350,7 +348,7 @@ export default function JobDetailPage() {
             </div>
 
             {/* Actions Card */}
-            <div className="bg-neutral-900 rounded-2xl p-5 border border-neutral-800">
+            <div className="bg-neutral-900 rounded-2xl p-5 border border-neutral-800 text-white placeholder-neutral-500">
               <h2 className="text-lg font-semibold mb-4">Acciones</h2>
 
               <div className="space-y-3">
@@ -404,7 +402,7 @@ export default function JobDetailPage() {
               applications.map(app => (
                 <div
                   key={app.id}
-                  className="bg-neutral-900 rounded-2xl p-4 border border-neutral-800"
+                  className="bg-neutral-900 rounded-2xl p-4 border border-neutral-800 text-white placeholder-neutral-500"
                 >
                   <div className="flex items-start gap-3">
                     {/* Avatar */}
@@ -427,7 +425,7 @@ export default function JobDetailPage() {
                           app.status === 'accepted' ? 'bg-green-500/20 text-green-400' :
                           app.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
                           'bg-neutral-700 text-neutral-400'
-                        }`}>
+                        } text-white placeholder-neutral-500`}>
                           {app.status === 'pending' ? 'Pendiente' :
                            app.status === 'accepted' ? 'Aceptado' :
                            app.status === 'rejected' ? 'Rechazado' :
@@ -495,7 +493,7 @@ export default function JobDetailPage() {
                 </div>
               ))
             ) : (
-              <div className="bg-neutral-900 rounded-2xl p-12 border border-neutral-800 text-center">
+              <div className="bg-neutral-900 rounded-2xl p-12 border border-neutral-800 text-center text-white placeholder-neutral-500">
                 <div className="w-16 h-16 bg-neutral-800 rounded-full flex items-center justify-center mx-auto mb-4">
                   <svg className="w-8 h-8 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />

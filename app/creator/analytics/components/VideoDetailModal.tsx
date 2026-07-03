@@ -61,7 +61,7 @@ export function VideoDetailModal({ video, allVideos, onClose }: VideoDetailModal
         )
       default:
         return (
-          <div className="flex items-center gap-1 text-gray-500">
+          <div className="flex items-center gap-1 text-neutral-500">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14" />
             </svg>
@@ -81,17 +81,17 @@ export function VideoDetailModal({ video, allVideos, onClose }: VideoDetailModal
 
       {/* Modal */}
       <div
-        className="relative bg-white w-full max-h-[90vh] overflow-y-auto rounded-t-3xl md:rounded-2xl md:max-w-lg md:mx-4 animate-slide-up"
+        className="relative bg-neutral-900 w-full max-h-[90vh] overflow-y-auto rounded-t-3xl md:rounded-2xl md:max-w-lg md:mx-4 animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between z-10">
-          <h3 className="font-semibold text-gray-900">Analisis del Video</h3>
+        <div className="sticky top-0 bg-neutral-900 border-b border-neutral-800 px-4 py-3 flex items-center justify-between z-10">
+          <h3 className="font-semibold text-white">Analisis del Video</h3>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition"
+            className="p-2 hover:bg-neutral-800 rounded-full transition"
           >
-            <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -100,7 +100,7 @@ export function VideoDetailModal({ video, allVideos, onClose }: VideoDetailModal
         <div className="p-4 space-y-6">
           {/* Video Preview */}
           <div className="flex gap-4">
-            <div className="w-28 h-48 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
+            <div className="w-28 h-48 rounded-xl overflow-hidden bg-neutral-800 flex-shrink-0">
               {video.thumbnail ? (
                 <img
                   src={video.thumbnail}
@@ -109,7 +109,7 @@ export function VideoDetailModal({ video, allVideos, onClose }: VideoDetailModal
                 />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
-                  <svg className="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-8 h-8 text-neutral-500" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
                   </svg>
                 </div>
@@ -117,10 +117,10 @@ export function VideoDetailModal({ video, allVideos, onClose }: VideoDetailModal
             </div>
 
             <div className="flex-1 min-w-0">
-              <h4 className="font-semibold text-gray-900 line-clamp-2 mb-1">
+              <h4 className="font-semibold text-white line-clamp-2 mb-1">
                 {video.title || 'Video sin titulo'}
               </h4>
-              <p className="text-sm text-gray-500 mb-3">
+              <p className="text-sm text-neutral-500 mb-3">
                 {analysis.timeSincePosted}
               </p>
 
@@ -147,16 +147,16 @@ export function VideoDetailModal({ video, allVideos, onClose }: VideoDetailModal
           </div>
 
           {/* Engagement Rate with Comparison */}
-          <div className="bg-gray-50 rounded-xl p-4">
+          <div className="bg-neutral-950 rounded-xl p-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-600">Engagement Rate</span>
-              <span className="text-2xl font-bold text-gray-900">
+              <span className="text-sm text-neutral-400">Engagement Rate</span>
+              <span className="text-2xl font-bold text-white">
                 {analysis.video.engagementRate}%
               </span>
             </div>
 
             {/* Comparison Bar */}
-            <div className="relative h-3 bg-gray-200 rounded-full overflow-hidden mb-2">
+            <div className="relative h-3 bg-neutral-800 rounded-full overflow-hidden mb-2">
               <div
                 className="absolute left-0 top-0 h-full bg-blue-500 rounded-full transition-all"
                 style={{
@@ -171,12 +171,12 @@ export function VideoDetailModal({ video, allVideos, onClose }: VideoDetailModal
             </div>
 
             <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500">
+              <span className="text-neutral-500">
                 vs Promedio ({analysis.accountAvgEngagement}%)
               </span>
               <span className={`font-semibold ${
                 analysis.percentageDifference > 0 ? 'text-green-600' :
-                analysis.percentageDifference < 0 ? 'text-red-600' : 'text-gray-600'
+                analysis.percentageDifference < 0 ? 'text-red-600' : 'text-neutral-400'
               }`}>
                 {formatPercentageWithSign(analysis.percentageDifference)}
               </span>
@@ -185,42 +185,42 @@ export function VideoDetailModal({ video, allVideos, onClose }: VideoDetailModal
 
           {/* Stats Grid */}
           <div className="grid grid-cols-4 gap-3">
-            <div className="bg-gray-50 rounded-xl p-3 text-center">
-              <div className="text-lg font-bold text-gray-900">
+            <div className="bg-neutral-950 rounded-xl p-3 text-center">
+              <div className="text-lg font-bold text-white">
                 {formatNumber(video.views)}
               </div>
-              <div className="text-xs text-gray-500">Views</div>
+              <div className="text-xs text-neutral-500">Views</div>
             </div>
-            <div className="bg-gray-50 rounded-xl p-3 text-center">
-              <div className="text-lg font-bold text-gray-900">
+            <div className="bg-neutral-950 rounded-xl p-3 text-center">
+              <div className="text-lg font-bold text-white">
                 {formatNumber(video.likes)}
               </div>
-              <div className="text-xs text-gray-500">Likes</div>
+              <div className="text-xs text-neutral-500">Likes</div>
             </div>
-            <div className="bg-gray-50 rounded-xl p-3 text-center">
-              <div className="text-lg font-bold text-gray-900">
+            <div className="bg-neutral-950 rounded-xl p-3 text-center">
+              <div className="text-lg font-bold text-white">
                 {formatNumber(video.comments)}
               </div>
-              <div className="text-xs text-gray-500">Comments</div>
+              <div className="text-xs text-neutral-500">Comments</div>
             </div>
-            <div className="bg-gray-50 rounded-xl p-3 text-center">
-              <div className="text-lg font-bold text-gray-900">
+            <div className="bg-neutral-950 rounded-xl p-3 text-center">
+              <div className="text-lg font-bold text-white">
                 {formatNumber(video.shares)}
               </div>
-              <div className="text-xs text-gray-500">Shares</div>
+              <div className="text-xs text-neutral-500">Shares</div>
             </div>
           </div>
 
           {/* Trend */}
-          <div className="bg-gray-50 rounded-xl p-4">
-            <div className="text-sm text-gray-600 mb-2">Tendencia</div>
+          <div className="bg-neutral-950 rounded-xl p-4">
+            <div className="text-sm text-neutral-400 mb-2">Tendencia</div>
             {getTrendIcon()}
           </div>
 
           {/* Video Rank */}
-          <div className="flex items-center justify-between py-3 border-t border-gray-100">
-            <span className="text-sm text-gray-600">Ranking en tu cuenta</span>
-            <span className="font-semibold text-gray-900">
+          <div className="flex items-center justify-between py-3 border-t border-neutral-800">
+            <span className="text-sm text-neutral-400">Ranking en tu cuenta</span>
+            <span className="font-semibold text-white">
               #{analysis.video.performanceRank} de {analysis.totalVideos}
             </span>
           </div>

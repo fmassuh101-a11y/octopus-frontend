@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { BarChart3, Briefcase, Eye, MessageCircle, RefreshCw, Smartphone, TrendingUp, Users, Video } from 'lucide-react'
 
 interface Creator {
   id: string
@@ -359,9 +360,9 @@ export default function CompanyAnalyticsPage() {
               onClick={() => setTimePeriod(period.id as TimePeriod)}
               className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition ${
                 timePeriod === period.id
-                  ? 'bg-white text-black'
+                  ? 'bg-neutral-900 text-white'
                   : 'bg-neutral-800 text-neutral-400 hover:text-white'
-              }`}
+              } placeholder-neutral-500`}
             >
               {period.label}
             </button>
@@ -373,20 +374,20 @@ export default function CompanyAnalyticsPage() {
       <div className="px-4 mb-4">
         <div className="flex bg-neutral-900 rounded-xl p-1">
           {[
-            { id: 'overview', label: 'Overview', icon: '📊' },
-            { id: 'creators', label: 'Creadores', icon: '👥' },
-            { id: 'posts', label: 'Posts', icon: '📱' }
+            { id: 'overview', label: 'Overview', icon: BarChart3 },
+            { id: 'creators', label: 'Creadores', icon: Users },
+            { id: 'posts', label: 'Posts', icon: Smartphone }
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setViewMode(tab.id as ViewMode)}
               className={`flex-1 py-3 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 ${
                 viewMode === tab.id
-                  ? 'bg-white text-black'
+                  ? 'bg-neutral-900 text-white'
                   : 'text-neutral-400 hover:text-white'
-              }`}
+              } placeholder-neutral-500`}
             >
-              <span>{tab.icon}</span>
+              <tab.icon className="w-4 h-4" strokeWidth={2} />
               {tab.label}
             </button>
           ))}
@@ -399,33 +400,33 @@ export default function CompanyAnalyticsPage() {
           <div className="space-y-4">
             {/* Overview Stats Grid */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-neutral-900 rounded-2xl p-4 border border-neutral-800">
+              <div className="bg-neutral-900 rounded-2xl p-4 border border-neutral-800 text-white placeholder-neutral-500">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">👁️</span>
+                  <Eye className="w-5 h-5" strokeWidth={2} />
                   <span className="text-neutral-400 text-sm">Views</span>
                 </div>
                 <p className="text-2xl font-bold">{formatNumber(stats.totalViews)}</p>
               </div>
 
-              <div className="bg-neutral-900 rounded-2xl p-4 border border-neutral-800">
+              <div className="bg-neutral-900 rounded-2xl p-4 border border-neutral-800 text-white placeholder-neutral-500">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">❤️</span>
+                  <span className="text-lg"></span>
                   <span className="text-neutral-400 text-sm">Likes</span>
                 </div>
                 <p className="text-2xl font-bold">{formatNumber(stats.totalLikes)}</p>
               </div>
 
-              <div className="bg-neutral-900 rounded-2xl p-4 border border-neutral-800">
+              <div className="bg-neutral-900 rounded-2xl p-4 border border-neutral-800 text-white placeholder-neutral-500">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">💬</span>
+                  <MessageCircle className="w-5 h-5" strokeWidth={2} />
                   <span className="text-neutral-400 text-sm">Comments</span>
                 </div>
                 <p className="text-2xl font-bold">{formatNumber(stats.totalComments)}</p>
               </div>
 
-              <div className="bg-neutral-900 rounded-2xl p-4 border border-neutral-800">
+              <div className="bg-neutral-900 rounded-2xl p-4 border border-neutral-800 text-white placeholder-neutral-500">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">🔄</span>
+                  <RefreshCw className="w-5 h-5" strokeWidth={2} />
                   <span className="text-neutral-400 text-sm">Shares</span>
                 </div>
                 <p className="text-2xl font-bold">{formatNumber(stats.totalShares)}</p>
@@ -433,14 +434,14 @@ export default function CompanyAnalyticsPage() {
             </div>
 
             {/* Engagement Card */}
-            <div className="bg-gradient-to-br from-sky-900/50 to-purple-900/50 rounded-2xl p-5 border border-sky-500/30">
+            <div className="bg-gradient-to-br from-sky-900/50 to-emerald-900/50 rounded-2xl p-5 border border-sky-500/30">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <p className="text-neutral-400 text-sm">Engagement Promedio</p>
                   <p className="text-4xl font-bold">{stats.avgEngagement.toFixed(2)}%</p>
                 </div>
                 <div className="w-16 h-16 bg-sky-500/20 rounded-full flex items-center justify-center">
-                  <span className="text-3xl">📈</span>
+                  <TrendingUp className="w-7 h-7" strokeWidth={2} />
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4 pt-4 border-t border-white/10">
@@ -461,7 +462,7 @@ export default function CompanyAnalyticsPage() {
 
             {/* Top Creators Preview */}
             {creators.length > 0 && (
-              <div className="bg-neutral-900 rounded-2xl p-4 border border-neutral-800">
+              <div className="bg-neutral-900 rounded-2xl p-4 border border-neutral-800 text-white placeholder-neutral-500">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-semibold">Top Creadores</h3>
                   <button
@@ -484,7 +485,7 @@ export default function CompanyAnalyticsPage() {
                           className="w-10 h-10 rounded-full object-cover"
                         />
                       ) : (
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center font-bold">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-500 flex items-center justify-center font-bold">
                           {creator.name.charAt(0)}
                         </div>
                       )}
@@ -503,7 +504,7 @@ export default function CompanyAnalyticsPage() {
 
             {/* Top Posts Preview */}
             {posts.length > 0 && (
-              <div className="bg-neutral-900 rounded-2xl p-4 border border-neutral-800">
+              <div className="bg-neutral-900 rounded-2xl p-4 border border-neutral-800 text-white placeholder-neutral-500">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-semibold">Top Posts</h3>
                   <button
@@ -524,7 +525,7 @@ export default function CompanyAnalyticsPage() {
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <span className="text-2xl">📹</span>
+                          <Video className="w-6 h-6" strokeWidth={2} />
                         </div>
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
@@ -538,8 +539,8 @@ export default function CompanyAnalyticsPage() {
             )}
 
             {stats.totalCreators === 0 && (
-              <div className="bg-neutral-900 rounded-2xl p-8 border border-neutral-800 text-center">
-                <span className="text-4xl block mb-4">📊</span>
+              <div className="bg-neutral-900 rounded-2xl p-8 border border-neutral-800 text-center text-white placeholder-neutral-500">
+                <BarChart3 className="w-8 h-8" strokeWidth={2} />
                 <h3 className="text-lg font-semibold mb-2">Sin datos de analytics</h3>
                 <p className="text-neutral-500 text-sm">
                   Acepta creadores para comenzar a ver metricas de sus contenidos
@@ -552,8 +553,8 @@ export default function CompanyAnalyticsPage() {
         {viewMode === 'creators' && (
           <div className="space-y-3">
             {creators.length === 0 ? (
-              <div className="bg-neutral-900 rounded-2xl p-8 border border-neutral-800 text-center">
-                <span className="text-4xl block mb-4">👥</span>
+              <div className="bg-neutral-900 rounded-2xl p-8 border border-neutral-800 text-center text-white placeholder-neutral-500">
+                <Users className="w-8 h-8" strokeWidth={2} />
                 <h3 className="text-lg font-semibold mb-2">Sin creadores</h3>
                 <p className="text-neutral-500 text-sm">
                   Acepta creadores para verlos aqui
@@ -564,7 +565,7 @@ export default function CompanyAnalyticsPage() {
                 <Link
                   key={creator.id}
                   href={`/company/creator/${creator.id}`}
-                  className="block bg-neutral-900 rounded-2xl p-4 border border-neutral-800 hover:border-neutral-700 transition"
+                  className="block bg-neutral-900 rounded-2xl p-4 border border-neutral-800 hover:border-neutral-700 transition text-white placeholder-neutral-500"
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-lg font-bold text-neutral-500 w-6">
@@ -577,7 +578,7 @@ export default function CompanyAnalyticsPage() {
                         className="w-12 h-12 rounded-full object-cover"
                       />
                     ) : (
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-lg font-bold">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-500 flex items-center justify-center text-lg font-bold">
                         {creator.name.charAt(0)}
                       </div>
                     )}
@@ -620,8 +621,8 @@ export default function CompanyAnalyticsPage() {
         {viewMode === 'posts' && (
           <div className="space-y-3">
             {posts.length === 0 ? (
-              <div className="bg-neutral-900 rounded-2xl p-8 border border-neutral-800 text-center">
-                <span className="text-4xl block mb-4">📱</span>
+              <div className="bg-neutral-900 rounded-2xl p-8 border border-neutral-800 text-center text-white placeholder-neutral-500">
+                <Smartphone className="w-8 h-8" strokeWidth={2} />
                 <h3 className="text-lg font-semibold mb-2">Sin posts</h3>
                 <p className="text-neutral-500 text-sm">
                   Los posts de tus creadores apareceran aqui
@@ -631,7 +632,7 @@ export default function CompanyAnalyticsPage() {
               posts.map((post, index) => (
                 <div
                   key={post.id}
-                  className="bg-neutral-900 rounded-2xl overflow-hidden border border-neutral-800"
+                  className="bg-neutral-900 rounded-2xl overflow-hidden border border-neutral-800 text-white placeholder-neutral-500"
                 >
                   <div className="flex">
                     {/* Thumbnail */}
@@ -644,7 +645,7 @@ export default function CompanyAnalyticsPage() {
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <span className="text-2xl">📹</span>
+                          <Video className="w-6 h-6" strokeWidth={2} />
                         </div>
                       )}
                     </div>
@@ -657,7 +658,7 @@ export default function CompanyAnalyticsPage() {
                           post.engagementRate >= 10 ? 'bg-green-500/20 text-green-400' :
                           post.engagementRate >= 5 ? 'bg-yellow-500/20 text-yellow-400' :
                           'bg-neutral-700 text-neutral-400'
-                        }`}>
+                        } text-white placeholder-neutral-500`}>
                           {post.engagementRate.toFixed(1)}% eng
                         </span>
                       </div>
@@ -701,23 +702,23 @@ export default function CompanyAnalyticsPage() {
       <div className="fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-800">
         <div className="flex justify-around py-3">
           <button onClick={() => router.push('/company/dashboard')} className="flex flex-col items-center space-y-1 text-neutral-500 hover:text-white transition-colors">
-            <span className="text-lg">📊</span>
+            <BarChart3 className="w-5 h-5" strokeWidth={2} />
             <span className="text-xs">Dashboard</span>
           </button>
           <button onClick={() => router.push('/company/jobs')} className="flex flex-col items-center space-y-1 text-neutral-500 hover:text-white transition-colors">
-            <span className="text-lg">💼</span>
+            <Briefcase className="w-5 h-5" strokeWidth={2} />
             <span className="text-xs">Mis Gigs</span>
           </button>
           <div className="flex flex-col items-center space-y-1 text-sky-500">
-            <span className="text-lg">📈</span>
+            <TrendingUp className="w-5 h-5" strokeWidth={2} />
             <span className="text-xs font-medium">Analytics</span>
           </div>
           <button onClick={() => router.push('/company/applicants')} className="flex flex-col items-center space-y-1 text-neutral-500 hover:text-white transition-colors">
-            <span className="text-lg">👥</span>
+            <Users className="w-5 h-5" strokeWidth={2} />
             <span className="text-xs">Aplicantes</span>
           </button>
         </div>
-        <div className="h-1 bg-white mx-auto w-32 rounded-full mb-2" />
+        <div className="h-1 bg-neutral-900 mx-auto w-32 rounded-full mb-2" />
       </div>
     </div>
   )

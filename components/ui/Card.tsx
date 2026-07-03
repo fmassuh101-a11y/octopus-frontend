@@ -12,11 +12,11 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 const Card = forwardRef<HTMLDivElement, CardProps>(
   ({ className, variant = 'default', padding = 'md', hover = false, children, ...props }, ref) => {
     const variants = {
-      default: 'bg-white border border-neutral-200/50 shadow-sm dark:bg-neutral-900 dark:border-neutral-800',
-      elevated: 'bg-white shadow-md dark:bg-neutral-900',
+      default: 'bg-neutral-900 border border-neutral-200/50 shadow-sm dark:bg-neutral-900 dark:border-neutral-800',
+      elevated: 'bg-neutral-900 shadow-md dark:bg-neutral-900',
       outline: 'bg-transparent border-2 border-neutral-200 dark:border-neutral-700',
       ghost: 'bg-neutral-50 dark:bg-neutral-800/50',
-      gradient: 'bg-gradient-to-br from-white to-neutral-50 border border-neutral-200/50 dark:from-neutral-900 dark:to-neutral-800 dark:border-neutral-700',
+      gradient: 'bg-gradient-to-br from-neutral-950 to-neutral-50 border border-neutral-200/50 dark:from-neutral-900 dark:to-neutral-800 dark:border-neutral-700',
     }
 
     const paddings = {

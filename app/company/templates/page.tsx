@@ -12,6 +12,7 @@ import {
   DEFAULT_TEMPLATES
 } from '@/lib/utils/messageTemplates'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { FileText } from 'lucide-react'
 
 export default function TemplatesPage() {
   const router = useRouter()
@@ -243,38 +244,38 @@ export default function TemplatesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-10 h-10 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando templates...</p>
+          <div className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-neutral-400">Cargando templates...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-neutral-950 pb-24">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <div className="bg-neutral-900 border-b border-neutral-800 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link
                 href="/company/messages"
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-neutral-800 rounded-lg transition-colors"
               >
-                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </Link>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Mis Templates</h1>
-                <p className="text-sm text-gray-500">Mensajes predeterminados</p>
+                <h1 className="text-xl font-bold text-white">Mis Templates</h1>
+                <p className="text-sm text-neutral-500">Mensajes predeterminados</p>
               </div>
             </div>
             <button
               onClick={openCreateModal}
-              className="px-4 py-2 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors flex items-center gap-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -286,16 +287,16 @@ export default function TemplatesPage() {
       </div>
 
       {/* Category Tabs */}
-      <div className="bg-white border-b border-gray-100">
+      <div className="bg-neutral-900 border-b border-neutral-800">
         <div className="max-w-4xl mx-auto px-4">
           <div className="flex gap-2 py-3 overflow-x-auto">
             <button
               onClick={() => setSelectedCategory(null)}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
                 !selectedCategory
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-800'
+              } placeholder-neutral-500`}
             >
               Todos ({templates.length})
             </button>
@@ -307,9 +308,9 @@ export default function TemplatesPage() {
                   onClick={() => setSelectedCategory(cat.id)}
                   className={`px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
                     selectedCategory === cat.id
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
+                      ? 'bg-emerald-600'
+                      : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-800'
+                  } text-white placeholder-neutral-500`}
                 >
                   {cat.emoji} {cat.label} ({count})
                 </button>
@@ -323,24 +324,24 @@ export default function TemplatesPage() {
       <div className="max-w-4xl mx-auto px-4 py-6">
         {templates.length === 0 ? (
           <div className="text-center py-16">
-            <div className="text-6xl mb-6">📝</div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">
+            <div className="text-6xl mb-6"><FileText className="w-12 h-12" strokeWidth={2} /></div>
+            <h3 className="text-xl font-semibold text-white mb-3">
               No tienes templates
             </h3>
-            <p className="text-gray-500 mb-6 max-w-sm mx-auto">
+            <p className="text-neutral-500 mb-6 max-w-sm mx-auto">
               Los templates te permiten enviar mensajes rapidos y consistentes a los creadores.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button
                 onClick={openCreateModal}
-                className="px-6 py-3 bg-purple-600 text-white rounded-full font-semibold hover:bg-purple-700 transition-colors"
+                className="px-6 py-3 bg-emerald-600 text-white rounded-full font-semibold hover:bg-emerald-700 transition-colors"
               >
                 Crear mi primer template
               </button>
               <button
                 onClick={addDefaultTemplates}
                 disabled={saving}
-                className="px-6 py-3 border border-purple-200 text-purple-600 rounded-full font-semibold hover:bg-purple-50 transition-colors disabled:opacity-50"
+                className="px-6 py-3 border border-emerald-200 text-emerald-600 rounded-full font-semibold hover:bg-emerald-50 transition-colors disabled:opacity-50"
               >
                 {saving ? 'Agregando...' : 'Agregar templates de ejemplo'}
               </button>
@@ -353,21 +354,21 @@ export default function TemplatesPage() {
               return (
                 <div
                   key={template.id}
-                  className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100"
+                  className="bg-neutral-900 rounded-2xl p-5 shadow-sm border border-neutral-800 text-white placeholder-neutral-500"
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <h3 className="font-bold text-gray-900">{template.title}</h3>
-                      <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
+                      <h3 className="font-bold text-white">{template.title}</h3>
+                      <span className="text-xs text-neutral-500 bg-neutral-800 px-2 py-1 rounded-full">
                         {category?.emoji} {category?.label}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => openEditModal(template)}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="p-2 hover:bg-neutral-800 rounded-lg transition-colors"
                       >
-                        <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-5 h-5 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
                       </button>
@@ -386,11 +387,11 @@ export default function TemplatesPage() {
                       </button>
                     </div>
                   </div>
-                  <p className="text-gray-600 text-sm whitespace-pre-wrap line-clamp-3">
+                  <p className="text-neutral-400 text-sm whitespace-pre-wrap line-clamp-3">
                     {template.content}
                   </p>
                   {template.use_count > 0 && (
-                    <p className="text-xs text-gray-400 mt-3">
+                    <p className="text-xs text-neutral-500 mt-3">
                       Usado {template.use_count} veces
                     </p>
                   )}
@@ -402,27 +403,27 @@ export default function TemplatesPage() {
       </div>
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200">
+      <div className="fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-800">
         <div className="flex justify-around py-2">
-          <Link href="/company/dashboard" className="flex flex-col items-center py-2 px-4 text-gray-400 hover:text-gray-600">
+          <Link href="/company/dashboard" className="flex flex-col items-center py-2 px-4 text-neutral-500 hover:text-neutral-400">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
             </svg>
             <span className="text-xs font-medium mt-1">Dashboard</span>
           </Link>
-          <Link href="/company/messages" className="flex flex-col items-center py-2 px-4 text-gray-400 hover:text-gray-600">
+          <Link href="/company/messages" className="flex flex-col items-center py-2 px-4 text-neutral-500 hover:text-neutral-400">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
             <span className="text-xs font-medium mt-1">Mensajes</span>
           </Link>
-          <div className="flex flex-col items-center py-2 px-4 text-purple-600">
+          <div className="flex flex-col items-center py-2 px-4 text-emerald-600">
             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
             </svg>
             <span className="text-xs font-medium mt-1">Templates</span>
           </div>
-          <Link href="/company/applicants" className="flex flex-col items-center py-2 px-4 text-gray-400 hover:text-gray-600">
+          <Link href="/company/applicants" className="flex flex-col items-center py-2 px-4 text-neutral-500 hover:text-neutral-400">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
@@ -435,18 +436,18 @@ export default function TemplatesPage() {
       {/* Create/Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <div className="bg-neutral-900 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
-            <div className="p-5 border-b border-gray-100">
+            <div className="p-5 border-b border-neutral-800">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-bold text-gray-900">
+                <h3 className="text-lg font-bold text-white">
                   {editingTemplate ? 'Editar Template' : 'Crear Template'}
                 </h3>
                 <button
                   onClick={closeModal}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-neutral-800 rounded-lg transition-colors"
                 >
-                  <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
@@ -457,7 +458,7 @@ export default function TemplatesPage() {
             <div className="p-5 space-y-5">
               {/* Title */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-neutral-200 mb-2">
                   Titulo del Template
                 </label>
                 <input
@@ -465,13 +466,13 @@ export default function TemplatesPage() {
                   value={formTitle}
                   onChange={(e) => setFormTitle(e.target.value)}
                   placeholder="Ej: Bienvenida Inicial"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-3 border border-neutral-800 rounded-xl focus:outline-none bg-neutral-900 focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
 
               {/* Category */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-neutral-200 mb-2">
                   Categoria
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -481,9 +482,9 @@ export default function TemplatesPage() {
                       onClick={() => setFormCategory(cat.id)}
                       className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                         formCategory === cat.id
-                          ? 'bg-purple-600 text-white'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-800'
+                      } placeholder-neutral-500`}
                     >
                       {cat.emoji} {cat.label}
                     </button>
@@ -493,7 +494,7 @@ export default function TemplatesPage() {
 
               {/* Variables */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-neutral-200 mb-2">
                   Variables disponibles
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -508,14 +509,14 @@ export default function TemplatesPage() {
                     </button>
                   ))}
                 </div>
-                <p className="text-xs text-gray-400 mt-2">
+                <p className="text-xs text-neutral-500 mt-2">
                   Haz clic para insertar. Se reemplazaran automaticamente al enviar.
                 </p>
               </div>
 
               {/* Content */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-neutral-200 mb-2">
                   Contenido del mensaje
                 </label>
                 <textarea
@@ -523,17 +524,17 @@ export default function TemplatesPage() {
                   onChange={(e) => setFormContent(e.target.value)}
                   placeholder="Escribe tu mensaje aqui. Usa variables como {nombre} para personalizar."
                   rows={6}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                  className="w-full px-4 py-3 border border-neutral-800 rounded-xl focus:outline-none bg-neutral-900 focus:ring-2 focus:ring-emerald-500 resize-none"
                 />
               </div>
 
               {/* Preview */}
               {formContent && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-neutral-200 mb-2">
                     Vista previa
                   </label>
-                  <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-700 whitespace-pre-wrap">
+                  <div className="bg-neutral-950 rounded-xl p-4 text-sm text-neutral-200 whitespace-pre-wrap">
                     {generatePreview(formContent)}
                   </div>
                 </div>
@@ -550,17 +551,17 @@ export default function TemplatesPage() {
             </div>
 
             {/* Modal Actions */}
-            <div className="p-5 border-t border-gray-100 flex gap-3">
+            <div className="p-5 border-t border-neutral-800 flex gap-3">
               <button
                 onClick={closeModal}
-                className="flex-1 px-4 py-3 border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                className="flex-1 px-4 py-3 border border-neutral-800 text-neutral-200 rounded-xl font-medium hover:bg-neutral-950 transition-colors"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="flex-1 px-4 py-3 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {saving ? (
                   <>

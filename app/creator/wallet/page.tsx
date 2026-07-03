@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { authHeaders } from '@/lib/auth/clientToken'
 
 const MINIMUM_PAYOUT = 10.20
 
@@ -11,9 +13,9 @@ const WhopPayoutsEmbed = dynamic(() => import('./WhopPayoutsEmbed'), {
   ssr: false,
   loading: () => (
     <div className="animate-pulse">
-      <div className="h-20 bg-gray-200 rounded-xl mb-4" />
-      <div className="h-32 bg-gray-200 rounded-xl mb-4" />
-      <div className="h-12 bg-gray-200 rounded-xl" />
+      <div className="h-20 bg-neutral-800 rounded-xl mb-4" />
+      <div className="h-32 bg-neutral-800 rounded-xl mb-4" />
+      <div className="h-12 bg-neutral-800 rounded-xl" />
     </div>
   )
 })
@@ -47,7 +49,7 @@ export default function CreatorWallet() {
       const user = JSON.parse(userStr)
       setUserId(user.id)
 
-      const res = await fetch(`/api/whop/creator-balance?userId=${user.id}`)
+      const res = await fetch(`/api/whop/creator-balance`, { headers: authHeaders() })
       const data = await res.json()
 
       if (data.needsSetup) {
@@ -82,11 +84,11 @@ export default function CreatorWallet() {
       const user = JSON.parse(userStr)
 
       const profileRes = await fetch(
-        `https://ftvqoudlmojdxwjxljzr.supabase.co/rest/v1/profiles?user_id=eq.${user.id}&select=*`,
+        `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=*`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
-            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
+            'apikey': SUPABASE_ANON_KEY
           }
         }
       )
@@ -95,9 +97,8 @@ export default function CreatorWallet() {
 
       const res = await fetch('/api/whop/setup-creator', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
-          userId: user.id,
           email: user.email,
           fullName: profile.full_name,
           existingCompanyId: profile.whop_company_id
@@ -141,21 +142,21 @@ export default function CreatorWallet() {
 
         <div className="px-4 pt-6">
           {/* Balance Card - Shows 0 */}
-          <div className="bg-white rounded-2xl shadow-sm p-5 mb-4">
-            <p className="text-gray-500 text-sm mb-1">Balance disponible</p>
-            <p className="text-3xl font-bold text-gray-900">$0.00 <span className="text-lg font-normal text-gray-400">USD</span></p>
+          <div className="bg-neutral-900 rounded-2xl shadow-sm p-5 mb-4">
+            <p className="text-neutral-500 text-sm mb-1">Balance disponible</p>
+            <p className="text-3xl font-bold text-white">$0.00 <span className="text-lg font-normal text-neutral-500">USD</span></p>
           </div>
 
           {/* Setup Card */}
-          <div className="bg-white rounded-2xl shadow-sm p-6">
+          <div className="bg-neutral-900 rounded-2xl shadow-sm p-6">
             <div className="text-center">
               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
               </div>
-              <h2 className="text-xl font-bold text-gray-900 mb-2">Configura tu wallet</h2>
-              <p className="text-gray-500 text-sm mb-6">Verifica tu identidad para poder recibir pagos de las marcas</p>
+              <h2 className="text-xl font-bold text-white mb-2">Configura tu wallet</h2>
+              <p className="text-neutral-500 text-sm mb-6">Verifica tu identidad para poder recibir pagos de las marcas</p>
 
               <button
                 onClick={startSetup}
@@ -210,8 +211,8 @@ export default function CreatorWallet() {
     <div className="min-h-screen bg-[#f8f9fa]">
       <Header title="Payouts" />
       <div className="px-4 pt-6">
-        <div className="bg-white rounded-2xl shadow-sm p-6 text-center">
-          <p className="text-gray-500">Cargando...</p>
+        <div className="bg-neutral-900 rounded-2xl shadow-sm p-6 text-center">
+          <p className="text-neutral-500">Cargando...</p>
         </div>
       </div>
       <BottomNav active="wallet" />
@@ -221,13 +222,13 @@ export default function CreatorWallet() {
 
 function Header({ title }: { title: string }) {
   return (
-    <div className="bg-white px-4 py-4 flex items-center justify-between shadow-sm sticky top-0 z-10">
-      <Link href="/creator/dashboard" className="p-2 -ml-2 rounded-lg hover:bg-gray-100">
-        <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div className="bg-neutral-900 px-4 py-4 flex items-center justify-between shadow-sm sticky top-0 z-10">
+      <Link href="/creator/dashboard" className="p-2 -ml-2 rounded-lg hover:bg-neutral-800">
+        <svg className="w-6 h-6 text-neutral-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
       </Link>
-      <h1 className="font-bold text-gray-900 text-lg">{title}</h1>
+      <h1 className="font-bold text-white text-lg">{title}</h1>
       <div className="w-10" />
     </div>
   )
@@ -258,14 +259,14 @@ function BottomNav({ active }: { active: string }) {
   ]
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-10">
+    <div className="fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-800 z-10">
       <div className="flex justify-around py-2">
         {items.map((item) => (
           <Link
             key={item.id}
             href={item.href}
             className={`flex flex-col items-center py-2 px-4 ${
-              active === item.id ? 'text-blue-600' : 'text-gray-400'
+              active === item.id ? 'text-blue-600' : 'text-neutral-500'
             }`}
           >
             {item.icon}

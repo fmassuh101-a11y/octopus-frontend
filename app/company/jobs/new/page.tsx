@@ -4,6 +4,7 @@ import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { Lightbulb } from 'lucide-react'
 
 type PaymentType = "fixed" | "hourly" | "cpm"
 type PaymentFrequency = "one_time" | "weekly" | "monthly"
@@ -219,13 +220,13 @@ export default function NewJobPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-neutral-950 to-neutral-950">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100">
+      <header className="sticky top-0 z-50 bg-neutral-900/80 backdrop-blur-xl border-b border-neutral-800">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <button
             onClick={() => router.push("/company/campaigns")}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+            className="flex items-center gap-2 text-neutral-400 hover:text-white transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -234,15 +235,15 @@ export default function NewJobPage() {
           </button>
 
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-600 to-pink-500 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-500 flex items-center justify-center">
               <span className="text-white text-lg font-bold">O</span>
             </div>
-            <span className="font-bold text-xl bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
+            <span className="font-bold text-xl bg-gradient-to-r from-emerald-600 to-emerald-500 bg-clip-text text-transparent">
               Nueva Campana
             </span>
           </div>
 
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-neutral-500">
             Paso {currentStep}/4
           </div>
         </div>
@@ -252,8 +253,8 @@ export default function NewJobPage() {
         <div className="flex gap-8">
           {/* Left Sidebar - Progress */}
           <div className="hidden lg:block w-64 shrink-0">
-            <div className="sticky top-24 bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-              <h3 className="font-semibold text-gray-900 mb-6">Progreso</h3>
+            <div className="sticky top-24 bg-neutral-900 rounded-2xl p-6 shadow-lg border border-neutral-800 text-white placeholder-neutral-500">
+              <h3 className="font-semibold text-white mb-6">Progreso</h3>
               <div className="space-y-1">
                 {steps.map((step, index) => (
                   <div key={step.id} className="relative">
@@ -262,26 +263,26 @@ export default function NewJobPage() {
                       disabled={step.id > currentStep}
                       className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${
                         step.id === currentStep
-                          ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-200"
+                          ? "bg-gradient-to-r from-emerald-500 to-emerald-500 text-white shadow-lg shadow-emerald-200"
                           : step.id < currentStep
                           ? "bg-green-50 text-green-700 hover:bg-green-100"
-                          : "bg-gray-50 text-gray-400"
-                      }`}
+                          : "bg-neutral-950 text-neutral-500"
+                      } placeholder-neutral-500`}
                     >
                       <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${
                         step.id === currentStep
-                          ? "bg-white/20"
+                          ? "bg-neutral-900/20"
                           : step.id < currentStep
                           ? "bg-green-200"
-                          : "bg-gray-200"
-                      }`}>
-                        {step.id < currentStep ? "✓" : step.icon}
+                          : "bg-neutral-800"
+                      } text-white placeholder-neutral-500`}>
+                        {step.id < currentStep ? "" : step.icon}
                       </span>
                       <span className="font-medium text-sm">{step.name}</span>
                     </button>
                     {index < steps.length - 1 && (
                       <div className={`absolute left-6 top-14 w-0.5 h-4 ${
-                        step.id < currentStep ? "bg-green-300" : "bg-gray-200"
+                        step.id < currentStep ? "bg-green-300" : "bg-neutral-800"
                       }`} />
                     )}
                   </div>
@@ -300,17 +301,17 @@ export default function NewJobPage() {
                     key={step.id}
                     className={`h-1.5 flex-1 rounded-full transition-all ${
                       step.id <= currentStep
-                        ? "bg-gradient-to-r from-purple-500 to-pink-500"
-                        : "bg-gray-200"
-                    }`}
+                        ? "bg-gradient-to-r from-emerald-500 to-emerald-500"
+                        : "bg-neutral-800"
+                    } text-white placeholder-neutral-500`}
                   />
                 ))}
               </div>
               <div className="mt-3 flex items-center gap-2">
-                <span className="w-8 h-8 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm">
+                <span className="w-8 h-8 rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-500 flex items-center justify-center text-white font-bold text-sm">
                   {currentStep}
                 </span>
-                <span className="font-semibold text-gray-900">{steps[currentStep - 1].name}</span>
+                <span className="font-semibold text-white">{steps[currentStep - 1].name}</span>
               </div>
             </div>
 
@@ -322,19 +323,19 @@ export default function NewJobPage() {
             )}
 
             {/* Form Container */}
-            <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+            <div className="bg-neutral-900 rounded-2xl shadow-xl border border-neutral-800 overflow-hidden text-white placeholder-neutral-500">
               <div className="p-6 sm:p-8">
                 {/* Step 1: Job Details */}
                 {currentStep === 1 && (
                   <div className="space-y-6">
                     <div>
-                      <h2 className="text-2xl font-bold text-gray-900 mb-2">Detalles del trabajo</h2>
-                      <p className="text-gray-500">Describe que tipo de contenido necesitas</p>
+                      <h2 className="text-2xl font-bold text-white mb-2">Detalles del trabajo</h2>
+                      <p className="text-neutral-500">Describe que tipo de contenido necesitas</p>
                     </div>
 
                     <div className="space-y-5">
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        <label className="block text-sm font-semibold text-neutral-200 mb-2">
                           Titulo del trabajo *
                         </label>
                         <input
@@ -342,33 +343,33 @@ export default function NewJobPage() {
                           value={formData.title}
                           onChange={e => updateFormData({ title: e.target.value })}
                           placeholder="ej. Creador UGC para marca de skincare"
-                          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-gray-900 placeholder-gray-400"
+                          className="w-full px-4 py-3 rounded-xl border border-neutral-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all outline-none bg-neutral-900 text-white placeholder-neutral-500"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        <label className="block text-sm font-semibold text-neutral-200 mb-2">
                           Tipo de trabajo *
                         </label>
                         <div className="relative">
                           <select
                             value={formData.jobType}
                             onChange={e => updateFormData({ jobType: e.target.value })}
-                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-gray-900 appearance-none bg-white"
+                            className="w-full px-4 py-3 rounded-xl border border-neutral-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all outline-none text-white appearance-none bg-neutral-900"
                           >
                             <option value="">Selecciona un tipo</option>
                             {jobTypes.map(type => (
                               <option key={type} value={type}>{type}</option>
                             ))}
                           </select>
-                          <svg className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-500 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                           </svg>
                         </div>
                       </div>
 
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        <label className="block text-sm font-semibold text-neutral-200 mb-2">
                           Descripcion *
                         </label>
                         <textarea
@@ -376,9 +377,9 @@ export default function NewJobPage() {
                           onChange={e => updateFormData({ description: e.target.value })}
                           placeholder="Describe el trabajo, requisitos, entregables y que hace especial a tu marca..."
                           rows={6}
-                          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-gray-900 placeholder-gray-400 resize-none"
+                          className="w-full px-4 py-3 rounded-xl border border-neutral-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all outline-none bg-neutral-900 text-white placeholder-neutral-500 resize-none"
                         />
-                        <p className="mt-2 text-sm text-gray-400">
+                        <p className="mt-2 text-sm text-neutral-500">
                           {formData.description.length} caracteres
                         </p>
                       </div>
@@ -390,8 +391,8 @@ export default function NewJobPage() {
                 {currentStep === 2 && (
                   <div className="space-y-6">
                     <div>
-                      <h2 className="text-2xl font-bold text-gray-900 mb-2">Como vas a pagar?</h2>
-                      <p className="text-gray-500">Elige el modelo de pago que mejor te funcione</p>
+                      <h2 className="text-2xl font-bold text-white mb-2">Como vas a pagar?</h2>
+                      <p className="text-neutral-500">Elige el modelo de pago que mejor te funcione</p>
                     </div>
 
                     {/* Payment Type Cards */}
@@ -401,12 +402,12 @@ export default function NewJobPage() {
                         onClick={() => updateFormData({ paymentType: "fixed" })}
                         className={`relative p-5 rounded-2xl border-2 text-left transition-all ${
                           formData.paymentType === "fixed"
-                            ? "border-purple-500 bg-purple-50 shadow-lg"
-                            : "border-gray-200 hover:border-purple-200 hover:bg-gray-50"
-                        }`}
+                            ? "border-emerald-500 bg-emerald-50 shadow-lg"
+                            : "border-neutral-800 hover:border-emerald-200 hover:bg-neutral-950"
+                        } text-white placeholder-neutral-500`}
                       >
                         {formData.paymentType === "fixed" && (
-                          <div className="absolute top-3 right-3 w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center">
+                          <div className="absolute top-3 right-3 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center">
                             <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                             </svg>
@@ -415,8 +416,8 @@ export default function NewJobPage() {
                         <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-emerald-500 rounded-xl flex items-center justify-center mb-3 text-white font-bold text-xl">
                           $
                         </div>
-                        <h3 className="font-bold text-gray-900">Precio Fijo</h3>
-                        <p className="text-sm text-gray-500 mt-1">Pago unico por entrega</p>
+                        <h3 className="font-bold text-white">Precio Fijo</h3>
+                        <p className="text-sm text-neutral-500 mt-1">Pago unico por entrega</p>
                       </button>
 
                       {/* Hourly */}
@@ -424,24 +425,24 @@ export default function NewJobPage() {
                         onClick={() => updateFormData({ paymentType: "hourly" })}
                         className={`relative p-5 rounded-2xl border-2 text-left transition-all ${
                           formData.paymentType === "hourly"
-                            ? "border-purple-500 bg-purple-50 shadow-lg"
-                            : "border-gray-200 hover:border-purple-200 hover:bg-gray-50"
-                        }`}
+                            ? "border-emerald-500 bg-emerald-50 shadow-lg"
+                            : "border-neutral-800 hover:border-emerald-200 hover:bg-neutral-950"
+                        } text-white placeholder-neutral-500`}
                       >
                         {formData.paymentType === "hourly" && (
-                          <div className="absolute top-3 right-3 w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center">
+                          <div className="absolute top-3 right-3 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center">
                             <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                             </svg>
                           </div>
                         )}
-                        <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-xl flex items-center justify-center mb-3">
+                        <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-emerald-500 rounded-xl flex items-center justify-center mb-3">
                           <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                         </div>
-                        <h3 className="font-bold text-gray-900">Por Hora</h3>
-                        <p className="text-sm text-gray-500 mt-1">Trabajo continuo por horas</p>
+                        <h3 className="font-bold text-white">Por Hora</h3>
+                        <p className="text-sm text-neutral-500 mt-1">Trabajo continuo por horas</p>
                       </button>
 
                       {/* CPM */}
@@ -449,54 +450,54 @@ export default function NewJobPage() {
                         onClick={() => updateFormData({ paymentType: "cpm" })}
                         className={`relative p-5 rounded-2xl border-2 text-left transition-all ${
                           formData.paymentType === "cpm"
-                            ? "border-purple-500 bg-purple-50 shadow-lg"
-                            : "border-gray-200 hover:border-purple-200 hover:bg-gray-50"
-                        }`}
+                            ? "border-emerald-500 bg-emerald-50 shadow-lg"
+                            : "border-neutral-800 hover:border-emerald-200 hover:bg-neutral-950"
+                        } text-white placeholder-neutral-500`}
                       >
                         {formData.paymentType === "cpm" && (
-                          <div className="absolute top-3 right-3 w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center">
+                          <div className="absolute top-3 right-3 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center">
                             <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                             </svg>
                           </div>
                         )}
                         <div className="absolute -top-2 -right-2">
-                          <span className="px-2 py-1 bg-gradient-to-r from-orange-400 to-pink-500 text-white text-xs font-bold rounded-full shadow-lg">
+                          <span className="px-2 py-1 bg-gradient-to-r from-orange-400 to-emerald-500 text-white text-xs font-bold rounded-full shadow-lg">
                             NUEVO
                           </span>
                         </div>
-                        <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-pink-500 rounded-xl flex items-center justify-center mb-3">
+                        <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-emerald-500 rounded-xl flex items-center justify-center mb-3">
                           <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                           </svg>
                         </div>
-                        <h3 className="font-bold text-gray-900">CPM</h3>
-                        <p className="text-sm text-gray-500 mt-1">Pago por 1,000 vistas</p>
+                        <h3 className="font-bold text-white">CPM</h3>
+                        <p className="text-sm text-neutral-500 mt-1">Pago por 1,000 vistas</p>
                       </button>
                     </div>
 
                     {/* Payment Details */}
-                    <div className="bg-gray-50 rounded-2xl p-6 space-y-5">
+                    <div className="bg-neutral-950 rounded-2xl p-6 space-y-5">
                       {formData.paymentType === "fixed" && (
                         <>
                           <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            <label className="block text-sm font-semibold text-neutral-200 mb-2">
                               Cantidad a pagar *
                             </label>
                             <div className="relative">
-                              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">$</span>
+                              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 font-medium">$</span>
                               <input
                                 type="number"
                                 value={formData.fixedAmount}
                                 onChange={e => updateFormData({ fixedAmount: e.target.value })}
                                 placeholder="0.00"
-                                className="w-full pl-8 pr-4 py-3 rounded-xl border border-gray-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-gray-900"
+                                className="w-full pl-8 pr-4 py-3 rounded-xl border border-neutral-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all outline-none bg-neutral-900 text-white"
                               />
                             </div>
                           </div>
                           <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            <label className="block text-sm font-semibold text-neutral-200 mb-2">
                               Frecuencia de pago
                             </label>
                             <div className="flex gap-2">
@@ -511,9 +512,9 @@ export default function NewJobPage() {
                                   onClick={() => updateFormData({ paymentFrequency: option.value as PaymentFrequency })}
                                   className={`flex-1 py-2.5 px-4 rounded-xl font-medium text-sm transition-all ${
                                     formData.paymentFrequency === option.value
-                                      ? "bg-purple-500 text-white shadow-lg"
-                                      : "bg-white border border-gray-200 text-gray-600 hover:border-purple-300"
-                                  }`}
+                                      ? "bg-emerald-500 text-white shadow-lg"
+                                      : "bg-neutral-900 border border-neutral-800 text-neutral-400 hover:border-emerald-300"
+                                  } placeholder-neutral-500`}
                                 >
                                   {option.label}
                                 </button>
@@ -526,23 +527,23 @@ export default function NewJobPage() {
                       {formData.paymentType === "hourly" && (
                         <>
                           <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            <label className="block text-sm font-semibold text-neutral-200 mb-2">
                               Tarifa por hora *
                             </label>
                             <div className="relative">
-                              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">$</span>
+                              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 font-medium">$</span>
                               <input
                                 type="number"
                                 value={formData.hourlyRate}
                                 onChange={e => updateFormData({ hourlyRate: e.target.value })}
                                 placeholder="0.00"
-                                className="w-full pl-8 pr-16 py-3 rounded-xl border border-gray-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-gray-900"
+                                className="w-full pl-8 pr-16 py-3 rounded-xl border border-neutral-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all outline-none bg-neutral-900 text-white"
                               />
-                              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">/hora</span>
+                              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500">/hora</span>
                             </div>
                           </div>
                           <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            <label className="block text-sm font-semibold text-neutral-200 mb-2">
                               Horas estimadas por semana
                             </label>
                             <input
@@ -550,7 +551,7 @@ export default function NewJobPage() {
                               value={formData.estimatedHoursPerWeek}
                               onChange={e => updateFormData({ estimatedHoursPerWeek: e.target.value })}
                               placeholder="10"
-                              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-gray-900"
+                              className="w-full px-4 py-3 rounded-xl border border-neutral-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all outline-none bg-neutral-900 text-white"
                             />
                           </div>
                         </>
@@ -558,26 +559,26 @@ export default function NewJobPage() {
 
                       {formData.paymentType === "cpm" && (
                         <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          <label className="block text-sm font-semibold text-neutral-200 mb-2">
                             Tarifa por 1,000 vistas *
                           </label>
                           <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">$</span>
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 font-medium">$</span>
                             <input
                               type="number"
                               value={formData.cpmRate}
                               onChange={e => updateFormData({ cpmRate: e.target.value })}
                               placeholder="5.00"
-                              className="w-full pl-8 pr-28 py-3 rounded-xl border border-gray-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-gray-900"
+                              className="w-full pl-8 pr-28 py-3 rounded-xl border border-neutral-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all outline-none bg-neutral-900 text-white"
                             />
-                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">/1K vistas</span>
+                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500">/1K vistas</span>
                           </div>
-                          <div className="mt-4 p-4 bg-gradient-to-r from-orange-50 to-pink-50 rounded-xl border border-orange-100">
+                          <div className="mt-4 p-4 bg-gradient-to-r from-orange-50 to-neutral-900 rounded-xl border border-orange-100">
                             <div className="flex items-start gap-3">
-                              <span className="text-xl">💡</span>
+                              <Lightbulb className="w-5 h-5" strokeWidth={2} />
                               <div>
-                                <p className="font-medium text-gray-900">Pago por rendimiento</p>
-                                <p className="text-sm text-gray-600 mt-1">
+                                <p className="font-medium text-white">Pago por rendimiento</p>
+                                <p className="text-sm text-neutral-400 mt-1">
                                   Paga solo por resultados. Si un creador obtiene 100K vistas a ${formData.cpmRate || "5"}/1K,
                                   pagas ${((parseFloat(formData.cpmRate || "5") * 100) || 500).toFixed(2)}.
                                 </p>
@@ -594,35 +595,35 @@ export default function NewJobPage() {
                 {currentStep === 3 && (
                   <div className="space-y-6">
                     <div>
-                      <h2 className="text-2xl font-bold text-gray-900 mb-2">Requisitos del creador</h2>
-                      <p className="text-gray-500">Define que necesitan los creadores para aplicar</p>
+                      <h2 className="text-2xl font-bold text-white mb-2">Requisitos del creador</h2>
+                      <p className="text-neutral-500">Define que necesitan los creadores para aplicar</p>
                     </div>
 
                     <div className="space-y-4">
-                      <div className="bg-gray-50 rounded-2xl divide-y divide-gray-100">
+                      <div className="bg-neutral-950 rounded-2xl divide-y divide-neutral-800">
                         {/* Instagram */}
                         <div className="p-5 flex items-center justify-between">
                           <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 rounded-xl flex items-center justify-center">
+                            <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 via-emerald-500 to-orange-400 rounded-xl flex items-center justify-center">
                               <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
                               </svg>
                             </div>
                             <div>
-                              <p className="font-semibold text-gray-900">Requiere Instagram</p>
-                              <p className="text-sm text-gray-500">El creador debe tener Instagram conectado</p>
+                              <p className="font-semibold text-white">Requiere Instagram</p>
+                              <p className="text-sm text-neutral-500">El creador debe tener Instagram conectado</p>
                             </div>
                           </div>
                           <button
                             type="button"
                             onClick={() => updateFormData({ requireInstagram: !formData.requireInstagram })}
                             className={`relative w-14 h-8 rounded-full transition-all ${
-                              formData.requireInstagram ? "bg-purple-500" : "bg-gray-300"
+                              formData.requireInstagram ? "bg-emerald-500" : "bg-gray-300"
                             }`}
                           >
-                            <div className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow-md transition-all ${
+                            <div className={`absolute top-1 w-6 h-6 bg-neutral-900 rounded-full shadow-md transition-all ${
                               formData.requireInstagram ? "left-7" : "left-1"
-                            }`} />
+                            } text-white placeholder-neutral-500`} />
                           </button>
                         </div>
 
@@ -635,20 +636,20 @@ export default function NewJobPage() {
                               </svg>
                             </div>
                             <div>
-                              <p className="font-semibold text-gray-900">Requiere TikTok</p>
-                              <p className="text-sm text-gray-500">El creador debe tener TikTok conectado</p>
+                              <p className="font-semibold text-white">Requiere TikTok</p>
+                              <p className="text-sm text-neutral-500">El creador debe tener TikTok conectado</p>
                             </div>
                           </div>
                           <button
                             type="button"
                             onClick={() => updateFormData({ requireTikTok: !formData.requireTikTok })}
                             className={`relative w-14 h-8 rounded-full transition-all ${
-                              formData.requireTikTok ? "bg-purple-500" : "bg-gray-300"
+                              formData.requireTikTok ? "bg-emerald-500" : "bg-gray-300"
                             }`}
                           >
-                            <div className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow-md transition-all ${
+                            <div className={`absolute top-1 w-6 h-6 bg-neutral-900 rounded-full shadow-md transition-all ${
                               formData.requireTikTok ? "left-7" : "left-1"
-                            }`} />
+                            } text-white placeholder-neutral-500`} />
                           </button>
                         </div>
 
@@ -659,27 +660,27 @@ export default function NewJobPage() {
                               21+
                             </div>
                             <div>
-                              <p className="font-semibold text-gray-900">Requiere 21+ anos</p>
-                              <p className="text-sm text-gray-500">Para alcohol o contenido restringido</p>
+                              <p className="font-semibold text-white">Requiere 21+ anos</p>
+                              <p className="text-sm text-neutral-500">Para alcohol o contenido restringido</p>
                             </div>
                           </div>
                           <button
                             type="button"
                             onClick={() => updateFormData({ requireAge21: !formData.requireAge21 })}
                             className={`relative w-14 h-8 rounded-full transition-all ${
-                              formData.requireAge21 ? "bg-purple-500" : "bg-gray-300"
+                              formData.requireAge21 ? "bg-emerald-500" : "bg-gray-300"
                             }`}
                           >
-                            <div className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow-md transition-all ${
+                            <div className={`absolute top-1 w-6 h-6 bg-neutral-900 rounded-full shadow-md transition-all ${
                               formData.requireAge21 ? "left-7" : "left-1"
-                            }`} />
+                            } text-white placeholder-neutral-500`} />
                           </button>
                         </div>
                       </div>
 
                       {/* Minimum Followers */}
-                      <div className="bg-gray-50 rounded-2xl p-5">
-                        <label className="block text-sm font-semibold text-gray-700 mb-3">
+                      <div className="bg-neutral-950 rounded-2xl p-5">
+                        <label className="block text-sm font-semibold text-neutral-200 mb-3">
                           Minimo de seguidores (opcional)
                         </label>
                         <input
@@ -687,9 +688,9 @@ export default function NewJobPage() {
                           value={formData.minFollowers}
                           onChange={e => updateFormData({ minFollowers: e.target.value })}
                           placeholder="1000"
-                          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-gray-900"
+                          className="w-full px-4 py-3 rounded-xl border border-neutral-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all outline-none bg-neutral-900 text-white"
                         />
-                        <p className="mt-2 text-sm text-gray-500">
+                        <p className="mt-2 text-sm text-neutral-500">
                           Dejalo vacio para aceptar creadores de cualquier tamano
                         </p>
                       </div>
@@ -701,14 +702,14 @@ export default function NewJobPage() {
                 {currentStep === 4 && (
                   <div className="space-y-6">
                     <div>
-                      <h2 className="text-2xl font-bold text-gray-900 mb-2">Imagen del trabajo</h2>
-                      <p className="text-gray-500">Agrega una imagen atractiva para tu publicacion</p>
+                      <h2 className="text-2xl font-bold text-white mb-2">Imagen del trabajo</h2>
+                      <p className="text-neutral-500">Agrega una imagen atractiva para tu publicacion</p>
                     </div>
 
                     <div className="space-y-4">
                       {formData.jobImage ? (
                         <div className="relative">
-                          <div className="aspect-video rounded-2xl overflow-hidden bg-gray-100">
+                          <div className="aspect-video rounded-2xl overflow-hidden bg-neutral-800">
                             <img
                               src={formData.jobImage}
                               alt="Vista previa"
@@ -729,16 +730,16 @@ export default function NewJobPage() {
                         <button
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
-                          className="w-full aspect-video rounded-2xl border-2 border-dashed border-gray-300 hover:border-purple-400 bg-gray-50 hover:bg-purple-50 transition-all flex flex-col items-center justify-center gap-4"
+                          className="w-full aspect-video rounded-2xl border-2 border-dashed border-neutral-700 hover:border-emerald-400 bg-neutral-950 hover:bg-emerald-50 transition-all flex flex-col items-center justify-center gap-4 text-white placeholder-neutral-500"
                         >
-                          <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-pink-100 rounded-2xl flex items-center justify-center">
-                            <svg className="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <div className="w-16 h-16 bg-gradient-to-br from-emerald-100 to-emerald-100 rounded-2xl flex items-center justify-center">
+                            <svg className="w-8 h-8 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
                           </div>
                           <div className="text-center">
-                            <p className="font-semibold text-gray-700">Haz clic para subir imagen</p>
-                            <p className="text-sm text-gray-500 mt-1">PNG, JPG hasta 5MB</p>
+                            <p className="font-semibold text-neutral-200">Haz clic para subir imagen</p>
+                            <p className="text-sm text-neutral-500 mt-1">PNG, JPG hasta 5MB</p>
                           </div>
                         </button>
                       )}
@@ -747,29 +748,29 @@ export default function NewJobPage() {
                         type="file"
                         accept="image/*"
                         onChange={handleImageUpload}
-                        className="hidden"
+                        className="hidden bg-neutral-900 text-white placeholder-neutral-500"
                       />
 
-                      <p className="text-center text-sm text-gray-500">
+                      <p className="text-center text-sm text-neutral-500">
                         La imagen es opcional - usaremos una por defecto si no subes una
                       </p>
                     </div>
 
                     {/* Preview Card */}
-                    <div className="mt-8 bg-gray-50 rounded-2xl p-6">
-                      <h4 className="text-sm font-semibold text-gray-500 mb-4">VISTA PREVIA</h4>
-                      <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                    <div className="mt-8 bg-neutral-950 rounded-2xl p-6">
+                      <h4 className="text-sm font-semibold text-neutral-500 mb-4">VISTA PREVIA</h4>
+                      <div className="bg-neutral-900 rounded-xl p-4 shadow-sm border border-neutral-800 text-white placeholder-neutral-500">
                         <div className="flex gap-4">
-                          <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-pink-100 rounded-xl flex items-center justify-center shrink-0 overflow-hidden">
+                          <div className="w-16 h-16 bg-gradient-to-br from-emerald-100 to-emerald-100 rounded-xl flex items-center justify-center shrink-0 overflow-hidden">
                             {formData.jobImage ? (
                               <img src={formData.jobImage} alt="" className="w-full h-full object-cover" />
                             ) : (
-                              <span className="text-2xl font-bold text-purple-500">O</span>
+                              <span className="text-2xl font-bold text-emerald-500">O</span>
                             )}
                           </div>
                           <div className="flex-1">
-                            <h3 className="font-bold text-gray-900">{formData.title || "Titulo del trabajo"}</h3>
-                            <p className="text-sm text-gray-500">{formData.jobType || "Tipo de trabajo"}</p>
+                            <h3 className="font-bold text-white">{formData.title || "Titulo del trabajo"}</h3>
+                            <p className="text-sm text-neutral-500">{formData.jobType || "Tipo de trabajo"}</p>
                             <div className="mt-2">
                               {formData.paymentType === "fixed" && formData.fixedAmount && (
                                 <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
@@ -782,7 +783,7 @@ export default function NewJobPage() {
                                 </span>
                               )}
                               {formData.paymentType === "cpm" && formData.cpmRate && (
-                                <span className="px-2 py-1 bg-gradient-to-r from-orange-100 to-pink-100 text-orange-700 text-xs font-medium rounded-full">
+                                <span className="px-2 py-1 bg-gradient-to-r from-orange-100 to-emerald-100 text-orange-700 text-xs font-medium rounded-full">
                                   ${formData.cpmRate} CPM
                                 </span>
                               )}
@@ -796,19 +797,19 @@ export default function NewJobPage() {
               </div>
 
               {/* Footer Navigation */}
-              <div className="px-6 sm:px-8 py-5 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+              <div className="px-6 sm:px-8 py-5 bg-neutral-950 border-t border-neutral-800 flex items-center justify-between">
                 {currentStep > 1 ? (
                   <button
                     type="button"
                     onClick={handleBack}
-                    className="px-6 py-3 text-gray-600 font-medium hover:text-gray-900 transition-colors"
+                    className="px-6 py-3 text-neutral-400 font-medium hover:text-white transition-colors"
                   >
                     Atras
                   </button>
                 ) : (
                   <Link
                     href="/company/campaigns"
-                    className="px-6 py-3 text-gray-600 font-medium hover:text-gray-900 transition-colors"
+                    className="px-6 py-3 text-neutral-400 font-medium hover:text-white transition-colors"
                   >
                     Cancelar
                   </Link>
@@ -821,9 +822,9 @@ export default function NewJobPage() {
                     disabled={!canProceed()}
                     className={`px-8 py-3 rounded-xl font-semibold transition-all ${
                       canProceed()
-                        ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg hover:shadow-xl hover:scale-[1.02]"
-                        : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                    }`}
+                        ? "bg-gradient-to-r from-emerald-500 to-emerald-500 text-white shadow-lg hover:shadow-xl hover:scale-[1.02]"
+                        : "bg-neutral-800 text-neutral-500 cursor-not-allowed"
+                    } placeholder-neutral-500`}
                   >
                     Continuar
                   </button>
@@ -832,7 +833,7 @@ export default function NewJobPage() {
                     type="button"
                     onClick={handleSubmit}
                     disabled={isSubmitting}
-                    className="px-8 py-3 rounded-xl font-semibold bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="px-8 py-3 rounded-xl font-semibold bg-gradient-to-r from-emerald-500 to-emerald-500 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
                     {isSubmitting ? (
                       <>

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { Bell, Star, Rocket, BarChart3, Briefcase, TrendingUp, Users } from 'lucide-react'
 
 interface Job {
   id: string
@@ -256,7 +257,7 @@ export default function CompanyJobsPage() {
         <div className="px-4 py-4">
           <div className="grid grid-cols-3 gap-3">
             {[1,2,3].map(i => (
-              <div key={i} className="bg-neutral-900 rounded-2xl p-4 border border-neutral-800 animate-pulse">
+              <div key={i} className="bg-neutral-900 rounded-2xl p-4 border border-neutral-800 animate-pulse text-white placeholder-neutral-500">
                 <div className="h-4 w-16 bg-neutral-800 rounded mb-2" />
                 <div className="h-8 w-12 bg-neutral-800 rounded" />
               </div>
@@ -270,7 +271,7 @@ export default function CompanyJobsPage() {
         {/* Skeleton Jobs */}
         <div className="px-4 space-y-3">
           {[1,2,3,4].map(i => (
-            <div key={i} className="bg-neutral-900 rounded-2xl p-4 border border-neutral-800">
+            <div key={i} className="bg-neutral-900 rounded-2xl p-4 border border-neutral-800 text-white placeholder-neutral-500">
               <div className="h-5 w-3/4 bg-neutral-800 rounded animate-pulse mb-2" />
               <div className="h-4 w-full bg-neutral-800 rounded animate-pulse mb-3" />
               <div className="flex gap-4">
@@ -321,21 +322,21 @@ export default function CompanyJobsPage() {
       {/* Stats Cards */}
       <div className="px-4 py-4">
         <div className="grid grid-cols-3 gap-3">
-          <div className="bg-neutral-900 rounded-2xl p-4 border border-neutral-800">
+          <div className="bg-neutral-900 rounded-2xl p-4 border border-neutral-800 text-white placeholder-neutral-500">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-green-500">●</span>
               <span className="text-sm text-neutral-400">Activos</span>
             </div>
             <p className="text-2xl font-bold">{jobCounts.active}</p>
           </div>
-          <div className="bg-neutral-900 rounded-2xl p-4 border border-neutral-800">
+          <div className="bg-neutral-900 rounded-2xl p-4 border border-neutral-800 text-white placeholder-neutral-500">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-yellow-500">●</span>
               <span className="text-sm text-neutral-400">Borradores</span>
             </div>
             <p className="text-2xl font-bold">{jobCounts.draft}</p>
           </div>
-          <div className="bg-neutral-900 rounded-2xl p-4 border border-neutral-800">
+          <div className="bg-neutral-900 rounded-2xl p-4 border border-neutral-800 text-white placeholder-neutral-500">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-neutral-500">●</span>
               <span className="text-sm text-neutral-400">Archivados</span>
@@ -363,10 +364,10 @@ export default function CompanyJobsPage() {
           </div>
 
           {/* View Toggle */}
-          <div className="flex bg-neutral-900 rounded-xl p-1 border border-neutral-800">
+          <div className="flex bg-neutral-900 rounded-xl p-1 border border-neutral-800 text-white placeholder-neutral-500">
             <button
               onClick={() => setViewMode('cards')}
-              className={`p-2 rounded-lg transition ${viewMode === 'cards' ? 'bg-neutral-700 text-white' : 'text-neutral-500'}`}
+              className={`p-2 rounded-lg transition ${viewMode === 'cards' ? 'bg-neutral-700 text-white' : 'text-neutral-500'} placeholder-neutral-500`}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
@@ -374,7 +375,7 @@ export default function CompanyJobsPage() {
             </button>
             <button
               onClick={() => setViewMode('table')}
-              className={`p-2 rounded-lg transition ${viewMode === 'table' ? 'bg-neutral-700 text-white' : 'text-neutral-500'}`}
+              className={`p-2 rounded-lg transition ${viewMode === 'table' ? 'bg-neutral-700 text-white' : 'text-neutral-500'} placeholder-neutral-500`}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -393,14 +394,14 @@ export default function CompanyJobsPage() {
               onClick={() => setActiveTab(tab)}
               className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 ${
                 activeTab === tab
-                  ? 'bg-white text-black'
+                  ? 'bg-neutral-900 text-white'
                   : 'text-neutral-400 hover:text-white'
-              }`}
+              } placeholder-neutral-500`}
             >
               {tab === 'active' ? 'Activos' : tab === 'draft' ? 'Borradores' : 'Archivados'}
               <span className={`px-2 py-0.5 rounded-full text-xs ${
-                activeTab === tab ? 'bg-black text-white' : 'bg-neutral-700'
-              }`}>
+                activeTab === tab ? 'bg-black' : 'bg-neutral-700'
+              } text-white placeholder-neutral-500`}>
                 {jobCounts[tab]}
               </span>
             </button>
@@ -416,7 +417,7 @@ export default function CompanyJobsPage() {
               {filteredJobs.map(job => (
                 <div
                   key={job.id}
-                  className="bg-neutral-900 rounded-2xl p-4 border border-neutral-800 hover:border-neutral-700 transition"
+                  className="bg-neutral-900 rounded-2xl p-4 border border-neutral-800 hover:border-neutral-700 transition text-white placeholder-neutral-500"
                 >
                   <div className="flex items-start justify-between">
                     <div
@@ -429,7 +430,7 @@ export default function CompanyJobsPage() {
                           job.status === 'active' ? 'bg-green-500/20 text-green-400' :
                           job.status === 'draft' ? 'bg-yellow-500/20 text-yellow-400' :
                           'bg-neutral-700 text-neutral-400'
-                        }`}>
+                        } text-white placeholder-neutral-500`}>
                           {job.status === 'active' ? 'Activo' : job.status === 'draft' ? 'Borrador' : 'Archivado'}
                         </span>
                       </div>
@@ -471,7 +472,7 @@ export default function CompanyJobsPage() {
                       </button>
 
                       {menuOpen === job.id && (
-                        <div className="absolute right-0 top-10 w-48 bg-neutral-800 rounded-xl shadow-xl border border-neutral-700 py-1 z-20">
+                        <div className="absolute right-0 top-10 w-48 bg-neutral-800 rounded-xl shadow-xl border border-neutral-700 py-1 z-20 text-white placeholder-neutral-500">
                           <button
                             onClick={() => handleMenuAction('edit', job)}
                             className="w-full px-4 py-2 text-left text-sm hover:bg-neutral-700 flex items-center gap-2"
@@ -549,7 +550,7 @@ export default function CompanyJobsPage() {
             </div>
           ) : (
             /* Table View */
-            <div className="bg-neutral-900 rounded-2xl border border-neutral-800 overflow-hidden">
+            <div className="bg-neutral-900 rounded-2xl border border-neutral-800 overflow-hidden text-white placeholder-neutral-500">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-neutral-800">
@@ -574,7 +575,7 @@ export default function CompanyJobsPage() {
                           job.status === 'active' ? 'bg-green-500/20 text-green-400' :
                           job.status === 'draft' ? 'bg-yellow-500/20 text-yellow-400' :
                           'bg-neutral-700 text-neutral-400'
-                        }`}>
+                        } text-white placeholder-neutral-500`}>
                           {job.status === 'active' ? 'Activo' : job.status === 'draft' ? 'Borrador' : 'Archivado'}
                         </span>
                       </td>
@@ -604,8 +605,8 @@ export default function CompanyJobsPage() {
           )
         ) : (
           /* Empty State */
-          <div className="bg-neutral-900 rounded-2xl p-12 border border-neutral-800 text-center">
-            <div className="w-20 h-20 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <div className="bg-neutral-900 rounded-2xl p-12 border border-neutral-800 text-center text-white placeholder-neutral-500">
+            <div className="w-20 h-20 bg-gradient-to-br from-blue-500/20 to-emerald-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <svg className="w-10 h-10 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
@@ -656,10 +657,10 @@ export default function CompanyJobsPage() {
             </p>
 
             <div className="space-y-3">
-              <div className="bg-neutral-800 rounded-xl p-4 border border-neutral-700 hover:border-yellow-500/50 transition cursor-pointer">
+              <div className="bg-neutral-800 rounded-xl p-4 border border-neutral-700 hover:border-yellow-500/50 transition cursor-pointer text-white placeholder-neutral-500">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">🔔</span>
+                    <Bell className="w-6 h-6 text-emerald-400" strokeWidth={2} />
                     <div>
                       <h3 className="font-semibold">Push Notification</h3>
                       <p className="text-xs text-neutral-400">Notifica a todos los creadores</p>
@@ -669,10 +670,10 @@ export default function CompanyJobsPage() {
                 </div>
               </div>
 
-              <div className="bg-neutral-800 rounded-xl p-4 border border-neutral-700 hover:border-yellow-500/50 transition cursor-pointer">
+              <div className="bg-neutral-800 rounded-xl p-4 border border-neutral-700 hover:border-yellow-500/50 transition cursor-pointer text-white placeholder-neutral-500">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">⭐</span>
+                    <Star className="w-6 h-6 text-amber-400" strokeWidth={2} />
                     <div>
                       <h3 className="font-semibold">Staff Pick (1 Semana)</h3>
                       <p className="text-xs text-neutral-400">Destacado en la seccion principal</p>
@@ -682,10 +683,10 @@ export default function CompanyJobsPage() {
                 </div>
               </div>
 
-              <div className="bg-neutral-800 rounded-xl p-4 border border-neutral-700 hover:border-yellow-500/50 transition cursor-pointer">
+              <div className="bg-neutral-800 rounded-xl p-4 border border-neutral-700 hover:border-yellow-500/50 transition cursor-pointer text-white placeholder-neutral-500">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">🚀</span>
+                    <Rocket className="w-6 h-6 text-emerald-400" strokeWidth={2} />
                     <div>
                       <h3 className="font-semibold">Top del Feed (1 Semana)</h3>
                       <p className="text-xs text-neutral-400">Aparece primero en busquedas</p>
@@ -707,23 +708,23 @@ export default function CompanyJobsPage() {
       <div className="fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-800">
         <div className="flex justify-around py-3">
           <button onClick={() => router.push('/company/dashboard')} className="flex flex-col items-center space-y-1 text-neutral-500 hover:text-white transition-colors">
-            <span className="text-lg">📊</span>
+            <BarChart3 className="w-5 h-5" strokeWidth={2} />
             <span className="text-xs">Dashboard</span>
           </button>
           <div className="flex flex-col items-center space-y-1 text-blue-500">
-            <span className="text-lg">💼</span>
+            <Briefcase className="w-5 h-5" strokeWidth={2} />
             <span className="text-xs font-medium">Mis Gigs</span>
           </div>
           <button onClick={() => router.push('/company/analytics')} className="flex flex-col items-center space-y-1 text-neutral-500 hover:text-white transition-colors">
-            <span className="text-lg">📈</span>
+            <TrendingUp className="w-5 h-5" strokeWidth={2} />
             <span className="text-xs">Analytics</span>
           </button>
           <button onClick={() => router.push('/company/applicants')} className="flex flex-col items-center space-y-1 text-neutral-500 hover:text-white transition-colors">
-            <span className="text-lg">👥</span>
+            <Users className="w-5 h-5" strokeWidth={2} />
             <span className="text-xs">Aplicantes</span>
           </button>
         </div>
-        <div className="h-1 bg-white mx-auto w-32 rounded-full mb-2" />
+        <div className="h-1 bg-neutral-900 mx-auto w-32 rounded-full mb-2" />
       </div>
     </div>
   )

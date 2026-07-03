@@ -1,9 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-
-const SUPABASE_URL = 'https://ftvqoudlmojdxwjxljzr.supabase.co'
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 
 const QUICK_SUGGESTIONS = [
   { id: 'payment', label: 'Problemas de pago' },
@@ -635,7 +633,7 @@ export default function SupportChatWidget() {
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="fixed bottom-40 right-4 w-[360px] max-w-[calc(100vw-2rem)] h-[500px] max-h-[calc(100vh-12rem)] bg-neutral-950 rounded-2xl shadow-2xl flex flex-col overflow-hidden z-40 border border-neutral-800">
+        <div className="fixed bottom-40 right-4 w-[360px] max-w-[calc(100vw-2rem)] h-[500px] max-h-[calc(100vh-12rem)] bg-neutral-950 rounded-2xl shadow-2xl flex flex-col overflow-hidden z-40 border border-neutral-800 text-white placeholder-neutral-500">
           {/* Header */}
           <div className="bg-neutral-900 px-4 py-3 border-b border-neutral-800">
             <div className="flex items-center justify-between">
@@ -732,11 +730,11 @@ export default function SupportChatWidget() {
                     msg.type === 'user'
                       ? 'bg-emerald-600 text-white'
                       : msg.type === 'agent'
-                      ? 'bg-sky-600 text-white'
+                      ? 'bg-sky-600'
                       : msg.type === 'system'
                       ? 'bg-neutral-800 text-neutral-300 text-center w-full'
                       : 'bg-neutral-800 text-neutral-200'
-                  }`}
+                  } placeholder-neutral-500`}
                 >
                   {msg.type === 'agent' && (
                     <p className="text-xs text-sky-200 mb-1 font-medium">Soporte Octopus</p>
@@ -812,7 +810,7 @@ export default function SupportChatWidget() {
           {/* End Confirmation Dialog */}
           {showEndConfirm && (
             <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-20 p-4">
-              <div className="bg-neutral-900 rounded-xl p-5 max-w-xs w-full border border-neutral-700">
+              <div className="bg-neutral-900 rounded-xl p-5 max-w-xs w-full border border-neutral-700 text-white placeholder-neutral-500">
                 <h4 className="text-white font-semibold text-center mb-2">Finalizar conversacion?</h4>
                 <p className="text-neutral-400 text-sm text-center mb-4">
                   Seguro que quieres finalizar esta conversacion de soporte?
@@ -838,7 +836,7 @@ export default function SupportChatWidget() {
           {/* Rating UI */}
           {showRating && !ratingSubmitted && (
             <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-20 p-4">
-              <div className="bg-neutral-900 rounded-xl p-5 max-w-xs w-full border border-neutral-700">
+              <div className="bg-neutral-900 rounded-xl p-5 max-w-xs w-full border border-neutral-700 text-white placeholder-neutral-500">
                 <h4 className="text-white font-semibold text-center mb-2">Como fue tu experiencia?</h4>
                 <p className="text-neutral-400 text-sm text-center mb-4">
                   Califica tu atencion de soporte

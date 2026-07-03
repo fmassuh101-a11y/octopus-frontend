@@ -23,7 +23,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <QueryProvider>
           <AuthProvider>
-            <div id="root" className="min-h-screen bg-gray-50">
+            <div id="root" className="min-h-screen bg-neutral-950">
               {children}
             </div>
             <SupportChatWidget />

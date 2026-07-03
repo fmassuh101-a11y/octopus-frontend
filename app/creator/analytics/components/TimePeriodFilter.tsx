@@ -20,10 +20,10 @@ export function TimePeriodFilter({ selected, onChange, disabled }: TimePeriodFil
             px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all
             ${selected === period.value
               ? 'bg-black text-white'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-800'
             }
             ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
-          `}
+           placeholder-neutral-500`}
         >
           {period.shortLabel}
         </button>

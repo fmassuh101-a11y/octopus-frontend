@@ -116,7 +116,7 @@ export default function CompanyOnboarding() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-green-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-neutral-950 to-green-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
@@ -125,22 +125,22 @@ export default function CompanyOnboarding() {
               <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm3 2h6v8H7V6z" clipRule="evenodd" />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-slate-800 mb-2">Company Account</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">Company Account</h1>
           <div className="flex justify-center space-x-2 mb-4">
             {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
               <div
                 key={i}
                 className={`w-2 h-2 rounded-full transition-colors ${
-                  i <= step ? 'bg-green-500' : 'bg-slate-200'
-                }`}
+                  i <= step ? 'bg-green-500' : 'bg-neutral-800'
+                } text-white placeholder-neutral-500`}
               />
             ))}
           </div>
-          <p className="text-sm text-slate-600">Step {step} of 8</p>
+          <p className="text-sm text-neutral-400">Step {step} of 8</p>
         </div>
 
         {/* Main Content */}
-        <div className="bg-white py-8 px-6 shadow-lg rounded-xl">
+        <div className="bg-neutral-900 py-8 px-6 shadow-lg rounded-xl">
           {/* Error display */}
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
@@ -152,13 +152,13 @@ export default function CompanyOnboarding() {
           <div className="space-y-6">
             {step === 1 && (
               <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-slate-800">What's your name?</h2>
+                <h2 className="text-xl font-semibold text-white">What's your name?</h2>
                 <input
                   type="text"
                   placeholder="Your full name"
                   value={formData.fullName}
                   onChange={(e) => updateFormData('fullName', e.target.value)}
-                  className="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full p-3 border border-neutral-700 rounded-lg focus:outline-none bg-neutral-900 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   autoFocus
                 />
               </div>
@@ -166,13 +166,13 @@ export default function CompanyOnboarding() {
 
             {step === 2 && (
               <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-slate-800">What's your email?</h2>
+                <h2 className="text-xl font-semibold text-white">What's your email?</h2>
                 <input
                   type="email"
                   placeholder="Enter your business email"
                   value={formData.email}
                   onChange={(e) => updateFormData('email', e.target.value)}
-                  className="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full p-3 border border-neutral-700 rounded-lg focus:outline-none bg-neutral-900 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   autoFocus
                 />
               </div>
@@ -180,13 +180,13 @@ export default function CompanyOnboarding() {
 
             {step === 3 && (
               <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-slate-800">Choose a username</h2>
+                <h2 className="text-xl font-semibold text-white">Choose a username</h2>
                 <input
                   type="text"
                   placeholder="Your unique username"
                   value={formData.username}
                   onChange={(e) => updateFormData('username', e.target.value)}
-                  className="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full p-3 border border-neutral-700 rounded-lg focus:outline-none bg-neutral-900 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   autoFocus
                 />
               </div>
@@ -194,13 +194,13 @@ export default function CompanyOnboarding() {
 
             {step === 4 && (
               <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-slate-800">Create a password</h2>
+                <h2 className="text-xl font-semibold text-white">Create a password</h2>
                 <input
                   type="password"
                   placeholder="At least 6 characters"
                   value={formData.password}
                   onChange={(e) => updateFormData('password', e.target.value)}
-                  className="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full p-3 border border-neutral-700 rounded-lg focus:outline-none bg-neutral-900 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   autoFocus
                 />
               </div>
@@ -208,11 +208,11 @@ export default function CompanyOnboarding() {
 
             {step === 5 && (
               <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-slate-800">Where are you from?</h2>
+                <h2 className="text-xl font-semibold text-white">Where are you from?</h2>
                 <select
                   value={formData.country}
                   onChange={(e) => updateFormData('country', e.target.value)}
-                  className="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full p-3 border border-neutral-700 rounded-lg focus:outline-none bg-neutral-900 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 >
                   <option value="">Select your country</option>
                   <option value="US">United States</option>
@@ -234,20 +234,20 @@ export default function CompanyOnboarding() {
                   placeholder="Business phone number"
                   value={formData.phoneNumber}
                   onChange={(e) => updateFormData('phoneNumber', e.target.value)}
-                  className="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full p-3 border border-neutral-700 rounded-lg focus:outline-none bg-neutral-900 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 />
               </div>
             )}
 
             {step === 6 && (
               <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-slate-800">Company name</h2>
+                <h2 className="text-xl font-semibold text-white">Company name</h2>
                 <input
                   type="text"
                   placeholder="Enter your company name"
                   value={formData.companyName}
                   onChange={(e) => updateFormData('companyName', e.target.value)}
-                  className="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full p-3 border border-neutral-700 rounded-lg focus:outline-none bg-neutral-900 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   autoFocus
                 />
               </div>
@@ -255,7 +255,7 @@ export default function CompanyOnboarding() {
 
             {step === 7 && (
               <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-slate-800">Company type</h2>
+                <h2 className="text-xl font-semibold text-white">Company type</h2>
                 <div className="space-y-3">
                   {[
                     { value: 'startup', label: 'Startup', desc: 'Early stage company' },
@@ -270,11 +270,11 @@ export default function CompanyOnboarding() {
                       className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
                         formData.companyType === option.value
                           ? 'border-green-500 bg-green-50'
-                          : 'border-slate-200 hover:border-slate-300'
-                      }`}
+                          : 'border-neutral-800 hover:border-neutral-700'
+                      } text-white placeholder-neutral-500`}
                     >
-                      <div className="font-semibold text-slate-800">{option.label}</div>
-                      <div className="text-sm text-slate-600">{option.desc}</div>
+                      <div className="font-semibold text-white">{option.label}</div>
+                      <div className="text-sm text-neutral-400">{option.desc}</div>
                     </div>
                   ))}
                 </div>
@@ -283,12 +283,12 @@ export default function CompanyOnboarding() {
 
             {step === 8 && (
               <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-slate-800">Tell us about your company</h2>
+                <h2 className="text-xl font-semibold text-white">Tell us about your company</h2>
                 <textarea
                   placeholder="Describe what your company does and what kind of content you're looking for..."
                   value={formData.companyDescription}
                   onChange={(e) => updateFormData('companyDescription', e.target.value)}
-                  className="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full p-3 border border-neutral-700 rounded-lg focus:outline-none bg-neutral-900 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   rows={4}
                   autoFocus
                 />
@@ -301,7 +301,7 @@ export default function CompanyOnboarding() {
             {step > 1 && (
               <button
                 onClick={() => setStep(step - 1)}
-                className="flex-1 py-3 px-4 border border-slate-300 rounded-lg font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                className="flex-1 py-3 px-4 border border-neutral-700 rounded-lg font-medium text-neutral-200 hover:bg-neutral-950 transition-colors"
               >
                 Back
               </button>

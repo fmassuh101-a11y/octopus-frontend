@@ -1,21 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { getAuthenticatedUser } from '@/lib/auth/apiAuth'
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ftvqoudlmojdxwjxljzr.supabase.co'
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
 
 /**
  * POST /api/profile/save
- * Saves user profile - uses service key if available, falls back to user token
+ * Guarda el perfil del usuario AUTENTICADO (el userId sale de la sesión,
+ * nunca del body — antes cualquiera podía sobrescribir perfiles ajenos).
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { userId, profileData, userToken } = body
-
-    if (!userId) {
-      return NextResponse.json({ error: 'userId is required' }, { status: 400 })
+    const user = await getAuthenticatedUser(request)
+    if (!user) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
+
+    const body = await request.json()
+    const { profileData, userToken } = body
+    const userId = user.id
 
     // Use service key if available, otherwise fall back to user's token
     let authKey = SUPABASE_SERVICE_KEY

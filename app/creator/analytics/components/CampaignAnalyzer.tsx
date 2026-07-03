@@ -27,7 +27,7 @@ export function CampaignAnalyzer({ videos, onVideoClick }: CampaignAnalyzerProps
             </div>
             <h3 className="font-semibold text-lg">Analisis de Campana</h3>
           </div>
-          <p className="text-sm text-gray-400">
+          <p className="text-sm text-neutral-500">
             Analiza hasta 20 videos de tu campana
           </p>
         </div>
@@ -44,19 +44,19 @@ export function CampaignAnalyzer({ videos, onVideoClick }: CampaignAnalyzerProps
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white/5 rounded-xl p-4">
           <div className="text-2xl font-bold">{formatNumber(stats.totalViews)}</div>
-          <div className="text-xs text-gray-400 mt-1">Alcance Total</div>
+          <div className="text-xs text-neutral-500 mt-1">Alcance Total</div>
         </div>
         <div className="bg-white/5 rounded-xl p-4">
           <div className="text-2xl font-bold">{stats.avgEngagement}%</div>
-          <div className="text-xs text-gray-400 mt-1">Engagement Prom.</div>
+          <div className="text-xs text-neutral-500 mt-1">Engagement Prom.</div>
         </div>
         <div className="bg-white/5 rounded-xl p-4">
           <div className="text-2xl font-bold text-green-400">{stats.videosAboveAvg}</div>
-          <div className="text-xs text-gray-400 mt-1">Sobre Promedio</div>
+          <div className="text-xs text-neutral-500 mt-1">Sobre Promedio</div>
         </div>
         <div className="bg-white/5 rounded-xl p-4">
           <div className="text-2xl font-bold text-blue-400">{stats.trendingUp}</div>
-          <div className="text-xs text-gray-400 mt-1">Tendencia Positiva</div>
+          <div className="text-xs text-neutral-500 mt-1">Tendencia Positiva</div>
         </div>
       </div>
 
@@ -81,9 +81,9 @@ export function CampaignAnalyzer({ videos, onVideoClick }: CampaignAnalyzerProps
               <div className="text-lg font-bold text-green-400">
                 {stats.bestVideo.engagementRate}%
               </div>
-              <div className="text-xs text-gray-400">engagement</div>
+              <div className="text-xs text-neutral-500">engagement</div>
             </div>
-            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
@@ -126,7 +126,7 @@ export function CampaignAnalyzer({ videos, onVideoClick }: CampaignAnalyzerProps
 
       {/* Footer Stats */}
       <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-between">
-        <div className="flex items-center gap-4 text-sm text-gray-400">
+        <div className="flex items-center gap-4 text-sm text-neutral-500">
           <span>{formatNumber(stats.totalLikes)} likes</span>
           <span>{formatNumber(stats.totalComments)} comentarios</span>
           <span>{formatNumber(stats.totalShares)} shares</span>

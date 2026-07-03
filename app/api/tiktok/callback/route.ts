@@ -75,9 +75,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing authorization code' }, { status: 400 })
     }
 
-    // Use production credentials from environment variables
+    // El secret SOLO puede venir de env vars (el fallback hardcodeado
+    // quedó comprometido en el historial de git — rotar en TikTok Developers)
     const clientKey = process.env.NEXT_PUBLIC_TIKTOK_CLIENT_KEY || 'aw5n2omdzbjx4xf8'
-    const clientSecret = process.env.TIKTOK_CLIENT_SECRET || 'j7W4sVsZbf9NcaXn3sayT47kZBDFgJwE'
+    const clientSecret = process.env.TIKTOK_CLIENT_SECRET
 
     if (!clientKey || !clientSecret) {
       return NextResponse.json({ error: 'TikTok credentials not configured' }, { status: 500 })
@@ -85,13 +86,7 @@ export async function POST(request: NextRequest) {
 
     // Step 1: Exchange code for access token
     console.log('=== TikTok Token Exchange ===')
-    console.log('Client Key:', clientKey)
-    console.log('Client Key length:', clientKey.length)
-    console.log('Client Secret length:', clientSecret.length)
-    console.log('Client Secret (first 10):', clientSecret.substring(0, 10))
-    console.log('Client Secret (last 10):', clientSecret.substring(clientSecret.length - 10))
     console.log('Redirect URI:', redirect_uri)
-    console.log('Code (first 10 chars):', code?.substring(0, 10))
 
     // Build the request body - MUST match exactly what's registered in TikTok
     const finalRedirectUri = redirect_uri || 'https://octopus-frontend-tau.vercel.app/'
@@ -102,9 +97,6 @@ export async function POST(request: NextRequest) {
       grant_type: 'authorization_code',
       redirect_uri: finalRedirectUri,
     })
-
-    console.log('Token request URL:', TIKTOK_TOKEN_URL)
-    console.log('Token request body (without secret):', bodyParams.toString().replace(clientSecret, '***'))
 
     console.log('>>> Sending token request to TikTok...')
     const tokenResponse = await fetchWithTimeout(TIKTOK_TOKEN_URL, {
@@ -118,7 +110,6 @@ export async function POST(request: NextRequest) {
     console.log('>>> Token response received, status:', tokenResponse.status)
 
     const tokenText = await tokenResponse.text()
-    console.log('TikTok token raw response:', tokenText)
 
     if (!tokenResponse.ok) {
       console.error('TikTok token error status:', tokenResponse.status)

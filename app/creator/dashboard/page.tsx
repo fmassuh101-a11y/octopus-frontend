@@ -3,6 +3,10 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import UserAvatar from '@/components/ui/UserAvatar'
+import CreatorBottomNav from '@/components/ui/CreatorBottomNav'
+import CreatorLevelBadge from '@/components/ui/CreatorLevelBadge'
+import { Search, ClipboardList, Target, Lightbulb, Briefcase, LayoutDashboard, Wallet, MessageCircle, User } from 'lucide-react'
 
 interface Application {
   id: string
@@ -185,7 +189,7 @@ export default function CreatorDashboard() {
         {/* Skeleton Quick Actions */}
         <div className="px-4 mb-6">
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-violet-500/30 rounded-2xl p-5 h-32 animate-pulse" />
+            <div className="bg-emerald-500/30 rounded-2xl p-5 h-32 animate-pulse" />
             <div className="bg-white/5 rounded-2xl p-5 h-32 animate-pulse" />
           </div>
         </div>
@@ -226,9 +230,7 @@ export default function CreatorDashboard() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
             </button>
-            <Link href="/creator/profile" className="w-10 h-10 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-full flex items-center justify-center font-bold">
-              {displayName.charAt(0).toUpperCase()}
-            </Link>
+            <UserAvatar size={40} />
           </div>
         </div>
 
@@ -284,12 +286,20 @@ export default function CreatorDashboard() {
         </div>
       </div>
 
+      {/* Nivel del creador (gamificación estilo SideShift) */}
+      <div className="px-4 mb-6">
+        <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 text-white placeholder-neutral-500">
+          <h3 className="font-semibold text-white mb-3">Tu nivel</h3>
+          <CreatorLevelBadge completed={stats.completed} showProgress />
+        </div>
+      </div>
+
       {/* Quick Actions */}
       <div className="px-4 mb-6">
         <div className="grid grid-cols-2 gap-3">
-          <Link href="/gigs" className="bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl p-5 flex flex-col items-start">
+          <Link href="/gigs" className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-5 flex flex-col items-start">
             <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mb-3">
-              <span className="text-xl">🔍</span>
+              <Search className="w-5 h-5 text-white" strokeWidth={2} />
             </div>
             <h3 className="font-bold mb-1">Buscar Trabajos</h3>
             <p className="text-xs text-white/70">Encuentra gigs y campañas</p>
@@ -297,7 +307,7 @@ export default function CreatorDashboard() {
 
           <Link href="/creator/applications" className="bg-white/5 border border-white/10 rounded-2xl p-5 flex flex-col items-start">
             <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center mb-3">
-              <span className="text-xl">📋</span>
+              <ClipboardList className="w-5 h-5 text-emerald-400" strokeWidth={2} />
             </div>
             <h3 className="font-bold mb-1">Mis Aplicaciones</h3>
             <p className="text-xs text-white/50">Ver estado de aplicaciones</p>
@@ -318,12 +328,12 @@ export default function CreatorDashboard() {
 
         {applications.length === 0 ? (
           <div className="bg-white/5 border border-white/5 rounded-2xl p-8 text-center">
-            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-3xl">🎯</span>
+            <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Target className="w-8 h-8 text-emerald-500" strokeWidth={1.75} />
             </div>
             <h3 className="font-semibold mb-2">Sin aplicaciones aún</h3>
             <p className="text-white/40 text-sm mb-4">Empieza a buscar trabajos y aplica a los que te interesen</p>
-            <Link href="/gigs" className="inline-block bg-white text-black px-6 py-2 rounded-full font-semibold text-sm hover:bg-white/90 transition-colors">
+            <Link href="/gigs" className="inline-block bg-neutral-900 text-white px-6 py-2 rounded-full font-semibold text-sm hover:bg-white/90 transition-colors">
               Buscar Trabajos
             </Link>
           </div>
@@ -356,9 +366,9 @@ export default function CreatorDashboard() {
 
       {/* Tips Section */}
       <div className="px-4 mt-6">
-        <div className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/20 rounded-2xl p-5">
-          <h3 className="font-semibold text-blue-400 mb-3 flex items-center gap-2">
-            <span>💡</span> Consejos Pro
+        <div className="bg-emerald-500/[0.07] border border-emerald-500/20 rounded-2xl p-5">
+          <h3 className="font-semibold text-emerald-400 mb-3 flex items-center gap-2">
+            <Lightbulb className="w-4 h-4" strokeWidth={2} /> Consejos Pro
           </h3>
           <ul className="space-y-2 text-sm text-white/60">
             <li>• Aplica rápido a las campañas nuevas</li>
@@ -368,42 +378,13 @@ export default function CreatorDashboard() {
         </div>
       </div>
 
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-xl border-t border-white/10">
-        <div className="flex justify-around py-3">
-          <Link href="/gigs" className="flex flex-col items-center gap-1 text-white/40">
-            <span className="text-xl">💼</span>
-            <span className="text-[10px]">Trabajos</span>
-          </Link>
-          <div className="flex flex-col items-center gap-1 text-white">
-            <span className="text-xl">📊</span>
-            <span className="text-[10px] font-medium">Panel</span>
-          </div>
-          <Link href="/creator/wallet" className="flex flex-col items-center gap-1 text-white/40">
-            <span className="text-xl">💰</span>
-            <span className="text-[10px]">Wallet</span>
-          </Link>
-          <Link href="/creator/messages" className="flex flex-col items-center gap-1 text-white/40 relative">
-            <span className="text-xl">💬</span>
-            {unreadMessages > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white">
-                {unreadMessages > 9 ? '9+' : unreadMessages}
-              </span>
-            )}
-            <span className="text-[10px]">Mensajes</span>
-          </Link>
-          <Link href="/creator/profile" className="flex flex-col items-center gap-1 text-white/40">
-            <span className="text-xl">👤</span>
-            <span className="text-[10px]">Perfil</span>
-          </Link>
-        </div>
-        <div className="h-1 bg-white/20 mx-auto w-32 rounded-full mb-2" />
-      </div>
+      {/* Bottom Navigation (compartida) */}
+      <CreatorBottomNav unread={unreadMessages} />
 
       {/* Logout Modal */}
       {showLogoutModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-neutral-900 border border-white/10 rounded-3xl p-6 max-w-sm w-full">
+          <div className="bg-neutral-900 border border-white/10 rounded-3xl p-6 max-w-sm w-full text-white placeholder-neutral-500">
             <div className="text-center mb-6">
               <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

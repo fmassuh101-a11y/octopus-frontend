@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import CreateContractModal from '@/components/contracts/CreateContractModal'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { FileText, Home, MessageCircle, Users } from 'lucide-react'
 
 interface Conversation {
   creator_id: string
@@ -31,7 +32,7 @@ interface Message {
 
 // Skeleton Components
 function Skeleton({ className }: { className?: string }) {
-  return <div className={`animate-pulse bg-neutral-800 rounded ${className || ''}`} />
+  return <div className={`animate-pulse bg-neutral-800 rounded ${className || ''} text-white placeholder-neutral-500`} />
 }
 
 function ConversationSkeleton() {
@@ -468,7 +469,7 @@ export default function CompanyMessagesPage() {
                 className="w-10 h-10 rounded-full object-cover"
               />
             ) : (
-              <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-indigo-500 rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-500 rounded-full flex items-center justify-center">
                 <span className="font-semibold">{selectedConversation.creator_name.charAt(0).toUpperCase()}</span>
               </div>
             )}
@@ -481,7 +482,7 @@ export default function CompanyMessagesPage() {
               className="p-2 hover:bg-neutral-800 rounded-xl transition-colors"
               title="Crear Contrato"
             >
-              <svg className="w-5 h-5 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </button>
@@ -548,9 +549,9 @@ export default function CompanyMessagesPage() {
                         <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                           <div className={`max-w-[75%] ${
                             isMe
-                              ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white'
-                              : 'bg-neutral-800 text-white'
-                          } rounded-2xl px-4 py-2.5`}>
+                              ? 'bg-gradient-to-r from-emerald-600 to-emerald-600 text-white'
+                              : 'bg-neutral-800'
+                          } rounded-2xl px-4 py-2.5 placeholder-neutral-500`}>
                             <p className="text-[15px] leading-relaxed">{msg.content}</p>
                             <div className={`flex items-center gap-2 mt-1 ${isMe ? 'justify-end' : ''}`}>
                               <span className="text-[11px] text-white/60">
@@ -558,7 +559,7 @@ export default function CompanyMessagesPage() {
                               </span>
                               {isMe && (
                                 <span className="text-[10px] text-white/60">
-                                  {msg.read_at ? '✓✓' : '✓'}
+                                  {msg.read_at ? '' : ''}
                                 </span>
                               )}
                             </div>
@@ -584,12 +585,12 @@ export default function CompanyMessagesPage() {
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage())}
               placeholder="Escribe un mensaje..."
-              className="flex-1 px-4 py-2.5 bg-neutral-800 border border-neutral-700 rounded-xl focus:outline-none focus:border-violet-500 text-sm transition-colors"
+              className="flex-1 px-4 py-2.5 bg-neutral-800 border border-neutral-700 rounded-xl focus:outline-none focus:border-emerald-500 text-sm transition-colors text-white placeholder-neutral-500"
             />
             <button
               onClick={sendMessage}
               disabled={!newMessage.trim() || sending}
-              className="w-10 h-10 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white rounded-xl flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="w-10 h-10 bg-gradient-to-r from-emerald-600 to-emerald-600 hover:from-emerald-500 hover:to-emerald-500 text-white rounded-xl flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               {sending ? (
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -620,7 +621,7 @@ export default function CompanyMessagesPage() {
             <div>
               <h1 className="text-xl font-bold">Mensajes</h1>
               {totalUnread > 0 && (
-                <p className="text-sm text-violet-400">{totalUnread} sin leer</p>
+                <p className="text-sm text-emerald-400">{totalUnread} sin leer</p>
               )}
             </div>
           </div>
@@ -640,7 +641,7 @@ export default function CompanyMessagesPage() {
           </p>
           <Link
             href="/company/applicants"
-            className="px-6 py-3 bg-violet-600 hover:bg-violet-500 rounded-xl font-medium transition-colors"
+            className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 rounded-xl font-medium transition-colors"
           >
             Ver Aplicantes
           </Link>
@@ -652,8 +653,8 @@ export default function CompanyMessagesPage() {
               key={conv.creator_id}
               onClick={() => selectConversation(conv)}
               className={`w-full px-6 py-4 flex items-center gap-4 hover:bg-neutral-900/50 text-left transition-colors ${
-                conv.unread_count > 0 ? 'bg-violet-500/5' : ''
-              }`}
+                conv.unread_count > 0 ? 'bg-emerald-500/5' : ''
+              } text-white placeholder-neutral-500`}
             >
               <div className="relative flex-shrink-0">
                 {conv.creator_avatar ? (
@@ -663,12 +664,12 @@ export default function CompanyMessagesPage() {
                     className="w-12 h-12 rounded-full object-cover"
                   />
                 ) : (
-                  <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-indigo-500 rounded-full flex items-center justify-center">
+                  <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-500 rounded-full flex items-center justify-center">
                     <span className="font-semibold text-lg">{conv.creator_name.charAt(0).toUpperCase()}</span>
                   </div>
                 )}
                 {conv.unread_count > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-violet-500 rounded-full flex items-center justify-center text-xs font-bold">
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center text-xs font-bold">
                     {conv.unread_count}
                   </span>
                 )}
@@ -679,7 +680,7 @@ export default function CompanyMessagesPage() {
                     {conv.creator_name}
                   </h3>
                   <span className={`text-xs flex-shrink-0 ml-2 ${
-                    conv.unread_count > 0 ? 'text-violet-400' : 'text-neutral-500'
+                    conv.unread_count > 0 ? 'text-emerald-400' : 'text-neutral-500'
                   }`}>
                     {conv.last_message_time ? formatTime(conv.last_message_time) : ''}
                   </span>
@@ -702,19 +703,19 @@ export default function CompanyMessagesPage() {
       <div className="fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-800">
         <div className="flex justify-around py-3">
           {[
-            { icon: '🏠', label: 'Dashboard', href: '/company/dashboard', active: false },
-            { icon: '📝', label: 'Contratos', href: '/company/contracts', active: false },
-            { icon: '💬', label: 'Mensajes', href: '/company/messages', active: true },
-            { icon: '👥', label: 'Aplicantes', href: '/company/applicants', active: false },
+            { icon: Home, label: 'Dashboard', href: '/company/dashboard', active: false },
+            { icon: FileText, label: 'Contratos', href: '/company/contracts', active: false },
+            { icon: MessageCircle, label: 'Mensajes', href: '/company/messages', active: true },
+            { icon: Users, label: 'Aplicantes', href: '/company/applicants', active: false },
           ].map((item) => (
             <Link
               key={item.label}
               href={item.href}
               className={`flex flex-col items-center gap-1 px-4 py-1 ${
-                item.active ? 'text-violet-400' : 'text-neutral-500 hover:text-neutral-300'
+                item.active ? 'text-emerald-400' : 'text-neutral-500 hover:text-neutral-300'
               } transition-colors`}
             >
-              <span className="text-xl">{item.icon}</span>
+              <item.icon className="w-5 h-5" strokeWidth={2} />
               <span className="text-xs">{item.label}</span>
             </Link>
           ))}

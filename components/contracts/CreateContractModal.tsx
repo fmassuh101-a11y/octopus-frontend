@@ -1,9 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-
-const SUPABASE_URL = 'https://ftvqoudlmojdxwjxljzr.supabase.co'
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { Camera, Clapperboard, Music2, Youtube } from 'lucide-react'
 
 interface Deliverable {
   platform: string
@@ -26,10 +25,10 @@ interface CreateContractModalProps {
 }
 
 const PLATFORMS = [
-  { id: 'tiktok', name: 'TikTok', icon: '🎵' },
-  { id: 'instagram', name: 'Instagram', icon: '📸' },
-  { id: 'youtube', name: 'YouTube', icon: '▶️' },
-  { id: 'ugc', name: 'UGC (Sin publicar)', icon: '🎬' },
+  { id: 'tiktok', name: 'TikTok', icon: Music2 },
+  { id: 'instagram', name: 'Instagram', icon: Camera },
+  { id: 'youtube', name: 'YouTube', icon: Youtube },
+  { id: 'ugc', name: 'UGC (Sin publicar)', icon: Clapperboard },
 ]
 
 const CONTENT_TYPES: Record<string, { id: string; name: string }[]> = {
@@ -211,7 +210,7 @@ export default function CreateContractModal({
             conversation_id: applicationId,
             sender_id: companyId,
             sender_type: 'company',
-            content: `📋 Te he enviado un contrato: "${title}" por ${CURRENCIES.find(c => c.id === paymentCurrency)?.symbol || '$'}${paymentAmount} ${paymentCurrency}. Revísalo en tu sección de contratos.`
+            content: `Te he enviado un contrato: "${title}" por ${CURRENCIES.find(c => c.id === paymentCurrency)?.symbol || '$'}${paymentAmount} ${paymentCurrency}. Revísalo en tu sección de contratos.`
           })
         })
 
@@ -223,7 +222,7 @@ export default function CreateContractModal({
       }
 
       // Show success alert
-      alert(`✅ Contrato "${title}" enviado exitosamente a ${creatorName}`)
+      alert(`Contrato "${title}" enviado exitosamente a ${creatorName}`)
 
       onSuccess(contract)
       onClose()
@@ -264,13 +263,13 @@ export default function CreateContractModal({
               onClick={() => setStep(i + 1)}
               className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
                 step === i + 1
-                  ? 'bg-violet-600 text-white'
+                  ? 'bg-emerald-600 text-white'
                   : step > i + 1
                   ? 'bg-green-600/20 text-green-400'
                   : 'bg-neutral-800 text-neutral-400'
-              }`}
+              } placeholder-neutral-500`}
             >
-              {step > i + 1 && '✓ '}{label}
+              {step > i + 1 && ''}{label}
             </button>
           ))}
         </div>
@@ -295,7 +294,7 @@ export default function CreateContractModal({
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Ej: Campaña de lanzamiento producto X"
-                  className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-violet-500"
+                  className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
@@ -308,7 +307,7 @@ export default function CreateContractModal({
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Describe brevemente la campaña..."
                   rows={2}
-                  className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-violet-500 resize-none"
+                  className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500 resize-none"
                 />
               </div>
 
@@ -319,7 +318,7 @@ export default function CreateContractModal({
                   </label>
                   <button
                     onClick={addDeliverable}
-                    className="text-sm text-violet-400 hover:text-violet-300"
+                    className="text-sm text-emerald-400 hover:text-emerald-300"
                   >
                     + Agregar otro
                   </button>
@@ -346,10 +345,10 @@ export default function CreateContractModal({
                           <select
                             value={del.platform}
                             onChange={(e) => updateDeliverable(index, 'platform', e.target.value)}
-                            className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-sm focus:outline-none focus:border-violet-500"
+                            className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-sm focus:outline-none focus:border-emerald-500"
                           >
                             {PLATFORMS.map(p => (
-                              <option key={p.id} value={p.id}>{p.icon} {p.name}</option>
+                              <option key={p.id} value={p.id}>{p.name}</option>
                             ))}
                           </select>
                         </div>
@@ -359,7 +358,7 @@ export default function CreateContractModal({
                           <select
                             value={del.content_type}
                             onChange={(e) => updateDeliverable(index, 'content_type', e.target.value)}
-                            className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-sm focus:outline-none focus:border-violet-500"
+                            className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-sm focus:outline-none focus:border-emerald-500"
                           >
                             {(CONTENT_TYPES[del.platform] || []).map(t => (
                               <option key={t.id} value={t.id}>{t.name}</option>
@@ -374,7 +373,7 @@ export default function CreateContractModal({
                             min="1"
                             value={del.quantity}
                             onChange={(e) => updateDeliverable(index, 'quantity', parseInt(e.target.value) || 1)}
-                            className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-sm focus:outline-none focus:border-violet-500"
+                            className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-sm focus:outline-none focus:border-emerald-500"
                           />
                         </div>
                       </div>
@@ -391,7 +390,7 @@ export default function CreateContractModal({
                   type="date"
                   value={contentDueDate}
                   onChange={(e) => setContentDueDate(e.target.value)}
-                  className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white focus:outline-none focus:border-violet-500"
+                  className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white focus:outline-none focus:border-emerald-500"
                 />
               </div>
             </div>
@@ -412,7 +411,7 @@ export default function CreateContractModal({
                     value={paymentAmount}
                     onChange={(e) => setPaymentAmount(e.target.value)}
                     placeholder="0.00"
-                    className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-violet-500"
+                    className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
                   />
                 </div>
 
@@ -423,7 +422,7 @@ export default function CreateContractModal({
                   <select
                     value={paymentCurrency}
                     onChange={(e) => setPaymentCurrency(e.target.value)}
-                    className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white focus:outline-none focus:border-violet-500"
+                    className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white focus:outline-none focus:border-emerald-500"
                   >
                     {CURRENCIES.map(c => (
                       <option key={c.id} value={c.id}>{c.name}</option>
@@ -441,19 +440,19 @@ export default function CreateContractModal({
                   onChange={(e) => setPaymentTerms(e.target.value)}
                   placeholder="Describe cuando y como se realizara el pago..."
                   rows={3}
-                  className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-violet-500 resize-none"
+                  className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500 resize-none"
                 />
               </div>
 
-              <div className="p-4 bg-violet-500/10 border border-violet-500/30 rounded-xl">
-                <h4 className="font-medium text-violet-300 mb-2">Derechos de Uso</h4>
+              <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl">
+                <h4 className="font-medium text-emerald-300 mb-2">Derechos de Uso</h4>
                 <div className="space-y-3">
                   <label className="flex items-center gap-3 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={usageRights.paid_ads}
                       onChange={(e) => setUsageRights({ ...usageRights, paid_ads: e.target.checked })}
-                      className="w-5 h-5 rounded bg-neutral-700 border-neutral-600 text-violet-500 focus:ring-violet-500"
+                      className="w-5 h-5 rounded bg-neutral-700 border-neutral-600 text-emerald-500 focus:ring-emerald-500"
                     />
                     <span className="text-sm text-neutral-300">Uso en anuncios pagados (Paid Ads)</span>
                   </label>
@@ -462,7 +461,7 @@ export default function CreateContractModal({
                       type="checkbox"
                       checked={usageRights.whitelisting}
                       onChange={(e) => setUsageRights({ ...usageRights, whitelisting: e.target.checked })}
-                      className="w-5 h-5 rounded bg-neutral-700 border-neutral-600 text-violet-500 focus:ring-violet-500"
+                      className="w-5 h-5 rounded bg-neutral-700 border-neutral-600 text-emerald-500 focus:ring-emerald-500"
                     />
                     <span className="text-sm text-neutral-300">Whitelisting (publicar desde cuenta del creador)</span>
                   </label>
@@ -471,7 +470,7 @@ export default function CreateContractModal({
                     <select
                       value={usageRights.duration_months}
                       onChange={(e) => setUsageRights({ ...usageRights, duration_months: parseInt(e.target.value) })}
-                      className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-sm focus:outline-none focus:border-violet-500"
+                      className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-sm focus:outline-none focus:border-emerald-500"
                     >
                       <option value={3}>3 meses</option>
                       <option value={6}>6 meses</option>
@@ -497,7 +496,7 @@ export default function CreateContractModal({
                   value={hashtags}
                   onChange={(e) => setHashtags(e.target.value)}
                   placeholder="#ad, #sponsored, #miMarca"
-                  className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-violet-500"
+                  className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
                 />
                 <p className="text-xs text-neutral-500 mt-1">Separados por comas</p>
               </div>
@@ -511,7 +510,7 @@ export default function CreateContractModal({
                   value={mentions}
                   onChange={(e) => setMentions(e.target.value)}
                   placeholder="@miMarca, @otraCuenta"
-                  className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-violet-500"
+                  className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
                 />
                 <p className="text-xs text-neutral-500 mt-1">Separados por comas</p>
               </div>
@@ -525,7 +524,7 @@ export default function CreateContractModal({
                   onChange={(e) => setBrandGuidelines(e.target.value)}
                   placeholder="Describe el tono, estilo, que incluir, que evitar..."
                   rows={3}
-                  className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-violet-500 resize-none"
+                  className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500 resize-none"
                 />
               </div>
 
@@ -574,7 +573,7 @@ export default function CreateContractModal({
                   onChange={(e) => setAdditionalTerms(e.target.value)}
                   placeholder="Cualquier termino o condicion adicional..."
                   rows={3}
-                  className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-violet-500 resize-none"
+                  className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500 resize-none"
                 />
               </div>
 
@@ -604,7 +603,7 @@ export default function CreateContractModal({
           {step < 3 ? (
             <button
               onClick={() => setStep(step + 1)}
-              className="px-6 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-medium transition-colors"
+              className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-medium transition-colors"
             >
               Siguiente
             </button>

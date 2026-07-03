@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import crypto from "crypto";
 
 /**
  * Webhook handler para eventos de Whop
@@ -14,11 +15,25 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: NextRequest) {
   try {
-    const payload = await request.json();
-    const signature = request.headers.get("x-webhook-signature");
+    // Validación de firma HMAC: sin WHOP_WEBHOOK_SECRET configurado se
+    // rechaza todo — antes cualquiera podía forjar "payment.succeeded".
+    const secret = process.env.WHOP_WEBHOOK_SECRET;
+    if (!secret) {
+      console.error("[Whop Webhook] WHOP_WEBHOOK_SECRET no configurado — webhook rechazado");
+      return NextResponse.json({ error: "Webhook not configured" }, { status: 503 });
+    }
 
-    // TODO: Validar firma del webhook
-    // https://docs.whop.com/developer/guides/webhooks#validating-webhooks
+    const rawBody = await request.text();
+    const signature = request.headers.get("x-webhook-signature") || "";
+    const expected = crypto.createHmac("sha256", secret).update(rawBody).digest("hex");
+    const sigBuf = new Uint8Array(Buffer.from(signature));
+    const expBuf = new Uint8Array(Buffer.from(expected));
+    if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
+      console.error("[Whop Webhook] Firma inválida — rechazado");
+      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+    }
+
+    const payload = JSON.parse(rawBody);
 
     console.log("[Whop Webhook]", payload.event, payload.data?.id);
 

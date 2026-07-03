@@ -66,17 +66,17 @@ export default function AcceptAndMessageModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <div className="bg-neutral-900 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="p-5 border-b border-gray-100">
+        <div className="p-5 border-b border-neutral-800">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold text-gray-900">Aceptar Aplicante</h3>
+            <h3 className="text-lg font-bold text-white">Aceptar Aplicante</h3>
             <button
               onClick={onCancel}
               disabled={loading}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-neutral-800 rounded-lg transition-colors"
             >
-              <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -93,8 +93,8 @@ export default function AcceptAndMessageModal({
               </span>
             </div>
             <div>
-              <h4 className="font-bold text-gray-900">{creatorName}</h4>
-              <p className="text-sm text-gray-600">Para: {gigTitle}</p>
+              <h4 className="font-bold text-white">{creatorName}</h4>
+              <p className="text-sm text-neutral-400">Para: {gigTitle}</p>
               {gigBudget && (
                 <p className="text-sm text-green-600 font-medium">{gigBudget}</p>
               )}
@@ -113,9 +113,9 @@ export default function AcceptAndMessageModal({
                 type="checkbox"
                 checked={sendMessage}
                 onChange={(e) => setSendMessage(e.target.checked)}
-                className="w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                className="w-5 h-5 rounded border-neutral-700 text-emerald-600 focus:ring-emerald-500"
               />
-              <span className="font-medium text-gray-900">Enviar mensaje de bienvenida</span>
+              <span className="font-medium text-white">Enviar mensaje de bienvenida</span>
             </label>
           </div>
 
@@ -126,23 +126,23 @@ export default function AcceptAndMessageModal({
               <div className="relative">
                 <button
                   onClick={() => setShowTemplates(!showTemplates)}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl flex items-center justify-between hover:bg-gray-50 transition-colors"
+                  className="w-full px-4 py-2.5 border border-neutral-800 rounded-xl flex items-center justify-between hover:bg-neutral-950 transition-colors text-white placeholder-neutral-500"
                 >
-                  <span className="text-gray-700">
+                  <span className="text-neutral-200">
                     {selectedTemplateId
                       ? templates.find(t => t.id === selectedTemplateId)?.title || 'Template seleccionado'
                       : 'Seleccionar template'}
                   </span>
-                  <svg className={`w-5 h-5 text-gray-400 transition-transform ${showTemplates ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className={`w-5 h-5 text-neutral-500 transition-transform ${showTemplates ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
 
                 {/* Templates Dropdown */}
                 {showTemplates && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg z-10 max-h-60 overflow-y-auto">
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-neutral-900 border border-neutral-800 rounded-xl shadow-lg z-10 max-h-60 overflow-y-auto text-white placeholder-neutral-500">
                     {templates.length === 0 ? (
-                      <div className="p-4 text-center text-gray-500 text-sm">
+                      <div className="p-4 text-center text-neutral-500 text-sm">
                         No tienes templates. Crea uno en la seccion de Templates.
                       </div>
                     ) : (
@@ -152,11 +152,11 @@ export default function AcceptAndMessageModal({
                           <button
                             key={template.id}
                             onClick={() => handleTemplateSelect(template)}
-                            className="w-full p-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-0"
+                            className="w-full p-3 text-left hover:bg-neutral-950 border-b border-neutral-800 last:border-0"
                           >
                             <div className="flex items-center justify-between">
-                              <span className="font-medium text-gray-900">{template.title}</span>
-                              <span className="text-xs text-gray-400">{category?.emoji}</span>
+                              <span className="font-medium text-white">{template.title}</span>
+                              <span className="text-xs text-neutral-500">{category?.emoji}</span>
                             </div>
                           </button>
                         )
@@ -172,10 +172,10 @@ export default function AcceptAndMessageModal({
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Escribe tu mensaje de bienvenida..."
                 rows={6}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                className="w-full px-4 py-3 border border-neutral-800 rounded-xl focus:outline-none bg-neutral-900 focus:ring-2 focus:ring-emerald-500 resize-none"
               />
 
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-neutral-500">
                 Puedes editar el mensaje antes de enviarlo
               </p>
             </div>
@@ -183,11 +183,11 @@ export default function AcceptAndMessageModal({
         </div>
 
         {/* Actions */}
-        <div className="p-5 border-t border-gray-100 flex gap-3">
+        <div className="p-5 border-t border-neutral-800 flex gap-3">
           <button
             onClick={onCancel}
             disabled={loading}
-            className="flex-1 px-4 py-3 border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
+            className="flex-1 px-4 py-3 border border-neutral-800 text-neutral-200 rounded-xl font-medium hover:bg-neutral-950 transition-colors disabled:opacity-50"
           >
             Cancelar
           </button>

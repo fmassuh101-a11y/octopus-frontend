@@ -123,7 +123,7 @@ export default function CreatorOnboarding() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-neutral-950 to-neutral-950 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
@@ -132,22 +132,22 @@ export default function CreatorOnboarding() {
               <path d="M10 2L13.09 8.26L20 9.27L15 14.14L16.18 21.02L10 17.77L3.82 21.02L5 14.14L0 9.27L6.91 8.26L10 2Z" />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-slate-800 mb-2">Creator Account</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">Creator Account</h1>
           <div className="flex justify-center space-x-2 mb-4">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div
                 key={i}
                 className={`w-2 h-2 rounded-full transition-colors ${
-                  i <= step ? 'bg-blue-500' : 'bg-slate-200'
-                }`}
+                  i <= step ? 'bg-blue-500' : 'bg-neutral-800'
+                } text-white placeholder-neutral-500`}
               />
             ))}
           </div>
-          <p className="text-sm text-slate-600">Step {step} of 6</p>
+          <p className="text-sm text-neutral-400">Step {step} of 6</p>
         </div>
 
         {/* Main Content */}
-        <div className="bg-white py-8 px-6 shadow-lg rounded-xl">
+        <div className="bg-neutral-900 py-8 px-6 shadow-lg rounded-xl">
           {/* Error display */}
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
@@ -159,13 +159,13 @@ export default function CreatorOnboarding() {
           <div className="space-y-6">
             {step === 1 && (
               <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-slate-800">What's your name?</h2>
+                <h2 className="text-xl font-semibold text-white">What's your name?</h2>
                 <input
                   type="text"
                   placeholder="Enter your full name"
                   value={formData.fullName}
                   onChange={(e) => updateFormData('fullName', e.target.value)}
-                  className="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full p-3 border border-neutral-700 rounded-lg focus:outline-none bg-neutral-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   autoFocus
                 />
               </div>
@@ -173,13 +173,13 @@ export default function CreatorOnboarding() {
 
             {step === 2 && (
               <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-slate-800">What's your email?</h2>
+                <h2 className="text-xl font-semibold text-white">What's your email?</h2>
                 <input
                   type="email"
                   placeholder="Enter your email"
                   value={formData.email}
                   onChange={(e) => updateFormData('email', e.target.value)}
-                  className="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full p-3 border border-neutral-700 rounded-lg focus:outline-none bg-neutral-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   autoFocus
                 />
               </div>
@@ -187,13 +187,13 @@ export default function CreatorOnboarding() {
 
             {step === 3 && (
               <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-slate-800">Choose a username</h2>
+                <h2 className="text-xl font-semibold text-white">Choose a username</h2>
                 <input
                   type="text"
                   placeholder="Your unique username"
                   value={formData.username}
                   onChange={(e) => updateFormData('username', e.target.value)}
-                  className="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full p-3 border border-neutral-700 rounded-lg focus:outline-none bg-neutral-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   autoFocus
                 />
               </div>
@@ -201,13 +201,13 @@ export default function CreatorOnboarding() {
 
             {step === 4 && (
               <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-slate-800">Create a password</h2>
+                <h2 className="text-xl font-semibold text-white">Create a password</h2>
                 <input
                   type="password"
                   placeholder="At least 6 characters"
                   value={formData.password}
                   onChange={(e) => updateFormData('password', e.target.value)}
-                  className="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full p-3 border border-neutral-700 rounded-lg focus:outline-none bg-neutral-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   autoFocus
                 />
               </div>
@@ -215,11 +215,11 @@ export default function CreatorOnboarding() {
 
             {step === 5 && (
               <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-slate-800">Where are you from?</h2>
+                <h2 className="text-xl font-semibold text-white">Where are you from?</h2>
                 <select
                   value={formData.country}
                   onChange={(e) => updateFormData('country', e.target.value)}
-                  className="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full p-3 border border-neutral-700 rounded-lg focus:outline-none bg-neutral-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">Select your country</option>
                   <option value="US">United States</option>
@@ -241,14 +241,14 @@ export default function CreatorOnboarding() {
                   placeholder="Phone number"
                   value={formData.phoneNumber}
                   onChange={(e) => updateFormData('phoneNumber', e.target.value)}
-                  className="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full p-3 border border-neutral-700 rounded-lg focus:outline-none bg-neutral-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
             )}
 
             {step === 6 && (
               <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-slate-800">Your experience level?</h2>
+                <h2 className="text-xl font-semibold text-white">Your experience level?</h2>
                 <div className="space-y-3">
                   {[
                     { value: 'beginner', label: 'Beginner', desc: 'New to content creation' },
@@ -261,11 +261,11 @@ export default function CreatorOnboarding() {
                       className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
                         formData.experience === option.value
                           ? 'border-blue-500 bg-blue-50'
-                          : 'border-slate-200 hover:border-slate-300'
-                      }`}
+                          : 'border-neutral-800 hover:border-neutral-700'
+                      } text-white placeholder-neutral-500`}
                     >
-                      <div className="font-semibold text-slate-800">{option.label}</div>
-                      <div className="text-sm text-slate-600">{option.desc}</div>
+                      <div className="font-semibold text-white">{option.label}</div>
+                      <div className="text-sm text-neutral-400">{option.desc}</div>
                     </div>
                   ))}
                 </div>
@@ -278,7 +278,7 @@ export default function CreatorOnboarding() {
             {step > 1 && (
               <button
                 onClick={() => setStep(step - 1)}
-                className="flex-1 py-3 px-4 border border-slate-300 rounded-lg font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                className="flex-1 py-3 px-4 border border-neutral-700 rounded-lg font-medium text-neutral-200 hover:bg-neutral-950 transition-colors"
               >
                 Back
               </button>

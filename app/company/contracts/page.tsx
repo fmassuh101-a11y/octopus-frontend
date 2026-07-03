@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import LegalContractDocument from '@/components/contracts/LegalContractDocument'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { ClipboardList, FileText, Home, MessageCircle, Users } from 'lucide-react'
 
 interface Contract {
   id: string
@@ -41,15 +42,15 @@ const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }
   accepted: { label: 'Aceptado', color: 'text-green-400', bg: 'bg-green-500/20' },
   rejected: { label: 'Rechazado', color: 'text-red-400', bg: 'bg-red-500/20' },
   cancelled: { label: 'Cancelado', color: 'text-red-400', bg: 'bg-red-500/20' },
-  in_progress: { label: 'En Progreso', color: 'text-violet-400', bg: 'bg-violet-500/20' },
+  in_progress: { label: 'En Progreso', color: 'text-emerald-400', bg: 'bg-emerald-500/20' },
   completed: { label: 'Completado', color: 'text-emerald-400', bg: 'bg-emerald-500/20' },
 }
 
 const PLATFORM_ICONS: Record<string, string> = {
-  tiktok: '🎵',
-  instagram: '📸',
-  youtube: '▶️',
-  ugc: '🎬',
+  tiktok: '',
+  instagram: '',
+  youtube: '',
+  ugc: '',
 }
 
 // Helper to build correct profile URLs
@@ -83,7 +84,7 @@ const HandleAnalytics = ({ platform, handle }: { platform: string; handle: strin
           href={profileUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-violet-400 hover:text-violet-300"
+          className="text-emerald-400 hover:text-emerald-300"
         >
           Ver perfil →
         </a>
@@ -287,7 +288,7 @@ export default function CompanyContractsPage() {
                 conversation_id: app.id,
                 sender_id: user.id,
                 sender_type: 'company',
-                content: `❌ El contrato "${contract.title}" ha sido cancelado por la empresa.${reason ? ` Razón: ${reason}` : ''}`
+                content: `El contrato "${contract.title}" ha sido cancelado por la empresa.${reason ? ` Razón: ${reason}` : ''}`
               })
             })
           }
@@ -330,7 +331,7 @@ export default function CompanyContractsPage() {
     return (
       <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-10 h-10 border-4 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-neutral-400">Cargando contratos...</p>
         </div>
       </div>
@@ -369,9 +370,9 @@ export default function CompanyContractsPage() {
               onClick={() => setFilter(f.id as any)}
               className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
                 filter === f.id
-                  ? 'bg-violet-600 text-white'
+                  ? 'bg-emerald-600 text-white'
                   : 'bg-neutral-800 text-neutral-400 hover:text-white'
-              }`}
+              } placeholder-neutral-500`}
             >
               {f.label}
             </button>
@@ -392,7 +393,7 @@ export default function CompanyContractsPage() {
             <p className="text-neutral-500 text-sm mb-4">Crea contratos desde el chat con creadores</p>
             <Link
               href="/company/messages"
-              className="inline-block px-6 py-3 bg-violet-600 hover:bg-violet-500 rounded-xl font-medium transition-colors"
+              className="inline-block px-6 py-3 bg-emerald-600 hover:bg-emerald-500 rounded-xl font-medium transition-colors"
             >
               Ir a Mensajes
             </Link>
@@ -423,7 +424,7 @@ export default function CompanyContractsPage() {
                   </div>
                   <div className="flex items-center gap-1 text-neutral-500">
                     <span>
-                      {contract.deliverables.map((d: any) => PLATFORM_ICONS[d.platform] || '📱').join(' ')}
+                      {contract.deliverables.map((d: any) => PLATFORM_ICONS[d.platform] || '').join(' ')}
                     </span>
                     <span>{contract.deliverables.reduce((sum: number, d: any) => sum + (d.quantity || 1), 0)} entregables</span>
                   </div>
@@ -433,7 +434,7 @@ export default function CompanyContractsPage() {
                 {contract.status === 'accepted' && contract.creator_handles && contract.creator_handles.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-2">
                     {contract.creator_handles.map((h: any, i: number) => (
-                      <span key={i} className="px-2 py-1 bg-violet-500/20 text-violet-400 rounded-lg text-xs">
+                      <span key={i} className="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded-lg text-xs">
                         {PLATFORM_ICONS[h.platform]} {h.handle}
                       </span>
                     ))}
@@ -495,7 +496,7 @@ export default function CompanyContractsPage() {
                       <div key={i} className="bg-neutral-800 rounded-xl p-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <span className="text-2xl">{PLATFORM_ICONS[h.platform] || '📱'}</span>
+                            <span className="text-2xl">{PLATFORM_ICONS[h.platform] || ''}</span>
                             <div>
                               <p className="font-semibold">{h.handle}</p>
                               <p className="text-xs text-neutral-500 capitalize">{h.platform}</p>
@@ -505,7 +506,7 @@ export default function CompanyContractsPage() {
                             href={buildProfileUrl(h.platform, h.handle)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="px-3 py-1.5 bg-violet-600 hover:bg-violet-500 text-white rounded-lg text-sm font-medium transition-colors"
+                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors"
                           >
                             Ver Perfil
                           </a>
@@ -523,7 +524,7 @@ export default function CompanyContractsPage() {
                 <div className="space-y-2">
                   {selectedContract.deliverables.map((del: any, i: number) => (
                     <div key={i} className="flex items-center gap-3 bg-neutral-800 rounded-xl p-3">
-                      <span className="text-2xl">{PLATFORM_ICONS[del.platform] || '📱'}</span>
+                      <span className="text-2xl">{PLATFORM_ICONS[del.platform] || ''}</span>
                       <div className="flex-1">
                         <p className="font-medium capitalize">{del.platform}</p>
                         <p className="text-sm text-neutral-400">{del.quantity} {del.content_type}</p>
@@ -571,7 +572,7 @@ export default function CompanyContractsPage() {
               <div className="flex gap-3">
                 <Link
                   href={`/company/messages?creator=${selectedContract.creator_id}`}
-                  className="flex-1 py-3 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-medium text-center transition-colors"
+                  className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-medium text-center transition-colors"
                 >
                   Enviar Mensaje
                 </Link>
@@ -678,23 +679,23 @@ export default function CompanyContractsPage() {
       <div className="fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-800">
         <div className="flex justify-around py-3">
           <Link href="/company/dashboard" className="flex flex-col items-center gap-1 px-4 py-1 text-neutral-500 hover:text-neutral-300">
-            <span className="text-xl">🏠</span>
+            <Home className="w-5 h-5" strokeWidth={2} />
             <span className="text-xs">Dashboard</span>
           </Link>
           <Link href="/company/campaigns" className="flex flex-col items-center gap-1 px-4 py-1 text-neutral-500 hover:text-neutral-300">
-            <span className="text-xl">📋</span>
+            <ClipboardList className="w-5 h-5" strokeWidth={2} />
             <span className="text-xs">Campañas</span>
           </Link>
-          <div className="flex flex-col items-center gap-1 px-4 py-1 text-violet-400">
-            <span className="text-xl">📝</span>
+          <div className="flex flex-col items-center gap-1 px-4 py-1 text-emerald-400">
+            <FileText className="w-5 h-5" strokeWidth={2} />
             <span className="text-xs">Contratos</span>
           </div>
           <Link href="/company/messages" className="flex flex-col items-center gap-1 px-4 py-1 text-neutral-500 hover:text-neutral-300">
-            <span className="text-xl">💬</span>
+            <MessageCircle className="w-5 h-5" strokeWidth={2} />
             <span className="text-xs">Mensajes</span>
           </Link>
           <Link href="/company/applicants" className="flex flex-col items-center gap-1 px-4 py-1 text-neutral-500 hover:text-neutral-300">
-            <span className="text-xl">👥</span>
+            <Users className="w-5 h-5" strokeWidth={2} />
             <span className="text-xs">Aplicantes</span>
           </Link>
         </div>

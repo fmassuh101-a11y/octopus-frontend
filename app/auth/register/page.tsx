@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 
 export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
@@ -32,76 +33,73 @@ export default function RegisterPage() {
     setLoading(true)
     setError('')
 
+    // Registro vía fetch directo al Auth API de Supabase.
+    // El cliente supabase-js se cuelga en el navegador (locks), por eso
+    // NO lo usamos acá. Timeout de 20s para que nunca quede colgado.
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 20000)
+
     try {
-      console.log('[Register] Starting signup...')
-
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { full_name: email.split('@')[0] }
-        }
+      const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          data: { full_name: email.split('@')[0] },
+        }),
+        signal: controller.signal,
       })
+      clearTimeout(timeout)
 
-      console.log('[Register] Signup response:', {
-        user: !!data.user,
-        session: !!data.session,
-        error: signUpError?.message
-      })
+      const data = await res.json()
 
-      if (signUpError) {
-        console.error('[Register] Signup error:', signUpError)
-        if (signUpError.message?.includes('already registered')) {
+      if (!res.ok) {
+        const msg = (data?.msg || data?.error_description || data?.error || '').toLowerCase()
+        if (msg.includes('already') || msg.includes('registered') || msg.includes('exists')) {
           setError('Este email ya está registrado. Intenta iniciar sesión.')
+        } else if (msg.includes('password')) {
+          setError('La contraseña debe tener al menos 6 caracteres.')
         } else {
-          setError(signUpError.message || 'Error al crear cuenta')
+          setError(data?.msg || data?.error_description || 'Error al crear cuenta')
         }
         setLoading(false)
         return
       }
 
-      // If we got a session, save to localStorage and redirect
-      if (data.session) {
-        console.log('[Register] Session created, saving and redirecting...')
-        localStorage.setItem('sb-access-token', data.session.access_token)
-        localStorage.setItem('sb-refresh-token', data.session.refresh_token || '')
-        localStorage.setItem('sb-user', JSON.stringify(data.session.user))
+      // Con "Confirm email" apagado, el signup devuelve la sesión directo
+      if (data.access_token && data.user) {
+        localStorage.setItem('sb-access-token', data.access_token)
+        localStorage.setItem('sb-refresh-token', data.refresh_token || '')
+        localStorage.setItem('sb-user', JSON.stringify(data.user))
         window.location.href = '/auth/select-type'
         return
       }
 
-      // If user created but no session, try to sign in
-      if (data.user && !data.session) {
-        console.log('[Register] User created but no session, trying to sign in...')
-
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password
-        })
-
-        if (signInError) {
-          console.error('[Register] Sign in error:', signInError)
-          setError('Cuenta creada. Por favor ve a iniciar sesión.')
-          setLoading(false)
-          return
-        }
-
-        if (signInData.session) {
-          console.log('[Register] Sign in successful, saving and redirecting...')
-          localStorage.setItem('sb-access-token', signInData.session.access_token)
-          localStorage.setItem('sb-refresh-token', signInData.session.refresh_token || '')
-          localStorage.setItem('sb-user', JSON.stringify(signInData.session.user))
-          window.location.href = '/auth/select-type'
-          return
-        }
+      // Usuario creado sin sesión (confirmación de email activada): logueamos vía token endpoint
+      const loginRes = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+        body: JSON.stringify({ email, password }),
+      })
+      const loginData = await loginRes.json()
+      if (loginRes.ok && loginData.access_token) {
+        localStorage.setItem('sb-access-token', loginData.access_token)
+        localStorage.setItem('sb-refresh-token', loginData.refresh_token || '')
+        localStorage.setItem('sb-user', JSON.stringify(loginData.user))
+        window.location.href = '/auth/select-type'
+        return
       }
 
-      setError('Error inesperado. Intenta de nuevo.')
+      setError('Cuenta creada. Por favor inicia sesión.')
       setLoading(false)
-
     } catch (err: any) {
+      clearTimeout(timeout)
       console.error('[Register] Error:', err)
-      setError(err.message || 'Error de conexión. Verifica tu internet.')
+      setError(err.name === 'AbortError' ? 'La conexión tardó demasiado. Intenta de nuevo.' : (err.message || 'Error de conexión.'))
       setLoading(false)
     }
   }
@@ -129,21 +127,21 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-blue-800 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-neutral-950 flex items-center justify-center px-4">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <Link href="/" className="inline-block">
-            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg mx-auto">
-              <span className="text-2xl font-bold text-white">🐙</span>
+            <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20 mx-auto">
+              <span className="text-3xl font-black text-white">O</span>
             </div>
-            <span className="text-2xl font-bold text-white block mt-2">Octopus</span>
+            <span className="text-2xl font-bold text-white block mt-3 tracking-tight">Octopus</span>
           </Link>
         </div>
 
-        <div className="bg-white/10 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-white/20">
+        <div className="bg-neutral-900 rounded-3xl p-8 shadow-xl border border-neutral-800 text-white placeholder-neutral-500">
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-white mb-2">Registro</h2>
-            <p className="text-blue-100">Crea tu cuenta en Octopus</p>
+            <h2 className="text-3xl font-bold text-white mb-2">Crear cuenta</h2>
+            <p className="text-neutral-400">Empieza a ganar con tu contenido</p>
           </div>
 
           {error && (
@@ -154,40 +152,40 @@ export default function RegisterPage() {
 
           <form onSubmit={handleEmailSignUp} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-blue-100 mb-2">Email</label>
+              <label className="block text-sm font-medium text-neutral-300 mb-2">Email</label>
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
                 placeholder="tu@email.com"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-blue-100 mb-2">Contraseña</label>
+              <label className="block text-sm font-medium text-neutral-300 mb-2">Contraseña</label>
               <input
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
                 placeholder="••••••••"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-blue-100 mb-2">Confirmar contraseña</label>
+              <label className="block text-sm font-medium text-neutral-300 mb-2">Confirmar contraseña</label>
               <input
                 type="password"
                 required
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 disabled={loading}
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
                 placeholder="••••••••"
               />
             </div>
@@ -195,7 +193,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-blue-600 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-emerald-500 text-white py-3 px-4 rounded-lg font-semibold hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Creando cuenta...' : 'Crear Cuenta'}
             </button>
@@ -206,7 +204,7 @@ export default function RegisterPage() {
               <div className="w-full border-t border-white/20"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-transparent text-blue-100">o</span>
+              <span className="px-2 bg-transparent text-neutral-300">o</span>
             </div>
           </div>
 
@@ -214,7 +212,7 @@ export default function RegisterPage() {
             type="button"
             onClick={handleGoogleSignIn}
             disabled={loading}
-            className="w-full bg-white text-gray-800 py-3 px-4 rounded-lg font-semibold hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+            className="w-full bg-neutral-900 text-white py-3 px-4 rounded-lg font-semibold hover:bg-neutral-950 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -226,9 +224,9 @@ export default function RegisterPage() {
           </button>
 
           <div className="mt-8 text-center">
-            <p className="text-blue-100 text-sm">
+            <p className="text-neutral-300 text-sm">
               ¿Ya tienes una cuenta?{' '}
-              <Link href="/auth/login" className="font-medium text-white hover:text-blue-200">
+              <Link href="/auth/login" className="font-medium text-emerald-400 hover:text-emerald-300">
                 Inicia sesión
               </Link>
             </p>

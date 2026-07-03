@@ -148,7 +148,7 @@ export default function LegalContractDocument({
     <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 overflow-y-auto">
       {/* Document Container */}
       <div className="min-h-screen py-8 px-4">
-        <div className="max-w-4xl mx-auto bg-white text-neutral-900 rounded-lg shadow-2xl overflow-hidden">
+        <div className="max-w-4xl mx-auto bg-neutral-900 text-neutral-900 rounded-lg shadow-2xl overflow-hidden">
 
           {/* Document Header */}
           <div className="bg-neutral-100 px-8 py-4 border-b border-neutral-200 flex items-center justify-between">
@@ -163,8 +163,8 @@ export default function LegalContractDocument({
           {/* Document Title */}
           <div className="px-8 py-8 text-center border-b border-neutral-200">
             <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 bg-violet-600 rounded-xl flex items-center justify-center">
-                <span className="text-3xl text-white">🐙</span>
+              <div className="w-16 h-16 bg-emerald-600 rounded-xl flex items-center justify-center">
+                <span className="text-3xl text-white"></span>
               </div>
             </div>
             <h1 className="text-2xl font-bold text-neutral-900 mb-2">
@@ -513,11 +513,11 @@ export default function LegalContractDocument({
                 <h2 className="text-lg font-bold text-neutral-900 border-b border-neutral-300 pb-2">
                   INFORMACIÓN DEL CREADOR
                 </h2>
-                <div className="bg-violet-50 border border-violet-200 rounded-lg p-4">
-                  <p className="text-sm font-medium text-violet-900 mb-2">Handles de redes sociales:</p>
+                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+                  <p className="text-sm font-medium text-emerald-900 mb-2">Handles de redes sociales:</p>
                   <div className="space-y-1">
                     {contract.creator_handles.map((h, i) => (
-                      <div key={i} className="flex items-center gap-2 text-sm text-violet-800">
+                      <div key={i} className="flex items-center gap-2 text-sm text-emerald-800">
                         <span className="font-medium">{PLATFORM_NAMES[h.platform] || h.platform}:</span>
                         <span>{h.handle}</span>
                       </div>
@@ -603,7 +603,7 @@ export default function LegalContractDocument({
             {/* Platform Notice */}
             <div className="text-center text-xs text-neutral-500 pt-4">
               <p>Este contrato fue generado y administrado a través de</p>
-              <p className="font-bold text-violet-600">Octopus - Marketplace de Creadores para LATAM</p>
+              <p className="font-bold text-emerald-600">Octopus - Marketplace de Creadores para LATAM</p>
               <p className="mt-2">Octopus actúa únicamente como intermediario y no es parte de este contrato.</p>
             </div>
 
@@ -611,7 +611,7 @@ export default function LegalContractDocument({
 
           {/* Action Footer */}
           {showActions && ['sent', 'viewed'].includes(contract.status) && (
-            <div className="sticky bottom-0 bg-white border-t border-neutral-200 px-8 py-4 flex items-center justify-between">
+            <div className="sticky bottom-0 bg-neutral-900 border-t border-neutral-200 px-8 py-4 flex items-center justify-between">
               <button
                 onClick={onClose}
                 className="px-6 py-3 text-neutral-600 hover:text-neutral-900 font-medium transition-colors"
@@ -652,7 +652,7 @@ export default function LegalContractDocument({
                 {onDeliverContent && (
                   <button
                     onClick={onDeliverContent}
-                    className="px-6 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-medium transition-colors flex items-center gap-2"
+                    className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-medium transition-colors flex items-center gap-2"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />

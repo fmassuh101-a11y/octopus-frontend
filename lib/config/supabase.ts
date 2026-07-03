@@ -1,11 +1,14 @@
 // Configuración centralizada de Supabase
-// TODAS las credenciales deben venir de aquí
+// TODAS las credenciales deben venir de aquí — para cambiar de proyecto
+// Supabase basta con editar .env.local (y este fallback).
 
-// URL de Supabase - hardcoded para evitar problemas con env vars
-export const SUPABASE_URL = 'https://ftvqoudlmojdxwjxljzr.supabase.co'
+export const SUPABASE_URL =
+  process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  'https://cnsyrgurwtufbynwrxjt.supabase.co'
 
-// Anon Key - hardcoded para evitar problemas con env vars
-export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
+export const SUPABASE_ANON_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNuc3lyZ3Vyd3R1ZmJ5bndyeGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwNjYwNTQsImV4cCI6MjA5ODY0MjA1NH0.rpKy0saQFeB1Bq3V8tZE3FRuzEVb3CRlzO57E0y1Wfo'
 
 // Helper para construir URLs de la API REST
 export function getSupabaseRestUrl(table: string, query?: string): string {

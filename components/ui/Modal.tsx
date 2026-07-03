@@ -67,7 +67,7 @@ export function Modal({
       <div className="flex min-h-full items-center justify-center p-4">
         <div
           className={cn(
-            'relative w-full bg-white dark:bg-neutral-900 rounded-2xl shadow-xl transform transition-all animate-scale-in',
+            'relative w-full bg-neutral-900 dark:bg-neutral-900 rounded-2xl shadow-xl transform transition-all animate-scale-in',
             sizes[size],
             className
           )}

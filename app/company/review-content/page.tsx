@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { FileText, Inbox, MessageCircle, Package } from 'lucide-react'
 
 interface Delivery {
   id: string
@@ -424,7 +425,7 @@ export default function CompanyReviewContentPage() {
             </div>
             {/* Gold Badge */}
             <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-yellow-500/10 border border-yellow-500/30 rounded-full">
-              <span className="text-yellow-500">★</span>
+              <span className="text-yellow-500"></span>
               <span className="text-yellow-400 text-sm font-medium">Premium</span>
             </div>
           </div>
@@ -441,14 +442,14 @@ export default function CompanyReviewContentPage() {
                 onClick={() => setFilter(f.id as any)}
                 className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
                   filter === f.id
-                    ? 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/20'
+                    ? 'bg-yellow-500 text-white shadow-lg shadow-yellow-500/20'
                     : 'bg-neutral-800/50 text-neutral-400 hover:text-white hover:bg-neutral-800'
-                }`}
+                } placeholder-neutral-500`}
               >
                 {f.label}
                 {f.badge ? (
                   <span className={`px-1.5 py-0.5 text-xs rounded-full ${
-                    filter === f.id ? 'bg-black/20 text-black' : 'bg-yellow-500 text-black'
+                    filter === f.id ? 'bg-black/20' : 'bg-yellow-500 text-white'
                   }`}>
                     {f.badge}
                   </span>
@@ -462,9 +463,9 @@ export default function CompanyReviewContentPage() {
       {/* Content */}
       <div className="max-w-6xl mx-auto px-4 py-6">
         {filteredDeliveries.length === 0 ? (
-          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-16 text-center">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-16 text-center text-white placeholder-neutral-500">
             <div className="w-24 h-24 bg-neutral-800 rounded-full flex items-center justify-center mx-auto mb-6">
-              <span className="text-5xl">📭</span>
+              <Inbox className="w-10 h-10" strokeWidth={2} />
             </div>
             <h3 className="text-xl font-semibold mb-2">No hay entregas</h3>
             <p className="text-neutral-500">Las entregas de contenido aparecerán aquí</p>
@@ -477,7 +478,7 @@ export default function CompanyReviewContentPage() {
               return (
                 <div
                   key={delivery.id}
-                  className="group bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden hover:border-yellow-500/50 transition-all hover:shadow-xl hover:shadow-yellow-500/5"
+                  className="group bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden hover:border-yellow-500/50 transition-all hover:shadow-xl hover:shadow-yellow-500/5 text-white placeholder-neutral-500"
                 >
                   {/* Creator Header - Elegant Card */}
                   <div className="p-5 border-b border-neutral-800/50 bg-gradient-to-r from-neutral-900 to-neutral-800/50">
@@ -492,7 +493,7 @@ export default function CompanyReviewContentPage() {
                           />
                         ) : (
                           <div className="w-14 h-14 rounded-full bg-gradient-to-br from-yellow-500 to-yellow-600 flex items-center justify-center border-2 border-yellow-500/30">
-                            <span className="text-black font-bold text-xl">
+                            <span className="text-white font-bold text-xl">
                               {delivery.creator_name?.charAt(0).toUpperCase()}
                             </span>
                           </div>
@@ -520,7 +521,7 @@ export default function CompanyReviewContentPage() {
                       href={delivery.video_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block p-4 bg-neutral-800/50 border border-neutral-700 rounded-xl hover:border-yellow-500/50 transition-colors group/link"
+                      className="block p-4 bg-neutral-800/50 border border-neutral-700 rounded-xl hover:border-yellow-500/50 transition-colors group/link text-white placeholder-neutral-500"
                     >
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
@@ -577,10 +578,9 @@ export default function CompanyReviewContentPage() {
                             setFeedbackText('')
                             setShowFeedbackModal(true)
                           }}
-                          className="flex-1 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-black rounded-xl text-sm font-bold transition-all shadow-lg shadow-yellow-500/20"
+                          className="flex-1 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-yellow-500/20"
                         >
-                          Aprobar ✓
-                        </button>
+                          Aprobar                         </button>
                       </div>
                     )}
 
@@ -590,7 +590,7 @@ export default function CompanyReviewContentPage() {
                         disabled={processing}
                         className="w-full py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white rounded-xl text-sm font-bold transition-all disabled:opacity-50 shadow-lg shadow-emerald-500/20"
                       >
-                        💰 Liberar Pago (${delivery.payment_amount})
+                        Liberar Pago (${delivery.payment_amount})
                       </button>
                     )}
 
@@ -603,7 +603,7 @@ export default function CompanyReviewContentPage() {
 
                     {delivery.status === 'completed' && (
                       <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 text-center">
-                        <span className="text-yellow-400 font-semibold">✓ Pago Liberado</span>
+                        <span className="text-yellow-400 font-semibold">Pago Liberado</span>
                       </div>
                     )}
 
@@ -625,11 +625,11 @@ export default function CompanyReviewContentPage() {
       {/* Feedback Modal - Elegant Black & Gold */}
       {showFeedbackModal && selectedDelivery && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl text-white placeholder-neutral-500">
             {/* Modal Header */}
             <div className="px-6 py-5 border-b border-neutral-800 bg-gradient-to-r from-neutral-900 to-neutral-800">
               <h2 className="text-lg font-bold text-white">
-                {actionType === 'approve' ? '✓ Aprobar Contenido' : '↻ Solicitar Cambios'}
+                {actionType === 'approve' ? 'Aprobar Contenido' : '↻ Solicitar Cambios'}
               </h2>
               <p className="text-sm text-neutral-400 mt-1">{selectedDelivery.creator_name}</p>
             </div>
@@ -640,7 +640,7 @@ export default function CompanyReviewContentPage() {
                 href={selectedDelivery.video_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-4 p-4 bg-neutral-800/50 border border-neutral-700 rounded-xl hover:border-yellow-500/50 transition-colors"
+                className="flex items-center gap-4 p-4 bg-neutral-800/50 border border-neutral-700 rounded-xl hover:border-yellow-500/50 transition-colors text-white placeholder-neutral-500"
               >
                 <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center">
                   <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
@@ -696,8 +696,8 @@ export default function CompanyReviewContentPage() {
                 disabled={processing || (actionType === 'revision' && !feedbackText.trim())}
                 className={`flex-1 py-3 rounded-xl font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 ${
                   actionType === 'approve'
-                    ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-black shadow-lg shadow-yellow-500/20'
-                    : 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white shadow-lg shadow-orange-500/20'
+                    ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-white shadow-lg shadow-yellow-500/20'
+                    : 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 shadow-lg shadow-orange-500/20'
                 }`}
               >
                 {processing ? (
@@ -706,7 +706,7 @@ export default function CompanyReviewContentPage() {
                     Procesando...
                   </>
                 ) : actionType === 'approve' ? (
-                  'Aprobar ✓'
+                  'Aprobar '
                 ) : (
                   'Enviar Feedback'
                 )}
@@ -719,7 +719,7 @@ export default function CompanyReviewContentPage() {
       {/* Detail Modal */}
       {selectedDelivery && !showFeedbackModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-hidden shadow-2xl flex flex-col text-white placeholder-neutral-500">
             {/* Header with Creator Info */}
             <div className="px-6 py-5 border-b border-neutral-800 bg-gradient-to-r from-neutral-900 to-neutral-800">
               <div className="flex items-center gap-4">
@@ -732,7 +732,7 @@ export default function CompanyReviewContentPage() {
                   />
                 ) : (
                   <div className="w-16 h-16 rounded-full bg-gradient-to-br from-yellow-500 to-yellow-600 flex items-center justify-center border-2 border-yellow-500/30">
-                    <span className="text-black font-bold text-2xl">
+                    <span className="text-white font-bold text-2xl">
                       {selectedDelivery.creator_name?.charAt(0).toUpperCase()}
                     </span>
                   </div>
@@ -767,7 +767,7 @@ export default function CompanyReviewContentPage() {
                 href={selectedDelivery.video_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block p-5 bg-neutral-800/50 border border-neutral-700 rounded-xl hover:border-yellow-500/50 transition-colors"
+                className="block p-5 bg-neutral-800/50 border border-neutral-700 rounded-xl hover:border-yellow-500/50 transition-colors text-white placeholder-neutral-500"
               >
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
@@ -786,7 +786,7 @@ export default function CompanyReviewContentPage() {
               {selectedDelivery.description && (
                 <div>
                   <h4 className="font-medium text-white mb-2">Notas del Creador</h4>
-                  <p className="text-neutral-400 bg-neutral-800/50 rounded-xl p-4 border border-neutral-700">{selectedDelivery.description}</p>
+                  <p className="text-neutral-400 bg-neutral-800/50 rounded-xl p-4 border border-neutral-700 text-white placeholder-neutral-500">{selectedDelivery.description}</p>
                 </div>
               )}
 
@@ -831,10 +831,9 @@ export default function CompanyReviewContentPage() {
                       setFeedbackText('')
                       setShowFeedbackModal(true)
                     }}
-                    className="flex-1 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-black rounded-xl font-bold transition-all shadow-lg shadow-yellow-500/20"
+                    className="flex-1 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-yellow-500/20"
                   >
-                    Aprobar ✓
-                  </button>
+                    Aprobar                   </button>
                 </div>
               )}
 
@@ -844,7 +843,7 @@ export default function CompanyReviewContentPage() {
                   disabled={processing}
                   className="w-full py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white rounded-xl font-bold transition-all disabled:opacity-50 shadow-lg shadow-emerald-500/20"
                 >
-                  💰 Liberar Pago (${selectedDelivery.payment_amount})
+                  Liberar Pago (${selectedDelivery.payment_amount})
                 </button>
               )}
 
@@ -853,7 +852,7 @@ export default function CompanyReviewContentPage() {
                 href={`/company/messages?creator=${selectedDelivery.creator_id}`}
                 className="block w-full py-3 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl font-medium text-center transition-colors border border-neutral-700"
               >
-                💬 Enviar Mensaje
+                Enviar Mensaje
               </Link>
             </div>
           </div>
@@ -870,15 +869,15 @@ export default function CompanyReviewContentPage() {
             <span className="text-xs mt-1">Inicio</span>
           </Link>
           <div className="flex flex-col items-center p-2 text-yellow-500">
-            <span className="text-xl">📦</span>
+            <Package className="w-5 h-5" strokeWidth={2} />
             <span className="text-xs mt-1 font-medium">Contenido</span>
           </div>
           <Link href="/company/contracts" className="flex flex-col items-center p-2 text-neutral-500">
-            <span className="text-xl">📝</span>
+            <FileText className="w-5 h-5" strokeWidth={2} />
             <span className="text-xs mt-1">Contratos</span>
           </Link>
           <Link href="/company/messages" className="flex flex-col items-center p-2 text-neutral-500">
-            <span className="text-xl">💬</span>
+            <MessageCircle className="w-5 h-5" strokeWidth={2} />
             <span className="text-xs mt-1">Mensajes</span>
           </Link>
         </div>

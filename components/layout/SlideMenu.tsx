@@ -76,7 +76,7 @@ export default function SlideMenu({ userType, userName, userEmail, avatarUrl }: 
       {/* Toggle Button - Always visible */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed top-4 left-4 z-[60] w-11 h-11 bg-neutral-900 rounded-lg flex items-center justify-center hover:bg-neutral-800 transition-all duration-200 border border-neutral-700 shadow-lg"
+        className="fixed top-4 left-4 z-[60] w-11 h-11 bg-neutral-900 rounded-lg flex items-center justify-center hover:bg-neutral-800 transition-all duration-200 border border-neutral-700 shadow-lg text-white placeholder-neutral-500"
         aria-label="Toggle menu"
       >
         {isOpen ? (
@@ -142,7 +142,7 @@ export default function SlideMenu({ userType, userName, userEmail, avatarUrl }: 
                         isActive
                           ? 'bg-emerald-500/20 text-emerald-400 font-medium'
                           : 'text-neutral-400 hover:bg-neutral-800/50 hover:text-white'
-                      }`}
+                      } placeholder-neutral-500`}
                     >
                       {item.label}
                       {isActive && (

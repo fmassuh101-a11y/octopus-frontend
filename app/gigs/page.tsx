@@ -4,6 +4,8 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import CreatorBottomNav from '@/components/ui/CreatorBottomNav'
+import UserAvatar from '@/components/ui/UserAvatar'
 
 interface Gig {
   id: string
@@ -202,11 +204,11 @@ export default function GigsPage() {
 
   const getGradient = (index: number) => {
     const gradients = [
-      'from-violet-600 via-purple-600 to-blue-600',
-      'from-rose-500 via-pink-500 to-purple-500',
+      'from-emerald-600 via-emerald-600 to-blue-600',
+      'from-rose-500 via-emerald-500 to-emerald-500',
       'from-emerald-500 via-teal-500 to-cyan-500',
-      'from-orange-500 via-red-500 to-pink-500',
-      'from-blue-600 via-indigo-600 to-purple-600',
+      'from-orange-500 via-red-500 to-emerald-500',
+      'from-blue-600 via-emerald-600 to-emerald-600',
       'from-amber-500 via-orange-500 to-red-500',
     ]
     return gradients[index % gradients.length]
@@ -252,7 +254,7 @@ export default function GigsPage() {
         <div className="px-4 py-4 pb-28">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[1,2,3,4,5,6].map(i => (
-              <div key={i} className="bg-neutral-900 rounded-2xl overflow-hidden border border-neutral-800">
+              <div key={i} className="bg-neutral-900 rounded-2xl overflow-hidden border border-neutral-800 text-white placeholder-neutral-500">
                 <div className="h-52 bg-neutral-800 animate-pulse" />
                 <div className="p-4">
                   <div className="flex items-center justify-between mb-3">
@@ -310,15 +312,7 @@ export default function GigsPage() {
                 className="w-full pl-12 pr-4 py-3 bg-neutral-800 rounded-full text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 border border-neutral-700"
               />
             </div>
-            <Link href="/creator/profile" className="w-11 h-11 rounded-full overflow-hidden bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
-              {user ? (
-                <span className="text-white font-bold">{user.email?.charAt(0).toUpperCase()}</span>
-              ) : (
-                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                </svg>
-              )}
-            </Link>
+            <UserAvatar email={user?.email} size={44} />
           </div>
 
           {/* Filter Tabs */}
@@ -329,7 +323,7 @@ export default function GigsPage() {
                 filter === 'para_ti'
                   ? 'bg-emerald-500 text-white'
                   : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white'
-              }`}
+              } placeholder-neutral-500`}
             >
               Para Ti
             </button>
@@ -337,9 +331,9 @@ export default function GigsPage() {
               onClick={() => setFilter('mejor_pago')}
               className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                 filter === 'mejor_pago'
-                  ? 'bg-emerald-500 text-white'
+                  ? 'bg-emerald-500'
                   : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white'
-              }`}
+              } placeholder-neutral-500`}
             >
               Mejor Pago
             </button>
@@ -347,9 +341,9 @@ export default function GigsPage() {
               onClick={() => setFilter('tendencia')}
               className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                 filter === 'tendencia'
-                  ? 'bg-emerald-500 text-white'
+                  ? 'bg-emerald-500'
                   : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white'
-              }`}
+              } placeholder-neutral-500`}
             >
               Tendencia
             </button>
@@ -383,7 +377,7 @@ export default function GigsPage() {
               <div
                 key={gig.id}
                 onClick={() => setSelectedGig(gig)}
-                className="bg-neutral-900 rounded-2xl overflow-hidden border border-neutral-800 hover:border-emerald-500/50 transition-all cursor-pointer group"
+                className="bg-neutral-900 rounded-2xl overflow-hidden border border-neutral-800 hover:border-emerald-500/50 transition-all cursor-pointer group text-white placeholder-neutral-500"
               >
                 {/* Card Image */}
                 <div className={`h-52 relative bg-gradient-to-br ${getGradient(index)}`}>
@@ -407,11 +401,11 @@ export default function GigsPage() {
 
                   {/* Company Logo */}
                   <div className="absolute top-4 left-4 flex items-center gap-2">
-                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg">
+                    <div className="w-10 h-10 bg-neutral-900 rounded-full flex items-center justify-center shadow-lg">
                       {gig.company_logo ? (
                         <img src={gig.company_logo} alt="" className="w-8 h-8 rounded-full object-cover" />
                       ) : (
-                        <span className="text-gray-800 font-bold text-sm">
+                        <span className="text-white font-bold text-sm">
                           {(gig.company_name || gig.title)?.charAt(0).toUpperCase()}
                         </span>
                       )}
@@ -469,51 +463,13 @@ export default function GigsPage() {
         )}
       </div>
 
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-800 safe-area-bottom">
-        <div className="flex justify-around py-2">
-          <div className="flex flex-col items-center py-2 px-4 text-emerald-400">
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
-            </svg>
-            <span className="text-xs font-medium mt-1">Trabajos</span>
-          </div>
-
-          <Link href="/creator/analytics" className="flex flex-col items-center py-2 px-4 text-neutral-500 hover:text-neutral-300">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-            <span className="text-xs font-medium mt-1">Analytics</span>
-          </Link>
-
-          <Link href="/creator/applications" className="flex flex-col items-center py-2 px-4 text-neutral-500 hover:text-neutral-300">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <span className="text-xs font-medium mt-1">Aplicaciones</span>
-          </Link>
-
-          <Link href="/creator/messages" className="flex flex-col items-center py-2 px-4 text-neutral-500 hover:text-neutral-300">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
-            <span className="text-xs font-medium mt-1">Mensajes</span>
-          </Link>
-
-          <Link href="/creator/profile" className="flex flex-col items-center py-2 px-4 text-neutral-500 hover:text-neutral-300">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-            <span className="text-xs font-medium mt-1">Perfil</span>
-          </Link>
-        </div>
-        <div className="h-1 bg-emerald-500 mx-auto w-32 rounded-full mb-2"></div>
-      </div>
+      {/* Navegación inferior (compartida) */}
+      <CreatorBottomNav />
 
       {/* Verification Required Modal */}
       {showVerificationModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-neutral-900 rounded-2xl max-w-md w-full p-6 border border-neutral-800">
+          <div className="bg-neutral-900 rounded-2xl max-w-md w-full p-6 border border-neutral-800 text-white placeholder-neutral-500">
             {/* Icon */}
             <div className="w-20 h-20 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
               <svg className="w-10 h-10 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -531,7 +487,7 @@ export default function GigsPage() {
             </div>
 
             {/* Benefits */}
-            <div className="bg-neutral-800 rounded-xl p-4 mb-6 border border-neutral-700">
+            <div className="bg-neutral-800 rounded-xl p-4 mb-6 border border-neutral-700 text-white placeholder-neutral-500">
               <p className="text-sm font-medium text-neutral-300 mb-2">Al verificar obtendras:</p>
               <ul className="space-y-2 text-sm text-neutral-400">
                 <li className="flex items-center gap-2">
@@ -577,7 +533,7 @@ export default function GigsPage() {
       {/* Gig Detail Modal */}
       {selectedGig && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-neutral-900 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto border border-neutral-800">
+          <div className="bg-neutral-900 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto border border-neutral-800 text-white placeholder-neutral-500">
             {/* Modal Header Image */}
             <div className={`h-48 relative bg-gradient-to-br ${getGradient(gigs.indexOf(selectedGig))}`}>
               {selectedGig.image_url && selectedGig.image_url.startsWith('http') ? (
@@ -612,7 +568,7 @@ export default function GigsPage() {
             <div className="p-6">
               {/* Company Info */}
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-neutral-800 rounded-full flex items-center justify-center border border-neutral-700">
+                <div className="w-12 h-12 bg-neutral-800 rounded-full flex items-center justify-center border border-neutral-700 text-white placeholder-neutral-500">
                   {selectedGig.company_logo ? (
                     <img src={selectedGig.company_logo} alt="" className="w-10 h-10 rounded-full object-cover" />
                   ) : (
@@ -636,7 +592,7 @@ export default function GigsPage() {
               {/* Description */}
               <div className="mb-6">
                 <h4 className="font-semibold text-neutral-300 mb-2">Lo que haras:</h4>
-                <div className="bg-neutral-800 rounded-xl p-4 border border-neutral-700">
+                <div className="bg-neutral-800 rounded-xl p-4 border border-neutral-700 text-white placeholder-neutral-500">
                   <p className="text-neutral-300 leading-relaxed whitespace-pre-wrap">{selectedGig.description}</p>
                 </div>
               </div>
@@ -645,7 +601,7 @@ export default function GigsPage() {
               {selectedGig.requirements && (
                 <div className="mb-6">
                   <h4 className="font-semibold text-neutral-300 mb-2">Requisitos:</h4>
-                  <div className="bg-neutral-800 rounded-xl p-4 border border-neutral-700">
+                  <div className="bg-neutral-800 rounded-xl p-4 border border-neutral-700 text-white placeholder-neutral-500">
                     <p className="text-neutral-300 leading-relaxed whitespace-pre-wrap">{selectedGig.requirements}</p>
                   </div>
                 </div>

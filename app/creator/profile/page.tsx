@@ -3,14 +3,16 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
-import { supabase } from '@/lib/supabase'
+import CreatorBottomNav from '@/components/ui/CreatorBottomNav'
+import { supabase, getStoredSession } from '@/lib/supabase'
+import { User, ShieldCheck, Wallet, BarChart3, Lock, MapPin, type LucideIcon } from 'lucide-react'
 
 const TIKTOK_CLIENT_KEY = process.env.NEXT_PUBLIC_TIKTOK_CLIENT_KEY || 'aw5n2omdzbjx4xf8'
 
 interface ProfileSection {
   id: string
   title: string
-  icon: string
+  icon: LucideIcon
   component: JSX.Element
 }
 
@@ -37,40 +39,37 @@ export default function ProfilePage() {
     console.log('[Profile] Loading profile data...')
 
     try {
-      // Get session from Supabase client
-      const { data: { session } } = await supabase.auth.getSession()
+      // Sesión desde localStorage (patrón estable; supabase.auth.getSession()
+      // se cuelga por locks del navegador — mismo método que usa el dashboard)
+      const stored = getStoredSession()
 
-      if (!session) {
+      if (!stored) {
         console.log('[Profile] No session, redirecting to login')
         window.location.href = '/auth/login'
         return
       }
 
-      const userData = session.user
+      const userData = stored.user
       setUser(userData)
       console.log('[Profile] User loaded:', userData.email, userData.id)
 
       let finalBioData: any = {}
       let finalProfile: any = {}
 
-      // FIRST: Try Supabase (this is the source of truth)
+      // FIRST: Try Supabase (source of truth) vía fetch con el token de la sesión
       try {
-        const { data: profiles, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', userData.id)
+        const res = await fetch(
+          `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=*`,
+          { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${stored.access_token}` } }
+        )
 
-        if (error) {
-          console.error('[Profile] Supabase error:', error)
-          if (error.message?.includes('JWT') || error.code === 'PGRST301') {
-            console.log('[Profile] JWT expired, redirecting to login')
-            alert('Tu sesión ha expirado. Por favor inicia sesión de nuevo.')
-            await supabase.auth.signOut()
-            window.location.href = '/auth/login'
-            return
-          }
+        if (res.status === 401) {
+          console.log('[Profile] Token expirado, redirigiendo a login')
+          window.location.href = '/auth/login'
+          return
         }
 
+        const profiles = res.ok ? await res.json() : []
         console.log('[Profile] Profiles found:', profiles?.length || 0)
 
         if (profiles && profiles.length > 0) {
@@ -150,7 +149,7 @@ export default function ProfilePage() {
 
     return (
     <div className="space-y-6">
-      <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800">
+      <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 text-white placeholder-neutral-500">
         <h3 className="text-lg font-semibold text-white mb-4">Informacion Personal</h3>
         <div className="space-y-4">
           <div className="flex justify-between items-center py-3 border-b border-neutral-800">
@@ -188,12 +187,12 @@ export default function ProfilePage() {
         </button>
       </div>
 
-      <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800">
+      <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 text-white placeholder-neutral-500">
         <h3 className="text-lg font-semibold text-white mb-4">Redes Sociales</h3>
         <div className="space-y-4">
           <div className="flex items-center justify-between py-3 border-b border-neutral-800">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-emerald-500 rounded-lg flex items-center justify-center">
                 <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
                 </svg>
@@ -247,7 +246,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Experience & Education */}
-      <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800">
+      <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 text-white placeholder-neutral-500">
         <h3 className="text-lg font-semibold text-white mb-4">Educacion y Experiencia</h3>
         <div className="space-y-4">
           <div className="flex justify-between items-center py-3 border-b border-neutral-800">
@@ -276,7 +275,7 @@ export default function ProfilePage() {
   // Earnings Section
   const EarningsSection = () => (
     <div className="space-y-6">
-      <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800">
+      <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 text-white placeholder-neutral-500">
         <h3 className="text-lg font-semibold text-white mb-6">Resumen de Ganancias</h3>
 
         <div className="grid grid-cols-2 gap-4 mb-6">
@@ -308,7 +307,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800">
+      <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 text-white placeholder-neutral-500">
         <h3 className="text-lg font-semibold text-white mb-4">Metodos de Pago</h3>
         <p className="text-neutral-400 mb-4">No tienes metodos de pago configurados</p>
         <button className="w-full py-3 bg-emerald-500 text-white rounded-xl font-medium hover:bg-emerald-600 transition-colors">
@@ -321,7 +320,7 @@ export default function ProfilePage() {
   // Privacy & Security Section
   const SecuritySection = () => (
     <div className="space-y-6">
-      <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800">
+      <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 text-white placeholder-neutral-500">
         <h3 className="text-lg font-semibold text-white mb-4">Seguridad de la Cuenta</h3>
         <div className="space-y-4">
           <div className="flex justify-between items-center py-3 border-b border-neutral-800">
@@ -348,7 +347,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800">
+      <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 text-white placeholder-neutral-500">
         <h3 className="text-lg font-semibold text-white mb-4">Privacidad</h3>
         <div className="space-y-4">
           <div className="flex justify-between items-center py-3 border-b border-neutral-800">
@@ -357,8 +356,8 @@ export default function ProfilePage() {
               <p className="text-sm text-neutral-500">Las marcas pueden ver tu perfil</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" defaultChecked className="sr-only peer" />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-neutral-900 after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+              <input type="checkbox" defaultChecked className="sr-only peer bg-neutral-900 text-white placeholder-neutral-500" />
+              <div className="w-11 h-6 bg-neutral-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-neutral-900 after:border-neutral-700 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 text-white placeholder-neutral-500"></div>
             </label>
           </div>
           <div className="flex justify-between items-center py-3">
@@ -367,8 +366,8 @@ export default function ProfilePage() {
               <p className="text-sm text-neutral-500">Campanas completadas y rating</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" defaultChecked className="sr-only peer" />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-neutral-900 after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+              <input type="checkbox" defaultChecked className="sr-only peer bg-neutral-900 text-white placeholder-neutral-500" />
+              <div className="w-11 h-6 bg-neutral-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-neutral-900 after:border-neutral-700 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 text-white placeholder-neutral-500"></div>
             </label>
           </div>
         </div>
@@ -497,7 +496,7 @@ export default function ProfilePage() {
     return (
       <div className="space-y-6">
         {/* Verification Status Card */}
-        <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800">
+        <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 text-white placeholder-neutral-500">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
               <svg className="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -547,7 +546,7 @@ export default function ProfilePage() {
           {/* TikTok */}
           <div className={`p-4 rounded-xl border-2 transition-colors ${
             isTiktokVerified ? 'border-green-500 bg-green-50' : 'border-neutral-800 bg-neutral-950'
-          }`}>
+          } text-white placeholder-neutral-500`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center">
@@ -579,7 +578,7 @@ export default function ProfilePage() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleConnectTikTok}
-                    className="px-4 py-2 text-sm font-medium text-neutral-400 bg-neutral-900 border border-gray-300 rounded-lg hover:bg-neutral-950 transition-colors"
+                    className="px-4 py-2 text-sm font-medium text-neutral-400 bg-neutral-900 border border-neutral-700 rounded-lg hover:bg-neutral-950 transition-colors text-white placeholder-neutral-500"
                   >
                     Reconectar
                   </button>
@@ -623,10 +622,10 @@ export default function ProfilePage() {
           </div>
 
           {/* Instagram - Coming Soon */}
-          <div className="mt-4 p-4 rounded-xl border-2 border-neutral-800 bg-neutral-950 opacity-60">
+          <div className="mt-4 p-4 rounded-xl border-2 border-neutral-800 bg-neutral-950 opacity-60 text-white placeholder-neutral-500">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-emerald-500 rounded-xl flex items-center justify-center">
                   <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
                   </svg>
@@ -636,14 +635,14 @@ export default function ProfilePage() {
                   <p className="text-sm text-neutral-500">Proximamente</p>
                 </div>
               </div>
-              <span className="px-3 py-1 text-xs font-medium text-neutral-500 bg-gray-200 rounded-full">
+              <span className="px-3 py-1 text-xs font-medium text-neutral-500 bg-neutral-800 rounded-full">
                 Pronto
               </span>
             </div>
           </div>
 
           {/* YouTube - Coming Soon */}
-          <div className="mt-4 p-4 rounded-xl border-2 border-neutral-800 bg-neutral-950 opacity-60">
+          <div className="mt-4 p-4 rounded-xl border-2 border-neutral-800 bg-neutral-950 opacity-60 text-white placeholder-neutral-500">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-red-600 rounded-xl flex items-center justify-center">
@@ -656,7 +655,7 @@ export default function ProfilePage() {
                   <p className="text-sm text-neutral-500">Proximamente</p>
                 </div>
               </div>
-              <span className="px-3 py-1 text-xs font-medium text-neutral-500 bg-gray-200 rounded-full">
+              <span className="px-3 py-1 text-xs font-medium text-neutral-500 bg-neutral-800 rounded-full">
                 Pronto
               </span>
             </div>
@@ -664,7 +663,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Why Verify Card */}
-        <div className="bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl p-6 text-white">
+        <div className="bg-gradient-to-br from-blue-600 to-emerald-600 rounded-2xl p-6 text-white">
           <h3 className="text-lg font-semibold mb-3">¿Por que verificar?</h3>
           <ul className="space-y-2 text-sm text-white/90">
             <li className="flex items-start gap-2">
@@ -694,7 +693,7 @@ export default function ProfilePage() {
   // Statistics Section
   const StatsSection = () => (
     <div className="space-y-6">
-      <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800">
+      <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 text-white placeholder-neutral-500">
         <h3 className="text-lg font-semibold text-white mb-6">Estadisticas de Rendimiento</h3>
 
         <div className="grid grid-cols-2 gap-4 mb-6">
@@ -716,14 +715,14 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <div className="border-t border-gray-100 pt-4">
+        <div className="border-t border-neutral-800 pt-4">
           <p className="text-sm text-neutral-500 text-center">
             Las estadisticas se actualizan en tiempo real
           </p>
         </div>
       </div>
 
-      <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800">
+      <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 text-white placeholder-neutral-500">
         <h3 className="text-lg font-semibold text-white mb-4">Actividad Reciente</h3>
         <div className="text-center py-8 text-neutral-500">
           <svg className="w-16 h-16 mx-auto mb-4 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -737,11 +736,11 @@ export default function ProfilePage() {
   )
 
   const sections: ProfileSection[] = [
-    { id: 'account', title: 'Mi Cuenta', icon: '👤', component: <AccountSection /> },
-    { id: 'verification', title: 'Verificacion', icon: '🛡️', component: <VerificationSection /> },
-    { id: 'earnings', title: 'Ganancias', icon: '💰', component: <EarningsSection /> },
-    { id: 'stats', title: 'Estadisticas', icon: '📊', component: <StatsSection /> },
-    { id: 'security', title: 'Seguridad', icon: '🔒', component: <SecuritySection /> }
+    { id: 'account', title: 'Mi Cuenta', icon: User, component: <AccountSection /> },
+    { id: 'verification', title: 'Verificacion', icon: ShieldCheck, component: <VerificationSection /> },
+    { id: 'earnings', title: 'Ganancias', icon: Wallet, component: <EarningsSection /> },
+    { id: 'stats', title: 'Estadisticas', icon: BarChart3, component: <StatsSection /> },
+    { id: 'security', title: 'Seguridad', icon: Lock, component: <SecuritySection /> }
   ]
 
   if (loading) {
@@ -776,7 +775,7 @@ export default function ProfilePage() {
         </div>
         {/* Skeleton Content */}
         <div className="px-4 py-6 space-y-6">
-          <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800">
+          <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 text-white placeholder-neutral-500">
             <div className="h-6 w-40 bg-neutral-800 rounded animate-pulse mb-4" />
             <div className="space-y-4">
               {[1,2,3,4].map(i => (
@@ -829,7 +828,7 @@ export default function ProfilePage() {
       {/* Profile Header */}
       <div className="bg-neutral-900 px-4 py-6 border-b border-neutral-800">
         <div className="flex items-center space-x-4">
-          <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center overflow-hidden">
+          <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-emerald-600 rounded-full flex items-center justify-center overflow-hidden">
             {profilePhoto ? (
               <img src={profilePhoto} alt="Profile" className="w-full h-full rounded-full object-cover" />
             ) : (
@@ -842,7 +841,10 @@ export default function ProfilePage() {
             <h2 className="text-xl font-bold text-white">{displayName}</h2>
             <p className="text-neutral-400">{user?.email || 'Sin email'}</p>
             {(profile?.location || bioData.location) && (
-              <p className="text-sm text-neutral-500 mt-1">📍 {profile?.location || bioData.location}</p>
+              <p className="flex items-center gap-1.5 text-sm text-neutral-500 mt-1">
+                <MapPin className="w-3.5 h-3.5" strokeWidth={2} />
+                {profile?.location || bioData.location}
+              </p>
             )}
           </div>
         </div>
@@ -856,13 +858,13 @@ export default function ProfilePage() {
               <button
                 key={section.id}
                 onClick={() => setActiveSection(section.id)}
-                className={`py-3 px-1 border-b-2 transition-colors whitespace-nowrap ${
+                className={`flex items-center gap-2 py-3 px-1 border-b-2 transition-colors whitespace-nowrap text-sm font-medium ${
                   activeSection === section.id
                     ? 'border-emerald-500 text-emerald-400'
                     : 'border-transparent text-neutral-500 hover:text-neutral-300'
                 }`}
               >
-                <span className="mr-2">{section.icon}</span>
+                <section.icon className="w-4 h-4" strokeWidth={2} />
                 {section.title}
               </button>
             ))}
@@ -875,39 +877,8 @@ export default function ProfilePage() {
         {sections.find(s => s.id === activeSection)?.component}
       </div>
 
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-800">
-        <div className="flex justify-around py-2">
-          <a href="/gigs" className="flex flex-col items-center py-2 px-4 text-neutral-500 hover:text-neutral-400">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-            <span className="text-xs font-medium mt-1">Trabajos</span>
-          </a>
-
-          <a href="/creator/dashboard" className="flex flex-col items-center py-2 px-4 text-neutral-500 hover:text-neutral-400">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-            <span className="text-xs font-medium mt-1">Panel</span>
-          </a>
-
-          <a href="/creator/applications" className="flex flex-col items-center py-2 px-4 text-neutral-500 hover:text-neutral-400">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <span className="text-xs font-medium mt-1">Aplicaciones</span>
-          </a>
-
-          <div className="flex flex-col items-center py-2 px-4 text-emerald-400">
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-            </svg>
-            <span className="text-xs font-medium mt-1">Perfil</span>
-          </div>
-        </div>
-        <div className="h-1 bg-gray-900 mx-auto w-32 rounded-full mb-2"></div>
-      </div>
+      {/* Navegación inferior (compartida) */}
+      <CreatorBottomNav />
 
       {/* Logout Confirmation Modal */}
       {showLogoutModal && (
@@ -925,7 +896,7 @@ export default function ProfilePage() {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowLogoutModal(false)}
-                className="flex-1 py-3 px-4 bg-neutral-800 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
+                className="flex-1 py-3 px-4 bg-neutral-800 text-neutral-200 rounded-xl font-semibold hover:bg-neutral-800 transition-colors"
               >
                 Cancelar
               </button>

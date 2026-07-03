@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const GEMINI_API_KEY = 'AIzaSyDb26jKEli_4Tx1jlhhf9amaGoKVW88DEo'
+// SOLO env var — la key anterior quedó en el historial de git y en docs:
+// rotarla en Google AI Studio y setear GEMINI_API_KEY en .env.local y Vercel
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || ''
 
 const SYSTEM_PROMPT = `Eres el asistente de Octopus. Responde CORTO y DIRECTO (maximo 2-3 oraciones).
 

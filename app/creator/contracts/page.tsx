@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 import LegalContractDocument from '@/components/contracts/LegalContractDocument'
 import CreateDeliveryModal from '@/components/deliveries/CreateDeliveryModal'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import CreatorBottomNav from '@/components/ui/CreatorBottomNav'
+import { Music2, Instagram, Youtube, Clapperboard, Smartphone, BarChart3, ClipboardList, Package, MessageCircle, User, type LucideIcon } from 'lucide-react'
 
 interface Contract {
   id: string
@@ -45,15 +47,20 @@ const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }
   accepted: { label: 'Aceptado', color: 'text-green-400', bg: 'bg-green-500/20' },
   rejected: { label: 'Rechazado', color: 'text-red-400', bg: 'bg-red-500/20' },
   cancelled: { label: 'Cancelado', color: 'text-red-400', bg: 'bg-red-500/20' },
-  in_progress: { label: 'En Progreso', color: 'text-violet-400', bg: 'bg-violet-500/20' },
+  in_progress: { label: 'En Progreso', color: 'text-emerald-400', bg: 'bg-emerald-500/20' },
   completed: { label: 'Completado', color: 'text-emerald-400', bg: 'bg-emerald-500/20' },
 }
 
-const PLATFORM_ICONS: Record<string, string> = {
-  tiktok: '🎵',
-  instagram: '📸',
-  youtube: '▶️',
-  ugc: '🎬',
+const PLATFORM_ICONS: Record<string, LucideIcon> = {
+  tiktok: Music2,
+  instagram: Instagram,
+  youtube: Youtube,
+  ugc: Clapperboard,
+}
+
+function PlatformIcon({ platform, className = 'w-4 h-4' }: { platform: string; className?: string }) {
+  const Icon = PLATFORM_ICONS[platform] || Smartphone
+  return <Icon className={className} strokeWidth={2} />
 }
 
 export default function CreatorContractsPage() {
@@ -271,7 +278,7 @@ export default function CreatorContractsPage() {
               conversation_id: apps[0].id,
               sender_id: user.id,
               sender_type: 'creator',
-              content: `✅ He aceptado el contrato "${selectedContract.title}".\n\nMis handles: ${handlesText}`
+              content: `He aceptado el contrato "${selectedContract.title}".\n\nMis handles: ${handlesText}`
             })
           })
         }
@@ -351,7 +358,7 @@ export default function CreatorContractsPage() {
     return (
       <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-10 h-10 border-4 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-neutral-400">Cargando contratos...</p>
         </div>
       </div>
@@ -390,9 +397,9 @@ export default function CreatorContractsPage() {
               onClick={() => setFilter(f.id as any)}
               className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
                 filter === f.id
-                  ? 'bg-violet-600 text-white'
+                  ? 'bg-emerald-600 text-white'
                   : 'bg-neutral-800 text-neutral-400 hover:text-white'
-              }`}
+              } placeholder-neutral-500`}
             >
               {f.label}
             </button>
@@ -436,9 +443,11 @@ export default function CreatorContractsPage() {
                   <div className="flex items-center gap-1 text-green-400">
                     <span className="font-semibold">{formatCurrency(contract.payment_amount, contract.payment_currency)}</span>
                   </div>
-                  <div className="flex items-center gap-1 text-neutral-500">
-                    <span>
-                      {contract.deliverables.map((d: any) => PLATFORM_ICONS[d.platform] || '📱').join(' ')}
+                  <div className="flex items-center gap-1.5 text-neutral-500">
+                    <span className="flex items-center gap-1">
+                      {contract.deliverables.map((d: any, i: number) => (
+                        <PlatformIcon key={i} platform={d.platform} className="w-3.5 h-3.5" />
+                      ))}
                     </span>
                     <span>{contract.deliverables.reduce((sum: number, d: any) => sum + (d.quantity || 1), 0)} entregables</span>
                   </div>
@@ -453,7 +462,7 @@ export default function CreatorContractsPage() {
                 {/* CTA for accepted contracts */}
                 {contract.status === 'accepted' && (
                   <div
-                    className="mt-3 flex items-center gap-2 text-violet-400 bg-violet-500/10 border border-violet-500/30 rounded-xl px-3 py-2"
+                    className="mt-3 flex items-center gap-2 text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 rounded-xl px-3 py-2"
                     onClick={(e) => {
                       e.stopPropagation()
                       setContractForDelivery(contract)
@@ -538,8 +547,9 @@ export default function CreatorContractsPage() {
 
                 return (
                   <div key={platform}>
-                    <label className="block text-sm font-medium text-neutral-300 mb-2">
-                      {PLATFORM_ICONS[platform]} {platform.charAt(0).toUpperCase() + platform.slice(1)}
+                    <label className="flex items-center gap-2 text-sm font-medium text-neutral-300 mb-2">
+                      <PlatformIcon platform={platform} className="w-4 h-4" />
+                      {platform.charAt(0).toUpperCase() + platform.slice(1)}
                     </label>
                     <div className="flex gap-2">
                       <input
@@ -547,14 +557,14 @@ export default function CreatorContractsPage() {
                         value={handleValue}
                         onChange={(e) => setHandles({ ...handles, [platform]: e.target.value })}
                         placeholder="tu_usuario"
-                        className="flex-1 px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-violet-500"
+                        className="flex-1 px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
                       />
                       {verifyUrl && cleanHandle && (
                         <a
                           href={verifyUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-neutral-400 hover:text-white hover:border-violet-500 transition-colors flex items-center gap-2"
+                          className="px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-neutral-400 hover:text-white hover:border-emerald-500 transition-colors flex items-center gap-2"
                           title={`Verificar @${cleanHandle} en ${platform}`}
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -567,8 +577,8 @@ export default function CreatorContractsPage() {
                 )
               })}
 
-              <div className="bg-violet-500/10 border border-violet-500/30 rounded-xl p-4">
-                <p className="text-sm text-violet-300">
+              <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4">
+                <p className="text-sm text-emerald-300">
                   Al aceptar, confirmas que los handles son tuyos y que cumplirás con los términos del contrato.
                 </p>
               </div>
@@ -603,31 +613,8 @@ export default function CreatorContractsPage() {
         </div>
       )}
 
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-800">
-        <div className="flex justify-around py-3">
-          <Link href="/creator/dashboard" className="flex flex-col items-center gap-1 px-4 py-1 text-neutral-500 hover:text-neutral-300">
-            <span className="text-xl">📊</span>
-            <span className="text-xs">Panel</span>
-          </Link>
-          <div className="flex flex-col items-center gap-1 px-4 py-1 text-violet-400">
-            <span className="text-xl">📋</span>
-            <span className="text-xs">Contratos</span>
-          </div>
-          <Link href="/creator/deliveries" className="flex flex-col items-center gap-1 px-4 py-1 text-neutral-500 hover:text-neutral-300">
-            <span className="text-xl">📦</span>
-            <span className="text-xs">Entregas</span>
-          </Link>
-          <Link href="/creator/messages" className="flex flex-col items-center gap-1 px-4 py-1 text-neutral-500 hover:text-neutral-300">
-            <span className="text-xl">💬</span>
-            <span className="text-xs">Mensajes</span>
-          </Link>
-          <Link href="/creator/profile" className="flex flex-col items-center gap-1 px-4 py-1 text-neutral-500 hover:text-neutral-300">
-            <span className="text-xl">👤</span>
-            <span className="text-xs">Perfil</span>
-          </Link>
-        </div>
-      </div>
+      {/* Navegación inferior (compartida) */}
+      <CreatorBottomNav />
     </div>
   )
 }

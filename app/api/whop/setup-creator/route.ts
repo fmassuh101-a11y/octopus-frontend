@@ -1,26 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { whopClient, OCTOPUS_COMPANY_ID } from "@/lib/whop";
+import { SUPABASE_URL } from '@/lib/config/supabase'
+import { getAuthenticatedUser } from '@/lib/auth/apiAuth'
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ftvqoudlmojdxwjxljzr.supabase.co'
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 
 /**
  * POST /api/whop/setup-creator
- * Body: { userId, email, fullName, existingCompanyId? }
- *
- * Creates a Whop sub-company for the creator and returns KYC link
+ * Body: { email?, fullName?, existingCompanyId? }
+ * Crea la sub-company de Whop del usuario AUTENTICADO y devuelve link KYC
+ * (antes aceptaba userId del body → secuestro del destino de pagos).
  */
 export async function POST(request: NextRequest) {
   try {
-    console.log("[Setup Creator] Starting...");
-
-    // Get data from body
-    const body = await request.json();
-    const { userId, email, fullName, existingCompanyId } = body;
-
-    if (!userId) {
-      return NextResponse.json({ error: "userId requerido" }, { status: 400 });
+    const user = await getAuthenticatedUser(request)
+    if (!user) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
     }
+
+    const body = await request.json();
+    const { existingCompanyId } = body;
+    const userId = user.id;
+    const email = body.email || user.email;
+    const fullName = body.fullName;
 
     console.log("[Setup Creator] Processing:", { userId, email, hasExisting: !!existingCompanyId });
 

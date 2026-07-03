@@ -3,9 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase, getStoredSession, restoreSession } from '@/lib/supabase'
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ftvqoudlmojdxwjxljzr.supabase.co'
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { Clapperboard, Users, Scissors, Smartphone } from 'lucide-react'
 
 export default function HomePage() {
   const searchParams = useSearchParams()
@@ -334,8 +333,8 @@ export default function HomePage() {
   if (!mounted || tiktokProcessing) {
     return (
       <div className="min-h-screen bg-black flex flex-col items-center justify-center">
-        <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mb-6">
-          <span className="text-3xl">🐙</span>
+        <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/20">
+          <span className="text-3xl font-black text-white">O</span>
         </div>
         <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin mb-4"></div>
         <p className="text-white/60">
@@ -351,8 +350,8 @@ export default function HomePage() {
       <nav className="border-b border-white/10">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center">
-              <span className="text-2xl">🐙</span>
+            <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center">
+              <span className="text-xl font-black text-white">O</span>
             </div>
             <span className="text-2xl font-bold">Octopus</span>
           </div>
@@ -363,7 +362,7 @@ export default function HomePage() {
                 <button
                   onClick={handleContinue}
                   disabled={isLoading}
-                  className="bg-white text-black px-6 py-2.5 rounded-lg font-semibold hover:bg-white/90 transition disabled:opacity-70"
+                  className="bg-neutral-900 text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-white/90 transition disabled:opacity-70"
                 >
                   {isLoading ? (
                     <span className="flex items-center gap-2">
@@ -383,7 +382,7 @@ export default function HomePage() {
                 <a href="/auth/login" className="text-white/80 hover:text-white px-4 py-2.5 transition font-medium">
                   Iniciar Sesion
                 </a>
-                <a href="/auth/register" className="bg-white text-black px-6 py-2.5 rounded-lg font-semibold hover:bg-white/90 transition">
+                <a href="/auth/register" className="bg-neutral-900 text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-white/90 transition">
                   Comenzar
                 </a>
               </>
@@ -402,7 +401,7 @@ export default function HomePage() {
           <h1 className="text-5xl md:text-7xl font-bold mb-8 leading-tight">
             Conecta con marcas.
             <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-emerald-400 to-emerald-400">
               Multiplica tus ingresos.
             </span>
           </h1>
@@ -415,7 +414,7 @@ export default function HomePage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a
               href="/auth/register"
-              className="bg-white text-black px-8 py-4 rounded-xl font-bold text-lg hover:bg-white/90 transition transform hover:scale-105"
+              className="bg-neutral-900 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-white/90 transition transform hover:scale-105"
             >
               Comenzar Gratis
             </a>
@@ -435,11 +434,11 @@ export default function HomePage() {
             <div className="text-white/60 text-sm">Creadores Activos</div>
           </div>
           <div className="text-center p-6 bg-white/5 rounded-2xl border border-white/10">
-            <div className="text-3xl font-bold text-purple-400 mb-1">500+</div>
+            <div className="text-3xl font-bold text-emerald-400 mb-1">500+</div>
             <div className="text-white/60 text-sm">Marcas Premium</div>
           </div>
           <div className="text-center p-6 bg-white/5 rounded-2xl border border-white/10">
-            <div className="text-3xl font-bold text-pink-400 mb-1">$2M+</div>
+            <div className="text-3xl font-bold text-emerald-400 mb-1">$2M+</div>
             <div className="text-white/60 text-sm">Pagado a Creadores</div>
           </div>
           <div className="text-center p-6 bg-white/5 rounded-2xl border border-white/10">
@@ -454,28 +453,28 @@ export default function HomePage() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="p-6 bg-white/5 rounded-2xl border border-white/10 hover:border-white/20 transition">
-              <div className="text-3xl mb-4">🎬</div>
+              <div className="text-3xl mb-4"><Clapperboard className="w-7 h-7" strokeWidth={2} /></div>
               <h3 className="font-bold mb-2">Contenido UGC</h3>
               <p className="text-white/60 text-sm">Crea videos autenticos para marcas</p>
               <p className="text-blue-400 text-sm mt-2 font-medium">$200 - $2,000</p>
             </div>
 
             <div className="p-6 bg-white/5 rounded-2xl border border-white/10 hover:border-white/20 transition">
-              <div className="text-3xl mb-4">✂️</div>
+              <div className="text-3xl mb-4"><Scissors className="w-7 h-7" strokeWidth={2} /></div>
               <h3 className="font-bold mb-2">Clips & Edicion</h3>
               <p className="text-white/60 text-sm">Edita contenido para creadores</p>
-              <p className="text-purple-400 text-sm mt-2 font-medium">$50 - $500</p>
+              <p className="text-emerald-400 text-sm mt-2 font-medium">$50 - $500</p>
             </div>
 
             <div className="p-6 bg-white/5 rounded-2xl border border-white/10 hover:border-white/20 transition">
-              <div className="text-3xl mb-4">🤝</div>
+              <div className="text-3xl mb-4"><Users className="w-7 h-7" strokeWidth={2} /></div>
               <h3 className="font-bold mb-2">Colaboraciones</h3>
               <p className="text-white/60 text-sm">Trabaja directamente con marcas</p>
-              <p className="text-pink-400 text-sm mt-2 font-medium">$500 - $10,000</p>
+              <p className="text-emerald-400 text-sm mt-2 font-medium">$500 - $10,000</p>
             </div>
 
             <div className="p-6 bg-white/5 rounded-2xl border border-white/10 hover:border-white/20 transition">
-              <div className="text-3xl mb-4">📱</div>
+              <div className="text-3xl mb-4"><Smartphone className="w-7 h-7" strokeWidth={2} /></div>
               <h3 className="font-bold mb-2">Redes Sociales</h3>
               <p className="text-white/60 text-sm">Gestiona cuentas de marcas</p>
               <p className="text-emerald-400 text-sm mt-2 font-medium">$300 - $2,000/mes</p>
@@ -484,7 +483,7 @@ export default function HomePage() {
         </div>
 
         {/* CTA */}
-        <div className="text-center p-12 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 rounded-3xl border border-white/10">
+        <div className="text-center p-12 bg-gradient-to-r from-blue-500/10 via-emerald-500/10 to-emerald-500/10 rounded-3xl border border-white/10">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
             ¿Listo para empezar?
           </h2>
@@ -493,7 +492,7 @@ export default function HomePage() {
           </p>
           <a
             href="/auth/register"
-            className="inline-block bg-white text-black px-10 py-4 rounded-xl font-bold text-lg hover:bg-white/90 transition transform hover:scale-105"
+            className="inline-block bg-neutral-900 text-white px-10 py-4 rounded-xl font-bold text-lg hover:bg-white/90 transition transform hover:scale-105"
           >
             Crear Cuenta Gratis
           </a>

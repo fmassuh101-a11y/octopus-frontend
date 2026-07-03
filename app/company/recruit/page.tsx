@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { Home, ClipboardList, MessageCircle, Users } from 'lucide-react'
 
 interface CreatorProfile {
   id?: string
@@ -26,13 +27,13 @@ interface CreatorProfile {
 // Skeleton component
 function Skeleton({ className }: { className?: string }) {
   return (
-    <div className={`animate-pulse bg-neutral-800 rounded ${className || ''}`} />
+    <div className={`animate-pulse bg-neutral-800 rounded ${className || ''} text-white placeholder-neutral-500`} />
   )
 }
 
 function CreatorCardSkeleton() {
   return (
-    <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800">
+    <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 text-white placeholder-neutral-500">
       <div className="flex items-start gap-4">
         <Skeleton className="w-20 h-20 rounded-full" />
         <div className="flex-1 space-y-3">
@@ -220,7 +221,7 @@ export default function RecruitPage() {
 
       <div className="max-w-4xl mx-auto px-6 py-8">
         {/* Search Box */}
-        <div className="bg-gradient-to-br from-violet-600/20 to-indigo-600/20 rounded-2xl p-8 border border-violet-500/30 mb-8">
+        <div className="bg-gradient-to-br from-emerald-600/20 to-emerald-600/20 rounded-2xl p-8 border border-emerald-500/30 mb-8">
           <div className="text-center mb-6">
             <h2 className="text-2xl font-bold mb-2">Analiza cualquier creador</h2>
             <p className="text-neutral-400">Ingresa un handle de TikTok para ver sus estadisticas</p>
@@ -235,13 +236,13 @@ export default function RecruitPage() {
                 onChange={(e) => setHandle(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && searchCreator()}
                 placeholder="username"
-                className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-4 py-3 pl-9 text-lg focus:outline-none focus:border-violet-500 transition-colors"
+                className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-4 py-3 pl-9 text-lg focus:outline-none focus:border-emerald-500 transition-colors text-white placeholder-neutral-500"
               />
             </div>
             <button
               onClick={searchCreator}
               disabled={loading || !handle.trim()}
-              className="px-8 py-3 bg-violet-600 hover:bg-violet-500 rounded-xl font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 rounded-xl font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -285,7 +286,7 @@ export default function RecruitPage() {
 
         {/* Creator Result */}
         {creator && !loading && (
-          <div className="bg-neutral-900 rounded-2xl border border-neutral-800 overflow-hidden">
+          <div className="bg-neutral-900 rounded-2xl border border-neutral-800 overflow-hidden text-white placeholder-neutral-500">
             {/* Profile Header */}
             <div className="p-6 border-b border-neutral-800">
               <div className="flex items-start gap-5">
@@ -307,7 +308,7 @@ export default function RecruitPage() {
                   <p className="text-neutral-300">{creator.bio}</p>
                 </div>
                 <div className="flex gap-2">
-                  <button className="px-4 py-2 bg-violet-600 hover:bg-violet-500 rounded-xl font-medium transition-colors">
+                  <button className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-xl font-medium transition-colors">
                     Invitar a Campaña
                   </button>
                   <button className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 rounded-xl font-medium transition-colors">
@@ -369,7 +370,7 @@ export default function RecruitPage() {
                 <p className="font-medium">¿Te interesa este creador?</p>
                 <p className="text-sm text-neutral-500">Invitalo a una de tus campañas</p>
               </div>
-              <button className="px-6 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 rounded-xl font-semibold transition-all">
+              <button className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-600 hover:from-emerald-500 hover:to-emerald-500 rounded-xl font-semibold transition-all">
                 Enviar Invitacion
               </button>
             </div>
@@ -386,7 +387,7 @@ export default function RecruitPage() {
               {handle.trim() && filteredCreators.length === 0 && (
                 <button
                   onClick={() => setHandle('')}
-                  className="text-violet-400 hover:text-violet-300 text-sm"
+                  className="text-emerald-400 hover:text-emerald-300 text-sm"
                 >
                   Ver todos
                 </button>
@@ -403,7 +404,7 @@ export default function RecruitPage() {
                   <div
                     key={c.id || idx}
                     onClick={() => setCreator(c)}
-                    className="bg-neutral-900 rounded-2xl p-5 border border-neutral-800 hover:border-violet-500/50 cursor-pointer transition-all hover:shadow-lg hover:shadow-violet-500/10"
+                    className="bg-neutral-900 rounded-2xl p-5 border border-neutral-800 hover:border-emerald-500/50 cursor-pointer transition-all hover:shadow-lg hover:shadow-emerald-500/10 text-white placeholder-neutral-500"
                   >
                     <div className="flex items-start gap-4">
                       <img
@@ -447,7 +448,7 @@ export default function RecruitPage() {
                           </div>
                         )}
                         {c.instagram && (
-                          <div className="w-6 h-6 bg-gradient-to-br from-purple-500 to-pink-500 rounded flex items-center justify-center">
+                          <div className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-emerald-500 rounded flex items-center justify-center">
                             <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
                               <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073z"/>
                             </svg>
@@ -490,17 +491,17 @@ export default function RecruitPage() {
       <div className="fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-800 px-6 py-3">
         <div className="max-w-4xl mx-auto flex justify-around">
           {[
-            { icon: '🏠', label: 'Dashboard', href: '/company/dashboard' },
-            { icon: '📋', label: 'Campañas', href: '/company/campaigns' },
-            { icon: '💬', label: 'Mensajes', href: '/company/messages' },
-            { icon: '👥', label: 'Aplicantes', href: '/company/applicants' },
+            { icon: Home, label: 'Dashboard', href: '/company/dashboard' },
+            { icon: ClipboardList, label: 'Campañas', href: '/company/campaigns' },
+            { icon: MessageCircle, label: 'Mensajes', href: '/company/messages' },
+            { icon: Users, label: 'Aplicantes', href: '/company/applicants' },
           ].map((item) => (
             <Link
               key={item.label}
               href={item.href}
               className="flex flex-col items-center gap-1 text-neutral-400 hover:text-white transition-colors"
             >
-              <span className="text-xl">{item.icon}</span>
+              <item.icon className="w-5 h-5" strokeWidth={2} />
               <span className="text-xs">{item.label}</span>
             </Link>
           ))}

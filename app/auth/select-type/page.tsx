@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { Video, Building2, Check } from 'lucide-react'
 
 const ADMIN_EMAIL = 'fmassuh133@gmail.com'
 
@@ -114,10 +115,10 @@ export default function SelectTypePage() {
       <div className="max-w-md w-full">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <span className="text-3xl">🐙</span>
+          <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-500/20">
+            <span className="text-3xl font-black text-white">O</span>
           </div>
-          <h1 className="text-2xl font-bold text-white">Octopus</h1>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Octopus</h1>
         </div>
 
         {/* Card */}
@@ -133,21 +134,21 @@ export default function SelectTypePage() {
               onClick={() => setSelectedType('creator')}
               className={`w-full p-5 rounded-xl border-2 transition-all text-left ${
                 selectedType === 'creator'
-                  ? 'border-white bg-white/10'
+                  ? 'border-emerald-500 bg-emerald-500/10'
                   : 'border-white/10 hover:border-white/30'
               }`}
             >
               <div className="flex items-center">
-                <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-purple-600 rounded-xl flex items-center justify-center mr-4">
-                  <span className="text-2xl">🎨</span>
+                <div className="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center mr-4">
+                  <Video className="w-6 h-6 text-emerald-400" strokeWidth={2} />
                 </div>
                 <div className="flex-1">
                   <h3 className="font-bold text-white">Soy Creador</h3>
                   <p className="text-sm text-white/60">Quiero crear contenido y trabajar con marcas</p>
                 </div>
                 {selectedType === 'creator' && (
-                  <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
-                    <span className="text-black text-sm">✓</span>
+                  <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center">
+                    <Check className="w-4 h-4 text-white" strokeWidth={3} />
                   </div>
                 )}
               </div>
@@ -158,21 +159,21 @@ export default function SelectTypePage() {
               onClick={() => setSelectedType('company')}
               className={`w-full p-5 rounded-xl border-2 transition-all text-left ${
                 selectedType === 'company'
-                  ? 'border-white bg-white/10'
+                  ? 'border-emerald-500 bg-emerald-500/10'
                   : 'border-white/10 hover:border-white/30'
               }`}
             >
               <div className="flex items-center">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center mr-4">
-                  <span className="text-2xl">🏢</span>
+                <div className="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center mr-4">
+                  <Building2 className="w-6 h-6 text-emerald-400" strokeWidth={2} />
                 </div>
                 <div className="flex-1">
                   <h3 className="font-bold text-white">Soy Empresa</h3>
                   <p className="text-sm text-white/60">Quiero contratar creadores para mi marca</p>
                 </div>
                 {selectedType === 'company' && (
-                  <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
-                    <span className="text-black text-sm">✓</span>
+                  <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center">
+                    <Check className="w-4 h-4 text-white" strokeWidth={3} />
                   </div>
                 )}
               </div>
@@ -182,14 +183,14 @@ export default function SelectTypePage() {
           <button
             onClick={handleContinue}
             disabled={!selectedType}
-            className="w-full bg-white text-black py-3.5 rounded-xl font-bold hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            className="w-full bg-emerald-500 text-white py-3.5 rounded-xl font-bold hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             Continuar
           </button>
 
           <p className="text-center text-white/40 text-sm mt-6">
             ¿Ya tienes una cuenta?{' '}
-            <a href="/auth/login" className="text-white hover:underline">
+            <a href="/auth/login" className="text-emerald-400 hover:text-emerald-300 hover:underline">
               Inicia sesión
             </a>
           </p>

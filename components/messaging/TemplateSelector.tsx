@@ -87,33 +87,33 @@ export default function TemplateSelector({
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center">
-      <div className="bg-white w-full max-w-lg max-h-[85vh] flex flex-col rounded-t-3xl sm:rounded-2xl">
+      <div className="bg-neutral-900 w-full max-w-lg max-h-[85vh] flex flex-col rounded-t-3xl sm:rounded-2xl">
         {/* Header */}
-        <div className="p-4 border-b border-gray-100">
+        <div className="p-4 border-b border-neutral-800">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold text-gray-900">Enviar Mensaje</h3>
+            <h3 className="text-lg font-bold text-white">Enviar Mensaje</h3>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-neutral-800 rounded-lg transition-colors"
             >
-              <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
-          <p className="text-sm text-gray-500 mt-1">
-            Para: <span className="font-medium text-gray-700">{variables.nombre}</span>
+          <p className="text-sm text-neutral-500 mt-1">
+            Para: <span className="font-medium text-neutral-200">{variables.nombre}</span>
           </p>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-100">
+        <div className="flex border-b border-neutral-800">
           <button
             onClick={() => setShowCustom(false)}
             className={`flex-1 py-3 text-sm font-medium transition-colors ${
               !showCustom
-                ? 'text-purple-600 border-b-2 border-purple-600'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'text-emerald-600 border-b-2 border-emerald-600'
+                : 'text-neutral-500 hover:text-neutral-200'
             }`}
           >
             Mensajes Rapidos
@@ -122,8 +122,8 @@ export default function TemplateSelector({
             onClick={() => setShowCustom(true)}
             className={`flex-1 py-3 text-sm font-medium transition-colors ${
               showCustom
-                ? 'text-purple-600 border-b-2 border-purple-600'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'text-emerald-600 border-b-2 border-emerald-600'
+                : 'text-neutral-500 hover:text-neutral-200'
             }`}
           >
             Escribir Mensaje
@@ -137,12 +137,12 @@ export default function TemplateSelector({
               value={customMessage}
               onChange={(e) => setCustomMessage(e.target.value)}
               placeholder={`Escribe tu mensaje para ${variables.nombre}...`}
-              className="flex-1 min-h-[200px] p-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+              className="flex-1 min-h-[200px] p-4 border border-neutral-800 rounded-xl focus:outline-none bg-neutral-900 focus:ring-2 focus:ring-emerald-500 resize-none"
             />
             <button
               onClick={handleSendCustom}
               disabled={!customMessage.trim()}
-              className="mt-4 w-full py-3 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="mt-4 w-full py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
@@ -165,19 +165,19 @@ export default function TemplateSelector({
                     onClick={() => setSelectedTemplate(template)}
                     className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
                       isSelected
-                        ? 'border-purple-500 bg-purple-50'
-                        : 'border-gray-100 hover:border-purple-200 hover:bg-gray-50'
-                    }`}
+                        ? 'border-emerald-500 bg-emerald-50'
+                        : 'border-neutral-800 hover:border-emerald-200 hover:bg-neutral-950'
+                    } text-white placeholder-neutral-500`}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-semibold text-gray-900">{template.title}</span>
+                      <span className="font-semibold text-white">{template.title}</span>
                       {category && (
-                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                        <span className="text-xs text-neutral-500 bg-neutral-800 px-2 py-1 rounded-full">
                           {category.emoji}
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-600 line-clamp-2">{processed}</p>
+                    <p className="text-sm text-neutral-400 line-clamp-2">{processed}</p>
                   </button>
                 )
               })}
@@ -185,14 +185,14 @@ export default function TemplateSelector({
 
             {/* Preview & Send */}
             {selectedTemplate && (
-              <div className="border-t border-gray-100 p-4">
-                <p className="text-xs font-medium text-gray-500 mb-2">Vista previa del mensaje:</p>
-                <div className="bg-purple-50 rounded-xl p-3 max-h-24 overflow-y-auto mb-4">
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{preview}</p>
+              <div className="border-t border-neutral-800 p-4">
+                <p className="text-xs font-medium text-neutral-500 mb-2">Vista previa del mensaje:</p>
+                <div className="bg-emerald-50 rounded-xl p-3 max-h-24 overflow-y-auto mb-4">
+                  <p className="text-sm text-neutral-200 whitespace-pre-wrap">{preview}</p>
                 </div>
                 <button
                   onClick={handleSend}
-                  className="w-full py-3 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
                 >
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />

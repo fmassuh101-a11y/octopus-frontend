@@ -1,10 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 
 // Hardcoded credentials
-const SUPABASE_URL = 'https://ftvqoudlmojdxwjxljzr.supabase.co'
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
 
 export default function TikTokCallbackPage() {
   const [status, setStatus] = useState('Conectando con TikTok...')
@@ -245,7 +244,7 @@ export default function TikTokCallbackPage() {
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center">
-      <div className="bg-white rounded-3xl p-10 shadow-2xl max-w-sm w-full mx-4 text-center">
+      <div className="bg-neutral-900 rounded-3xl p-10 shadow-2xl max-w-sm w-full mx-4 text-center">
         {/* TikTok Logo */}
         <div className="w-20 h-20 bg-black rounded-2xl flex items-center justify-center mx-auto mb-6">
           <svg className="w-10 h-10 text-white" viewBox="0 0 24 24" fill="currentColor">
@@ -253,14 +252,14 @@ export default function TikTokCallbackPage() {
           </svg>
         </div>
 
-        <h2 className={`text-lg font-bold mb-4 ${error ? 'text-red-600' : 'text-gray-800'}`}>
+        <h2 className={`text-lg font-bold mb-4 ${error ? 'text-red-600' : 'text-white'}`}>
           {status}
         </h2>
 
         {!error && (
           <>
             {/* Progress bar */}
-            <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
+            <div className="w-full bg-neutral-800 rounded-full h-2 mb-4">
               <div
                 className="bg-black h-2 rounded-full transition-all duration-500"
                 style={{ width: `${progress}%` }}
@@ -275,7 +274,7 @@ export default function TikTokCallbackPage() {
         )}
 
         {error && (
-          <p className="text-gray-500 text-sm">Redirigiendo...</p>
+          <p className="text-neutral-500 text-sm">Redirigiendo...</p>
         )}
       </div>
     </div>

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { BarChart3, Briefcase, Smartphone, Users, Video } from 'lucide-react'
 
 interface Post {
   id: string
@@ -216,7 +217,7 @@ export default function CompanyPostsPage() {
     return (
       <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-neutral-400">Cargando posts...</p>
         </div>
       </div>
@@ -248,15 +249,15 @@ export default function CompanyPostsPage() {
       {/* Stats Overview */}
       <div className="px-4 py-4">
         <div className="grid grid-cols-3 gap-3">
-          <div className="bg-neutral-900 rounded-xl p-3 border border-neutral-800 text-center">
+          <div className="bg-neutral-900 rounded-xl p-3 border border-neutral-800 text-center text-white placeholder-neutral-500">
             <p className="text-lg font-bold">{formatNumber(totalViews)}</p>
             <p className="text-xs text-neutral-500">Views Totales</p>
           </div>
-          <div className="bg-neutral-900 rounded-xl p-3 border border-neutral-800 text-center">
+          <div className="bg-neutral-900 rounded-xl p-3 border border-neutral-800 text-center text-white placeholder-neutral-500">
             <p className="text-lg font-bold">{formatNumber(totalLikes)}</p>
             <p className="text-xs text-neutral-500">Likes Totales</p>
           </div>
-          <div className="bg-neutral-900 rounded-xl p-3 border border-neutral-800 text-center">
+          <div className="bg-neutral-900 rounded-xl p-3 border border-neutral-800 text-center text-white placeholder-neutral-500">
             <p className="text-lg font-bold text-green-400">{avgEngagement.toFixed(1)}%</p>
             <p className="text-xs text-neutral-500">Engagement Prom</p>
           </div>
@@ -270,7 +271,7 @@ export default function CompanyPostsPage() {
           <select
             value={filterPlatform}
             onChange={(e) => setFilterPlatform(e.target.value as FilterPlatform)}
-            className="px-3 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="px-3 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-white placeholder-neutral-500"
           >
             <option value="all">Todas las plataformas</option>
             <option value="tiktok">TikTok</option>
@@ -282,7 +283,7 @@ export default function CompanyPostsPage() {
           <select
             value={filterCreator}
             onChange={(e) => setFilterCreator(e.target.value)}
-            className="px-3 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="px-3 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-white placeholder-neutral-500"
           >
             <option value="all">Todos los creadores</option>
             {creators.map(c => (
@@ -294,7 +295,7 @@ export default function CompanyPostsPage() {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortBy)}
-            className="px-3 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="px-3 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-white placeholder-neutral-500"
           >
             <option value="recent">Mas recientes</option>
             <option value="views">Mas views</option>
@@ -307,8 +308,8 @@ export default function CompanyPostsPage() {
       {/* Posts Grid */}
       <div className="px-4">
         {filteredPosts.length === 0 ? (
-          <div className="bg-neutral-900 rounded-2xl p-8 border border-neutral-800 text-center">
-            <span className="text-4xl block mb-4">📱</span>
+          <div className="bg-neutral-900 rounded-2xl p-8 border border-neutral-800 text-center text-white placeholder-neutral-500">
+            <Smartphone className="w-8 h-8" strokeWidth={2} />
             <h3 className="text-lg font-semibold mb-2">Sin posts</h3>
             <p className="text-neutral-500 text-sm">
               Los posts de tus creadores aceptados apareceran aqui
@@ -320,7 +321,7 @@ export default function CompanyPostsPage() {
               <div
                 key={post.id}
                 onClick={() => setSelectedPost(post)}
-                className="bg-neutral-900 rounded-2xl overflow-hidden border border-neutral-800 cursor-pointer hover:border-neutral-700 transition"
+                className="bg-neutral-900 rounded-2xl overflow-hidden border border-neutral-800 cursor-pointer hover:border-neutral-700 transition text-white placeholder-neutral-500"
               >
                 {/* Thumbnail */}
                 <div className="aspect-[9/16] relative bg-neutral-800">
@@ -332,7 +333,7 @@ export default function CompanyPostsPage() {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <span className="text-3xl">📹</span>
+                      <Video className="w-7 h-7" strokeWidth={2} />
                     </div>
                   )}
 
@@ -351,9 +352,9 @@ export default function CompanyPostsPage() {
                   <div className="absolute top-2 right-2">
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                       post.engagementRate >= 10 ? 'bg-green-500/90 text-white' :
-                      post.engagementRate >= 5 ? 'bg-yellow-500/90 text-black' :
+                      post.engagementRate >= 5 ? 'bg-yellow-500/90' :
                       'bg-neutral-700/90 text-white'
-                    }`}>
+                    } placeholder-neutral-500`}>
                       {post.engagementRate.toFixed(1)}%
                     </span>
                   </div>
@@ -388,7 +389,7 @@ export default function CompanyPostsPage() {
                         className="w-6 h-6 rounded-full object-cover"
                       />
                     ) : (
-                      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-xs font-bold">
+                      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-500 flex items-center justify-center text-xs font-bold">
                         {post.creatorName.charAt(0)}
                       </div>
                     )}
@@ -424,7 +425,7 @@ export default function CompanyPostsPage() {
                     className="w-10 h-10 rounded-full object-cover"
                   />
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center font-bold">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-500 flex items-center justify-center font-bold">
                     {selectedPost.creatorName.charAt(0)}
                   </div>
                 )}
@@ -453,7 +454,7 @@ export default function CompanyPostsPage() {
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
-                  <span className="text-5xl">📹</span>
+                  <Video className="w-10 h-10" strokeWidth={2} />
                 </div>
               )}
             </div>
@@ -484,7 +485,7 @@ export default function CompanyPostsPage() {
                 selectedPost.engagementRate >= 10 ? 'bg-green-500/20 border border-green-500/30' :
                 selectedPost.engagementRate >= 5 ? 'bg-yellow-500/20 border border-yellow-500/30' :
                 'bg-neutral-800 border border-neutral-700'
-              }`}>
+              } text-white placeholder-neutral-500`}>
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Engagement Rate</span>
                   <span className={`text-xl font-bold ${
@@ -515,7 +516,7 @@ export default function CompanyPostsPage() {
                 href={`https://tiktok.com/@username/video/${selectedPost.id}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-4 block w-full py-3 bg-white text-black rounded-xl font-semibold text-center hover:bg-neutral-200 transition"
+                className="mt-4 block w-full py-3 bg-neutral-900 text-white rounded-xl font-semibold text-center hover:bg-neutral-200 transition"
               >
                 Ver en TikTok
               </a>
@@ -528,23 +529,23 @@ export default function CompanyPostsPage() {
       <div className="fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-800">
         <div className="flex justify-around py-3">
           <button onClick={() => router.push('/company/dashboard')} className="flex flex-col items-center space-y-1 text-neutral-500 hover:text-white transition-colors">
-            <span className="text-lg">📊</span>
+            <BarChart3 className="w-5 h-5" strokeWidth={2} />
             <span className="text-xs">Dashboard</span>
           </button>
           <button onClick={() => router.push('/company/jobs')} className="flex flex-col items-center space-y-1 text-neutral-500 hover:text-white transition-colors">
-            <span className="text-lg">💼</span>
+            <Briefcase className="w-5 h-5" strokeWidth={2} />
             <span className="text-xs">Mis Gigs</span>
           </button>
-          <div className="flex flex-col items-center space-y-1 text-purple-500">
-            <span className="text-lg">📱</span>
+          <div className="flex flex-col items-center space-y-1 text-emerald-500">
+            <Smartphone className="w-5 h-5" strokeWidth={2} />
             <span className="text-xs font-medium">Posts</span>
           </div>
           <button onClick={() => router.push('/company/applicants')} className="flex flex-col items-center space-y-1 text-neutral-500 hover:text-white transition-colors">
-            <span className="text-lg">👥</span>
+            <Users className="w-5 h-5" strokeWidth={2} />
             <span className="text-xs">Aplicantes</span>
           </button>
         </div>
-        <div className="h-1 bg-white mx-auto w-32 rounded-full mb-2" />
+        <div className="h-1 bg-neutral-900 mx-auto w-32 rounded-full mb-2" />
       </div>
     </div>
   )

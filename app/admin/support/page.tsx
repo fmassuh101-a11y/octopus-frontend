@@ -378,9 +378,9 @@ export default function AdminSupportPage() {
                 msg.sender_type === 'agent'
                   ? 'bg-sky-600 text-white'
                   : msg.sender_type === 'bot'
-                  ? 'bg-violet-600/30 text-violet-200'
-                  : 'bg-neutral-800 text-white'
-              }`}>
+                  ? 'bg-emerald-600/30 text-emerald-200'
+                  : 'bg-neutral-800'
+              } placeholder-neutral-500`}>
                 <p className="text-xs opacity-70 mb-1 font-medium">
                   {msg.sender_type === 'agent' ? 'Tu' : msg.sender_type === 'bot' ? 'Bot IA' : selectedConversation.user_name}
                 </p>
@@ -404,7 +404,7 @@ export default function AdminSupportPage() {
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                 placeholder="Escribe tu respuesta..."
-                className="flex-1 px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-base focus:outline-none focus:border-sky-500"
+                className="flex-1 px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-base focus:outline-none focus:border-sky-500 text-white placeholder-neutral-500"
               />
               <button
                 onClick={sendMessage}
@@ -441,15 +441,15 @@ export default function AdminSupportPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-3 gap-3 mb-5">
-          <div className="bg-neutral-800/50 rounded-xl p-3 border border-neutral-700/50">
+          <div className="bg-neutral-800/50 rounded-xl p-3 border border-neutral-700/50 text-white placeholder-neutral-500">
             <p className="text-2xl font-bold text-sky-400">{stats.pending}</p>
             <p className="text-xs text-neutral-400">Pendientes</p>
           </div>
-          <div className="bg-neutral-800/50 rounded-xl p-3 border border-neutral-700/50">
+          <div className="bg-neutral-800/50 rounded-xl p-3 border border-neutral-700/50 text-white placeholder-neutral-500">
             <p className="text-2xl font-bold text-emerald-400">{stats.resolved}</p>
             <p className="text-xs text-neutral-400">Resueltos</p>
           </div>
-          <div className="bg-neutral-800/50 rounded-xl p-3 border border-neutral-700/50">
+          <div className="bg-neutral-800/50 rounded-xl p-3 border border-neutral-700/50 text-white placeholder-neutral-500">
             <div className="flex items-center gap-1">
               <p className="text-2xl font-bold text-yellow-400">{stats.averageRating || '-'}</p>
               <svg className="w-5 h-5 text-yellow-400 fill-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -476,7 +476,7 @@ export default function AdminSupportPage() {
             onClick={() => setFilter('resolved')}
             className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
               filter === 'resolved'
-                ? 'bg-emerald-500 text-white shadow-lg'
+                ? 'bg-emerald-500 shadow-lg'
                 : 'text-neutral-400 hover:text-white'
             }`}
           >
@@ -517,8 +517,8 @@ export default function AdminSupportPage() {
               <div className="flex items-start gap-3">
                 <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg ${
                   conv.user_type === 'creator'
-                    ? 'bg-gradient-to-br from-violet-500 to-purple-600 text-white'
-                    : 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white'
+                    ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white'
+                    : 'bg-gradient-to-br from-emerald-500 to-teal-600'
                 }`}>
                   {conv.user_name?.charAt(0)?.toUpperCase() || '?'}
                 </div>
@@ -531,7 +531,7 @@ export default function AdminSupportPage() {
                   <div className="flex items-center gap-2">
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
                       conv.user_type === 'creator'
-                        ? 'bg-violet-500/20 text-violet-300'
+                        ? 'bg-emerald-500/20 text-emerald-300'
                         : 'bg-emerald-500/20 text-emerald-300'
                     }`}>
                       {conv.user_type === 'creator' ? 'Creador' : 'Empresa'}

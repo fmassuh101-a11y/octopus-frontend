@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-
-const SUPABASE_URL = 'https://ftvqoudlmojdxwjxljzr.supabase.co'
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { authHeaders } from '@/lib/auth/clientToken'
+import { Building2, Camera, Globe, Music2, Phone, Target, Landmark } from 'lucide-react'
 
 export default function CompanyLogoPage() {
   const [logo, setLogo] = useState<string | null>(null)
@@ -136,11 +136,8 @@ export default function CompanyLogoPage() {
       console.log('Saving company profile via API...')
       const saveResponse = await fetch('/api/profile/save', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
-          userId: user.id,
           profileData: profileData,
           userToken: accessToken
         })
@@ -171,31 +168,31 @@ export default function CompanyLogoPage() {
   // Show loading while checking session
   if (checkingSession) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-neutral-950 to-neutral-950 flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-slate-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-500 text-sm">Verificando sesión...</p>
+          <p className="text-neutral-500 text-sm">Verificando sesión...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-50 flex">
+    <div className="min-h-screen bg-gradient-to-br from-neutral-950 to-neutral-950 flex">
       {/* Left Section */}
       <div className="flex-1 p-8 max-w-2xl">
         {/* Logo */}
         <div className="mb-8">
           <div className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-gradient-to-r from-slate-700 to-slate-900 rounded-xl flex items-center justify-center shadow-lg">
-              <span className="text-xl text-white">🐙</span>
+            <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+              <span className="text-xl text-white font-black">O</span>
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-slate-700 to-slate-900 bg-clip-text text-transparent">Octopus</span>
+            <span className="text-xl font-bold bg-gradient-to-r from-emerald-500 to-emerald-600 bg-clip-text text-transparent">Octopus</span>
           </div>
         </div>
 
         {/* Step indicator */}
-        <div className="inline-block px-4 py-1.5 bg-slate-100 rounded-full text-sm text-slate-700 font-medium mb-6">
+        <div className="inline-block px-4 py-1.5 bg-neutral-800 rounded-full text-sm text-neutral-200 font-medium mb-6">
           Paso 6 de 7
         </div>
 
@@ -204,13 +201,13 @@ export default function CompanyLogoPage() {
           {[1,2,3,4,5].map(i => (
             <div key={i} className="w-2.5 h-2.5 bg-slate-300 rounded-full"></div>
           ))}
-          <div className="w-10 h-2.5 bg-gradient-to-r from-slate-600 to-slate-800 rounded-full"></div>
-          <div className="w-2.5 h-2.5 bg-gray-200 rounded-full"></div>
+          <div className="w-10 h-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full"></div>
+          <div className="w-2.5 h-2.5 bg-neutral-800 rounded-full"></div>
         </div>
 
         {/* Title */}
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Logo de tu Empresa</h1>
-        <p className="text-gray-500 mb-8">Sube el logo de tu empresa para que los creadores te reconozcan</p>
+        <h1 className="text-3xl font-bold text-white mb-2">Logo de tu Empresa</h1>
+        <p className="text-neutral-500 mb-8">Sube el logo de tu empresa para que los creadores te reconozcan</p>
 
         {/* Auth status */}
         {!isAuthenticated ? (
@@ -223,7 +220,7 @@ export default function CompanyLogoPage() {
         ) : (
           <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl">
             <p className="text-green-800 text-sm text-center">
-              ✓ Sesión activa: {user?.email}
+              Sesión activa: {user?.email}
             </p>
           </div>
         )}
@@ -237,23 +234,23 @@ export default function CompanyLogoPage() {
         <div className="flex flex-col items-center py-8">
           <div
             onClick={() => fileInputRef.current?.click()}
-            className="w-36 h-36 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-100 border-3 border-dashed border-slate-300 flex items-center justify-center cursor-pointer hover:from-slate-200 hover:to-slate-200 transition-all hover:scale-105 overflow-hidden shadow-lg"
+            className="w-36 h-36 rounded-2xl bg-gradient-to-br from-neutral-900 to-neutral-900 border-3 border-dashed border-neutral-700 flex items-center justify-center cursor-pointer hover:from-emerald-600 hover:to-emerald-700 transition-all hover:scale-105 overflow-hidden shadow-lg"
           >
             {logo ? (
               <img src={logo} alt="Logo" className="w-full h-full object-cover" />
             ) : (
               <div className="text-center">
-                <svg className="w-12 h-12 text-slate-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-12 h-12 text-neutral-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                <p className="text-sm text-slate-500 font-medium">Subir logo</p>
+                <p className="text-sm text-neutral-500 font-medium">Subir logo</p>
               </div>
             )}
           </div>
 
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="mt-6 px-8 py-3 bg-white border-2 border-slate-200 text-slate-600 rounded-xl font-semibold hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm"
+            className="mt-6 px-8 py-3 bg-neutral-900 border-2 border-neutral-800 text-neutral-400 rounded-xl font-semibold hover:bg-neutral-950 hover:border-neutral-700 transition-all shadow-sm text-white placeholder-neutral-500"
           >
             {logo ? 'Cambiar Foto' : 'Seleccionar Archivo'}
           </button>
@@ -263,15 +260,15 @@ export default function CompanyLogoPage() {
             type="file"
             accept="image/*"
             onChange={handlePhotoUpload}
-            className="hidden"
+            className="hidden bg-neutral-900 text-white placeholder-neutral-500"
           />
 
-          <p className="text-sm text-gray-400 mt-4">PNG, JPG o GIF (max. 5MB)</p>
+          <p className="text-sm text-neutral-500 mt-4">PNG, JPG o GIF (max. 5MB)</p>
         </div>
 
         {/* Buttons */}
         <div className="flex items-center justify-between mt-8">
-          <Link href="/onboarding/company/terms" className="flex items-center text-gray-500 hover:text-gray-700 font-medium">
+          <Link href="/onboarding/company/terms" className="flex items-center text-neutral-500 hover:text-neutral-200 font-medium">
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
@@ -284,7 +281,7 @@ export default function CompanyLogoPage() {
             className={`px-10 py-3 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl ${
               loading || !isAuthenticated
                 ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-gradient-to-r from-slate-700 to-slate-900 hover:from-slate-600 hover:to-slate-700'
+                : 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-500 hover:to-emerald-600'
             } text-white`}
           >
             {loading ? 'Guardando...' : !isAuthenticated ? 'Inicia sesión primero' : 'Finalizar'}
@@ -293,78 +290,78 @@ export default function CompanyLogoPage() {
       </div>
 
       {/* Right Section - Summary Card */}
-      <div className="hidden lg:block w-96 bg-white/50 backdrop-blur-sm p-8 overflow-y-auto border-l border-slate-100">
-        <div className="bg-white rounded-3xl p-6 shadow-xl border border-slate-100">
-          <div className="w-14 h-14 bg-gradient-to-br from-slate-700 to-slate-900 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
+      <div className="hidden lg:block w-96 bg-neutral-900/50 backdrop-blur-sm p-8 overflow-y-auto border-l border-neutral-800">
+        <div className="bg-neutral-900 rounded-3xl p-6 shadow-xl border border-neutral-800 text-white placeholder-neutral-500">
+          <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
             <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
           </div>
 
-          <h3 className="font-bold text-gray-900 text-lg">Tu Empresa</h3>
-          <p className="text-sm text-gray-500 mb-6">Resumen de tu informacion</p>
+          <h3 className="font-bold text-white text-lg">Tu Empresa</h3>
+          <p className="text-sm text-neutral-500 mb-6">Resumen de tu informacion</p>
 
-          <div className="border-t border-gray-100 pt-4 space-y-4 text-sm">
+          <div className="border-t border-neutral-800 pt-4 space-y-4 text-sm">
             {formData.companyName && (
               <div className="flex items-start space-x-3">
-                <span className="text-lg">🏢</span>
+                <Building2 className="w-5 h-5" strokeWidth={2} />
                 <div>
-                  <p className="text-xs text-gray-400">Nombre de empresa</p>
-                  <p className="font-medium text-gray-800">{formData.companyName}</p>
+                  <p className="text-xs text-neutral-500">Nombre de empresa</p>
+                  <p className="font-medium text-white">{formData.companyName}</p>
                 </div>
               </div>
             )}
             {formData.website && (
               <div className="flex items-start space-x-3">
-                <span className="text-lg">🌐</span>
+                <Globe className="w-5 h-5" strokeWidth={2} />
                 <div>
-                  <p className="text-xs text-gray-400">Sitio web</p>
-                  <p className="font-medium text-gray-800">{formData.website}</p>
+                  <p className="text-xs text-neutral-500">Sitio web</p>
+                  <p className="font-medium text-white">{formData.website}</p>
                 </div>
               </div>
             )}
             {formData.phoneNumber && (
               <div className="flex items-start space-x-3">
-                <span className="text-lg">📞</span>
+                <Phone className="w-5 h-5" strokeWidth={2} />
                 <div>
-                  <p className="text-xs text-gray-400">Telefono</p>
-                  <p className="font-medium text-gray-800">{formData.countryCode}{formData.phoneNumber}</p>
+                  <p className="text-xs text-neutral-500">Telefono</p>
+                  <p className="font-medium text-white">{formData.countryCode}{formData.phoneNumber}</p>
                 </div>
               </div>
             )}
             {formData.orgType && (
               <div className="flex items-start space-x-3">
-                <span className="text-lg">🏛️</span>
+                <Landmark className="w-5 h-5" strokeWidth={2} />
                 <div>
-                  <p className="text-xs text-gray-400">Tipo de organizacion</p>
-                  <p className="font-medium text-gray-800">{formData.orgType}</p>
+                  <p className="text-xs text-neutral-500">Tipo de organizacion</p>
+                  <p className="font-medium text-white">{formData.orgType}</p>
                 </div>
               </div>
             )}
             {formData.niche && (
               <div className="flex items-start space-x-3">
-                <span className="text-lg">🎯</span>
+                <Target className="w-5 h-5" strokeWidth={2} />
                 <div>
-                  <p className="text-xs text-gray-400">Industria</p>
-                  <p className="font-medium text-gray-800">{formData.niche}</p>
+                  <p className="text-xs text-neutral-500">Industria</p>
+                  <p className="font-medium text-white">{formData.niche}</p>
                 </div>
               </div>
             )}
             {formData.tiktok && (
               <div className="flex items-start space-x-3">
-                <span className="text-lg">🎵</span>
+                <Music2 className="w-5 h-5" strokeWidth={2} />
                 <div>
-                  <p className="text-xs text-gray-400">TikTok</p>
-                  <p className="font-medium text-gray-800">@{formData.tiktok}</p>
+                  <p className="text-xs text-neutral-500">TikTok</p>
+                  <p className="font-medium text-white">@{formData.tiktok}</p>
                 </div>
               </div>
             )}
             {formData.instagram && (
               <div className="flex items-start space-x-3">
-                <span className="text-lg">📸</span>
+                <Camera className="w-5 h-5" strokeWidth={2} />
                 <div>
-                  <p className="text-xs text-gray-400">Instagram</p>
-                  <p className="font-medium text-gray-800">@{formData.instagram}</p>
+                  <p className="text-xs text-neutral-500">Instagram</p>
+                  <p className="font-medium text-white">@{formData.instagram}</p>
                 </div>
               </div>
             )}

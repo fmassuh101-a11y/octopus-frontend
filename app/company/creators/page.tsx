@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { ClipboardList, Eye, Home, MessageCircle, Smartphone, Users, Wallet } from 'lucide-react'
 
 interface Creator {
   id: string
@@ -20,12 +21,12 @@ interface Creator {
 }
 
 function Skeleton({ className }: { className?: string }) {
-  return <div className={`animate-pulse bg-neutral-800 rounded ${className || ''}`} />
+  return <div className={`animate-pulse bg-neutral-800 rounded ${className || ''} text-white placeholder-neutral-500`} />
 }
 
 function CreatorSkeleton() {
   return (
-    <div className="bg-neutral-900 rounded-xl p-4 border border-neutral-800">
+    <div className="bg-neutral-900 rounded-xl p-4 border border-neutral-800 text-white placeholder-neutral-500">
       <div className="flex items-center gap-4">
         <Skeleton className="w-14 h-14 rounded-full" />
         <div className="flex-1 space-y-2">
@@ -144,7 +145,7 @@ export default function CreatorsPage() {
             </div>
             <Link
               href="/company/recruit"
-              className="px-4 py-2 bg-violet-600 hover:bg-violet-500 rounded-xl font-medium transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-xl font-medium transition-colors flex items-center gap-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -167,16 +168,16 @@ export default function CreatorsPage() {
               placeholder="Buscar creador..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 pl-10 focus:outline-none focus:border-violet-500 transition-colors"
+              className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 pl-10 focus:outline-none focus:border-emerald-500 transition-colors text-white placeholder-neutral-500"
             />
           </div>
-          <div className="flex bg-neutral-900 border border-neutral-800 rounded-xl p-1">
+          <div className="flex bg-neutral-900 border border-neutral-800 rounded-xl p-1 text-white placeholder-neutral-500">
             {['all', 'active', 'completed'].map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f as any)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  filter === f ? 'bg-violet-600 text-white' : 'text-neutral-400 hover:text-white'
+                  filter === f ? 'bg-emerald-600 text-white' : 'text-neutral-400 hover:text-white'
                 }`}
               >
                 {f === 'all' ? 'Todos' : f === 'active' ? 'Activos' : 'Completados'}
@@ -188,14 +189,14 @@ export default function CreatorsPage() {
         {/* Stats */}
         <div className="grid grid-cols-4 gap-4 mb-8">
           {[
-            { label: 'Creadores', value: creators.length, icon: '👥' },
-            { label: 'Gasto Total', value: `$${creators.reduce((s, c) => s + c.total_spent, 0).toLocaleString()}`, icon: '💰' },
-            { label: 'Posts Totales', value: creators.reduce((s, c) => s + c.total_posts, 0), icon: '📱' },
-            { label: 'Views Totales', value: formatNumber(creators.reduce((s, c) => s + c.total_views, 0)), icon: '👁️' },
+            { label: 'Creadores', value: creators.length, icon: Users },
+            { label: 'Gasto Total', value: `$${creators.reduce((s, c) => s + c.total_spent, 0).toLocaleString()}`, icon: Wallet },
+            { label: 'Posts Totales', value: creators.reduce((s, c) => s + c.total_posts, 0), icon: Smartphone },
+            { label: 'Views Totales', value: formatNumber(creators.reduce((s, c) => s + c.total_views, 0)), icon: Eye },
           ].map((stat) => (
-            <div key={stat.label} className="bg-neutral-900 rounded-xl p-4 border border-neutral-800">
+            <div key={stat.label} className="bg-neutral-900 rounded-xl p-4 border border-neutral-800 text-white placeholder-neutral-500">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-2xl">{stat.icon}</span>
+                <stat.icon className="w-6 h-6" strokeWidth={2} />
               </div>
               <p className="text-2xl font-bold">{stat.value}</p>
               <p className="text-sm text-neutral-500">{stat.label}</p>
@@ -211,7 +212,7 @@ export default function CreatorsPage() {
         ) : filteredCreators.length === 0 ? (
           <div className="text-center py-16">
             <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-neutral-800 flex items-center justify-center">
-              <span className="text-4xl">👥</span>
+              <Users className="w-8 h-8" strokeWidth={2} />
             </div>
             <h3 className="text-xl font-semibold mb-2">
               {searchTerm ? 'No se encontraron creadores' : 'Sin creadores aun'}
@@ -232,7 +233,7 @@ export default function CreatorsPage() {
                 </Link>
                 <Link
                   href="/company/recruit"
-                  className="px-6 py-3 bg-violet-600 hover:bg-violet-500 rounded-xl font-medium transition-colors"
+                  className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 rounded-xl font-medium transition-colors"
                 >
                   Buscar Creadores
                 </Link>
@@ -245,7 +246,7 @@ export default function CreatorsPage() {
               <Link
                 key={creator.id}
                 href={`/company/creator/${creator.id}`}
-                className="block bg-neutral-900 rounded-xl p-4 border border-neutral-800 hover:border-neutral-700 transition-all hover:bg-neutral-800/50"
+                className="block bg-neutral-900 rounded-xl p-4 border border-neutral-800 hover:border-neutral-700 transition-all hover:bg-neutral-800/50 text-white placeholder-neutral-500"
               >
                 <div className="flex items-center gap-4">
                   <img
@@ -260,7 +261,7 @@ export default function CreatorsPage() {
                         creator.status === 'active'
                           ? 'bg-green-500/20 text-green-400'
                           : 'bg-neutral-500/20 text-neutral-400'
-                      }`}>
+                      } text-white placeholder-neutral-500`}>
                         {creator.status === 'active' ? 'Activo' : 'Completado'}
                       </span>
                     </div>
@@ -296,17 +297,17 @@ export default function CreatorsPage() {
       <div className="fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-800 px-6 py-3">
         <div className="max-w-4xl mx-auto flex justify-around">
           {[
-            { icon: '🏠', label: 'Dashboard', href: '/company/dashboard' },
-            { icon: '📋', label: 'Campañas', href: '/company/campaigns' },
-            { icon: '💬', label: 'Mensajes', href: '/company/messages' },
-            { icon: '👥', label: 'Aplicantes', href: '/company/applicants' },
+            { icon: Home, label: 'Dashboard', href: '/company/dashboard' },
+            { icon: ClipboardList, label: 'Campañas', href: '/company/campaigns' },
+            { icon: MessageCircle, label: 'Mensajes', href: '/company/messages' },
+            { icon: Users, label: 'Aplicantes', href: '/company/applicants' },
           ].map((item) => (
             <Link
               key={item.label}
               href={item.href}
               className="flex flex-col items-center gap-1 text-neutral-400 hover:text-white transition-colors"
             >
-              <span className="text-xl">{item.icon}</span>
+              <item.icon className="w-5 h-5" strokeWidth={2} />
               <span className="text-xs">{item.label}</span>
             </Link>
           ))}

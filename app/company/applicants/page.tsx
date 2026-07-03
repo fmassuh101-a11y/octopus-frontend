@@ -412,10 +412,10 @@ export default function ApplicantsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-10 h-10 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando aplicantes...</p>
+          <div className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-neutral-400">Cargando aplicantes...</p>
         </div>
       </div>
     )
@@ -427,15 +427,15 @@ export default function ApplicantsPage() {
       onClick={() => setActiveTab(tab)}
       className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors relative ${
         activeTab === tab
-          ? 'text-purple-600 border-b-2 border-purple-600'
-          : 'text-gray-500 hover:text-gray-700'
+          ? 'text-emerald-600 border-b-2 border-emerald-600'
+          : 'text-neutral-500 hover:text-neutral-200'
       }`}
     >
       {label}
       {count > 0 && (
         <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${
-          activeTab === tab ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-600'
-        }`}>
+          activeTab === tab ? 'bg-emerald-100 text-emerald-600' : 'bg-neutral-800 text-neutral-400'
+        } text-white placeholder-neutral-500`}>
           {count}
         </span>
       )}
@@ -449,10 +449,10 @@ export default function ApplicantsPage() {
     const isUpdating = updatingId === app.id
 
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow">
+      <div className="bg-neutral-900 rounded-xl border border-neutral-800 p-4 hover:shadow-md transition-shadow text-white placeholder-neutral-500">
         {/* Header Row */}
         <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-2 text-xs text-gray-400">
+          <div className="flex items-center gap-2 text-xs text-neutral-500">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -461,17 +461,17 @@ export default function ApplicantsPage() {
           {/* Social Icons */}
           <div className="flex items-center gap-2">
             {creator?.instagram && (
-              <a href={`https://instagram.com/${(creator.instagram || '').replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-pink-500">
+              <a href={`https://instagram.com/${(creator.instagram || '').replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer" className="text-neutral-500 hover:text-emerald-500">
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
               </a>
             )}
             {tiktok && (
-              <a href={`https://tiktok.com/@${(tiktok.username || '').replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-black">
+              <a href={`https://tiktok.com/@${(tiktok.username || '').replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer" className="text-neutral-500 hover:text-white">
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/></svg>
               </a>
             )}
             {creator?.linkedin && (
-              <a href={creator.linkedin} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-blue-600">
+              <a href={creator.linkedin} target="_blank" rel="noopener noreferrer" className="text-neutral-500 hover:text-blue-600">
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
               </a>
             )}
@@ -488,20 +488,20 @@ export default function ApplicantsPage() {
                 className="w-12 h-12 rounded-full object-cover"
               />
             ) : (
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+              <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold text-lg">{getCreatorName(creator).charAt(0).toUpperCase()}</span>
               </div>
             )}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-gray-900 truncate">{getCreatorName(creator)}</h3>
+                <h3 className="font-semibold text-white truncate">{getCreatorName(creator)}</h3>
                 {tiktok?.isVerified && (
                   <svg className="w-4 h-4 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                 )}
               </div>
-              <p className="text-sm text-gray-500 truncate">
+              <p className="text-sm text-neutral-500 truncate">
                 {creator?.city && creator?.country ? `${creator.city}, ${creator.country}` : tiktok ? `@${tiktok.username}` : ''}
               </p>
             </div>
@@ -510,16 +510,16 @@ export default function ApplicantsPage() {
 
         {/* Bio/About */}
         {creator?.about && (
-          <p className="text-sm text-gray-600 mb-3 line-clamp-2">{creator.about}</p>
+          <p className="text-sm text-neutral-400 mb-3 line-clamp-2">{creator.about}</p>
         )}
 
         {/* Tags */}
         <div className="flex flex-wrap gap-2 mb-4">
           {creator?.niche && (
-            <span className="px-2 py-1 bg-purple-50 text-purple-700 rounded-full text-xs font-medium">{creator.niche}</span>
+            <span className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-medium">{creator.niche}</span>
           )}
           {tiktok && (
-            <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs">{formatNumber(getTotalFollowers(creator))} seguidores</span>
+            <span className="px-2 py-1 bg-neutral-800 text-neutral-400 rounded-full text-xs">{formatNumber(getTotalFollowers(creator))} seguidores</span>
           )}
           {app.gig && (
             <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs">{app.gig.category}</span>
@@ -527,12 +527,12 @@ export default function ApplicantsPage() {
         </div>
 
         {/* Action Buttons - Sideshift Style */}
-        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+        <div className="flex items-center justify-between pt-3 border-t border-neutral-800">
           <div className="flex items-center gap-2">
             {/* Eye - View Profile */}
             <button
               onClick={() => handleViewProfile(app)}
-              className="p-2 rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
+              className="p-2 rounded-full border border-neutral-800 text-neutral-500 hover:bg-neutral-950 hover:text-neutral-200 transition-colors"
               title="Ver perfil"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -546,9 +546,9 @@ export default function ApplicantsPage() {
               disabled={isUpdating}
               className={`p-2 rounded-full border transition-colors ${
                 app.bookmarked
-                  ? 'border-purple-300 bg-purple-50 text-purple-600'
-                  : 'border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-700'
-              }`}
+                  ? 'border-emerald-300 bg-emerald-50 text-emerald-600'
+                  : 'border-neutral-800 text-neutral-500 hover:bg-neutral-950 hover:text-neutral-200'
+              } placeholder-neutral-500`}
               title={app.bookmarked ? 'Quitar bookmark' : 'Guardar'}
             >
               <svg className="w-5 h-5" fill={app.bookmarked ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
@@ -563,7 +563,7 @@ export default function ApplicantsPage() {
               <button
                 onClick={(e) => handleSendMessage(app, e)}
                 disabled={isUpdating}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors text-sm font-medium disabled:opacity-50"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-neutral-800 text-neutral-200 hover:bg-neutral-950 transition-colors text-sm font-medium disabled:opacity-50"
               >
                 <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -576,7 +576,7 @@ export default function ApplicantsPage() {
               <button
                 onClick={(e) => handleDecline(app, e)}
                 disabled={isUpdating}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-gray-200 text-gray-700 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors text-sm font-medium disabled:opacity-50"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-neutral-800 text-neutral-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors text-sm font-medium disabled:opacity-50"
               >
                 <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -600,27 +600,27 @@ export default function ApplicantsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-neutral-950 pb-24">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <div className="bg-neutral-900 border-b border-neutral-800 sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
-              <Link href="/company/dashboard" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <Link href="/company/dashboard" className="p-2 hover:bg-neutral-800 rounded-lg transition-colors">
+                <svg className="w-6 h-6 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </Link>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Aplicantes</h1>
-                <p className="text-sm text-gray-500">Gestiona las aplicaciones a tus trabajos</p>
+                <h1 className="text-xl font-bold text-white">Aplicantes</h1>
+                <p className="text-sm text-neutral-500">Gestiona las aplicaciones a tus trabajos</p>
               </div>
             </div>
             {/* Job Filter */}
             <select
               value={selectedGigId}
               onChange={(e) => setSelectedGigId(e.target.value)}
-              className="px-4 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="px-4 py-2 border border-neutral-800 rounded-lg text-sm bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-white placeholder-neutral-500"
             >
               <option value="all">Todos los trabajos</option>
               {gigs.map(gig => (
@@ -630,7 +630,7 @@ export default function ApplicantsPage() {
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-1 overflow-x-auto border-b border-gray-200 -mb-px">
+          <div className="flex gap-1 overflow-x-auto border-b border-neutral-800 -mb-px">
             <TabButton tab="new" label="Nuevos" count={counts.new} />
             <TabButton tab="reviewed" label="Revisados" count={counts.reviewed} />
             <TabButton tab="messaged" label="Contactados" count={counts.messaged} />
@@ -645,13 +645,13 @@ export default function ApplicantsPage() {
       <div className="max-w-5xl mx-auto px-4 py-6">
         {filteredApps.length === 0 ? (
           <div className="text-center py-16">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-16 h-16 bg-neutral-800 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-1">Sin aplicantes</h3>
-            <p className="text-gray-500 text-sm">
+            <h3 className="text-lg font-medium text-white mb-1">Sin aplicantes</h3>
+            <p className="text-neutral-500 text-sm">
               {activeTab === 'new' && 'Los nuevos aplicantes apareceran aqui'}
               {activeTab === 'reviewed' && 'Los aplicantes que hayas revisado apareceran aqui'}
               {activeTab === 'messaged' && 'Los aplicantes que hayas contactado apareceran aqui'}
@@ -662,7 +662,7 @@ export default function ApplicantsPage() {
           </div>
         ) : (
           <>
-            <p className="text-sm text-gray-500 mb-4">
+            <p className="text-sm text-neutral-500 mb-4">
               Mostrando {filteredApps.length} de {applications.length} aplicantes
             </p>
             <div className="grid gap-4 md:grid-cols-2">
@@ -675,27 +675,27 @@ export default function ApplicantsPage() {
       </div>
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200">
+      <div className="fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-800">
         <div className="flex justify-around py-2">
-          <Link href="/company/dashboard" className="flex flex-col items-center py-2 px-4 text-gray-400 hover:text-gray-600">
+          <Link href="/company/dashboard" className="flex flex-col items-center py-2 px-4 text-neutral-500 hover:text-neutral-400">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
             </svg>
             <span className="text-xs font-medium mt-1">Dashboard</span>
           </Link>
-          <Link href="/company/campaigns" className="flex flex-col items-center py-2 px-4 text-gray-400 hover:text-gray-600">
+          <Link href="/company/campaigns" className="flex flex-col items-center py-2 px-4 text-neutral-500 hover:text-neutral-400">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
             </svg>
             <span className="text-xs font-medium mt-1">Trabajos</span>
           </Link>
-          <Link href="/company/messages" className="flex flex-col items-center py-2 px-4 text-gray-400 hover:text-gray-600">
+          <Link href="/company/messages" className="flex flex-col items-center py-2 px-4 text-neutral-500 hover:text-neutral-400">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
             <span className="text-xs font-medium mt-1">Mensajes</span>
           </Link>
-          <div className="flex flex-col items-center py-2 px-4 text-purple-600">
+          <div className="flex flex-col items-center py-2 px-4 text-emerald-600">
             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
               <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
             </svg>
@@ -708,15 +708,15 @@ export default function ApplicantsPage() {
       {/* Creator Profile Modal */}
       {selectedCreator && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center">
-          <div className="bg-white w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-2xl">
+          <div className="bg-neutral-900 w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-2xl">
             {/* Modal Header */}
-            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
-              <h2 className="text-lg font-bold text-gray-900">Perfil del Creador</h2>
+            <div className="sticky top-0 bg-neutral-900 border-b border-neutral-800 px-6 py-4 flex items-center justify-between z-10">
+              <h2 className="text-lg font-bold text-white">Perfil del Creador</h2>
               <button
                 onClick={() => setSelectedCreator(null)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-2 hover:bg-neutral-800 rounded-full transition-colors"
               >
-                <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -729,21 +729,21 @@ export default function ApplicantsPage() {
                   <img
                     src={selectedCreator.creator?.tiktokAccounts?.[0]?.avatarUrl || selectedCreator.creator?.avatar_url}
                     alt={getCreatorName(selectedCreator.creator)}
-                    className="w-24 h-24 rounded-full object-cover mx-auto mb-4 border-4 border-purple-100"
+                    className="w-24 h-24 rounded-full object-cover mx-auto mb-4 border-4 border-emerald-100"
                   />
                 ) : (
-                  <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-24 h-24 bg-gradient-to-br from-emerald-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
                     <span className="text-white font-bold text-3xl">
                       {getCreatorName(selectedCreator.creator).charAt(0).toUpperCase()}
                     </span>
                   </div>
                 )}
-                <h3 className="text-xl font-bold text-gray-900">{getCreatorName(selectedCreator.creator)}</h3>
+                <h3 className="text-xl font-bold text-white">{getCreatorName(selectedCreator.creator)}</h3>
                 {selectedCreator.creator?.city && selectedCreator.creator?.country && (
-                  <p className="text-gray-500">{selectedCreator.creator.city}, {selectedCreator.creator.country}</p>
+                  <p className="text-neutral-500">{selectedCreator.creator.city}, {selectedCreator.creator.country}</p>
                 )}
                 {selectedCreator.creator?.niche && (
-                  <span className="inline-block mt-2 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
+                  <span className="inline-block mt-2 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm font-medium">
                     {selectedCreator.creator.niche}
                   </span>
                 )}
@@ -751,7 +751,7 @@ export default function ApplicantsPage() {
 
               {/* Social Profiles */}
               <div className="mb-6">
-                <h4 className="font-semibold text-gray-900 mb-3">Redes Sociales</h4>
+                <h4 className="font-semibold text-white mb-3">Redes Sociales</h4>
                 <div className="grid grid-cols-2 gap-3">
                   {selectedCreator.creator?.tiktokAccounts?.[0] && (
                     <a
@@ -772,7 +772,7 @@ export default function ApplicantsPage() {
                       href={`https://instagram.com/${(selectedCreator.creator.instagram || '').replace(/^@/, '')}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 p-3 bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 text-white rounded-xl hover:opacity-90 transition-opacity"
+                      className="flex items-center gap-3 p-3 bg-gradient-to-br from-emerald-600 via-emerald-500 to-orange-400 text-white rounded-xl hover:opacity-90 transition-opacity"
                     >
                       <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
                       <div className="text-left">
@@ -787,23 +787,23 @@ export default function ApplicantsPage() {
               {/* TikTok Stats */}
               {selectedCreator.creator?.tiktokAccounts?.[0] && (
                 <div className="mb-6">
-                  <h4 className="font-semibold text-gray-900 mb-3">Estadisticas TikTok</h4>
+                  <h4 className="font-semibold text-white mb-3">Estadisticas TikTok</h4>
                   <div className="grid grid-cols-4 gap-3">
-                    <div className="text-center p-3 bg-gray-50 rounded-xl">
-                      <p className="font-bold text-lg text-gray-900">{formatNumber(selectedCreator.creator.tiktokAccounts[0].followers)}</p>
-                      <p className="text-xs text-gray-500">Seguidores</p>
+                    <div className="text-center p-3 bg-neutral-950 rounded-xl">
+                      <p className="font-bold text-lg text-white">{formatNumber(selectedCreator.creator.tiktokAccounts[0].followers)}</p>
+                      <p className="text-xs text-neutral-500">Seguidores</p>
                     </div>
-                    <div className="text-center p-3 bg-gray-50 rounded-xl">
-                      <p className="font-bold text-lg text-gray-900">{formatNumber(selectedCreator.creator.tiktokAccounts[0].likes)}</p>
-                      <p className="text-xs text-gray-500">Likes</p>
+                    <div className="text-center p-3 bg-neutral-950 rounded-xl">
+                      <p className="font-bold text-lg text-white">{formatNumber(selectedCreator.creator.tiktokAccounts[0].likes)}</p>
+                      <p className="text-xs text-neutral-500">Likes</p>
                     </div>
-                    <div className="text-center p-3 bg-gray-50 rounded-xl">
-                      <p className="font-bold text-lg text-gray-900">{selectedCreator.creator.tiktokAccounts[0].videoCount}</p>
-                      <p className="text-xs text-gray-500">Videos</p>
+                    <div className="text-center p-3 bg-neutral-950 rounded-xl">
+                      <p className="font-bold text-lg text-white">{selectedCreator.creator.tiktokAccounts[0].videoCount}</p>
+                      <p className="text-xs text-neutral-500">Videos</p>
                     </div>
-                    <div className="text-center p-3 bg-gray-50 rounded-xl">
-                      <p className="font-bold text-lg text-gray-900">{selectedCreator.creator.tiktokAccounts[0].engagementRate?.toFixed(1) || '0'}%</p>
-                      <p className="text-xs text-gray-500">Engage</p>
+                    <div className="text-center p-3 bg-neutral-950 rounded-xl">
+                      <p className="font-bold text-lg text-white">{selectedCreator.creator.tiktokAccounts[0].engagementRate?.toFixed(1) || '0'}%</p>
+                      <p className="text-xs text-neutral-500">Engage</p>
                     </div>
                   </div>
                 </div>
@@ -812,20 +812,20 @@ export default function ApplicantsPage() {
               {/* About */}
               {selectedCreator.creator?.about && (
                 <div className="mb-6">
-                  <h4 className="font-semibold text-gray-900 mb-2">Acerca de</h4>
-                  <p className="text-gray-600">{selectedCreator.creator.about}</p>
+                  <h4 className="font-semibold text-white mb-2">Acerca de</h4>
+                  <p className="text-neutral-400">{selectedCreator.creator.about}</p>
                 </div>
               )}
 
               {/* Application Info */}
-              <div className="mb-6 bg-purple-50 rounded-xl p-4">
-                <h4 className="font-semibold text-gray-900 mb-2">Aplico para:</h4>
-                <p className="text-purple-700 font-medium">{selectedCreator.gig?.title}</p>
-                <p className="text-sm text-gray-600">{selectedCreator.gig?.category} - {selectedCreator.gig?.budget}</p>
+              <div className="mb-6 bg-emerald-50 rounded-xl p-4">
+                <h4 className="font-semibold text-white mb-2">Aplico para:</h4>
+                <p className="text-emerald-700 font-medium">{selectedCreator.gig?.title}</p>
+                <p className="text-sm text-neutral-400">{selectedCreator.gig?.category} - {selectedCreator.gig?.budget}</p>
                 {selectedCreator.message && (
-                  <div className="mt-3 pt-3 border-t border-purple-100">
-                    <p className="text-sm text-gray-600 font-medium">Mensaje:</p>
-                    <p className="text-gray-700">{selectedCreator.message}</p>
+                  <div className="mt-3 pt-3 border-t border-emerald-100">
+                    <p className="text-sm text-neutral-400 font-medium">Mensaje:</p>
+                    <p className="text-neutral-200">{selectedCreator.message}</p>
                   </div>
                 )}
               </div>
@@ -839,7 +839,7 @@ export default function ApplicantsPage() {
                         handleDecline(selectedCreator)
                         setSelectedCreator(null)
                       }}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 border border-gray-200 text-gray-600 rounded-xl font-medium hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 border border-neutral-800 text-neutral-400 rounded-xl font-medium hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -864,7 +864,7 @@ export default function ApplicantsPage() {
                 {selectedCreator.status === 'accepted' && (
                   <Link
                     href={`/company/messages?creator=${selectedCreator.creator_id}&application=${selectedCreator.id}`}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 transition-colors"
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors"
                     onClick={() => setSelectedCreator(null)}
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

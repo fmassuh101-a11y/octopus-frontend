@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../../../lib/contexts/AuthContext'
+import { Wallet, TrendingUp, Rocket, Gem, ArrowLeftRight, Target, Check, Clock, RefreshCw } from 'lucide-react'
 
 export default function CreatorEarnings() {
   const router = useRouter()
@@ -12,7 +13,7 @@ export default function CreatorEarnings() {
   // Check authentication and redirect if not logged in
   useEffect(() => {
     if (!loading && !user) {
-      console.log('❌ [Earnings] No authenticated user, redirecting to login')
+      console.log('[Earnings] No authenticated user, redirecting to login')
       router.replace('/auth/login')
     }
   }, [loading, user, router])
@@ -20,10 +21,10 @@ export default function CreatorEarnings() {
   // Show loading while checking auth
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando...</p>
+          <p className="text-neutral-400">Cargando...</p>
         </div>
       </div>
     )
@@ -57,23 +58,23 @@ export default function CreatorEarnings() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-screen bg-neutral-950">
       {/* Header */}
-      <div className="bg-white sticky top-0 z-10 border-b border-gray-100">
+      <div className="bg-neutral-900 sticky top-0 z-10 border-b border-neutral-800">
         <div className="px-4 py-4">
           <div className="flex items-center justify-between">
             <button
               onClick={() => router.push('/creator/dashboard')}
-              className="w-10 h-10 bg-gradient-to-r from-gray-100 to-gray-200 rounded-xl flex items-center justify-center hover:from-gray-200 hover:to-gray-300 transition-all"
+              className="w-10 h-10 bg-gradient-to-r from-neutral-800 to-neutral-800 rounded-xl flex items-center justify-center hover:bg-neutral-700 transition-all"
             >
-              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
 
             <div className="text-center">
-              <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-purple-600 bg-clip-text text-transparent">💰 Earnings</h1>
-              <p className="text-xs text-gray-500">Your financial dashboard</p>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-white to-emerald-600 bg-clip-text text-transparent">Ganancias</h1>
+              <p className="text-xs text-neutral-500">Tu panel financiero</p>
             </div>
 
             <div className="w-10 h-10 bg-gradient-to-r from-green-400 to-emerald-500 rounded-xl flex items-center justify-center">
@@ -88,7 +89,7 @@ export default function CreatorEarnings() {
 
         {/* Time Filter */}
         <div className="flex justify-center">
-          <div className="bg-white rounded-2xl p-2 shadow-sm border border-gray-100">
+          <div className="bg-neutral-900 rounded-2xl p-2 shadow-sm border border-neutral-800 text-white placeholder-neutral-500">
             <div className="flex space-x-1">
               {[
                 { key: 'week', label: '7 Days' },
@@ -101,8 +102,8 @@ export default function CreatorEarnings() {
                   className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
                     timeFilter === tab.key
                       ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-md'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                  }`}
+                      : 'text-neutral-400 hover:text-white hover:bg-neutral-950'
+                  } placeholder-neutral-500`}
                 >
                   {tab.label}
                 </button>
@@ -117,7 +118,7 @@ export default function CreatorEarnings() {
             <div className="text-sm font-medium text-green-100 mb-2">Total Earnings ({timeFilter})</div>
             <div className="text-5xl font-black mb-3">${currentData.total.toLocaleString()}</div>
             <div className="flex items-center justify-center space-x-2">
-              <div className="bg-white/20 backdrop-blur-sm rounded-full px-3 py-1">
+              <div className="bg-neutral-900/20 backdrop-blur-sm rounded-full px-3 py-1">
                 <span className="text-sm font-bold">{currentData.growth}</span>
               </div>
               <span className="text-green-100 text-sm">vs previous {timeFilter}</span>
@@ -126,15 +127,15 @@ export default function CreatorEarnings() {
 
           {/* Quick Stats */}
           <div className="grid grid-cols-3 gap-4">
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-center">
+            <div className="bg-neutral-900/10 backdrop-blur-sm rounded-2xl p-4 text-center">
               <div className="text-2xl font-bold">{currentData.transactions}</div>
               <div className="text-xs text-green-100">Transactions</div>
             </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-center">
+            <div className="bg-neutral-900/10 backdrop-blur-sm rounded-2xl p-4 text-center">
               <div className="text-2xl font-bold">${Math.round(currentData.total / currentData.transactions)}</div>
               <div className="text-xs text-green-100">Avg Per Job</div>
             </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-center">
+            <div className="bg-neutral-900/10 backdrop-blur-sm rounded-2xl p-4 text-center">
               <div className="text-2xl font-bold">98%</div>
               <div className="text-xs text-green-100">Success Rate</div>
             </div>
@@ -142,9 +143,9 @@ export default function CreatorEarnings() {
         </div>
 
         {/* Chart Placeholder - Revolutionary Design */}
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">📈 Earnings Trend</h3>
-          <div className="h-48 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 rounded-2xl flex items-center justify-center relative overflow-hidden">
+        <div className="bg-neutral-900 rounded-3xl p-6 shadow-sm border border-neutral-800 text-white placeholder-neutral-500">
+          <h3 className="flex items-center gap-2 text-lg font-bold text-white mb-4"><TrendingUp className="w-5 h-5 text-emerald-400" strokeWidth={2} /> Tendencia de Ganancias</h3>
+          <div className="h-48 bg-gradient-to-br from-neutral-800 via-neutral-800 to-neutral-800 rounded-2xl flex items-center justify-center relative overflow-hidden">
             {/* Fake Chart Lines */}
             <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
               <defs>
@@ -165,18 +166,18 @@ export default function CreatorEarnings() {
               <circle cx="380" cy="20" r="4" fill="#ec4899" />
             </svg>
             <div className="text-center z-10">
-              <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+              <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-emerald-600 bg-clip-text text-transparent mb-2">
                 +{currentData.growth}
               </div>
-              <div className="text-gray-600 font-medium">Growth This {timeFilter.charAt(0).toUpperCase() + timeFilter.slice(1)}</div>
+              <div className="text-neutral-400 font-medium">Growth This {timeFilter.charAt(0).toUpperCase() + timeFilter.slice(1)}</div>
             </div>
           </div>
         </div>
 
         {/* Upcoming Payouts */}
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+        <div className="bg-neutral-900 rounded-3xl p-6 shadow-sm border border-neutral-800 text-white placeholder-neutral-500">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-gray-900">🚀 Upcoming Payouts</h3>
+            <h3 className="flex items-center gap-2 text-lg font-bold text-white"><Rocket className="w-5 h-5 text-emerald-400" strokeWidth={2} /> Pagos Próximos</h3>
             <span className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full">
               ${upcomingPayouts.reduce((sum, p) => sum + p.amount, 0).toLocaleString()} Expected
             </span>
@@ -186,11 +187,11 @@ export default function CreatorEarnings() {
               <div key={index} className="flex items-center justify-between p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border border-yellow-200">
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-sm">💎</span>
+                    <Gem className="w-4 h-4 text-white" strokeWidth={2} />
                   </div>
                   <div>
-                    <div className="font-semibold text-gray-900">{payout.campaign}</div>
-                    <div className="text-sm text-gray-600">{payout.date} • {payout.type}</div>
+                    <div className="font-semibold text-white">{payout.campaign}</div>
+                    <div className="text-sm text-neutral-400">{payout.date} • {payout.type}</div>
                   </div>
                 </div>
                 <div className="text-right">
@@ -202,32 +203,31 @@ export default function CreatorEarnings() {
         </div>
 
         {/* Recent Transactions */}
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">💸 Recent Transactions</h3>
+        <div className="bg-neutral-900 rounded-3xl p-6 shadow-sm border border-neutral-800 text-white placeholder-neutral-500">
+          <h3 className="flex items-center gap-2 text-lg font-bold text-white mb-4"><ArrowLeftRight className="w-5 h-5 text-emerald-400" strokeWidth={2} /> Transacciones Recientes</h3>
           <div className="space-y-3">
             {recentTransactions.map((transaction) => (
-              <div key={transaction.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+              <div key={transaction.id} className="flex items-center justify-between p-4 bg-neutral-950 rounded-xl hover:bg-neutral-800 transition-colors">
                 <div className="flex items-center space-x-3">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    transaction.status === 'paid' ? 'bg-green-100' :
-                    transaction.status === 'pending' ? 'bg-yellow-100' :
-                    'bg-blue-100'
+                    transaction.status === 'paid' ? 'bg-emerald-500/15 text-emerald-400' :
+                    transaction.status === 'pending' ? 'bg-amber-500/15 text-amber-400' :
+                    'bg-blue-500/15 text-blue-400'
                   }`}>
-                    <span className="text-sm">
-                      {transaction.status === 'paid' ? '✅' :
-                       transaction.status === 'pending' ? '⏳' : '🔄'}
-                    </span>
+                    {transaction.status === 'paid' ? <Check className="w-4 h-4" strokeWidth={2.5} /> :
+                     transaction.status === 'pending' ? <Clock className="w-4 h-4" strokeWidth={2} /> :
+                     <RefreshCw className="w-4 h-4" strokeWidth={2} />}
                   </div>
                   <div>
-                    <div className="font-semibold text-gray-900">{transaction.campaign}</div>
-                    <div className="text-sm text-gray-600">
+                    <div className="font-semibold text-white">{transaction.campaign}</div>
+                    <div className="text-sm text-neutral-400">
                       {transaction.date} • {transaction.status}
                     </div>
                   </div>
                 </div>
                 <div className="text-right">
                   <div className={`text-lg font-bold ${
-                    transaction.status === 'paid' ? 'text-green-600' : 'text-gray-600'
+                    transaction.status === 'paid' ? 'text-green-600' : 'text-neutral-400'
                   }`}>
                     ${transaction.amount}
                   </div>
@@ -238,20 +238,20 @@ export default function CreatorEarnings() {
         </div>
 
         {/* Performance Insights */}
-        <div className="bg-gradient-to-br from-purple-500 via-pink-500 to-red-500 rounded-3xl p-6 text-white shadow-xl">
-          <h3 className="text-lg font-bold mb-4">🎯 Performance Insights</h3>
+        <div className="bg-gradient-to-br from-emerald-500 via-emerald-500 to-red-500 rounded-3xl p-6 text-white shadow-xl">
+          <h3 className="flex items-center gap-2 text-lg font-bold mb-4"><Target className="w-5 h-5" strokeWidth={2} /> Métricas de Desempeño</h3>
           <div className="space-y-4">
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4">
+            <div className="bg-neutral-900/10 backdrop-blur-sm rounded-2xl p-4">
               <div className="text-2xl font-bold mb-2">Top Performing Category</div>
-              <div className="text-purple-100">UGC Content • $1,247 avg</div>
+              <div className="text-emerald-100">UGC Content • $1,247 avg</div>
             </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4">
+            <div className="bg-neutral-900/10 backdrop-blur-sm rounded-2xl p-4">
               <div className="text-2xl font-bold mb-2">Best Time to Post</div>
-              <div className="text-purple-100">Tuesdays 2-4 PM • +34% engagement</div>
+              <div className="text-emerald-100">Tuesdays 2-4 PM • +34% engagement</div>
             </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4">
+            <div className="bg-neutral-900/10 backdrop-blur-sm rounded-2xl p-4">
               <div className="text-2xl font-bold mb-2">Growth Potential</div>
-              <div className="text-purple-100">+67% possible with optimization</div>
+              <div className="text-emerald-100">+67% possible with optimization</div>
             </div>
           </div>
         </div>
@@ -259,9 +259,9 @@ export default function CreatorEarnings() {
       </div>
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100">
+      <div className="fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-800">
         <div className="flex justify-around py-3">
-          <button onClick={() => router.push('/gigs')} className="flex flex-col items-center space-y-1 text-gray-400 hover:text-blue-500 transition-colors">
+          <button onClick={() => router.push('/gigs')} className="flex flex-col items-center space-y-1 text-neutral-500 hover:text-blue-500 transition-colors">
             <div className="w-6 h-6 flex items-center justify-center">
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zM3 16a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
@@ -269,7 +269,7 @@ export default function CreatorEarnings() {
             </div>
             <span className="text-xs font-medium">Jobs</span>
           </button>
-          <button onClick={() => router.push('/creator/dashboard')} className="flex flex-col items-center space-y-1 text-gray-400 hover:text-purple-500 transition-colors">
+          <button onClick={() => router.push('/creator/dashboard')} className="flex flex-col items-center space-y-1 text-neutral-500 hover:text-emerald-500 transition-colors">
             <div className="w-6 h-6 flex items-center justify-center">
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
@@ -286,7 +286,7 @@ export default function CreatorEarnings() {
             </div>
             <span className="text-xs font-medium">Earnings</span>
           </div>
-          <button onClick={() => router.push('/creator/profile')} className="flex flex-col items-center space-y-1 text-gray-400 hover:text-pink-500 transition-colors">
+          <button onClick={() => router.push('/creator/profile')} className="flex flex-col items-center space-y-1 text-neutral-500 hover:text-emerald-500 transition-colors">
             <div className="w-6 h-6 flex items-center justify-center">
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
@@ -295,7 +295,7 @@ export default function CreatorEarnings() {
             <span className="text-xs font-medium">Profile</span>
           </button>
         </div>
-        <div className="h-1 bg-gray-900 mx-auto w-32 rounded-full mb-2"></div>
+        <div className="h-1 bg-neutral-900 mx-auto w-32 rounded-full mb-2"></div>
       </div>
     </div>
   )

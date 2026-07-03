@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { Bell, Inbox } from 'lucide-react'
 
 interface Notification {
   id: string
@@ -19,11 +20,11 @@ interface DeliveryNotificationBadgeProps {
 }
 
 const NOTIFICATION_ICONS: Record<string, string> = {
-  content_submitted: '📤',
-  content_approved: '✓',
+  content_submitted: '',
+  content_approved: '',
   revision_requested: '↻',
-  payment_released: '💰',
-  delivery_completed: '🎉',
+  payment_released: '',
+  delivery_completed: '',
 }
 
 export default function DeliveryNotificationBadge({ userId, userType }: DeliveryNotificationBadgeProps) {
@@ -154,7 +155,7 @@ export default function DeliveryNotificationBadge({ userId, userType }: Delivery
     return (
       <div className="relative">
         <button className="p-2 rounded-lg hover:bg-white/10">
-          <span className="text-xl animate-pulse">🔔</span>
+          <Bell className="w-5 h-5" strokeWidth={2} />
         </button>
       </div>
     )
@@ -167,7 +168,7 @@ export default function DeliveryNotificationBadge({ userId, userType }: Delivery
         onClick={() => setShowDropdown(!showDropdown)}
         className="relative p-2 rounded-lg hover:bg-white/10 transition-colors"
       >
-        <span className="text-xl">🔔</span>
+        <Bell className="w-5 h-5" strokeWidth={2} />
         {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
             {unreadCount > 9 ? '9+' : unreadCount}
@@ -185,14 +186,14 @@ export default function DeliveryNotificationBadge({ userId, userType }: Delivery
           />
 
           {/* Dropdown Content */}
-          <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-neutral-900 border border-neutral-800 rounded-2xl shadow-xl z-50 overflow-hidden">
+          <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-neutral-900 border border-neutral-800 rounded-2xl shadow-xl z-50 overflow-hidden text-white placeholder-neutral-500">
             {/* Header */}
             <div className="px-4 py-3 border-b border-neutral-800 flex items-center justify-between">
               <h3 className="font-semibold text-white">Notificaciones de Entregas</h3>
               {unreadCount > 0 && (
                 <button
                   onClick={markAllAsRead}
-                  className="text-xs text-violet-400 hover:text-violet-300"
+                  className="text-xs text-emerald-400 hover:text-emerald-300"
                 >
                   Marcar todo leido
                 </button>
@@ -203,7 +204,7 @@ export default function DeliveryNotificationBadge({ userId, userType }: Delivery
             <div className="max-h-96 overflow-y-auto">
               {notifications.length === 0 ? (
                 <div className="py-8 text-center">
-                  <span className="text-3xl block mb-2">📭</span>
+                  <Inbox className="w-7 h-7" strokeWidth={2} />
                   <p className="text-neutral-500 text-sm">Sin notificaciones</p>
                 </div>
               ) : (
@@ -212,12 +213,12 @@ export default function DeliveryNotificationBadge({ userId, userType }: Delivery
                     key={notif.id}
                     onClick={() => handleNotificationClick(notif)}
                     className={`w-full px-4 py-3 text-left hover:bg-neutral-800 transition-colors border-b border-neutral-800 last:border-0 ${
-                      !notif.read_at ? 'bg-violet-500/5' : ''
-                    }`}
+                      !notif.read_at ? 'bg-emerald-500/5' : ''
+                    } text-white placeholder-neutral-500`}
                   >
                     <div className="flex gap-3">
                       <span className="text-xl flex-shrink-0">
-                        {NOTIFICATION_ICONS[notif.type] || '📦'}
+                        {NOTIFICATION_ICONS[notif.type] || ''}
                       </span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
@@ -233,7 +234,7 @@ export default function DeliveryNotificationBadge({ userId, userType }: Delivery
                         </p>
                       </div>
                       {!notif.read_at && (
-                        <div className="w-2 h-2 bg-violet-500 rounded-full flex-shrink-0 mt-2" />
+                        <div className="w-2 h-2 bg-emerald-500 rounded-full flex-shrink-0 mt-2" />
                       )}
                     </div>
                   </button>
@@ -246,7 +247,7 @@ export default function DeliveryNotificationBadge({ userId, userType }: Delivery
               <div className="px-4 py-3 border-t border-neutral-800">
                 <a
                   href={userType === 'creator' ? '/creator/deliveries' : '/company/review-content'}
-                  className="block text-center text-sm text-violet-400 hover:text-violet-300 font-medium"
+                  className="block text-center text-sm text-emerald-400 hover:text-emerald-300 font-medium"
                 >
                   Ver todas las entregas
                 </a>

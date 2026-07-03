@@ -52,9 +52,9 @@ export function PerformanceChart({ videos }: PerformanceChartProps) {
 
   if (data.length === 0) {
     return (
-      <div className="bg-white rounded-2xl p-6 border border-gray-100">
-        <h3 className="font-semibold text-gray-900 mb-4">Rendimiento en el Tiempo</h3>
-        <div className="h-48 flex items-center justify-center text-gray-500 text-sm">
+      <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 text-white placeholder-neutral-500">
+        <h3 className="font-semibold text-white mb-4">Rendimiento en el Tiempo</h3>
+        <div className="h-48 flex items-center justify-center text-neutral-500 text-sm">
           No hay suficientes datos para mostrar el grafico
         </div>
       </div>
@@ -62,21 +62,21 @@ export function PerformanceChart({ videos }: PerformanceChartProps) {
   }
 
   return (
-    <div className="bg-white rounded-2xl p-6 border border-gray-100">
+    <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 text-white placeholder-neutral-500">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-        <h3 className="font-semibold text-gray-900">Rendimiento en el Tiempo</h3>
+        <h3 className="font-semibold text-white">Rendimiento en el Tiempo</h3>
 
         {/* Metric Toggle */}
-        <div className="flex bg-gray-100 rounded-lg p-1">
+        <div className="flex bg-neutral-800 rounded-lg p-1">
           {(Object.keys(METRIC_CONFIG) as MetricType[]).map((m) => (
             <button
               key={m}
               onClick={() => setMetric(m)}
               className={`px-3 py-1 text-sm font-medium rounded-md transition ${
                 metric === m
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
+                  ? 'bg-neutral-900 text-white shadow-sm'
+                  : 'text-neutral-400 hover:text-white'
+              } placeholder-neutral-500`}
             >
               {METRIC_CONFIG[m].label}
             </button>
@@ -131,24 +131,24 @@ export function PerformanceChart({ videos }: PerformanceChartProps) {
       </div>
 
       {/* Summary */}
-      <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-3 gap-4 text-center">
+      <div className="mt-4 pt-4 border-t border-neutral-800 grid grid-cols-3 gap-4 text-center">
         <div>
-          <div className="text-lg font-bold text-gray-900">
+          <div className="text-lg font-bold text-white">
             {data.length}
           </div>
-          <div className="text-xs text-gray-500">Dias con videos</div>
+          <div className="text-xs text-neutral-500">Dias con videos</div>
         </div>
         <div>
-          <div className="text-lg font-bold text-gray-900">
+          <div className="text-lg font-bold text-white">
             {data.reduce((sum, d) => sum + d.videoCount, 0)}
           </div>
-          <div className="text-xs text-gray-500">Videos totales</div>
+          <div className="text-xs text-neutral-500">Videos totales</div>
         </div>
         <div>
-          <div className="text-lg font-bold text-gray-900">
+          <div className="text-lg font-bold text-white">
             {(data.reduce((sum, d) => sum + d.engagementRate, 0) / data.length).toFixed(1)}%
           </div>
-          <div className="text-xs text-gray-500">Engagement prom.</div>
+          <div className="text-xs text-neutral-500">Engagement prom.</div>
         </div>
       </div>
     </div>

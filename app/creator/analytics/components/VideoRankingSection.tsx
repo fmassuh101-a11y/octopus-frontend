@@ -24,22 +24,22 @@ function VideoCard({
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition w-full text-left"
+      className="flex items-center gap-3 p-3 bg-neutral-950 rounded-xl hover:bg-neutral-800 transition w-full text-left"
     >
       {/* Rank */}
       <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
         isTop
           ? rank === 1 ? 'bg-yellow-400 text-yellow-900' :
-            rank === 2 ? 'bg-gray-300 text-gray-700' :
+            rank === 2 ? 'bg-gray-300 text-neutral-200' :
             rank === 3 ? 'bg-amber-600 text-white' :
-            'bg-gray-200 text-gray-600'
+            'bg-neutral-800 text-neutral-400'
           : 'bg-red-100 text-red-600'
-      }`}>
+      } placeholder-neutral-500`}>
         {rank}
       </div>
 
       {/* Thumbnail */}
-      <div className="w-12 h-16 rounded-lg overflow-hidden bg-gray-200 flex-shrink-0">
+      <div className="w-12 h-16 rounded-lg overflow-hidden bg-neutral-800 flex-shrink-0">
         {video.thumbnail ? (
           <img src={video.thumbnail} alt="" className="w-full h-full object-cover" />
         ) : (
@@ -49,21 +49,21 @@ function VideoCard({
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900 line-clamp-1">
+        <p className="text-sm font-medium text-white line-clamp-1">
           {video.title || 'Video'}
         </p>
         <div className="flex items-center gap-2 mt-1">
           <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${config.bgColor} ${config.color}`}>
             {video.engagementRate}%
           </span>
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-neutral-500">
             {formatNumber(video.views)} views
           </span>
         </div>
       </div>
 
       {/* Arrow */}
-      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg className="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
       </svg>
     </button>
@@ -90,7 +90,7 @@ export function VideoRankingSection({ videos, onVideoClick }: VideoRankingSectio
   // Special case: only 1-2 videos - show single column layout
   if (videos.length < 3) {
     return (
-      <div className="bg-white rounded-2xl p-5 border border-gray-100">
+      <div className="bg-neutral-900 rounded-2xl p-5 border border-neutral-800 text-white placeholder-neutral-500">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
             <svg className="w-5 h-5 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
@@ -98,8 +98,8 @@ export function VideoRankingSection({ videos, onVideoClick }: VideoRankingSectio
             </svg>
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900">Tus Videos</h3>
-            <p className="text-xs text-gray-500">Analisis de rendimiento</p>
+            <h3 className="font-semibold text-white">Tus Videos</h3>
+            <p className="text-xs text-neutral-500">Analisis de rendimiento</p>
           </div>
         </div>
 
@@ -127,7 +127,7 @@ export function VideoRankingSection({ videos, onVideoClick }: VideoRankingSectio
   return (
     <div className="grid md:grid-cols-2 gap-6">
       {/* Top Performers */}
-      <div className="bg-white rounded-2xl p-5 border border-gray-100">
+      <div className="bg-neutral-900 rounded-2xl p-5 border border-neutral-800 text-white placeholder-neutral-500">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
             <svg className="w-5 h-5 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
@@ -135,8 +135,8 @@ export function VideoRankingSection({ videos, onVideoClick }: VideoRankingSectio
             </svg>
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900">Top Performers</h3>
-            <p className="text-xs text-gray-500">Tus videos con mejor engagement</p>
+            <h3 className="font-semibold text-white">Top Performers</h3>
+            <p className="text-xs text-neutral-500">Tus videos con mejor engagement</p>
           </div>
         </div>
 
@@ -153,14 +153,14 @@ export function VideoRankingSection({ videos, onVideoClick }: VideoRankingSectio
         </div>
 
         {topPerformers.length === 0 && (
-          <p className="text-sm text-gray-500 text-center py-4">
+          <p className="text-sm text-neutral-500 text-center py-4">
             No hay suficientes videos para mostrar
           </p>
         )}
       </div>
 
       {/* Underperformers - Only show videos that are actually underperforming */}
-      <div className="bg-white rounded-2xl p-5 border border-gray-100">
+      <div className="bg-neutral-900 rounded-2xl p-5 border border-neutral-800 text-white placeholder-neutral-500">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
             <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -168,8 +168,8 @@ export function VideoRankingSection({ videos, onVideoClick }: VideoRankingSectio
             </svg>
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900">Necesitan Atencion</h3>
-            <p className="text-xs text-gray-500">Videos bajo el promedio</p>
+            <h3 className="font-semibold text-white">Necesitan Atencion</h3>
+            <p className="text-xs text-neutral-500">Videos bajo el promedio</p>
           </div>
         </div>
 
@@ -200,8 +200,8 @@ export function VideoRankingSection({ videos, onVideoClick }: VideoRankingSectio
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <p className="text-sm font-medium text-gray-900">Excelente trabajo!</p>
-            <p className="text-xs text-gray-500 text-center mt-1">
+            <p className="text-sm font-medium text-white">Excelente trabajo!</p>
+            <p className="text-xs text-neutral-500 text-center mt-1">
               Todos tus videos estan rindiendo bien
             </p>
           </div>

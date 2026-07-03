@@ -1,21 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { whopClient } from "@/lib/whop";
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { getAuthenticatedUser } from '@/lib/auth/apiAuth'
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ftvqoudlmojdxwjxljzr.supabase.co'
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
 
 /**
- * GET /api/whop/creator-payouts?userId=xxx
- * Returns creator's withdrawal/payout history
+ * GET /api/whop/creator-payouts
+ * Devuelve el historial de retiros del usuario AUTENTICADO
+ * (antes filtraba el historial de cualquier userId del query string).
  */
 export async function GET(request: NextRequest) {
   try {
-    const userId = request.nextUrl.searchParams.get('userId')
-
-    if (!userId) {
-      return NextResponse.json({ error: "userId required" }, { status: 400 })
+    const user = await getAuthenticatedUser(request)
+    if (!user) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
     }
+    const userId = user.id
 
     const apiKey = SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY
     const authToken = SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY

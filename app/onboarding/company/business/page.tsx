@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { Building2, Globe } from 'lucide-react'
 
 export default function CompanyBusinessPage() {
   const [companyName, setCompanyName] = useState('')
@@ -92,40 +93,40 @@ export default function CompanyBusinessPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-50 flex">
+    <div className="min-h-screen bg-gradient-to-br from-neutral-950 to-neutral-950 flex">
       {/* Left Section */}
       <div className="flex-1 p-8 max-w-2xl">
         {/* Logo */}
         <div className="mb-8">
           <div className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-gradient-to-r from-slate-700 to-slate-900 rounded-xl flex items-center justify-center shadow-lg">
-              <span className="text-xl text-white">🐙</span>
+            <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+              <span className="text-xl text-white font-black">O</span>
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-slate-700 to-slate-900 bg-clip-text text-transparent">Octopus</span>
+            <span className="text-xl font-bold bg-gradient-to-r from-emerald-500 to-emerald-600 bg-clip-text text-transparent">Octopus</span>
           </div>
         </div>
 
         {/* Step indicator */}
-        <div className="inline-block px-4 py-1.5 bg-slate-100 rounded-full text-sm text-slate-700 font-medium mb-6">
+        <div className="inline-block px-4 py-1.5 bg-neutral-800 rounded-full text-sm text-neutral-200 font-medium mb-6">
           Paso 1 de 7
         </div>
 
         {/* Progress dots */}
         <div className="flex space-x-2 mb-8">
-          <div className="w-10 h-2.5 bg-gradient-to-r from-slate-600 to-slate-800 rounded-full"></div>
+          <div className="w-10 h-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full"></div>
           {[2,3,4,5,6,7].map(i => (
-            <div key={i} className="w-2.5 h-2.5 bg-gray-200 rounded-full"></div>
+            <div key={i} className="w-2.5 h-2.5 bg-neutral-800 rounded-full"></div>
           ))}
         </div>
 
         {/* Title */}
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Cuéntanos sobre tu empresa</h1>
-        <p className="text-gray-500 mb-8">Proporciona el nombre de tu empresa, sitio web y URL de App Store</p>
+        <h1 className="text-3xl font-bold text-white mb-2">Cuéntanos sobre tu empresa</h1>
+        <p className="text-neutral-500 mb-8">Proporciona el nombre de tu empresa, sitio web y URL de App Store</p>
 
         {/* Form */}
         <div className="space-y-6">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Nombre de la empresa *</label>
+            <label className="block text-sm font-semibold text-neutral-200 mb-2">Nombre de la empresa *</label>
             <input
               type="text"
               value={companyName}
@@ -134,13 +135,13 @@ export default function CompanyBusinessPage() {
                 if (errors.companyName) setErrors({...errors, companyName: undefined})
               }}
               placeholder="Ej: Octopus, Nike, Apple"
-              className={`w-full px-4 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent bg-white shadow-sm ${errors.companyName ? 'border-red-500' : 'border-gray-200'}`}
+              className={`w-full px-4 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-neutral-900 shadow-sm ${errors.companyName ? 'border-red-500' : 'border-neutral-800'} text-white placeholder-neutral-500`}
             />
             {errors.companyName && <p className="text-red-500 text-sm mt-1">{errors.companyName}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Sitio web *</label>
+            <label className="block text-sm font-semibold text-neutral-200 mb-2">Sitio web *</label>
             <input
               type="url"
               value={website}
@@ -149,14 +150,14 @@ export default function CompanyBusinessPage() {
                 if (errors.website) setErrors({...errors, website: undefined})
               }}
               placeholder="www.tuempresa.com"
-              className={`w-full px-4 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent bg-white shadow-sm ${errors.website ? 'border-red-500' : 'border-gray-200'}`}
+              className={`w-full px-4 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-neutral-900 shadow-sm ${errors.website ? 'border-red-500' : 'border-neutral-800'} text-white placeholder-neutral-500`}
             />
             {errors.website && <p className="text-red-500 text-sm mt-1">{errors.website}</p>}
-            <p className="text-gray-400 text-xs mt-1">Ejemplo: www.miempresa.com o https://miempresa.com</p>
+            <p className="text-neutral-500 text-xs mt-1">Ejemplo: www.miempresa.com o https://miempresa.com</p>
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">URL de App Store (opcional)</label>
+            <label className="block text-sm font-semibold text-neutral-200 mb-2">URL de App Store (opcional)</label>
             <input
               type="url"
               value={appStoreUrl}
@@ -165,7 +166,7 @@ export default function CompanyBusinessPage() {
                 if (errors.appStoreUrl) setErrors({...errors, appStoreUrl: undefined})
               }}
               placeholder="apps.apple.com/app/tu-app"
-              className={`w-full px-4 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent bg-white shadow-sm ${errors.appStoreUrl ? 'border-red-500' : 'border-gray-200'}`}
+              className={`w-full px-4 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-neutral-900 shadow-sm ${errors.appStoreUrl ? 'border-red-500' : 'border-neutral-800'} text-white placeholder-neutral-500`}
             />
             {errors.appStoreUrl && <p className="text-red-500 text-sm mt-1">{errors.appStoreUrl}</p>}
           </div>
@@ -173,7 +174,7 @@ export default function CompanyBusinessPage() {
 
         {/* Buttons */}
         <div className="flex items-center justify-between mt-12">
-          <Link href="/auth/select-type" className="flex items-center text-gray-500 hover:text-gray-700 font-medium">
+          <Link href="/auth/select-type" className="flex items-center text-neutral-500 hover:text-neutral-200 font-medium">
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
@@ -183,7 +184,7 @@ export default function CompanyBusinessPage() {
           <button
             onClick={handleContinue}
             disabled={!companyName || !website}
-            className="px-10 py-3 bg-gradient-to-r from-slate-700 to-slate-900 text-white rounded-xl font-semibold hover:from-slate-600 hover:to-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl"
+            className="px-10 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl font-semibold hover:from-emerald-500 hover:to-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl"
           >
             Continuar
           </button>
@@ -191,33 +192,33 @@ export default function CompanyBusinessPage() {
       </div>
 
       {/* Right Section - Summary Card */}
-      <div className="hidden lg:block w-96 bg-white/50 backdrop-blur-sm p-8 border-l border-slate-100">
-        <div className="bg-white rounded-3xl p-6 shadow-xl border border-slate-100">
-          <div className="w-14 h-14 bg-gradient-to-br from-slate-700 to-slate-900 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
+      <div className="hidden lg:block w-96 bg-neutral-900/50 backdrop-blur-sm p-8 border-l border-neutral-800">
+        <div className="bg-neutral-900 rounded-3xl p-6 shadow-xl border border-neutral-800 text-white placeholder-neutral-500">
+          <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
             <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
           </div>
 
-          <h3 className="font-bold text-gray-900 text-lg">Empresa</h3>
-          <p className="text-sm text-gray-500 mb-6">Busco contratar creadores de contenido para mi marca</p>
+          <h3 className="font-bold text-white text-lg">Empresa</h3>
+          <p className="text-sm text-neutral-500 mb-6">Busco contratar creadores de contenido para mi marca</p>
 
           {companyName && (
-            <div className="border-t border-gray-100 pt-4 space-y-4">
+            <div className="border-t border-neutral-800 pt-4 space-y-4">
               <div className="flex items-start space-x-3">
-                <span className="text-lg">🏢</span>
+                <Building2 className="w-5 h-5" strokeWidth={2} />
                 <div>
-                  <p className="text-xs text-gray-400">Nombre de empresa</p>
-                  <p className="font-medium text-gray-800">{companyName}</p>
+                  <p className="text-xs text-neutral-500">Nombre de empresa</p>
+                  <p className="font-medium text-white">{companyName}</p>
                 </div>
               </div>
 
               {website && (
                 <div className="flex items-start space-x-3">
-                  <span className="text-lg">🌐</span>
+                  <Globe className="w-5 h-5" strokeWidth={2} />
                   <div>
-                    <p className="text-xs text-gray-400">Sitio web</p>
-                    <p className="font-medium text-gray-800">{website}</p>
+                    <p className="text-xs text-neutral-500">Sitio web</p>
+                    <p className="font-medium text-white">{website}</p>
                   </div>
                 </div>
               )}

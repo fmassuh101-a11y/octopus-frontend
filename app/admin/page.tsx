@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { Ban, BarChart3, Briefcase, Building2, Calendar, CheckCircle2, CircleDollarSign, Folder, Inbox, MessageCircle, Palette, Search, Users, Wallet } from 'lucide-react'
 
 const ADMIN_EMAIL = 'fmassuh133@gmail.com'
 
@@ -112,7 +113,7 @@ function GigsManagement() {
 
       if (res.ok) {
         setGigs(prev => prev.filter(g => g.id !== id))
-        alert('✅ Gig eliminado')
+        alert('Gig eliminado')
       } else {
         const errorText = await res.text()
         console.error('Delete error:', res.status, errorText)
@@ -155,8 +156,8 @@ function GigsManagement() {
       </div>
 
       {gigs.length === 0 ? (
-        <div className="bg-neutral-900 rounded-2xl p-12 text-center border border-neutral-800">
-          <span className="text-4xl mb-4 block">📭</span>
+        <div className="bg-neutral-900 rounded-2xl p-12 text-center border border-neutral-800 text-white placeholder-neutral-500">
+          <Inbox className="w-8 h-8" strokeWidth={2} />
           <h3 className="text-xl font-semibold mb-2">No hay gigs</h3>
           <p className="text-neutral-500">Aún no se han creado gigs en la plataforma</p>
         </div>
@@ -165,7 +166,7 @@ function GigsManagement() {
           {gigs.map((gig) => (
             <div
               key={gig.id}
-              className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 hover:border-neutral-700 transition-colors"
+              className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 hover:border-neutral-700 transition-colors text-white placeholder-neutral-500"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
@@ -175,7 +176,7 @@ function GigsManagement() {
                       gig.status === 'active' ? 'bg-green-500/20 text-green-400' :
                       gig.status === 'paused' ? 'bg-amber-500/20 text-amber-400' :
                       'bg-neutral-500/20 text-neutral-400'
-                    }`}>
+                    } text-white placeholder-neutral-500`}>
                       {gig.status || 'active'}
                     </span>
                   </div>
@@ -186,19 +187,19 @@ function GigsManagement() {
 
                   <div className="flex flex-wrap gap-4 text-sm">
                     <div className="flex items-center gap-2">
-                      <span className="text-neutral-500">🏢</span>
+                      <Building2 className="w-5 h-5" strokeWidth={2} />
                       <span>{gig.company_name || 'Unknown'}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-neutral-500">💰</span>
+                      <Wallet className="w-5 h-5" strokeWidth={2} />
                       <span className="text-green-400 font-semibold">${gig.budget || 0}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-neutral-500">📅</span>
+                      <Calendar className="w-5 h-5" strokeWidth={2} />
                       <span>{formatDate(gig.created_at)}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-neutral-500">📁</span>
+                      <Folder className="w-5 h-5" strokeWidth={2} />
                       <span>{gig.category || 'Sin categoría'}</span>
                     </div>
                   </div>
@@ -210,14 +211,14 @@ function GigsManagement() {
                     target="_blank"
                     className="px-4 py-2 bg-sky-500/20 text-sky-400 rounded-xl text-sm font-medium hover:bg-sky-500/30 transition-colors text-center"
                   >
-                    👁️ Ver
+                    Ver
                   </a>
                   <button
                     onClick={() => handleDelete(gig.id, gig.title)}
                     disabled={deletingId === gig.id}
                     className="px-4 py-2 bg-red-500/20 text-red-400 rounded-xl text-sm font-medium hover:bg-red-500/30 transition-colors disabled:opacity-50"
                   >
-                    {deletingId === gig.id ? '...' : '🗑️ Eliminar'}
+                    {deletingId === gig.id ? '...' : 'Eliminar'}
                   </button>
                 </div>
               </div>
@@ -411,7 +412,7 @@ function UsersManagement() {
         })
       }
 
-      alert(`✅ $${amount} agregados a la cuenta de ${selectedUser.full_name}`)
+      alert(`$${amount} agregados a la cuenta de ${selectedUser.full_name}`)
       setSelectedUser(null)
       setAddMoneyAmount('')
       setAddMoneyNote('')
@@ -451,14 +452,14 @@ function UsersManagement() {
               placeholder="Buscar usuario..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-2 pl-10 text-sm focus:outline-none focus:border-sky-500 w-64"
+              className="bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-2 pl-10 text-sm focus:outline-none focus:border-sky-500 w-64 text-white placeholder-neutral-500"
             />
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500">🔍</span>
+            <Search className="w-5 h-5" strokeWidth={2} />
           </div>
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value as any)}
-            className="bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-sky-500"
+            className="bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-sky-500 text-white placeholder-neutral-500"
           >
             <option value="all">Todos</option>
             <option value="creator">Creadores</option>
@@ -468,7 +469,7 @@ function UsersManagement() {
       </div>
 
       {/* Users Table */}
-      <div className="bg-neutral-900 rounded-2xl border border-neutral-800 overflow-hidden">
+      <div className="bg-neutral-900 rounded-2xl border border-neutral-800 overflow-hidden text-white placeholder-neutral-500">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -488,7 +489,7 @@ function UsersManagement() {
                     <div className="flex items-center gap-3">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
                         user.user_type === 'creator'
-                          ? 'bg-gradient-to-br from-violet-500 to-purple-500'
+                          ? 'bg-gradient-to-br from-emerald-500 to-emerald-500'
                           : 'bg-gradient-to-br from-emerald-500 to-green-500'
                       }`}>
                         {user.full_name?.charAt(0) || '?'}
@@ -502,10 +503,10 @@ function UsersManagement() {
                   <td className="px-6 py-4">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                       user.user_type === 'creator'
-                        ? 'bg-violet-500/20 text-violet-300'
+                        ? 'bg-emerald-500/20 text-emerald-300'
                         : 'bg-emerald-500/20 text-emerald-300'
                     }`}>
-                      {user.user_type === 'creator' ? '🎨 Creador' : '🏢 Empresa'}
+                      {user.user_type === 'creator' ? 'Creador' : 'Empresa'}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
@@ -524,7 +525,7 @@ function UsersManagement() {
                       onClick={() => setSelectedUser(user)}
                       className="px-4 py-2 bg-sky-500/20 text-sky-400 rounded-xl text-sm font-medium hover:bg-sky-500/30 transition-colors"
                     >
-                      💰 Agregar Fondos
+                      Agregar Fondos
                     </button>
                   </td>
                 </tr>
@@ -535,7 +536,7 @@ function UsersManagement() {
 
         {filteredUsers.length === 0 && (
           <div className="p-12 text-center">
-            <span className="text-4xl mb-4 block">🔍</span>
+            <Search className="w-8 h-8" strokeWidth={2} />
             <p className="text-neutral-500">No se encontraron usuarios</p>
           </div>
         )}
@@ -548,18 +549,17 @@ function UsersManagement() {
             className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={() => setSelectedUser(null)}
           />
-          <div className="relative bg-neutral-900 rounded-2xl p-6 w-full max-w-md border border-neutral-800 shadow-2xl">
+          <div className="relative bg-neutral-900 rounded-2xl p-6 w-full max-w-md border border-neutral-800 shadow-2xl text-white placeholder-neutral-500">
             <button
               onClick={() => setSelectedUser(null)}
               className="absolute top-4 right-4 text-neutral-500 hover:text-white"
             >
-              ✕
-            </button>
+                          </button>
 
             <div className="text-center mb-6">
               <div className={`w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl mx-auto mb-4 ${
                 selectedUser.user_type === 'creator'
-                  ? 'bg-gradient-to-br from-violet-500 to-purple-500'
+                  ? 'bg-gradient-to-br from-emerald-500 to-emerald-500'
                   : 'bg-gradient-to-br from-emerald-500 to-green-500'
               }`}>
                 {selectedUser.full_name?.charAt(0) || '?'}
@@ -587,7 +587,7 @@ function UsersManagement() {
                     placeholder="0.00"
                     min="0"
                     step="0.01"
-                    className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 pl-8 text-lg font-semibold focus:outline-none focus:border-sky-500"
+                    className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 pl-8 text-lg font-semibold focus:outline-none focus:border-sky-500 text-white placeholder-neutral-500"
                   />
                 </div>
               </div>
@@ -601,7 +601,7 @@ function UsersManagement() {
                   value={addMoneyNote}
                   onChange={(e) => setAddMoneyNote(e.target.value)}
                   placeholder="Ej: Fondos de prueba..."
-                  className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 focus:outline-none focus:border-sky-500"
+                  className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 focus:outline-none focus:border-sky-500 text-white placeholder-neutral-500"
                 />
               </div>
 
@@ -620,7 +620,7 @@ function UsersManagement() {
                   {processing ? (
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   ) : (
-                    <>💰 Agregar Fondos</>
+                    <>Agregar Fondos</>
                   )}
                 </button>
               </div>
@@ -851,9 +851,9 @@ export default function AdminDashboard() {
       }))
 
       if (action === 'approved') {
-        alert(`✅ Retiro aprobado!\n\nDEBES ENVIAR MANUALMENTE:\n$${withdrawal.net_amount} a ${withdrawal.user_name}\nMétodo: ${withdrawal.method}\nDetalles: ${JSON.stringify(withdrawal.payment_details)}`)
+        alert(`Retiro aprobado!\n\nDEBES ENVIAR MANUALMENTE:\n$${withdrawal.net_amount} a ${withdrawal.user_name}\nMétodo: ${withdrawal.method}\nDetalles: ${JSON.stringify(withdrawal.payment_details)}`)
       } else {
-        alert('❌ Retiro rechazado. El dinero fue devuelto al balance del usuario.')
+        alert('Retiro rechazado. El dinero fue devuelto al balance del usuario.')
       }
     } catch (err) {
       console.error('Error:', err)
@@ -864,10 +864,10 @@ export default function AdminDashboard() {
 
   const formatMethod = (method: string) => {
     const methods: Record<string, string> = {
-      'bank_transfer': '🏦 Transferencia Bancaria',
-      'paypal': '💳 PayPal',
+      'bank_transfer': 'Transferencia Bancaria',
+      'paypal': 'PayPal',
       'crypto_usdt': '₿ USDT',
-      'crypto_usdc': '💵 USDC'
+      'crypto_usdc': 'USDC'
     }
     return methods[method] || method
   }
@@ -894,8 +894,8 @@ export default function AdminDashboard() {
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-violet-500 flex items-center justify-center">
-                <span className="text-xl">🐙</span>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-emerald-500 flex items-center justify-center">
+                <span className="text-xl font-black">O</span>
               </div>
               <div>
                 <h1 className="text-xl font-bold">Admin Dashboard</h1>
@@ -914,11 +914,11 @@ export default function AdminDashboard() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex gap-1">
             {[
-              { id: 'overview', label: 'Overview', icon: '📊' },
-              { id: 'withdrawals', label: 'Retiros Pendientes', icon: '💸', badge: stats.pendingWithdrawals },
-              { id: 'users', label: 'Usuarios', icon: '👥' },
-              { id: 'gigs', label: 'Gigs', icon: '💼' },
-              { id: 'support', label: 'Soporte', icon: '💬', href: '/admin/support' },
+              { id: 'overview', label: 'Overview', icon: BarChart3 },
+              { id: 'withdrawals', label: 'Retiros Pendientes', icon: CircleDollarSign, badge: stats.pendingWithdrawals },
+              { id: 'users', label: 'Usuarios', icon: Users },
+              { id: 'gigs', label: 'Gigs', icon: Briefcase },
+              { id: 'support', label: 'Soporte', icon: MessageCircle, href: '/admin/support' },
             ].map((tab) => (
               tab.href ? (
                 <Link
@@ -927,7 +927,7 @@ export default function AdminDashboard() {
                   className="px-4 py-3 text-sm font-medium transition-colors relative text-neutral-400 hover:text-neutral-200"
                 >
                   <span className="flex items-center gap-2">
-                    {tab.icon} {tab.label}
+                    <tab.icon className="w-4 h-4" strokeWidth={2} /> {tab.label}
                   </span>
                 </Link>
               ) : (
@@ -941,7 +941,7 @@ export default function AdminDashboard() {
                   }`}
                 >
                   <span className="flex items-center gap-2">
-                    {tab.icon} {tab.label}
+                    <tab.icon className="w-4 h-4" strokeWidth={2} /> {tab.label}
                     {tab.badge ? (
                       <span className="px-2 py-0.5 text-xs bg-red-500 text-white rounded-full">
                         {tab.badge}
@@ -965,14 +965,14 @@ export default function AdminDashboard() {
             {/* Stats Grid */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               {[
-                { label: 'Total Usuarios', value: stats.totalUsers, icon: '👥', color: 'from-blue-500 to-cyan-500' },
-                { label: 'Creadores', value: stats.totalCreators, icon: '🎨', color: 'from-violet-500 to-purple-500' },
-                { label: 'Empresas', value: stats.totalCompanies, icon: '🏢', color: 'from-emerald-500 to-green-500' },
-                { label: 'Gigs Activos', value: stats.totalGigs, icon: '💼', color: 'from-orange-500 to-amber-500' },
+                { label: 'Total Usuarios', value: stats.totalUsers, icon: Users, color: 'from-blue-500 to-cyan-500' },
+                { label: 'Creadores', value: stats.totalCreators, icon: Palette, color: 'from-emerald-500 to-emerald-500' },
+                { label: 'Empresas', value: stats.totalCompanies, icon: Building2, color: 'from-emerald-500 to-green-500' },
+                { label: 'Gigs Activos', value: stats.totalGigs, icon: Briefcase, color: 'from-orange-500 to-amber-500' },
               ].map((stat) => (
-                <div key={stat.label} className="bg-neutral-900 rounded-2xl p-5 border border-neutral-800">
+                <div key={stat.label} className="bg-neutral-900 rounded-2xl p-5 border border-neutral-800 text-white placeholder-neutral-500">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-2xl">{stat.icon}</span>
+                    <stat.icon className="w-6 h-6" strokeWidth={2} />
                     <div className={`w-2 h-2 rounded-full bg-gradient-to-r ${stat.color}`} />
                   </div>
                   <p className="text-3xl font-bold">{stat.value}</p>
@@ -980,9 +980,9 @@ export default function AdminDashboard() {
                 </div>
               ))}
               {/* Support Messages Card */}
-              <Link href="/admin/support" className="bg-neutral-900 rounded-2xl p-5 border border-neutral-800 hover:border-sky-500/50 transition-colors">
+              <Link href="/admin/support" className="bg-neutral-900 rounded-2xl p-5 border border-neutral-800 hover:border-sky-500/50 transition-colors text-white placeholder-neutral-500">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-2xl">💬</span>
+                  <MessageCircle className="w-6 h-6" strokeWidth={2} />
                   {stats.pendingSupportMessages > 0 && (
                     <span className="px-2 py-0.5 text-xs bg-red-500 text-white rounded-full animate-pulse">
                       {stats.pendingSupportMessages}
@@ -999,7 +999,7 @@ export default function AdminDashboard() {
               <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-6">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
-                    <span className="text-2xl">⚠️</span>
+                    <span className="text-2xl"></span>
                   </div>
                   <div className="flex-1">
                     <h3 className="font-semibold text-amber-200">
@@ -1011,7 +1011,7 @@ export default function AdminDashboard() {
                   </div>
                   <button
                     onClick={() => setActiveTab('withdrawals')}
-                    className="px-4 py-2 bg-amber-500 text-black rounded-xl font-medium hover:bg-amber-400 transition-colors"
+                    className="px-4 py-2 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-400 transition-colors"
                   >
                     Ver Solicitudes
                   </button>
@@ -1023,26 +1023,26 @@ export default function AdminDashboard() {
             <div className="grid md:grid-cols-3 gap-4">
               <button
                 onClick={() => setActiveTab('withdrawals')}
-                className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 text-left hover:border-neutral-700 transition-colors group"
+                className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 text-left hover:border-neutral-700 transition-colors group text-white placeholder-neutral-500"
               >
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-sky-500/20 to-violet-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <span className="text-2xl">💸</span>
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-sky-500/20 to-emerald-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <CircleDollarSign className="w-6 h-6" strokeWidth={2} />
                 </div>
                 <h3 className="font-semibold mb-1">Procesar Retiros</h3>
                 <p className="text-sm text-neutral-500">Aprobar o rechazar solicitudes de pago</p>
               </button>
 
-              <button className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 text-left hover:border-neutral-700 transition-colors group">
+              <button className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 text-left hover:border-neutral-700 transition-colors group text-white placeholder-neutral-500">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500/20 to-green-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <span className="text-2xl">✅</span>
+                  <CheckCircle2 className="w-6 h-6" strokeWidth={2} />
                 </div>
                 <h3 className="font-semibold mb-1">Verificar Creadores</h3>
                 <p className="text-sm text-neutral-500">Revisar y aprobar perfiles de creadores</p>
               </button>
 
-              <button className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 text-left hover:border-neutral-700 transition-colors group">
+              <button className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 text-left hover:border-neutral-700 transition-colors group text-white placeholder-neutral-500">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500/20 to-orange-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <span className="text-2xl">🚫</span>
+                  <Ban className="w-6 h-6" strokeWidth={2} />
                 </div>
                 <h3 className="font-semibold mb-1">Moderar Contenido</h3>
                 <p className="text-sm text-neutral-500">Revisar y eliminar contenido inapropiado</p>
@@ -1065,9 +1065,9 @@ export default function AdminDashboard() {
             </div>
 
             {withdrawals.length === 0 ? (
-              <div className="bg-neutral-900 rounded-2xl p-12 text-center border border-neutral-800">
+              <div className="bg-neutral-900 rounded-2xl p-12 text-center border border-neutral-800 text-white placeholder-neutral-500">
                 <div className="w-16 h-16 rounded-full bg-neutral-800 flex items-center justify-center mx-auto mb-4">
-                  <span className="text-3xl">✅</span>
+                  <CheckCircle2 className="w-7 h-7" strokeWidth={2} />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">No hay solicitudes pendientes</h3>
                 <p className="text-neutral-500">Todas las solicitudes han sido procesadas</p>
@@ -1077,12 +1077,12 @@ export default function AdminDashboard() {
                 {withdrawals.map((withdrawal) => (
                   <div
                     key={withdrawal.id}
-                    className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800"
+                    className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 text-white placeholder-neutral-500"
                   >
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-3">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-sky-500 to-violet-500 flex items-center justify-center font-semibold">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-sky-500 to-emerald-500 flex items-center justify-center font-semibold">
                             {withdrawal.user_name?.charAt(0) || '?'}
                           </div>
                           <div>
@@ -1136,7 +1136,7 @@ export default function AdminDashboard() {
                           {processingId === withdrawal.id ? (
                             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                           ) : (
-                            <>✅ Aprobar</>
+                            <>Aprobar</>
                           )}
                         </button>
                         <button
@@ -1147,7 +1147,7 @@ export default function AdminDashboard() {
                           disabled={processingId === withdrawal.id}
                           className="px-6 py-3 bg-red-500/20 text-red-400 rounded-xl font-medium hover:bg-red-500/30 transition-colors disabled:opacity-50"
                         >
-                          ❌ Rechazar
+                          Rechazar
                         </button>
                       </div>
                     </div>

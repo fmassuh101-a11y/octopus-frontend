@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { authHeaders } from '@/lib/auth/clientToken'
 
 export default function WalletSetup() {
   const [loading, setLoading] = useState(false)
@@ -72,11 +73,8 @@ export default function WalletSetup() {
       // Call API to create Whop company and get KYC link
       const res = await fetch('/api/whop/setup-creator', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
-          userId: userId,
           email: userEmail || profile.email,
           fullName: profile.full_name,
           existingCompanyId: profile.whop_company_id

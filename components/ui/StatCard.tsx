@@ -73,7 +73,7 @@ const StatCard = forwardRef<HTMLDivElement, StatCardProps>(
             )}
           </div>
           {icon && (
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500/10 to-violet-500/10 flex items-center justify-center text-sky-600 dark:text-sky-400">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500/10 to-emerald-500/10 flex items-center justify-center text-sky-600 dark:text-sky-400">
               {icon}
             </div>
           )}

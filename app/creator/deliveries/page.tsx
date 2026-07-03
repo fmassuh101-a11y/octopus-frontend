@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import CreatorBottomNav from '@/components/ui/CreatorBottomNav'
+import { FileText, Upload, Eye, Check, RotateCcw, CircleDollarSign, Package, Clapperboard, Briefcase, BarChart3, MessageCircle, User, type LucideIcon } from 'lucide-react'
 
 interface Delivery {
   id: string
@@ -25,13 +27,13 @@ interface Delivery {
   created_at: string
 }
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: string }> = {
-  draft: { label: 'Borrador', color: 'text-neutral-400', bg: 'bg-neutral-500/20', icon: '📝' },
-  submitted: { label: 'Enviado', color: 'text-amber-400', bg: 'bg-amber-500/20', icon: '📤' },
-  in_review: { label: 'En Revision', color: 'text-blue-400', bg: 'bg-blue-500/20', icon: '👁' },
-  approved: { label: 'Aprobado', color: 'text-green-400', bg: 'bg-green-500/20', icon: '✓' },
-  revision_needed: { label: 'Cambios Pedidos', color: 'text-orange-400', bg: 'bg-orange-500/20', icon: '↻' },
-  completed: { label: 'Completado', color: 'text-emerald-400', bg: 'bg-emerald-500/20', icon: '💰' },
+const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: LucideIcon }> = {
+  draft: { label: 'Borrador', color: 'text-neutral-400', bg: 'bg-neutral-500/20', icon: FileText },
+  submitted: { label: 'Enviado', color: 'text-amber-400', bg: 'bg-amber-500/20', icon: Upload },
+  in_review: { label: 'En Revision', color: 'text-blue-400', bg: 'bg-blue-500/20', icon: Eye },
+  approved: { label: 'Aprobado', color: 'text-green-400', bg: 'bg-green-500/20', icon: Check },
+  revision_needed: { label: 'Cambios Pedidos', color: 'text-orange-400', bg: 'bg-orange-500/20', icon: RotateCcw },
+  completed: { label: 'Completado', color: 'text-emerald-400', bg: 'bg-emerald-500/20', icon: CircleDollarSign },
 }
 
 export default function CreatorDeliveriesPage() {
@@ -230,7 +232,7 @@ export default function CreatorDeliveriesPage() {
     return (
       <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-10 h-10 border-4 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-neutral-400">Cargando entregas...</p>
         </div>
       </div>
@@ -271,9 +273,9 @@ export default function CreatorDeliveriesPage() {
               onClick={() => setFilter(f.id as any)}
               className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
                 filter === f.id
-                  ? 'bg-violet-600 text-white'
+                  ? 'bg-emerald-600 text-white'
                   : 'bg-neutral-800 text-neutral-400 hover:text-white'
-              }`}
+              } placeholder-neutral-500`}
             >
               {f.label}
               {f.badge ? (
@@ -291,7 +293,7 @@ export default function CreatorDeliveriesPage() {
         {filteredDeliveries.length === 0 ? (
           <div className="text-center py-16">
             <div className="w-20 h-20 bg-neutral-800 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-4xl">📦</span>
+              <Package className="w-9 h-9 text-neutral-500" strokeWidth={1.75} />
             </div>
             <h3 className="text-lg font-semibold mb-2">No hay entregas</h3>
             <p className="text-neutral-500 text-sm">Las entregas de tus contratos apareceran aqui</p>
@@ -311,8 +313,8 @@ export default function CreatorDeliveriesPage() {
                     <h3 className="font-semibold text-white mb-1">{delivery.gig_title}</h3>
                     <p className="text-sm text-neutral-400">{delivery.company_name}</p>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${status.bg} ${status.color}`}>
-                    {status.icon} {status.label}
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${status.bg} ${status.color}`}>
+                    <status.icon className="w-3.5 h-3.5" strokeWidth={2} /> {status.label}
                   </span>
                 </div>
 
@@ -370,8 +372,12 @@ export default function CreatorDeliveriesPage() {
               {/* Status */}
               <div className="flex items-center justify-between">
                 <span className="text-neutral-400">Estado:</span>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${STATUS_CONFIG[selectedDelivery.status]?.bg} ${STATUS_CONFIG[selectedDelivery.status]?.color}`}>
-                  {STATUS_CONFIG[selectedDelivery.status]?.icon} {STATUS_CONFIG[selectedDelivery.status]?.label}
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${STATUS_CONFIG[selectedDelivery.status]?.bg} ${STATUS_CONFIG[selectedDelivery.status]?.color}`}>
+                  {(() => {
+                    const StatusIcon = STATUS_CONFIG[selectedDelivery.status]?.icon
+                    return StatusIcon ? <StatusIcon className="w-4 h-4" strokeWidth={2} /> : null
+                  })()}
+                  {STATUS_CONFIG[selectedDelivery.status]?.label}
                 </span>
               </div>
 
@@ -416,9 +422,9 @@ export default function CreatorDeliveriesPage() {
                       href={selectedDelivery.video_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 text-violet-400 hover:text-violet-300"
+                      className="flex items-center gap-3 text-emerald-400 hover:text-emerald-300"
                     >
-                      <span className="text-2xl">🎬</span>
+                      <Clapperboard className="w-6 h-6 shrink-0" strokeWidth={2} />
                       <div className="flex-1">
                         <p className="font-medium">Ver Video</p>
                         <p className="text-xs text-neutral-500 truncate">{selectedDelivery.video_url}</p>
@@ -491,7 +497,7 @@ export default function CreatorDeliveriesPage() {
                     })
                     setShowUploadModal(true)
                   }}
-                  className="w-full py-4 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -503,7 +509,7 @@ export default function CreatorDeliveriesPage() {
               {/* Approved message */}
               {selectedDelivery.status === 'approved' && (
                 <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 text-center">
-                  <span className="text-3xl block mb-2">✓</span>
+                  <Check className="w-8 h-8 mx-auto mb-2 text-green-400" strokeWidth={2.5} />
                   <p className="text-green-400 font-semibold">Contenido Aprobado</p>
                   <p className="text-sm text-green-400/70">El pago sera liberado pronto</p>
                 </div>
@@ -512,7 +518,7 @@ export default function CreatorDeliveriesPage() {
               {/* Completed message */}
               {selectedDelivery.status === 'completed' && (
                 <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 text-center">
-                  <span className="text-3xl block mb-2">💰</span>
+                  <CircleDollarSign className="w-8 h-8 mx-auto mb-2 text-emerald-400" strokeWidth={2} />
                   <p className="text-emerald-400 font-semibold">Entrega Completada</p>
                   <p className="text-sm text-emerald-400/70">Pago recibido en tu wallet</p>
                 </div>
@@ -544,7 +550,7 @@ export default function CreatorDeliveriesPage() {
                   value={uploadForm.video_url}
                   onChange={(e) => setUploadForm({ ...uploadForm, video_url: e.target.value })}
                   placeholder="https://drive.google.com/... o https://dropbox.com/..."
-                  className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-violet-500"
+                  className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
                 />
                 <p className="text-xs text-neutral-500 mt-1">
                   Soportamos Google Drive, Dropbox, WeTransfer, etc.
@@ -561,7 +567,7 @@ export default function CreatorDeliveriesPage() {
                   value={uploadForm.thumbnail_url}
                   onChange={(e) => setUploadForm({ ...uploadForm, thumbnail_url: e.target.value })}
                   placeholder="https://..."
-                  className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-violet-500"
+                  className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
@@ -575,7 +581,7 @@ export default function CreatorDeliveriesPage() {
                   onChange={(e) => setUploadForm({ ...uploadForm, description: e.target.value })}
                   placeholder="Cualquier nota o contexto sobre el contenido..."
                   rows={3}
-                  className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-violet-500 resize-none"
+                  className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500 resize-none"
                 />
               </div>
 
@@ -592,8 +598,8 @@ export default function CreatorDeliveriesPage() {
               )}
 
               {/* Info box */}
-              <div className="bg-violet-500/10 border border-violet-500/30 rounded-xl p-4">
-                <p className="text-sm text-violet-300">
+              <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4">
+                <p className="text-sm text-emerald-300">
                   Asegurate de que el link sea publico o tenga permisos de visualizacion.
                 </p>
               </div>
@@ -612,7 +618,7 @@ export default function CreatorDeliveriesPage() {
               <button
                 onClick={handleSubmitContent}
                 disabled={submitting || !uploadForm.video_url}
-                className="flex-1 py-3 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {submitting ? (
                   <>
@@ -628,31 +634,8 @@ export default function CreatorDeliveriesPage() {
         </div>
       )}
 
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-800">
-        <div className="flex justify-around py-3">
-          <Link href="/gigs" className="flex flex-col items-center gap-1 px-4 py-1 text-neutral-500 hover:text-neutral-300">
-            <span className="text-xl">💼</span>
-            <span className="text-xs">Trabajos</span>
-          </Link>
-          <Link href="/creator/dashboard" className="flex flex-col items-center gap-1 px-4 py-1 text-neutral-500 hover:text-neutral-300">
-            <span className="text-xl">📊</span>
-            <span className="text-xs">Panel</span>
-          </Link>
-          <div className="flex flex-col items-center gap-1 px-4 py-1 text-violet-400">
-            <span className="text-xl">📦</span>
-            <span className="text-xs">Entregas</span>
-          </div>
-          <Link href="/creator/messages" className="flex flex-col items-center gap-1 px-4 py-1 text-neutral-500 hover:text-neutral-300">
-            <span className="text-xl">💬</span>
-            <span className="text-xs">Mensajes</span>
-          </Link>
-          <Link href="/creator/profile" className="flex flex-col items-center gap-1 px-4 py-1 text-neutral-500 hover:text-neutral-300">
-            <span className="text-xl">👤</span>
-            <span className="text-xs">Perfil</span>
-          </Link>
-        </div>
-      </div>
+      {/* Navegación inferior (compartida) */}
+      <CreatorBottomNav />
     </div>
   )
 }

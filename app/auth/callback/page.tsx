@@ -134,13 +134,13 @@ export default function AuthCallback() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-blue-800 flex items-center justify-center">
-      <div className="bg-white rounded-3xl p-10 shadow-2xl max-w-sm w-full mx-4 text-center">
-        <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
-          <span className="text-3xl">🐙</span>
+    <div className="min-h-screen bg-gradient-to-br from-emerald-900 via-blue-900 to-blue-800 flex items-center justify-center">
+      <div className="bg-neutral-900 rounded-3xl p-10 shadow-2xl max-w-sm w-full mx-4 text-center">
+        <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
+          <span className="text-3xl"></span>
         </div>
 
-        <h2 className={`text-lg font-bold mb-4 ${error ? 'text-red-600' : 'text-gray-800'}`}>
+        <h2 className={`text-lg font-bold mb-4 ${error ? 'text-red-600' : 'text-white'}`}>
           {status}
         </h2>
 

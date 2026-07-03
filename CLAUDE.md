@@ -92,7 +92,7 @@ Octopus es un **marketplace que conecta creadores de contenido (influencers, UGC
 5. Usuario recibe respuesta (polling cada 8 segundos)
 
 ### API Key Gemini
-- Key: `AIzaSyDb26jKEli_4Tx1jlhhf9amaGoKVW88DEo`
+- Key: en env var `GEMINI_API_KEY` (.env.local / Vercel) — nunca hardcodear
 - Modelo: `gemini-2.5-flash` (tiene quota disponible)
 - NOTA: `gemini-2.0-flash` tiene quota agotada
 

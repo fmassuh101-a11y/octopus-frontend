@@ -1,22 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { whopClient } from "@/lib/whop";
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { getAuthenticatedUser } from '@/lib/auth/apiAuth'
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ftvqoudlmojdxwjxljzr.supabase.co'
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnFvdWRsbW9qZHh3anhsanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyOTM5MTgsImV4cCI6MjA4NDg2OTkxOH0.MsGoOGXmw7GPdC7xLOwAge_byzyc45udSFIBOQ0ULrY'
 
 /**
- * GET /api/whop/creator-balance?userId=xxx
- * Returns creator's Whop balance, KYC status, and payout methods
+ * GET /api/whop/creator-balance
+ * Devuelve balance/KYC/métodos de pago del usuario AUTENTICADO
+ * (antes filtraba el balance de cualquier userId del query string).
  */
 export async function GET(request: NextRequest) {
   try {
-    const userId = request.nextUrl.searchParams.get('userId')
-    const userToken = request.nextUrl.searchParams.get('token')
-
-    if (!userId) {
-      return NextResponse.json({ error: "userId required" }, { status: 400 })
+    const user = await getAuthenticatedUser(request)
+    if (!user) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
     }
+    const userId = user.id
+    const userToken = null
 
     // Use service key if available, otherwise use anon key with user token
     const apiKey = SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY

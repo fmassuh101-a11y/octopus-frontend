@@ -10,6 +10,7 @@ import {
   WithdrawalsElement,
 } from '@whop/embedded-components-react-js'
 import { loadWhopElements } from '@whop/embedded-components-vanilla-js'
+import { authHeaders } from '@/lib/auth/clientToken'
 
 interface WhopPayoutsEmbedProps {
   userId: string
@@ -45,8 +46,8 @@ export default function WhopPayoutsEmbed({ userId, companyId }: WhopPayoutsEmbed
       console.log('[WhopEmbed] Fetching token for userId:', userId)
       const res = await fetch('/api/whop/access-token', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId })
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({})
       })
       const data = await res.json()
       console.log('[WhopEmbed] Token response:', data)
@@ -73,9 +74,9 @@ export default function WhopPayoutsEmbed({ userId, companyId }: WhopPayoutsEmbed
   if (!elements) {
     return (
       <div className="animate-pulse space-y-4">
-        <div className="h-20 bg-gray-200 rounded-xl" />
-        <div className="h-32 bg-gray-200 rounded-xl" />
-        <div className="h-12 bg-gray-200 rounded-xl" />
+        <div className="h-20 bg-neutral-800 rounded-xl" />
+        <div className="h-32 bg-neutral-800 rounded-xl" />
+        <div className="h-12 bg-neutral-800 rounded-xl" />
       </div>
     )
   }
@@ -93,52 +94,52 @@ export default function WhopPayoutsEmbed({ userId, companyId }: WhopPayoutsEmbed
       >
         <div className="space-y-4">
           {/* Balance */}
-          <div className="bg-white rounded-2xl shadow-sm p-5">
-            <p className="text-gray-500 text-sm mb-2">Balance disponible</p>
+          <div className="bg-neutral-900 rounded-2xl shadow-sm p-5">
+            <p className="text-neutral-500 text-sm mb-2">Balance disponible</p>
             <BalanceElement
               fallback={
                 <div className="animate-pulse">
-                  <div className="h-8 w-32 bg-gray-200 rounded" />
+                  <div className="h-8 w-32 bg-neutral-800 rounded" />
                 </div>
               }
             />
           </div>
 
           {/* Payment Methods */}
-          <div className="bg-white rounded-2xl shadow-sm p-5">
-            <h3 className="font-semibold text-gray-900 mb-4">Métodos de pago</h3>
+          <div className="bg-neutral-900 rounded-2xl shadow-sm p-5">
+            <h3 className="font-semibold text-white mb-4">Métodos de pago</h3>
             <AddPayoutMethodElement
               fallback={
                 <div className="animate-pulse space-y-3">
-                  <div className="h-12 bg-gray-200 rounded-xl" />
-                  <div className="h-12 bg-gray-200 rounded-xl" />
+                  <div className="h-12 bg-neutral-800 rounded-xl" />
+                  <div className="h-12 bg-neutral-800 rounded-xl" />
                 </div>
               }
             />
           </div>
 
           {/* Withdraw Button */}
-          <div className="bg-white rounded-2xl shadow-sm p-5">
+          <div className="bg-neutral-900 rounded-2xl shadow-sm p-5">
             <WithdrawButtonElement
               fallback={
                 <div className="animate-pulse">
-                  <div className="h-12 bg-gray-200 rounded-xl" />
+                  <div className="h-12 bg-neutral-800 rounded-xl" />
                 </div>
               }
             />
-            <p className="text-center text-gray-400 text-sm mt-3">
+            <p className="text-center text-neutral-500 text-sm mt-3">
               Mínimo para retirar: $10.20 USD
             </p>
           </div>
 
           {/* Withdrawal History */}
-          <div className="bg-white rounded-2xl shadow-sm p-5">
-            <h3 className="font-semibold text-gray-900 mb-4">Historial de retiros</h3>
+          <div className="bg-neutral-900 rounded-2xl shadow-sm p-5">
+            <h3 className="font-semibold text-white mb-4">Historial de retiros</h3>
             <WithdrawalsElement
               fallback={
                 <div className="animate-pulse space-y-2">
-                  <div className="h-10 bg-gray-200 rounded" />
-                  <div className="h-10 bg-gray-200 rounded" />
+                  <div className="h-10 bg-neutral-800 rounded" />
+                  <div className="h-10 bg-neutral-800 rounded" />
                 </div>
               }
             />

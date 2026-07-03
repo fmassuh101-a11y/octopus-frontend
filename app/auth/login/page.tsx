@@ -110,39 +110,40 @@ export default function LoginPage() {
     setLoading(true)
     setError('')
 
+    // Login vía fetch directo (el cliente supabase-js se cuelga por locks).
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 20000)
+
     try {
-      console.log('[Login] Attempting sign in...')
-
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password
+      const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+        body: JSON.stringify({ email, password }),
+        signal: controller.signal,
       })
+      clearTimeout(timeout)
 
-      if (signInError) {
-        console.error('[Login] Sign in error:', signInError)
-        if (signInError.message?.includes('Invalid login') || signInError.message?.includes('invalid_grant')) {
+      const data = await res.json()
+
+      if (!res.ok || !data.access_token) {
+        const msg = (data?.error_description || data?.msg || data?.error || '').toLowerCase()
+        if (msg.includes('invalid') || msg.includes('credentials') || msg.includes('grant')) {
           setError('Email o contraseña incorrectos')
-        } else if (signInError.message?.includes('Email not confirmed')) {
+        } else if (msg.includes('not confirmed')) {
           setError('Debes confirmar tu email antes de iniciar sesión')
         } else {
-          setError(signInError.message || 'Error al iniciar sesión')
+          setError(data?.error_description || data?.msg || 'Error al iniciar sesión')
         }
         setLoading(false)
         return
       }
 
-      if (!data.session) {
-        setError('Error al iniciar sesión - no se pudo crear la sesión')
-        setLoading(false)
-        return
-      }
-
-      console.log('[Login] Sign in successful:', data.session.user.email)
+      const session = { access_token: data.access_token, refresh_token: data.refresh_token, user: data.user }
 
       // Store session in localStorage (same format as callback)
-      localStorage.setItem('sb-access-token', data.session.access_token)
-      localStorage.setItem('sb-refresh-token', data.session.refresh_token || '')
-      localStorage.setItem('sb-user', JSON.stringify(data.session.user))
+      localStorage.setItem('sb-access-token', session.access_token)
+      localStorage.setItem('sb-refresh-token', session.refresh_token || '')
+      localStorage.setItem('sb-user', JSON.stringify(session.user))
 
       // Check for pending onboarding
       const creatorOnboarding = localStorage.getItem('creatorOnboarding')
@@ -169,10 +170,10 @@ export default function LoginPage() {
 
       // Check if user has a profile using direct fetch
       const profileResponse = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${data.session.user.id}&select=user_type`,
+        `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${session.user.id}&select=user_type`,
         {
           headers: {
-            'Authorization': `Bearer ${data.session.access_token}`,
+            'Authorization': `Bearer ${session.access_token}`,
             'apikey': SUPABASE_ANON_KEY
           }
         }
@@ -226,28 +227,28 @@ export default function LoginPage() {
 
   if (checkingSession) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-blue-800 flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-blue-800 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-neutral-950 flex items-center justify-center px-4">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <Link href="/" className="flex justify-center items-center space-x-3">
-            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-              <span className="text-2xl font-bold text-white">🐙</span>
+          <Link href="/" className="inline-flex items-center gap-3">
+            <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
+              <span className="text-2xl font-black text-white">O</span>
             </div>
-            <span className="text-2xl font-bold text-white">Octopus</span>
+            <span className="text-2xl font-bold text-white tracking-tight">Octopus</span>
           </Link>
         </div>
 
-        <div className="bg-white/10 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-white/20">
+        <div className="bg-neutral-900 rounded-3xl p-8 shadow-xl border border-neutral-800 text-white placeholder-neutral-500">
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-white mb-2">Bienvenido</h2>
-            <p className="text-blue-100">Inicia sesión en tu cuenta</p>
+            <p className="text-neutral-300">Inicia sesión en tu cuenta</p>
           </div>
 
           {error && (
@@ -258,27 +259,27 @@ export default function LoginPage() {
 
           <form onSubmit={handleEmailSignIn} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-blue-100 mb-2">Email</label>
+              <label className="block text-sm font-medium text-neutral-300 mb-2">Email</label>
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
                 placeholder="tu@email.com"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-blue-100 mb-2">Contraseña</label>
+              <label className="block text-sm font-medium text-neutral-300 mb-2">Contraseña</label>
               <input
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
                 placeholder="••••••••"
               />
             </div>
@@ -286,7 +287,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-blue-600 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-emerald-500 text-white py-3 px-4 rounded-lg font-semibold hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
             </button>
@@ -297,7 +298,7 @@ export default function LoginPage() {
               <div className="w-full border-t border-white/20"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-transparent text-blue-100">o</span>
+              <span className="px-2 bg-transparent text-neutral-300">o</span>
             </div>
           </div>
 
@@ -305,7 +306,7 @@ export default function LoginPage() {
             type="button"
             onClick={handleGoogleSignIn}
             disabled={loading}
-            className="w-full bg-white text-gray-800 py-3 px-4 rounded-lg font-semibold hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+            className="w-full bg-neutral-900 text-white py-3 px-4 rounded-lg font-semibold hover:bg-neutral-950 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -317,9 +318,9 @@ export default function LoginPage() {
           </button>
 
           <div className="mt-6 text-center">
-            <p className="text-blue-100 text-sm">
+            <p className="text-neutral-300 text-sm">
               ¿No tienes una cuenta?{' '}
-              <Link href="/auth/register" className="font-medium text-white hover:text-blue-200">
+              <Link href="/auth/register" className="font-medium text-emerald-400 hover:text-emerald-300">
                 Regístrate
               </Link>
             </p>

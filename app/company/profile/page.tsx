@@ -95,10 +95,10 @@ export default function CompanyProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-slate-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-600">Cargando perfil...</p>
+          <p className="text-neutral-400">Cargando perfil...</p>
         </div>
       </div>
     )
@@ -107,20 +107,20 @@ export default function CompanyProfilePage() {
   const companyName = profile?.full_name || bioData.companyName || 'Empresa'
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-neutral-950">
       {/* Header */}
-      <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
+      <div className="bg-neutral-900 border-b border-neutral-800 sticky top-0 z-10">
         <div className="px-4 py-4">
           <div className="flex items-center justify-between">
             <button
               onClick={() => router.push('/company/dashboard')}
-              className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-neutral-800 rounded-lg transition-colors"
             >
-              <svg className="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <h1 className="text-xl font-bold text-slate-900">Perfil de Empresa</h1>
+            <h1 className="text-xl font-bold text-white">Perfil de Empresa</h1>
             <button
               onClick={() => setShowLogoutModal(true)}
               className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -134,9 +134,9 @@ export default function CompanyProfilePage() {
       </div>
 
       {/* Profile Header */}
-      <div className="bg-gradient-to-r from-slate-700 to-slate-900 px-4 py-8">
+      <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 px-4 py-8">
         <div className="flex items-center space-x-4">
-          <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center overflow-hidden">
+          <div className="w-20 h-20 bg-neutral-900/20 rounded-2xl flex items-center justify-center overflow-hidden">
             {bioData.logo ? (
               <img src={bioData.logo} alt="Logo" className="w-full h-full object-cover" />
             ) : (
@@ -147,9 +147,9 @@ export default function CompanyProfilePage() {
           </div>
           <div className="flex-1">
             <h2 className="text-xl font-bold text-white">{companyName}</h2>
-            <p className="text-slate-300">{user?.email}</p>
+            <p className="text-neutral-300">{user?.email}</p>
             {bioData.website && (
-              <p className="text-slate-400 text-sm mt-1">🌐 {bioData.website}</p>
+              <p className="text-neutral-500 text-sm mt-1">{bioData.website}</p>
             )}
           </div>
         </div>
@@ -158,78 +158,78 @@ export default function CompanyProfilePage() {
       {/* Profile Content */}
       <div className="px-4 py-6 pb-24 lg:pb-20">
         {/* Company Info */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 mb-6">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">Informacion de la Empresa</h3>
+        <div className="bg-neutral-900 rounded-2xl p-6 shadow-sm border border-neutral-800 mb-6 text-white placeholder-neutral-500">
+          <h3 className="text-lg font-semibold text-white mb-4">Informacion de la Empresa</h3>
           <div className="space-y-4">
-            <div className="flex justify-between items-center py-3 border-b border-slate-100">
-              <span className="text-slate-600">Nombre de Empresa</span>
-              <span className="font-medium text-slate-900">{bioData.companyName || 'Sin configurar'}</span>
+            <div className="flex justify-between items-center py-3 border-b border-neutral-800">
+              <span className="text-neutral-400">Nombre de Empresa</span>
+              <span className="font-medium text-white">{bioData.companyName || 'Sin configurar'}</span>
             </div>
-            <div className="flex justify-between items-center py-3 border-b border-slate-100">
-              <span className="text-slate-600">Sitio Web</span>
-              <span className="font-medium text-slate-900">{bioData.website || 'Sin configurar'}</span>
+            <div className="flex justify-between items-center py-3 border-b border-neutral-800">
+              <span className="text-neutral-400">Sitio Web</span>
+              <span className="font-medium text-white">{bioData.website || 'Sin configurar'}</span>
             </div>
-            <div className="flex justify-between items-center py-3 border-b border-slate-100">
-              <span className="text-slate-600">Tipo de Negocio</span>
-              <span className="font-medium text-slate-900">{bioData.businessType || 'Sin configurar'}</span>
+            <div className="flex justify-between items-center py-3 border-b border-neutral-800">
+              <span className="text-neutral-400">Tipo de Negocio</span>
+              <span className="font-medium text-white">{bioData.businessType || 'Sin configurar'}</span>
             </div>
-            <div className="flex justify-between items-center py-3 border-b border-slate-100">
-              <span className="text-slate-600">Tipo de Organizacion</span>
-              <span className="font-medium text-slate-900">{bioData.orgType || 'Sin configurar'}</span>
+            <div className="flex justify-between items-center py-3 border-b border-neutral-800">
+              <span className="text-neutral-400">Tipo de Organizacion</span>
+              <span className="font-medium text-white">{bioData.orgType || 'Sin configurar'}</span>
             </div>
-            <div className="flex justify-between items-center py-3 border-b border-slate-100">
-              <span className="text-slate-600">Industria</span>
-              <span className="font-medium text-slate-900">{bioData.niche || 'Sin configurar'}</span>
+            <div className="flex justify-between items-center py-3 border-b border-neutral-800">
+              <span className="text-neutral-400">Industria</span>
+              <span className="font-medium text-white">{bioData.niche || 'Sin configurar'}</span>
             </div>
             <div className="flex justify-between items-center py-3">
-              <span className="text-slate-600">Tu Rol</span>
-              <span className="font-medium text-slate-900">{bioData.role || 'Sin configurar'}</span>
+              <span className="text-neutral-400">Tu Rol</span>
+              <span className="font-medium text-white">{bioData.role || 'Sin configurar'}</span>
             </div>
           </div>
         </div>
 
         {/* Contact Info */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 mb-6">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">Informacion de Contacto</h3>
+        <div className="bg-neutral-900 rounded-2xl p-6 shadow-sm border border-neutral-800 mb-6 text-white placeholder-neutral-500">
+          <h3 className="text-lg font-semibold text-white mb-4">Informacion de Contacto</h3>
           <div className="space-y-4">
-            <div className="flex justify-between items-center py-3 border-b border-slate-100">
-              <span className="text-slate-600">Email</span>
-              <span className="font-medium text-slate-900">{user?.email || 'Sin configurar'}</span>
+            <div className="flex justify-between items-center py-3 border-b border-neutral-800">
+              <span className="text-neutral-400">Email</span>
+              <span className="font-medium text-white">{user?.email || 'Sin configurar'}</span>
             </div>
             <div className="flex justify-between items-center py-3">
-              <span className="text-slate-600">Telefono</span>
-              <span className="font-medium text-slate-900">{bioData.phoneNumber || 'Sin configurar'}</span>
+              <span className="text-neutral-400">Telefono</span>
+              <span className="font-medium text-white">{bioData.phoneNumber || 'Sin configurar'}</span>
             </div>
           </div>
         </div>
 
         {/* Social Media */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 mb-6">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">Redes Sociales</h3>
+        <div className="bg-neutral-900 rounded-2xl p-6 shadow-sm border border-neutral-800 mb-6 text-white placeholder-neutral-500">
+          <h3 className="text-lg font-semibold text-white mb-4">Redes Sociales</h3>
           <div className="space-y-4">
-            <div className="flex items-center justify-between py-3 border-b border-slate-100">
+            <div className="flex items-center justify-between py-3 border-b border-neutral-800">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
                   <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M19.321 5.562a5.124 5.124 0 0 1-.443-.258 6.228 6.228 0 0 1-1.137-.966c-.849-.849-1.432-1.884-1.432-3.052V.621h-3.714v14.325c0 1.568-1.277 2.845-2.845 2.845s-2.845-1.277-2.845-2.845 1.277-2.845 2.845-2.845c.195 0 .39.02.579.058V8.539c-.193-.013-.386-.02-.579-.02-3.462 0-6.265 2.803-6.265 6.265s2.803 6.265 6.265 6.265 6.265-2.803 6.265-6.265V8.317a9.14 9.14 0 0 0 5.125 1.553V6.538a5.549 5.549 0 0 1-2.119-.976z"/>
                   </svg>
                 </div>
-                <span className="text-slate-600">TikTok</span>
+                <span className="text-neutral-400">TikTok</span>
               </div>
-              <span className="font-medium text-slate-900">
+              <span className="font-medium text-white">
                 {bioData.tiktok ? `@${bioData.tiktok}` : 'Sin configurar'}
               </span>
             </div>
-            <div className="flex items-center justify-between py-3 border-b border-slate-100">
+            <div className="flex items-center justify-between py-3 border-b border-neutral-800">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-emerald-500 rounded-lg flex items-center justify-center">
                   <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
                   </svg>
                 </div>
-                <span className="text-slate-600">Instagram</span>
+                <span className="text-neutral-400">Instagram</span>
               </div>
-              <span className="font-medium text-slate-900">
+              <span className="font-medium text-white">
                 {bioData.instagram ? `@${bioData.instagram}` : 'Sin configurar'}
               </span>
             </div>
@@ -240,9 +240,9 @@ export default function CompanyProfilePage() {
                     <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
                   </svg>
                 </div>
-                <span className="text-slate-600">LinkedIn</span>
+                <span className="text-neutral-400">LinkedIn</span>
               </div>
-              <span className="font-medium text-slate-900">
+              <span className="font-medium text-white">
                 {bioData.linkedin || 'Sin configurar'}
               </span>
             </div>
@@ -250,20 +250,20 @@ export default function CompanyProfilePage() {
         </div>
 
         {/* Marketing Info */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 mb-6">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">Marketing & Contratacion</h3>
+        <div className="bg-neutral-900 rounded-2xl p-6 shadow-sm border border-neutral-800 mb-6 text-white placeholder-neutral-500">
+          <h3 className="text-lg font-semibold text-white mb-4">Marketing & Contratacion</h3>
           <div className="space-y-4">
-            <div className="flex justify-between items-center py-3 border-b border-slate-100">
-              <span className="text-slate-600">Rango de Contratacion</span>
-              <span className="font-medium text-slate-900">{bioData.hiringRange || 'Sin configurar'}</span>
+            <div className="flex justify-between items-center py-3 border-b border-neutral-800">
+              <span className="text-neutral-400">Rango de Contratacion</span>
+              <span className="font-medium text-white">{bioData.hiringRange || 'Sin configurar'}</span>
             </div>
-            <div className="flex justify-between items-center py-3 border-b border-slate-100">
-              <span className="text-slate-600">Estrategia de Marketing</span>
-              <span className="font-medium text-slate-900">{bioData.marketingStrategy || 'Sin configurar'}</span>
+            <div className="flex justify-between items-center py-3 border-b border-neutral-800">
+              <span className="text-neutral-400">Estrategia de Marketing</span>
+              <span className="font-medium text-white">{bioData.marketingStrategy || 'Sin configurar'}</span>
             </div>
             <div className="flex justify-between items-center py-3">
-              <span className="text-slate-600">App Store URL</span>
-              <span className="font-medium text-slate-900 text-right max-w-[180px] truncate">
+              <span className="text-neutral-400">App Store URL</span>
+              <span className="font-medium text-white text-right max-w-[180px] truncate">
                 {bioData.appStoreUrl || 'Sin configurar'}
               </span>
             </div>
@@ -271,27 +271,27 @@ export default function CompanyProfilePage() {
         </div>
 
         {/* Edit Button */}
-        <button className="w-full py-4 bg-gradient-to-r from-slate-700 to-slate-900 text-white rounded-xl font-semibold hover:from-slate-600 hover:to-slate-700 transition-all shadow-lg">
+        <button className="w-full py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl font-semibold hover:from-emerald-500 hover:to-emerald-600 transition-all shadow-lg">
           Editar Perfil
         </button>
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-800 z-40">
         <div className="flex justify-around py-2">
-          <Link href="/company/dashboard" className="flex flex-col items-center p-2 text-gray-500">
+          <Link href="/company/dashboard" className="flex flex-col items-center p-2 text-neutral-500">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
             </svg>
             <span className="text-xs mt-1">Inicio</span>
           </Link>
-          <Link href="/company/recruit" className="flex flex-col items-center p-2 text-gray-500">
+          <Link href="/company/recruit" className="flex flex-col items-center p-2 text-neutral-500">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <span className="text-xs mt-1">Buscar</span>
           </Link>
-          <Link href="/company/analytics" className="flex flex-col items-center p-2 text-gray-500">
+          <Link href="/company/analytics" className="flex flex-col items-center p-2 text-neutral-500">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
@@ -309,20 +309,20 @@ export default function CompanyProfilePage() {
       {/* Logout Modal */}
       {showLogoutModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
+          <div className="bg-neutral-900 rounded-2xl p-6 max-w-sm w-full shadow-xl">
             <div className="text-center mb-6">
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">Cerrar sesion</h3>
-              <p className="text-slate-600">¿Estas seguro de que quieres cerrar tu sesion?</p>
+              <h3 className="text-xl font-bold text-white mb-2">Cerrar sesion</h3>
+              <p className="text-neutral-400">¿Estas seguro de que quieres cerrar tu sesion?</p>
             </div>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowLogoutModal(false)}
-                className="flex-1 py-3 px-4 bg-slate-100 text-slate-700 rounded-xl font-semibold hover:bg-slate-200 transition-colors"
+                className="flex-1 py-3 px-4 bg-neutral-800 text-neutral-200 rounded-xl font-semibold hover:bg-neutral-800 transition-colors"
               >
                 Cancelar
               </button>

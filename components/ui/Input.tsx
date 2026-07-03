@@ -32,7 +32,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             disabled={disabled}
             className={cn(
               'w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl text-neutral-900 placeholder:text-neutral-400 transition-all duration-200',
-              'focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 focus:bg-white',
+              'focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 focus:bg-neutral-900',
               'dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:placeholder:text-neutral-500',
               'dark:focus:bg-neutral-900 dark:focus:border-sky-500',
               'disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-neutral-100 dark:disabled:bg-neutral-800',
@@ -83,7 +83,7 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           disabled={disabled}
           className={cn(
             'w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl text-neutral-900 placeholder:text-neutral-400 transition-all duration-200 resize-none',
-            'focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 focus:bg-white',
+            'focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 focus:bg-neutral-900',
             'dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:placeholder:text-neutral-500',
             'dark:focus:bg-neutral-900 dark:focus:border-sky-500',
             'disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-neutral-100 dark:disabled:bg-neutral-800',

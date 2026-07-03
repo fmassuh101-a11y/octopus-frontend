@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { ClipboardList, Music2, Instagram, Youtube, Clapperboard, Sparkles } from 'lucide-react'
 
 interface Application {
   id: string
@@ -134,11 +135,11 @@ export default function ApplicationsPage() {
 
   const getGradient = (index: number) => {
     const gradients = [
-      'from-violet-600 via-purple-600 to-blue-600',
-      'from-rose-500 via-pink-500 to-purple-500',
+      'from-emerald-600 via-emerald-600 to-blue-600',
+      'from-rose-500 via-emerald-500 to-emerald-500',
       'from-emerald-500 via-teal-500 to-cyan-500',
-      'from-orange-500 via-red-500 to-pink-500',
-      'from-blue-600 via-indigo-600 to-purple-600',
+      'from-orange-500 via-red-500 to-emerald-500',
+      'from-blue-600 via-emerald-600 to-emerald-600',
     ]
     return gradients[index % gradients.length]
   }
@@ -177,7 +178,7 @@ export default function ApplicationsPage() {
         {/* Skeleton Applications */}
         <div className="max-w-4xl mx-auto px-4 py-6 space-y-4">
           {[1,2,3,4].map(i => (
-            <div key={i} className="bg-neutral-900 rounded-2xl overflow-hidden border border-neutral-800 flex">
+            <div key={i} className="bg-neutral-900 rounded-2xl overflow-hidden border border-neutral-800 flex text-white placeholder-neutral-500">
               <div className="w-32 md:w-40 bg-neutral-800 animate-pulse" />
               <div className="flex-1 p-4">
                 <div className="h-5 w-3/4 bg-neutral-800 rounded animate-pulse mb-2" />
@@ -213,15 +214,15 @@ export default function ApplicationsPage() {
 
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4 mt-6">
-            <div className="bg-neutral-800 border border-neutral-700 rounded-xl p-4 text-center">
+            <div className="bg-neutral-800 border border-neutral-700 rounded-xl p-4 text-center text-white placeholder-neutral-500">
               <div className="text-3xl font-bold">{pendingCount}</div>
               <div className="text-sm text-neutral-400">Pendientes</div>
             </div>
-            <div className="bg-neutral-800 border border-neutral-700 rounded-xl p-4 text-center">
+            <div className="bg-neutral-800 border border-neutral-700 rounded-xl p-4 text-center text-white placeholder-neutral-500">
               <div className="text-3xl font-bold">{acceptedCount}</div>
               <div className="text-sm text-neutral-400">Aceptadas</div>
             </div>
-            <div className="bg-neutral-800 border border-neutral-700 rounded-xl p-4 text-center">
+            <div className="bg-neutral-800 border border-neutral-700 rounded-xl p-4 text-center text-white placeholder-neutral-500">
               <div className="text-3xl font-bold">{rejectedCount}</div>
               <div className="text-sm text-neutral-400">Rechazadas</div>
             </div>
@@ -239,7 +240,7 @@ export default function ApplicationsPage() {
                 filter === 'all'
                   ? 'bg-emerald-500 text-white'
                   : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700'
-              }`}
+              } placeholder-neutral-500`}
             >
               Todas ({applications.length})
             </button>
@@ -247,7 +248,7 @@ export default function ApplicationsPage() {
               onClick={() => setFilter('pending')}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
                 filter === 'pending'
-                  ? 'bg-amber-500 text-white'
+                  ? 'bg-amber-500'
                   : 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30'
               }`}
             >
@@ -267,7 +268,7 @@ export default function ApplicationsPage() {
               onClick={() => setFilter('rejected')}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
                 filter === 'rejected'
-                  ? 'bg-red-500 text-white'
+                  ? 'bg-red-500'
                   : 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
               }`}
             >
@@ -281,7 +282,9 @@ export default function ApplicationsPage() {
       <div className="max-w-4xl mx-auto px-4 py-6 pb-28">
         {filteredApplications.length === 0 ? (
           <div className="text-center py-16">
-            <div className="text-6xl mb-6">📋</div>
+            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-neutral-800 flex items-center justify-center">
+              <ClipboardList className="w-9 h-9 text-neutral-500" strokeWidth={1.75} />
+            </div>
             <h3 className="text-xl font-semibold text-white mb-3">
               {filter === 'all' ? 'No tienes aplicaciones' : `No hay aplicaciones ${filter === 'pending' ? 'pendientes' : filter === 'accepted' ? 'aceptadas' : 'rechazadas'}`}
             </h3>
@@ -292,7 +295,7 @@ export default function ApplicationsPage() {
             </p>
             <Link
               href="/gigs"
-              className="inline-block px-6 py-3 bg-emerald-500 text-white rounded-full font-semibold hover:bg-gray-800 transition-colors"
+              className="inline-block px-6 py-3 bg-emerald-500 text-white rounded-full font-semibold hover:bg-emerald-600 transition-colors"
             >
               Explorar Trabajos
             </Link>
@@ -302,7 +305,7 @@ export default function ApplicationsPage() {
             {filteredApplications.map((app, index) => (
               <div
                 key={app.id}
-                className="bg-neutral-900 rounded-2xl overflow-hidden border border-neutral-800 hover:border-neutral-700 transition-all"
+                className="bg-neutral-900 rounded-2xl overflow-hidden border border-neutral-800 hover:border-neutral-700 transition-all text-white placeholder-neutral-500"
               >
                 <div className="flex">
                   {/* Image/Gradient Side */}
@@ -310,11 +313,11 @@ export default function ApplicationsPage() {
                     {app.gig?.image_url ? (
                       <img src={app.gig.image_url} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      <div className="text-4xl opacity-80">
-                        {app.gig?.category?.includes('TikTok') ? '🎵' :
-                         app.gig?.category?.includes('Instagram') ? '📸' :
-                         app.gig?.category?.includes('YouTube') ? '▶️' :
-                         app.gig?.category?.includes('UGC') ? '🎬' : '✨'}
+                      <div className="text-white/90">
+                        {app.gig?.category?.includes('TikTok') ? <Music2 className="w-9 h-9" strokeWidth={1.75} /> :
+                         app.gig?.category?.includes('Instagram') ? <Instagram className="w-9 h-9" strokeWidth={1.75} /> :
+                         app.gig?.category?.includes('YouTube') ? <Youtube className="w-9 h-9" strokeWidth={1.75} /> :
+                         app.gig?.category?.includes('UGC') ? <Clapperboard className="w-9 h-9" strokeWidth={1.75} /> : <Sparkles className="w-9 h-9" strokeWidth={1.75} />}
                       </div>
                     )}
                   </div>

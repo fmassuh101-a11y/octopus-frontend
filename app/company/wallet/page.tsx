@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { BarChart3, Briefcase, Inbox, MessageCircle, Users, Wallet } from 'lucide-react'
 
 interface Wallet {
   id: string
@@ -136,13 +137,13 @@ export default function CompanyWallet() {
 
   const getTransactionIcon = (type: string) => {
     const icons: Record<string, string> = {
-      'deposit': '💰',
-      'bonus': '🎁',
-      'payment_sent': '📤',
-      'refund': '↩️',
-      'fee': '📋'
+      'deposit': '',
+      'bonus': '',
+      'payment_sent': '',
+      'refund': '',
+      'fee': ''
     }
-    return icons[type] || '💵'
+    return icons[type] || ''
   }
 
   const getTransactionLabel = (type: string) => {
@@ -182,7 +183,7 @@ export default function CompanyWallet() {
               </svg>
             </button>
             <div className="text-center">
-              <h1 className="text-xl font-bold">💼 Wallet Empresa</h1>
+              <h1 className="text-xl font-bold">Wallet Empresa</h1>
               <p className="text-xs text-neutral-500">Balance y pagos</p>
             </div>
             <div className="w-10 h-10" />
@@ -193,7 +194,7 @@ export default function CompanyWallet() {
       {/* Main Content */}
       <div className="px-4 py-6 space-y-6">
         {/* Balance Card */}
-        <div className="bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-600 rounded-3xl p-6 text-white shadow-xl">
+        <div className="bg-gradient-to-br from-sky-500 via-blue-500 to-emerald-600 rounded-3xl p-6 text-white shadow-xl">
           <div className="text-center mb-6">
             <p className="text-sm text-sky-100 mb-2">Balance Disponible</p>
             <p className="text-5xl font-black">${wallet?.balance?.toFixed(2) || '0.00'}</p>
@@ -203,7 +204,7 @@ export default function CompanyWallet() {
           </div>
 
           {/* Info Box */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4">
+          <div className="bg-neutral-900/10 backdrop-blur-sm rounded-2xl p-4">
             <p className="text-sm text-center text-sky-100">
               Para agregar fondos a tu cuenta, contacta al administrador o realiza una transferencia a nuestra cuenta.
             </p>
@@ -211,8 +212,8 @@ export default function CompanyWallet() {
         </div>
 
         {/* How It Works */}
-        <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800">
-          <h3 className="font-semibold mb-4">📋 ¿Cómo funciona?</h3>
+        <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 text-white placeholder-neutral-500">
+          <h3 className="font-semibold mb-4">¿Cómo funciona?</h3>
           <div className="space-y-4">
             <div className="flex gap-4">
               <div className="w-8 h-8 bg-sky-500/20 rounded-full flex items-center justify-center flex-shrink-0">
@@ -255,9 +256,9 @@ export default function CompanyWallet() {
               onClick={() => setActiveTab(tab.id as any)}
               className={`flex-1 py-3 rounded-xl text-sm font-medium transition-colors ${
                 activeTab === tab.id
-                  ? 'bg-white text-black'
+                  ? 'bg-neutral-900 text-white'
                   : 'text-neutral-400 hover:text-white'
-              }`}
+              } placeholder-neutral-500`}
             >
               {tab.label}
             </button>
@@ -269,13 +270,13 @@ export default function CompanyWallet() {
           <div className="space-y-4">
             {/* Stats */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-neutral-900 rounded-2xl p-5 border border-neutral-800">
+              <div className="bg-neutral-900 rounded-2xl p-5 border border-neutral-800 text-white placeholder-neutral-500">
                 <p className="text-sm text-neutral-500 mb-1">Pagos Realizados</p>
                 <p className="text-2xl font-bold text-sky-400">
                   {transactions.filter(t => t.type === 'payment_sent').length}
                 </p>
               </div>
-              <div className="bg-neutral-900 rounded-2xl p-5 border border-neutral-800">
+              <div className="bg-neutral-900 rounded-2xl p-5 border border-neutral-800 text-white placeholder-neutral-500">
                 <p className="text-sm text-neutral-500 mb-1">Total Pagado</p>
                 <p className="text-2xl font-bold">
                   ${transactions
@@ -290,7 +291,7 @@ export default function CompanyWallet() {
             <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 rounded-2xl p-6">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
-                  <span className="text-2xl">💬</span>
+                  <MessageCircle className="w-6 h-6" strokeWidth={2} />
                 </div>
                 <div className="flex-1">
                   <h3 className="font-semibold text-amber-200">¿Necesitas agregar fondos?</h3>
@@ -304,10 +305,10 @@ export default function CompanyWallet() {
         )}
 
         {activeTab === 'transactions' && (
-          <div className="bg-neutral-900 rounded-2xl border border-neutral-800 overflow-hidden">
+          <div className="bg-neutral-900 rounded-2xl border border-neutral-800 overflow-hidden text-white placeholder-neutral-500">
             {transactions.length === 0 ? (
               <div className="p-12 text-center">
-                <span className="text-4xl block mb-4">📭</span>
+                <Inbox className="w-8 h-8" strokeWidth={2} />
                 <p className="text-neutral-500">No hay transacciones aún</p>
                 <p className="text-sm text-neutral-600 mt-2">
                   Las transacciones aparecerán aquí cuando agregues fondos o pagues a creadores
@@ -347,20 +348,20 @@ export default function CompanyWallet() {
         )}
 
         {/* Fee Info */}
-        <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800">
-          <h3 className="font-semibold mb-3">💡 Información de Fees</h3>
+        <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 text-white placeholder-neutral-500">
+          <h3 className="font-semibold mb-3">Información de Fees</h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-neutral-400">Fee de plataforma</span>
-              <span>10% por pago</span>
+              <span className="text-white font-medium">4.5% por pago</span>
             </div>
             <div className="flex justify-between">
               <span className="text-neutral-400">El creador recibe</span>
-              <span>90% del monto</span>
+              <span className="text-emerald-400 font-medium">95.5% del monto</span>
             </div>
           </div>
           <p className="text-xs text-neutral-500 mt-4">
-            Ejemplo: Si pagas $100, el creador recibe $90 y $10 van a la plataforma.
+            Ejemplo: Si pagas $100, el creador recibe $95.50 y $4.50 van a la plataforma.
           </p>
         </div>
       </div>
@@ -369,23 +370,23 @@ export default function CompanyWallet() {
       <div className="fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-800">
         <div className="flex justify-around py-3">
           <button onClick={() => router.push('/company/dashboard')} className="flex flex-col items-center space-y-1 text-neutral-500 hover:text-white transition-colors">
-            <span className="text-lg">📊</span>
+            <BarChart3 className="w-5 h-5" strokeWidth={2} />
             <span className="text-xs">Dashboard</span>
           </button>
           <button onClick={() => router.push('/company/jobs')} className="flex flex-col items-center space-y-1 text-neutral-500 hover:text-white transition-colors">
-            <span className="text-lg">💼</span>
+            <Briefcase className="w-5 h-5" strokeWidth={2} />
             <span className="text-xs">Mis Gigs</span>
           </button>
           <div className="flex flex-col items-center space-y-1 text-sky-500">
-            <span className="text-lg">💰</span>
+            <Wallet className="w-5 h-5" strokeWidth={2} />
             <span className="text-xs font-medium">Wallet</span>
           </div>
           <button onClick={() => router.push('/company/applicants')} className="flex flex-col items-center space-y-1 text-neutral-500 hover:text-white transition-colors">
-            <span className="text-lg">👥</span>
+            <Users className="w-5 h-5" strokeWidth={2} />
             <span className="text-xs">Aplicantes</span>
           </button>
         </div>
-        <div className="h-1 bg-white mx-auto w-32 rounded-full mb-2" />
+        <div className="h-1 bg-neutral-900 mx-auto w-32 rounded-full mb-2" />
       </div>
     </div>
   )
