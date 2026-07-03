@@ -23,11 +23,25 @@ interface Gig {
   applicants_count?: number
 }
 
+const CATEGORIES = [
+  { key: 'todas', label: 'Todas' },
+  { key: 'ugc', label: 'UGC' },
+  { key: 'clipping', label: 'Clipping' },
+  { key: 'marketing', label: 'Marketing' },
+  { key: 'belleza', label: 'Belleza' },
+  { key: 'moda', label: 'Moda' },
+  { key: 'gaming', label: 'Gaming' },
+  { key: 'comida', label: 'Comida' },
+  { key: 'fitness', label: 'Fitness' },
+  { key: 'tech', label: 'Tech' },
+]
+
 export default function GigsPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [gigs, setGigs] = useState<Gig[]>([])
   const [filter, setFilter] = useState('para_ti')
+  const [category, setCategory] = useState('todas')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedGig, setSelectedGig] = useState<Gig | null>(null)
   const [user, setUser] = useState<any>(null)
@@ -185,6 +199,13 @@ export default function GigsPage() {
   // OPTIMIZED: Memoize filtered and sorted gigs
   const sortedGigs = useMemo(() => {
     const filtered = gigs.filter(gig => {
+      // filtro por categoría (chip)
+      if (category !== 'todas') {
+        const cat = (gig.category || '').toLowerCase()
+        const title = (gig.title || '').toLowerCase()
+        if (!cat.includes(category) && !title.includes(category)) return false
+      }
+      // filtro por búsqueda
       if (!searchQuery) return true
       const query = searchQuery.toLowerCase()
       return gig.title?.toLowerCase().includes(query) ||
@@ -200,7 +221,7 @@ export default function GigsPage() {
       }
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     })
-  }, [gigs, searchQuery, filter])
+  }, [gigs, searchQuery, filter, category])
 
   const getGradient = (index: number) => {
     const gradients = [
@@ -331,7 +352,7 @@ export default function GigsPage() {
               onClick={() => setFilter('mejor_pago')}
               className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                 filter === 'mejor_pago'
-                  ? 'bg-emerald-500'
+                  ? 'bg-emerald-500 text-white'
                   : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white'
               } placeholder-neutral-500`}
             >
@@ -341,12 +362,29 @@ export default function GigsPage() {
               onClick={() => setFilter('tendencia')}
               className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                 filter === 'tendencia'
-                  ? 'bg-emerald-500'
+                  ? 'bg-emerald-500 text-white'
                   : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white'
-              } placeholder-neutral-500`}
+              }`}
             >
               Tendencia
             </button>
+          </div>
+
+          {/* Category chips (estilo SideShift) */}
+          <div className="flex gap-2 mt-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
+            {CATEGORIES.map((c) => (
+              <button
+                key={c.key}
+                onClick={() => setCategory(c.key)}
+                className={`whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                  category === c.key
+                    ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400'
+                    : 'bg-transparent border-neutral-800 text-neutral-400 hover:border-neutral-600 hover:text-white'
+                }`}
+              >
+                {c.label}
+              </button>
+            ))}
           </div>
         </div>
       </div>
