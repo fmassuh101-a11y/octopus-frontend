@@ -4,71 +4,80 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Check, Sparkles } from 'lucide-react'
 
-// Precios ~mitad de SideShift ($199/$299/$999 → nosotros más baratos).
+// Sin plan free "generoso": el Starter es gratis de suscripción pero cobra
+// 7% al depositar (vs 4.5% en planes pagos) y es limitado → empuja a Pro.
 // Máximo 4 planes, incluyendo "Hablemos" (enterprise / contacto).
 const PLANS = [
   {
-    key: 'free',
-    name: 'Gratis',
+    key: 'starter',
+    name: 'Starter',
     monthly: 0,
-    tagline: 'Para probar Octopus y lanzar tu primera campaña.',
+    fee: '7%',
+    trial: false,
+    tagline: 'Para empezar y publicar tu primera campaña.',
     highlight: false,
-    cta: 'Empezar gratis',
+    cta: 'Empezar',
     features: [
-      '3 campañas activas',
-      'Hasta 5 creadores',
+      '1 campaña en el feed',
+      'Máximo 2 creadores contratados',
       '1 miembro del equipo',
-      '30 invitaciones a creadores',
-      'Soporte por chat',
+      'Comisión de 7% al depositar',
+      'Sin analíticas',
     ],
   },
   {
     key: 'pro',
     name: 'Pro',
     monthly: 99,
-    tagline: 'Para marcas que quieren contenido de forma constante.',
+    fee: '4.5%',
+    trial: true,
+    tagline: 'Para marcas que quieren contenido constante.',
     highlight: true,
     cta: 'Elegir Pro',
     features: [
-      '10 campañas activas',
-      'Hasta 15 creadores',
+      '3 campañas publicadas en el feed',
+      'Hasta 5 campañas activas (2 por link privado)',
       '3 miembros del equipo',
-      '100 invitaciones a creadores',
       'Analíticas de rendimiento',
-      '1 impulso de campaña (boost)',
-      'Soporte prioritario',
+      'Soporte funcional cuando lo necesites',
+      'Comisión reducida de 4.5% al depositar',
     ],
   },
   {
     key: 'scale',
     name: 'Scale',
     monthly: 499,
+    fee: '4.5%',
+    trial: false,
     tagline: 'Para escalar contenido a gran volumen.',
     highlight: false,
     cta: 'Elegir Scale',
     features: [
-      'Campañas ilimitadas',
-      'Creadores ilimitados',
+      '10 campañas al feed por mes',
+      'Hasta 15 campañas creadas',
       '10 miembros del equipo',
-      'Invitaciones ilimitadas',
-      'Analíticas avanzadas',
-      '3 impulsos de campaña',
+      'Analíticas avanzadas + reportes exportables',
+      'Campañas destacadas (boost)',
+      'Gerente de cuenta dedicado',
       'Soporte 24/7',
+      'Comisión reducida de 4.5% al depositar',
     ],
   },
   {
     key: 'enterprise',
     name: 'Hablemos',
     monthly: null,
-    tagline: 'Campañas gestionadas por nosotros, a tu medida.',
+    fee: null,
+    trial: false,
+    tagline: 'Nosotros creamos y gestionamos tus campañas por ti.',
     highlight: false,
-    cta: 'Contáctanos',
+    cta: 'Hablemos',
     features: [
-      'Todo lo de Scale',
+      'Todo lo de Scale, sin límites',
       'Miembros del equipo ilimitados',
-      'Manager dedicado',
-      'Campañas hechas por nosotros (done-for-you)',
+      'Campañas "Listas para ti" (creadas por nuestro equipo)',
       'Estrategia y check-ins semanales',
+      'Comisión y condiciones a medida',
     ],
   },
 ]
@@ -103,7 +112,7 @@ export default function CompanyPricing() {
         <div className="text-center mb-10">
           <h1 className="text-3xl sm:text-4xl font-black mb-3">Precios simples para hacer crecer tu marca</h1>
           <p className="text-neutral-400 max-w-2xl mx-auto">
-            Paga solo por lo que necesitas. Los pagos a los creadores van aparte. Cancela cuando quieras.
+            Prueba Pro gratis por 3 días. Los pagos a los creadores van aparte. Cancela cuando quieras.
           </p>
 
           {/* Toggle mensual/anual */}
@@ -147,14 +156,20 @@ export default function CompanyPricing() {
                   {price === null ? (
                     <span className="text-3xl font-black">A medida</span>
                   ) : price === 0 ? (
-                    <span className="text-4xl font-black">Gratis</span>
+                    <span className="text-4xl font-black">$0<span className="text-base font-medium text-neutral-500">/mes</span></span>
                   ) : (
                     <span className="text-4xl font-black">
                       ${price}<span className="text-base font-medium text-neutral-500">/mes</span>
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-neutral-400 mb-5 min-h-[40px]">{plan.tagline}</p>
+                <p className="text-sm text-neutral-400 mb-3 min-h-[40px]">{plan.tagline}</p>
+
+                {plan.trial && (
+                  <div className="mb-4 text-xs font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-1.5 text-center">
+                    3 días de prueba gratis
+                  </div>
+                )}
 
                 {plan.key === 'enterprise' ? (
                   <a
@@ -187,7 +202,7 @@ export default function CompanyPricing() {
         </div>
 
         <p className="text-center text-xs text-neutral-500 mt-8">
-          Los precios no incluyen lo que pagas a los creadores. Octopus cobra una comisión de 4.5% por pago procesado.
+          Los precios de suscripción no incluyen lo que pagas a los creadores. La comisión por pago depende de tu plan (Starter 7%, planes pagos 4.5%).
         </p>
       </div>
     </div>
