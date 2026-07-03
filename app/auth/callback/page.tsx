@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { isAdminEmail } from '@/lib/isAdmin'
 
 const ADMIN_EMAIL = 'fmassuh133@gmail.com'
 
@@ -65,7 +66,7 @@ export default function AuthCallback() {
       setStatus('¡Sesión guardada!')
 
       // Check if user is admin - redirect directly to admin dashboard
-      if (user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+      if (isAdminEmail(user.email)) {
         console.log('[Callback] Admin detected, redirecting to admin dashboard')
         window.location.href = '/admin'
         return
