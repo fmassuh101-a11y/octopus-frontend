@@ -232,24 +232,25 @@ export default function CompanySettingsPage() {
         {/* Payment Plans Tab */}
         {activeTab === 'payment' && (
           <div>
-            <h2 className="text-xl font-bold text-white mb-2">Payment Plans</h2>
-            <p className="text-neutral-500 mb-6">Upgrade, cancel or renew current options from here</p>
+            <h2 className="text-xl font-bold text-white mb-2">Planes</h2>
+            <p className="text-neutral-500 mb-6">Mejora, cancela o renueva tu plan desde aquí</p>
 
             <div className="grid md:grid-cols-2 gap-6">
               {/* Current Plan */}
               <div className="bg-neutral-900 rounded-xl border border-neutral-800 p-6 text-white placeholder-neutral-500">
-                <h3 className="font-semibold text-white mb-4">Current Plan</h3>
+                <h3 className="font-semibold text-white mb-4">Plan actual</h3>
                 <div className="flex items-center gap-3 mb-2">
-                  <Crown className="w-6 h-6" strokeWidth={2} />
-                  <span className="font-medium text-white">Free Plan</span>
+                  <Crown className="w-6 h-6 text-emerald-400" strokeWidth={2} />
+                  <span className="font-medium text-white">Starter</span>
                 </div>
-                <p className="text-3xl font-bold text-white mb-4">$0.00</p>
-                <button
-                  disabled
-                  className="px-4 py-2 border border-neutral-700 rounded-lg text-neutral-500 cursor-not-allowed"
+                <p className="text-3xl font-bold text-white mb-1">$0<span className="text-base font-medium text-neutral-500">/mes</span></p>
+                <p className="text-xs text-neutral-500 mb-4">Comisión 7% al depositar · 1 campaña</p>
+                <Link
+                  href="/company/pricing"
+                  className="inline-block px-4 py-2 bg-emerald-500 hover:bg-emerald-600 rounded-lg font-semibold text-sm transition-colors"
                 >
-                  Change (Coming Soon)
-                </button>
+                  Ver planes y mejorar
+                </Link>
               </div>
 
               {/* Payment Method */}

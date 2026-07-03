@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { validateEmail } from '@/lib/validateEmail'
 
 export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
@@ -17,6 +18,12 @@ export default function RegisterPage() {
 
     if (!email || !password || !confirmPassword) {
       setError('Por favor completa todos los campos')
+      return
+    }
+
+    const emailCheck = validateEmail(email)
+    if (!emailCheck.valid) {
+      setError(emailCheck.message || 'Email inválido')
       return
     }
 
