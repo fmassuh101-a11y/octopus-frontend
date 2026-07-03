@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { getAuthenticatedUser } from '@/lib/auth/apiAuth'
+import { rateLimit } from '@/lib/rateLimit'
 
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 
@@ -10,6 +11,8 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
  * nunca del body — antes cualquiera podía sobrescribir perfiles ajenos).
  */
 export async function POST(request: NextRequest) {
+  const limited = rateLimit(request, { limit: 20, name: 'profile-save' })
+  if (limited) return limited
   try {
     const user = await getAuthenticatedUser(request)
     if (!user) {

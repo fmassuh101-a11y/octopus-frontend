@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { rateLimit } from '@/lib/rateLimit'
 
 // SOLO env var — la key anterior quedó en el historial de git y en docs:
 // rotarla en Google AI Studio y setear GEMINI_API_KEY en .env.local y Vercel
@@ -21,6 +22,9 @@ INFO CLAVE:
 - Contrasena: usar "Olvide mi contrasena" en login`
 
 export async function POST(request: NextRequest) {
+  const limited = rateLimit(request, { limit: 15, name: 'support-chat' })
+  if (limited) return limited
+
   try {
     const body = await request.json()
     const { message, conversationHistory } = body

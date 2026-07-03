@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { whopClient } from "@/lib/whop";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { getAuthenticatedUser } from '@/lib/auth/apiAuth'
+import { rateLimit } from '@/lib/rateLimit'
 
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -13,6 +14,8 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://octopus-frontend-tau
  * El userId se deriva SIEMPRE de la sesión autenticada.
  */
 export async function POST(request: NextRequest) {
+  const limited = rateLimit(request, { limit: 10, name: 'whop-withdraw' })
+  if (limited) return limited
   try {
     const user = await getAuthenticatedUser(request)
     if (!user) {
