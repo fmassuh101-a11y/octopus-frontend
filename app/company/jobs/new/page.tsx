@@ -4,13 +4,12 @@ import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
-import { Lightbulb, Sparkles, Scissors } from 'lucide-react'
+import { Lightbulb } from 'lucide-react'
 
 type PaymentType = "fixed" | "hourly" | "cpm"
 type PaymentFrequency = "one_time" | "weekly" | "monthly"
 
 interface JobFormData {
-  campaignType: 'ugc' | 'clipping' | ''
   title: string
   jobType: string
   description: string
@@ -28,7 +27,6 @@ interface JobFormData {
 }
 
 const initialFormData: JobFormData = {
-  campaignType: "",
   title: "",
   jobType: "",
   description: "",
@@ -45,19 +43,16 @@ const initialFormData: JobFormData = {
   jobImage: null,
 }
 
-const jobTypes = [
-  "Creador UGC",
-  "Embajador de Marca",
-  "Creador de Contenido",
-  "Campana de Influencer",
-  "Resena de Producto",
-  "Community Manager",
-  "Editor de Video",
-  "Fotografo",
-  "Contenido TikTok",
-  "Contenido Instagram",
-  "Contenido YouTube",
-  "Otro"
+// Tipos de contenido que puede pedir una empresa (estilo SideShift)
+const contentTypes = [
+  { key: 'ugc', label: 'UGC', desc: 'Contenido original hecho por el creador', pay: 'fixed' },
+  { key: 'clipping', label: 'Clipping', desc: 'Clips de tu contenido en su cuenta', pay: 'cpm' },
+  { key: 'faceless', label: 'Faceless', desc: 'Contenido sin mostrar la cara', pay: 'fixed' },
+  { key: 'social', label: 'Social Media Manager', desc: 'Gestiona tus redes', pay: 'fixed' },
+  { key: 'slideshow', label: 'Slideshows', desc: 'Carruseles de fotos/imágenes', pay: 'fixed' },
+  { key: 'review', label: 'Reseñas', desc: 'Reseña honesta de tu producto', pay: 'fixed' },
+  { key: 'unboxing', label: 'Unboxing', desc: 'Video abriendo tu producto', pay: 'fixed' },
+  { key: 'ambassador', label: 'Embajador de Marca', desc: 'Representa tu marca a largo plazo', pay: 'fixed' },
 ]
 
 const steps = [
@@ -82,7 +77,7 @@ export default function NewJobPage() {
   const canProceed = () => {
     switch (currentStep) {
       case 1:
-        return formData.campaignType && formData.title.trim() && formData.jobType && formData.description.trim()
+        return formData.title.trim() && formData.jobType && formData.description.trim()
       case 2:
         if (formData.paymentType === "fixed") return formData.fixedAmount
         if (formData.paymentType === "hourly") return formData.hourlyRate
@@ -176,7 +171,7 @@ export default function NewJobPage() {
         title: formData.title,
         description: formData.description,
         budget: getBudgetString(),
-        category: formData.campaignType || formData.jobType,
+        category: contentTypes.find(c => c.label === formData.jobType)?.key || 'ugc',
         requirements: getRequirementsString(),
         status: 'active'
       }
@@ -335,42 +330,27 @@ export default function NewJobPage() {
                       <p className="text-neutral-500">Describe que tipo de contenido necesitas</p>
                     </div>
 
-                    {/* Tipo de campaña: UGC vs Clipping */}
+                    {/* Tipo de contenido (estilo SideShift) */}
                     <div>
                       <label className="block text-sm font-semibold text-neutral-200 mb-2">
-                        Tipo de campana *
+                        Tipo de contenido *
                       </label>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <button
-                          type="button"
-                          onClick={() => updateFormData({ campaignType: 'ugc', paymentType: 'fixed' })}
-                          className={`text-left p-4 rounded-xl border transition-all ${
-                            formData.campaignType === 'ugc'
-                              ? 'border-emerald-500 bg-emerald-500/10 ring-2 ring-emerald-500/20'
-                              : 'border-neutral-800 bg-neutral-900 hover:border-neutral-700'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 mb-1">
-                            <Sparkles className="w-5 h-5 text-emerald-400" />
-                            <span className="font-semibold text-white">UGC</span>
-                          </div>
-                          <p className="text-xs text-neutral-400">El creador produce contenido original para tu marca. Pago fijo por entrega.</p>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => updateFormData({ campaignType: 'clipping', paymentType: 'cpm' })}
-                          className={`text-left p-4 rounded-xl border transition-all ${
-                            formData.campaignType === 'clipping'
-                              ? 'border-emerald-500 bg-emerald-500/10 ring-2 ring-emerald-500/20'
-                              : 'border-neutral-800 bg-neutral-900 hover:border-neutral-700'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 mb-1">
-                            <Scissors className="w-5 h-5 text-emerald-400" />
-                            <span className="font-semibold text-white">Clipping</span>
-                          </div>
-                          <p className="text-xs text-neutral-400">Das tu contenido y el creador hace clips en su cuenta. Pago por 1.000 views.</p>
-                        </button>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        {contentTypes.map(ct => (
+                          <button
+                            key={ct.key}
+                            type="button"
+                            onClick={() => updateFormData({ jobType: ct.label, paymentType: ct.pay as PaymentType })}
+                            className={`text-left p-3 rounded-xl border transition-all ${
+                              formData.jobType === ct.label
+                                ? 'border-emerald-500 bg-emerald-500/10 ring-2 ring-emerald-500/20'
+                                : 'border-neutral-800 bg-neutral-900 hover:border-neutral-700'
+                            }`}
+                          >
+                            <span className="block font-semibold text-white text-sm mb-0.5">{ct.label}</span>
+                            <span className="block text-[11px] leading-tight text-neutral-400">{ct.desc}</span>
+                          </button>
+                        ))}
                       </div>
                     </div>
 
@@ -386,27 +366,6 @@ export default function NewJobPage() {
                           placeholder="ej. Creador UGC para marca de skincare"
                           className="w-full px-4 py-3 rounded-xl border border-neutral-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all outline-none bg-neutral-900 text-white placeholder-neutral-500"
                         />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-semibold text-neutral-200 mb-2">
-                          Tipo de trabajo *
-                        </label>
-                        <div className="relative">
-                          <select
-                            value={formData.jobType}
-                            onChange={e => updateFormData({ jobType: e.target.value })}
-                            className="w-full px-4 py-3 rounded-xl border border-neutral-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all outline-none text-white appearance-none bg-neutral-900"
-                          >
-                            <option value="">Selecciona un tipo</option>
-                            {jobTypes.map(type => (
-                              <option key={type} value={type}>{type}</option>
-                            ))}
-                          </select>
-                          <svg className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-500 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </div>
                       </div>
 
                       <div>
