@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
-import { ClipboardList, Music2, Instagram, Youtube, Clapperboard, Sparkles } from 'lucide-react'
+import { ClipboardList, Music2, Instagram, Youtube, Clapperboard, Sparkles, CheckCheck, Check } from 'lucide-react'
 
 interface Application {
   id: string
@@ -90,14 +90,14 @@ export default function ApplicationsPage() {
     switch (status) {
       case 'pending':
         return (
-          <span className="px-3 py-1 bg-yellow-100 text-yellow-700 text-sm font-medium rounded-full flex items-center gap-1">
+          <span className="px-3 py-1 bg-amber-500/15 text-amber-400 text-sm font-medium rounded-full flex items-center gap-1">
             <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></span>
             Pendiente
           </span>
         )
       case 'accepted':
         return (
-          <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-medium rounded-full flex items-center gap-1">
+          <span className="px-3 py-1 bg-emerald-500/15 text-emerald-400 text-sm font-medium rounded-full flex items-center gap-1">
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
             </svg>
@@ -106,7 +106,7 @@ export default function ApplicationsPage() {
         )
       case 'rejected':
         return (
-          <span className="px-3 py-1 bg-red-100 text-red-700 text-sm font-medium rounded-full flex items-center gap-1">
+          <span className="px-3 py-1 bg-red-500/15 text-red-400 text-sm font-medium rounded-full flex items-center gap-1">
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
             </svg>
@@ -354,6 +354,23 @@ export default function ApplicationsPage() {
                         </Link>
                       )}
                     </div>
+
+                    {/* Anti-ghosting: ¿la empresa vio tu aplicación? */}
+                    {app.status === 'pending' && (
+                      <div className="mt-3">
+                        {(app as any).reviewed_at ? (
+                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-400">
+                            <CheckCheck className="w-3.5 h-3.5" strokeWidth={2.5} />
+                            Vista por la empresa
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-neutral-500">
+                            <Check className="w-3.5 h-3.5" strokeWidth={2} />
+                            Enviada · aún no vista
+                          </span>
+                        )}
+                      </div>
+                    )}
 
                     {/* Message Preview */}
                     {app.message && (
