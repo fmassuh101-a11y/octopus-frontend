@@ -32,6 +32,56 @@ export default function CompanySettingsPage() {
   const [inviting, setInviting] = useState(false)
   const [teamMsg, setTeamMsg] = useState('')
 
+  // Buscador de usuarios reales (por nombre, handle o email)
+  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [searching, setSearching] = useState(false)
+
+  const searchUsers = async (q: string) => {
+    setInviteEmail(q)
+    if (q.trim().length < 2) { setSearchResults([]); return }
+    setSearching(true)
+    try {
+      const token = localStorage.getItem('sb-access-token')
+      const term = q.replace(/^@/, '').trim()
+      const orq = `or=(full_name.ilike.*${term}*,username.ilike.*${term}*,email.ilike.*${term}*,tiktok.ilike.*${term}*,instagram.ilike.*${term}*)`
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles?${orq}&select=user_id,full_name,username,email,tiktok,user_type,avatar_url&limit=6`,
+        { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+      )
+      if (res.ok) {
+        const data = await res.json()
+        setSearchResults(data.filter((u: any) => u.user_id !== user?.id && u.email))
+      }
+    } catch (e) { console.error(e) } finally { setSearching(false) }
+  }
+
+  const inviteUser = async (u: any) => {
+    setTeamMsg('')
+    const plan = getPlan(profile?.plan)
+    if (plan.seats >= 0 && teamMembers.length + 1 >= plan.seats) {
+      setTeamMsg(`Tu plan ${plan.name} permite ${plan.seats} ${plan.seats === 1 ? 'asiento' : 'asientos'}. Mejora tu plan para invitar más.`)
+      return
+    }
+    if (teamMembers.some(m => m.email === u.email?.toLowerCase())) { setTeamMsg('Esa persona ya está en tu equipo.'); return }
+    setInviting(true)
+    try {
+      const token = localStorage.getItem('sb-access-token')
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/team_members`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY, 'Prefer': 'return=representation' },
+        body: JSON.stringify({
+          company_id: user.id, email: u.email.toLowerCase(), name: u.full_name || u.username,
+          member_user_id: u.user_id, role: inviteRole, permissions: defaultPermsForRole(inviteRole), status: 'invited',
+        }),
+      })
+      if (!res.ok) throw new Error(await res.text())
+      const created = await res.json()
+      setTeamMembers(prev => [...(Array.isArray(created) ? created : [created]), ...prev])
+      setInviteEmail(''); setSearchResults([])
+      setTeamMsg(`✓ Invitaste a ${u.full_name || u.email}.`)
+    } catch (e: any) { setTeamMsg('Error al invitar.') } finally { setInviting(false) }
+  }
+
   const updateMemberRole = async (memberId: string, role: string) => {
     const token = localStorage.getItem('sb-access-token')
     const perms = defaultPermsForRole(role)
@@ -575,13 +625,37 @@ export default function CompanySettingsPage() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-2 mb-2">
-              <input
-                type="email"
-                value={inviteEmail}
-                onChange={e => setInviteEmail(e.target.value)}
-                placeholder="email@delcolaborador.com"
-                className="flex-1 px-4 py-2.5 rounded-xl border border-neutral-800 bg-neutral-900 text-white placeholder-neutral-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none"
-              />
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  value={inviteEmail}
+                  onChange={e => searchUsers(e.target.value)}
+                  placeholder="Busca por @handle, nombre o email"
+                  className="w-full px-4 py-2.5 rounded-xl border border-neutral-800 bg-neutral-900 text-white placeholder-neutral-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none"
+                />
+                {/* Resultados de la búsqueda de usuarios reales */}
+                {searchResults.length > 0 && (
+                  <div className="absolute left-0 right-0 top-full mt-1 bg-neutral-900 border border-neutral-800 rounded-xl shadow-xl z-20 p-1.5 max-h-64 overflow-y-auto">
+                    {searchResults.map(u => (
+                      <button
+                        key={u.user_id}
+                        onClick={() => inviteUser(u)}
+                        disabled={inviting}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-neutral-800 transition-colors text-left"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-neutral-800 overflow-hidden flex items-center justify-center flex-shrink-0">
+                          {u.avatar_url ? <img src={u.avatar_url} alt="" className="w-full h-full object-cover" /> : <span className="text-xs font-bold text-neutral-400">{(u.full_name || u.email)?.charAt(0)?.toUpperCase()}</span>}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm text-white truncate">{u.full_name || u.username || u.email}</p>
+                          <p className="text-xs text-neutral-500 truncate">{u.tiktok ? `@${u.tiktok.replace(/^@/, '')} · ` : ''}{u.email} · {u.user_type === 'company' ? 'Empresa' : 'Creador'}</p>
+                        </div>
+                        <span className="text-emerald-400 text-xs font-medium flex-shrink-0">Invitar</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <select
                 value={inviteRole}
                 onChange={e => setInviteRole(e.target.value)}
@@ -594,10 +668,12 @@ export default function CompanySettingsPage() {
                 disabled={inviting}
                 className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 rounded-xl font-semibold text-sm text-white transition-colors whitespace-nowrap"
               >
-                {inviting ? 'Invitando...' : 'Invitar'}
+                {inviting ? '...' : 'Invitar email'}
               </button>
             </div>
-            <p className="text-xs text-neutral-500 mb-4">{ROLES.find(r => r.key === inviteRole)?.desc}</p>
+            <p className="text-xs text-neutral-500 mb-4">
+              Busca a la persona por su @handle o nombre y elígela, o invita por email directo. Rol: <span className="text-neutral-300">{ROLES.find(r => r.key === inviteRole)?.desc}</span>
+            </p>
             {teamMsg && <p className={`text-sm mb-4 ${teamMsg.startsWith('✓') ? 'text-emerald-400' : 'text-amber-400'}`}>{teamMsg}</p>}
 
             {teamMembers.length > 0 && (
