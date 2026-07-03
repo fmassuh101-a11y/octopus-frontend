@@ -11,6 +11,10 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS whop_company_id TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS whop_user_id TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS kyc_status TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS verified BOOLEAN DEFAULT false;
+-- Suscripción de empresa: plan, origen (default/paid/gifted) y descuento del admin
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS plan TEXT DEFAULT 'starter';
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS plan_source TEXT DEFAULT 'default';
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS discount_percent INTEGER DEFAULT 0;
 
 -- APPLICATIONS (anti-ghosting + bookmarks)
 ALTER TABLE public.applications ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMPTZ;

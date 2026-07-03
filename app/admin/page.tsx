@@ -919,6 +919,7 @@ export default function AdminDashboard() {
               { id: 'users', label: 'Usuarios', icon: Users },
               { id: 'gigs', label: 'Gigs', icon: Briefcase },
               { id: 'support', label: 'Soporte', icon: MessageCircle, href: '/admin/support' },
+              { id: 'companies', label: 'Empresas', icon: Briefcase, href: '/admin/companies' },
             ].map((tab) => (
               tab.href ? (
                 <Link

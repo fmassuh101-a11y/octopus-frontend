@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
+import { getPlan, effectiveFee } from '@/lib/plans'
 import { useRouter } from 'next/navigation'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { Banknote, BarChart3, Bell, Briefcase, Crown, Users, Video } from 'lucide-react'
@@ -239,12 +240,23 @@ export default function CompanySettingsPage() {
               {/* Current Plan */}
               <div className="bg-neutral-900 rounded-xl border border-neutral-800 p-6 text-white placeholder-neutral-500">
                 <h3 className="font-semibold text-white mb-4">Plan actual</h3>
+                {profile?.plan_source === 'gifted' && (
+                  <div className="mb-3 text-xs font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2">
+                    🎁 Te han regalado el plan {getPlan(profile?.plan).name}
+                  </div>
+                )}
                 <div className="flex items-center gap-3 mb-2">
                   <Crown className="w-6 h-6 text-emerald-400" strokeWidth={2} />
-                  <span className="font-medium text-white">Starter</span>
+                  <span className="font-medium text-white">{getPlan(profile?.plan).name}</span>
                 </div>
-                <p className="text-3xl font-bold text-white mb-1">$0<span className="text-base font-medium text-neutral-500">/mes</span></p>
-                <p className="text-xs text-neutral-500 mb-4">Comisión 7% al depositar · 1 campaña</p>
+                <p className="text-3xl font-bold text-white mb-1">
+                  {getPlan(profile?.plan).monthly === null ? 'A medida' : `$${getPlan(profile?.plan).monthly}`}
+                  {getPlan(profile?.plan).monthly !== null && <span className="text-base font-medium text-neutral-500">/mes</span>}
+                </p>
+                <p className="text-xs text-neutral-500 mb-4">
+                  Comisión {effectiveFee(getPlan(profile?.plan), profile?.discount_percent || 0)}% al depositar
+                  {(profile?.discount_percent || 0) > 0 && ` (con ${profile.discount_percent}% de descuento)`}
+                </p>
                 <Link
                   href="/company/pricing"
                   className="inline-block px-4 py-2 bg-emerald-500 hover:bg-emerald-600 rounded-lg font-semibold text-sm transition-colors"
