@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import AcceptAndMessageModal from '@/components/messaging/AcceptAndMessageModal'
 import { MessageTemplate } from '@/lib/utils/messageTemplates'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import CreatorLevelBadge from '@/components/ui/CreatorLevelBadge'
 
 type TabType = 'new' | 'reviewed' | 'messaged' | 'declined' | 'bookmarked' | 'accepted'
 
@@ -427,14 +428,14 @@ export default function ApplicantsPage() {
       onClick={() => setActiveTab(tab)}
       className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors relative ${
         activeTab === tab
-          ? 'text-emerald-600 border-b-2 border-emerald-600'
+          ? 'text-emerald-400 border-b-2 border-emerald-600'
           : 'text-neutral-500 hover:text-neutral-200'
       }`}
     >
       {label}
       {count > 0 && (
         <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${
-          activeTab === tab ? 'bg-emerald-100 text-emerald-600' : 'bg-neutral-800 text-neutral-400'
+          activeTab === tab ? 'bg-emerald-500/15 text-emerald-400' : 'bg-neutral-800 text-neutral-400'
         } text-white placeholder-neutral-500`}>
           {count}
         </span>
@@ -516,13 +517,13 @@ export default function ApplicantsPage() {
         {/* Tags */}
         <div className="flex flex-wrap gap-2 mb-4">
           {creator?.niche && (
-            <span className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-medium">{creator.niche}</span>
+            <span className="px-2 py-1 bg-emerald-500/15 text-emerald-400 rounded-full text-xs font-medium">{creator.niche}</span>
           )}
           {tiktok && (
             <span className="px-2 py-1 bg-neutral-800 text-neutral-400 rounded-full text-xs">{formatNumber(getTotalFollowers(creator))} seguidores</span>
           )}
           {app.gig && (
-            <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs">{app.gig.category}</span>
+            <span className="px-2 py-1 bg-blue-500/15 text-blue-400 rounded-full text-xs">{app.gig.category}</span>
           )}
         </div>
 
@@ -546,7 +547,7 @@ export default function ApplicantsPage() {
               disabled={isUpdating}
               className={`p-2 rounded-full border transition-colors ${
                 app.bookmarked
-                  ? 'border-emerald-300 bg-emerald-50 text-emerald-600'
+                  ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-400'
                   : 'border-neutral-800 text-neutral-500 hover:bg-neutral-950 hover:text-neutral-200'
               } placeholder-neutral-500`}
               title={app.bookmarked ? 'Quitar bookmark' : 'Guardar'}
@@ -695,14 +696,14 @@ export default function ApplicantsPage() {
             </svg>
             <span className="text-xs font-medium mt-1">Mensajes</span>
           </Link>
-          <div className="flex flex-col items-center py-2 px-4 text-emerald-600">
+          <div className="flex flex-col items-center py-2 px-4 text-emerald-400">
             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
               <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
             </svg>
             <span className="text-xs font-medium mt-1">Aplicantes</span>
           </div>
         </div>
-        <div className="h-1 bg-gray-900 mx-auto w-32 rounded-full mb-2"></div>
+        <div className="h-1 bg-neutral-800 mx-auto w-32 rounded-full mb-2"></div>
       </div>
 
       {/* Creator Profile Modal */}
@@ -729,7 +730,7 @@ export default function ApplicantsPage() {
                   <img
                     src={selectedCreator.creator?.tiktokAccounts?.[0]?.avatarUrl || selectedCreator.creator?.avatar_url}
                     alt={getCreatorName(selectedCreator.creator)}
-                    className="w-24 h-24 rounded-full object-cover mx-auto mb-4 border-4 border-emerald-100"
+                    className="w-24 h-24 rounded-full object-cover mx-auto mb-4 border-4 border-emerald-500/20"
                   />
                 ) : (
                   <div className="w-24 h-24 bg-gradient-to-br from-emerald-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -742,11 +743,14 @@ export default function ApplicantsPage() {
                 {selectedCreator.creator?.city && selectedCreator.creator?.country && (
                   <p className="text-neutral-500">{selectedCreator.creator.city}, {selectedCreator.creator.country}</p>
                 )}
-                {selectedCreator.creator?.niche && (
-                  <span className="inline-block mt-2 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm font-medium">
-                    {selectedCreator.creator.niche}
-                  </span>
-                )}
+                <div className="flex items-center justify-center gap-2 mt-2 flex-wrap">
+                  <CreatorLevelBadge completed={(selectedCreator.creator as any)?.completed_jobs || 0} />
+                  {selectedCreator.creator?.niche && (
+                    <span className="inline-block px-3 py-1 bg-emerald-500/15 text-emerald-400 rounded-full text-sm font-medium">
+                      {selectedCreator.creator.niche}
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Social Profiles */}
@@ -758,7 +762,7 @@ export default function ApplicantsPage() {
                       href={`https://tiktok.com/@${(selectedCreator.creator.tiktokAccounts[0].username || '').replace(/^@/, '')}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 p-3 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors"
+                      className="flex items-center gap-3 p-3 bg-neutral-800 text-white rounded-xl hover:bg-neutral-700 transition-colors"
                     >
                       <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/></svg>
                       <div className="text-left">
@@ -818,12 +822,12 @@ export default function ApplicantsPage() {
               )}
 
               {/* Application Info */}
-              <div className="mb-6 bg-emerald-50 rounded-xl p-4">
+              <div className="mb-6 bg-emerald-500/10 rounded-xl p-4">
                 <h4 className="font-semibold text-white mb-2">Aplico para:</h4>
-                <p className="text-emerald-700 font-medium">{selectedCreator.gig?.title}</p>
+                <p className="text-emerald-400 font-medium">{selectedCreator.gig?.title}</p>
                 <p className="text-sm text-neutral-400">{selectedCreator.gig?.category} - {selectedCreator.gig?.budget}</p>
                 {selectedCreator.message && (
-                  <div className="mt-3 pt-3 border-t border-emerald-100">
+                  <div className="mt-3 pt-3 border-t border-emerald-500/20">
                     <p className="text-sm text-neutral-400 font-medium">Mensaje:</p>
                     <p className="text-neutral-200">{selectedCreator.message}</p>
                   </div>
