@@ -3,7 +3,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { getAuthenticatedUser } from '@/lib/auth/apiAuth'
 import { rateLimit } from '@/lib/rateLimit'
 
-const ADMIN_EMAIL = 'fmassuh133@gmail.com'
+import { isAdminEmail } from '@/lib/isAdmin'
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 const VALID_PLANS = ['starter', 'pro', 'scale', 'enterprise']
 
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
   if (limited) return limited
 
   const user = await getAuthenticatedUser(request)
-  if (!user || (user as any).email !== ADMIN_EMAIL) {
+  if (!user || !isAdminEmail((user as any).email)) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 403 })
   }
   if (!SERVICE_KEY) {

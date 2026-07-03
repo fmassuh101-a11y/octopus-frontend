@@ -6,7 +6,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { PLANS, PlanKey } from '@/lib/plans'
 import { Gift, Percent } from 'lucide-react'
 
-const ADMIN_EMAIL = 'fmassuh133@gmail.com'
+import { isAdminEmail } from '@/lib/isAdmin'
 
 interface Company {
   user_id: string
@@ -31,7 +31,7 @@ export default function AdminCompaniesPage() {
   useEffect(() => {
     const userStr = localStorage.getItem('sb-user')
     const email = userStr ? JSON.parse(userStr).email : null
-    if (email !== ADMIN_EMAIL) { setAuthorized(false); return }
+    if (!isAdminEmail(email)) { setAuthorized(false); return }
     setAuthorized(true)
     load()
   }, [])

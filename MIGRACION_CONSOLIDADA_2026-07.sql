@@ -1,30 +1,27 @@
 -- =====================================================================
--- MIGRACIÓN CONSOLIDADA — corré esto UNA vez en Supabase SQL Editor.
--- Agrega todas las columnas que la app usa y que faltaban en el schema
--- reconstruido, + baja el fee a 4.5%. Después de esto no deberían
--- aparecer más errores de "column X does not exist".
+-- MIGRACIÓN COMPLETA OCTOPUS — corré esto UNA vez en Supabase SQL Editor.
 -- Idempotente: se puede correr más de una vez sin romper nada.
+-- Incluye: columnas faltantes, fee 4.5%, jerarquía de campañas,
+-- sistema de planes, cuenta admin, team members y form de contacto.
 -- =====================================================================
 
--- PROFILES
+-- ---------- COLUMNAS FALTANTES ----------
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS whop_company_id TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS whop_user_id TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS kyc_status TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS verified BOOLEAN DEFAULT false;
--- Suscripción de empresa: plan, origen (default/paid/gifted) y descuento del admin
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS plan TEXT DEFAULT 'starter';
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS plan_source TEXT DEFAULT 'default';
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS discount_percent INTEGER DEFAULT 0;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT false;
 
--- APPLICATIONS (anti-ghosting + bookmarks)
 ALTER TABLE public.applications ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMPTZ;
 ALTER TABLE public.applications ADD COLUMN IF NOT EXISTS bookmarked BOOLEAN DEFAULT false;
 ALTER TABLE public.applications ADD COLUMN IF NOT EXISTS messaged_at TIMESTAMPTZ;
 
--- GIGS (columna budget que usa la app)
 ALTER TABLE public.gigs ADD COLUMN IF NOT EXISTS budget TEXT;
 
--- FEE de plataforma -> 4.5%
+-- ---------- FEE DE PLATAFORMA 4.5% ----------
 CREATE OR REPLACE FUNCTION process_payment(
   p_company_id UUID, p_creator_id UUID, p_amount DECIMAL,
   p_reference_id UUID, p_reference_type VARCHAR, p_description TEXT
@@ -56,7 +53,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- JERARQUÍA Campaña → Formatos
+-- ---------- JERARQUÍA Campaña → Formatos ----------
 CREATE TABLE IF NOT EXISTS public.campaigns (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   company_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -79,5 +76,71 @@ CREATE POLICY "campaigns_update_own" ON public.campaigns FOR UPDATE USING (auth.
 DROP POLICY IF EXISTS "campaigns_delete_own" ON public.campaigns;
 CREATE POLICY "campaigns_delete_own" ON public.campaigns FOR DELETE USING (auth.uid() = company_id);
 
+-- ---------- TEAM MEMBERS ----------
+CREATE TABLE IF NOT EXISTS public.team_members (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  email TEXT NOT NULL,
+  name TEXT,
+  role TEXT DEFAULT 'member',
+  status TEXT DEFAULT 'invited',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE public.team_members ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "team_members_own" ON public.team_members;
+CREATE POLICY "team_members_own" ON public.team_members FOR ALL
+  USING (auth.uid() = company_id) WITH CHECK (auth.uid() = company_id);
+
+-- ---------- CONTACT REQUESTS (formulario "Hablemos") ----------
+CREATE TABLE IF NOT EXISTS public.contact_requests (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT,
+  email TEXT,
+  company TEXT,
+  budget TEXT,
+  reason TEXT,
+  message TEXT,
+  status TEXT DEFAULT 'new',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE public.contact_requests ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "contact_insert_all" ON public.contact_requests;
+CREATE POLICY "contact_insert_all" ON public.contact_requests FOR INSERT WITH CHECK (true);
+
+-- ---------- CUENTA ADMIN (admin@octopus.app / admin123) ----------
+-- Requiere pgcrypto (Supabase lo trae por defecto).
+DO $$
+DECLARE
+  admin_id UUID;
+BEGIN
+  SELECT id INTO admin_id FROM auth.users WHERE email = 'admin@octopus.app';
+  IF admin_id IS NULL THEN
+    admin_id := gen_random_uuid();
+    INSERT INTO auth.users (
+      instance_id, id, aud, role, email, encrypted_password,
+      email_confirmed_at, created_at, updated_at,
+      raw_app_meta_data, raw_user_meta_data, is_super_admin
+    ) VALUES (
+      '00000000-0000-0000-0000-000000000000', admin_id, 'authenticated', 'authenticated',
+      'admin@octopus.app', crypt('admin123', gen_salt('bf')),
+      now(), now(), now(),
+      '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb, false
+    );
+    INSERT INTO auth.identities (
+      id, provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at
+    ) VALUES (
+      gen_random_uuid(), admin_id::text, admin_id,
+      jsonb_build_object('sub', admin_id::text, 'email', 'admin@octopus.app'),
+      'email', now(), now(), now()
+    );
+  END IF;
+  IF EXISTS (SELECT 1 FROM public.profiles WHERE user_id = admin_id) THEN
+    UPDATE public.profiles SET is_admin = true, user_type = 'admin', plan = 'enterprise' WHERE user_id = admin_id;
+  ELSE
+    INSERT INTO public.profiles (user_id, user_type, email, full_name, is_admin, plan)
+    VALUES (admin_id, 'admin', 'admin@octopus.app', 'Admin Octopus', true, 'enterprise');
+  END IF;
+END $$;
+
 NOTIFY pgrst, 'reload schema';
-SELECT 'Migración consolidada aplicada ✅' AS status;
+SELECT 'Migración completa aplicada ✅ — admin@octopus.app / admin123' AS status;

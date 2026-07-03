@@ -24,6 +24,49 @@ export default function CompanySettingsPage() {
   const [profileImage, setProfileImage] = useState<string | null>(null)
   const [email, setEmail] = useState('')
 
+  // Team members
+  const [teamMembers, setTeamMembers] = useState<any[]>([])
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviting, setInviting] = useState(false)
+  const [teamMsg, setTeamMsg] = useState('')
+
+  const loadTeam = async (companyId: string, token: string) => {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/team_members?company_id=eq.${companyId}&select=*&order=created_at.desc`,
+        { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } })
+      if (res.ok) setTeamMembers(await res.json())
+    } catch (e) { console.error(e) }
+  }
+
+  const inviteMember = async () => {
+    setTeamMsg('')
+    const plan = getPlan(profile?.plan)
+    const seats = plan.seats
+    // el dueño cuenta como 1 asiento
+    if (seats >= 0 && teamMembers.length + 1 >= seats) {
+      setTeamMsg(`Tu plan ${plan.name} permite ${seats} ${seats === 1 ? 'asiento' : 'asientos'}. Mejora tu plan para invitar más.`)
+      return
+    }
+    if (!inviteEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inviteEmail)) {
+      setTeamMsg('Ingresa un email válido.')
+      return
+    }
+    setInviting(true)
+    try {
+      const token = localStorage.getItem('sb-access-token')
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/team_members`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY, 'Prefer': 'return=representation' },
+        body: JSON.stringify({ company_id: user.id, email: inviteEmail.trim().toLowerCase(), role: 'member', status: 'invited' }),
+      })
+      if (!res.ok) throw new Error(await res.text())
+      const created = await res.json()
+      setTeamMembers(prev => [...(Array.isArray(created) ? created : [created]), ...prev])
+      setInviteEmail('')
+      setTeamMsg('✓ Invitación registrada.')
+    } catch (e: any) { setTeamMsg('Error al invitar.') } finally { setInviting(false) }
+  }
+
   // Notifications state
   const [notifications, setNotifications] = useState({
     allNotifications: true,
@@ -70,6 +113,7 @@ export default function CompanySettingsPage() {
         if (profiles.length > 0) {
           const profileData = profiles[0]
           setProfile(profileData)
+          loadTeam(userData.id, token)
           setCompanyName(profileData.full_name || '')
           setProfileImage(profileData.avatar_url || null)
 
@@ -492,18 +536,45 @@ export default function CompanySettingsPage() {
         {/* Team Members Tab */}
         {activeTab === 'team' && (
           <div>
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-xl font-bold text-white">Invite new user</h2>
-                <p className="text-neutral-500">Invite multiple admins to your Octopus account</p>
-              </div>
+            <div className="mb-6">
+              <h2 className="text-xl font-bold text-white">Miembros del equipo</h2>
+              <p className="text-neutral-500">
+                Tu plan <span className="text-emerald-400 font-medium">{getPlan(profile?.plan).name}</span> permite{' '}
+                {getPlan(profile?.plan).seats < 0 ? 'asientos ilimitados' : `${getPlan(profile?.plan).seats} ${getPlan(profile?.plan).seats === 1 ? 'asiento' : 'asientos'}`}
+                {' '}(incluyéndote). Usados: {teamMembers.length + 1}.
+              </p>
+            </div>
+
+            <div className="flex gap-2 mb-4">
+              <input
+                type="email"
+                value={inviteEmail}
+                onChange={e => setInviteEmail(e.target.value)}
+                placeholder="email@delcolaborador.com"
+                className="flex-1 px-4 py-2.5 rounded-xl border border-neutral-800 bg-neutral-900 text-white placeholder-neutral-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none"
+              />
               <button
-                disabled
-                className="px-6 py-2 bg-gray-900 text-white rounded-lg font-medium opacity-50 cursor-not-allowed"
+                onClick={inviteMember}
+                disabled={inviting}
+                className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 rounded-xl font-semibold text-sm text-white transition-colors whitespace-nowrap"
               >
-                Invite (Coming Soon)
+                {inviting ? 'Invitando...' : 'Invitar'}
               </button>
             </div>
+            {teamMsg && <p className={`text-sm mb-4 ${teamMsg.startsWith('✓') ? 'text-emerald-400' : 'text-amber-400'}`}>{teamMsg}</p>}
+
+            {teamMembers.length > 0 && (
+              <div className="bg-neutral-900 rounded-xl border border-neutral-800 divide-y divide-neutral-800 mb-4">
+                {teamMembers.map(m => (
+                  <div key={m.id} className="flex items-center justify-between px-4 py-3">
+                    <span className="text-sm text-white">{m.email}</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400">
+                      {m.status === 'invited' ? 'Invitado' : m.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
 
             <div className="bg-neutral-900 rounded-xl border border-neutral-800 p-6 text-white placeholder-neutral-500">
               <h3 className="font-semibold text-white mb-4">Team Members</h3>

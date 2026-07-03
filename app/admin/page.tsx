@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { Ban, BarChart3, Briefcase, Building2, Calendar, CheckCircle2, CircleDollarSign, Folder, Inbox, MessageCircle, Palette, Search, Users, Wallet } from 'lucide-react'
 
+import { isAdminEmail } from '@/lib/isAdmin'
 const ADMIN_EMAIL = 'fmassuh133@gmail.com'
 
 interface WithdrawalRequest {
@@ -665,7 +666,7 @@ export default function AdminDashboard() {
       const user = JSON.parse(userStr)
 
       // Check if user email matches admin email
-      if (user.email?.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+      if (!isAdminEmail(user.email)) {
         alert('Acceso denegado. Solo administradores.')
         window.location.href = '/'
         return
@@ -920,6 +921,7 @@ export default function AdminDashboard() {
               { id: 'gigs', label: 'Gigs', icon: Briefcase },
               { id: 'support', label: 'Soporte', icon: MessageCircle, href: '/admin/support' },
               { id: 'companies', label: 'Empresas', icon: Briefcase, href: '/admin/companies' },
+              { id: 'contact', label: 'Solicitudes', icon: Inbox, href: '/admin/contact' },
             ].map((tab) => (
               tab.href ? (
                 <Link

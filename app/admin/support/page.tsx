@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 
+import { isAdminEmail } from '@/lib/isAdmin'
 const ADMIN_EMAIL = 'fmassuh133@gmail.com'
 
 interface Conversation {
@@ -97,7 +98,7 @@ export default function AdminSupportPage() {
       return
     }
     const user = JSON.parse(userStr)
-    if (user.email?.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+    if (!isAdminEmail(user.email)) {
       alert('Acceso denegado')
       window.location.href = '/'
       return
