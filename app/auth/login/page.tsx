@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { isAdminEmail } from '@/lib/isAdmin'
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false)
@@ -50,6 +51,12 @@ export default function LoginPage() {
               return
             }
           } catch (e) {}
+        }
+
+        // Admin va directo al panel
+        if (isAdminEmail(user.email)) {
+          window.location.href = '/admin'
+          return
         }
 
         // Check if user has a profile
@@ -166,6 +173,12 @@ export default function LoginPage() {
             return
           }
         } catch (e) {}
+      }
+
+      // Admin va directo al panel
+      if (isAdminEmail(session.user.email)) {
+        window.location.href = '/admin'
+        return
       }
 
       // Check if user has a profile using direct fetch
