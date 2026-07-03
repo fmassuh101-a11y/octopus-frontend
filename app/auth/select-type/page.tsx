@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { isAdminEmail } from '@/lib/isAdmin'
 import { Video, Building2, Check } from 'lucide-react'
 
 const ADMIN_EMAIL = 'fmassuh133@gmail.com'
@@ -30,7 +31,7 @@ export default function SelectTypePage() {
         console.log('[SelectType] User ID:', user.id, 'Email:', user.email)
 
         // Check if user is admin - redirect directly to admin dashboard
-        if (user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+        if (isAdminEmail(user.email)) {
           console.log('[SelectType] Admin detected, redirecting to admin dashboard')
           window.location.href = '/admin'
           return
