@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import AcceptAndMessageModal from '@/components/messaging/AcceptAndMessageModal'
 import { MessageTemplate } from '@/lib/utils/messageTemplates'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { getActiveCompanyId } from '@/lib/workspace'
 import CreatorLevelBadge from '@/components/ui/CreatorLevelBadge'
 
 type TabType = 'new' | 'reviewed' | 'messaged' | 'declined' | 'bookmarked' | 'accepted'
@@ -100,7 +101,7 @@ export default function ApplicantsPage() {
     const userData = JSON.parse(userStr)
     setUser(userData)
     await Promise.all([
-      loadApplications(userData.id, token),
+      loadApplications(getActiveCompanyId(userData.id), token),
       loadTemplates(token),
       loadCompanyName(userData.id, token)
     ])

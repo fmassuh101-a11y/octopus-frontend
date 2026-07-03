@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { getActiveCompanyId } from '@/lib/workspace'
 import { Lightbulb } from 'lucide-react'
 
 type PaymentType = "fixed" | "hourly" | "cpm"
@@ -153,7 +154,7 @@ export default function NewJobPage() {
       let companyName = 'Empresa'
       try {
         const profileResponse = await fetch(
-          `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=company_name,full_name`,
+          `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${getActiveCompanyId(userData.id)}&select=company_name,full_name`,
           {
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -172,7 +173,7 @@ export default function NewJobPage() {
       }
 
       const gigData: any = {
-        company_id: userData.id,
+        company_id: getActiveCompanyId(userData.id),
         company_name: companyName,
         title: formData.title,
         description: formData.description,

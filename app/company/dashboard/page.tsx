@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { Crown, Wallet, Briefcase } from 'lucide-react'
+import WorkspaceSwitcher from '@/components/ui/WorkspaceSwitcher'
 
 const ACTION_ITEMS = [
   { id: 1, label: 'Publica tu primer trabajo', completed: false, link: '/company/jobs/new' },
@@ -475,6 +476,7 @@ export default function CompanyDashboard() {
         <div className="bg-neutral-900 border-b border-neutral-800 px-4 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div>
+              <div className="mb-2"><WorkspaceSwitcher /></div>
               <h1 className="text-2xl font-bold text-white">¡Bienvenido, {userName}!</h1>
               <p className="text-neutral-500">Aquí está lo que pasa con tus campañas de creadores</p>
             </div>

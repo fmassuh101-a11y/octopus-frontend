@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { getActiveCompany, getActiveCompanyId } from '@/lib/workspace'
 import { Megaphone } from 'lucide-react'
 
 export default function NewCampaignPage() {
@@ -22,16 +23,18 @@ export default function NewCampaignPage() {
       const userStr = localStorage.getItem('sb-user')
       if (!token || !userStr) { router.push('/auth/login'); return }
       const user = JSON.parse(userStr)
+      const activeCompanyId = getActiveCompanyId(user.id)
+      const activeWs = getActiveCompany()
 
       // nombre de la empresa
-      let companyName = 'Empresa'
+      let companyName = activeWs?.name || 'Empresa'
       const pRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=company_name,full_name`,
+        `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${activeCompanyId}&select=company_name,full_name`,
         { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
       )
       if (pRes.ok) {
         const p = await pRes.json()
-        if (p[0]) companyName = p[0].company_name || p[0].full_name || 'Empresa'
+        if (p[0]) companyName = activeWs?.name || p[0].company_name || p[0].full_name || 'Empresa'
       }
 
       const res = await fetch(`${SUPABASE_URL}/rest/v1/campaigns`, {
@@ -43,7 +46,7 @@ export default function NewCampaignPage() {
           'Prefer': 'return=representation'
         },
         body: JSON.stringify({
-          company_id: user.id,
+          company_id: activeCompanyId,
           company_name: companyName,
           title: title.trim(),
           objective: objective.trim() || null,

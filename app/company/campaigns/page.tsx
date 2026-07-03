@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { getActiveCompanyId } from '@/lib/workspace'
 
 interface Gig {
   id: string
@@ -48,7 +49,7 @@ export default function CampaignsPage() {
 
       // Fetch company's gigs
       const response = await fetch(
-        `${SUPABASE_URL}/rest/v1/gigs?company_id=eq.${userData.id}&select=*&order=created_at.desc`,
+        `${SUPABASE_URL}/rest/v1/gigs?company_id=eq.${getActiveCompanyId(userData.id)}&select=*&order=created_at.desc`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
