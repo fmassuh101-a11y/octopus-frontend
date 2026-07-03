@@ -108,6 +108,10 @@ DROP POLICY IF EXISTS "contact_insert_all" ON public.contact_requests;
 CREATE POLICY "contact_insert_all" ON public.contact_requests FOR INSERT WITH CHECK (true);
 
 -- ---------- CUENTA ADMIN (admin@octopus.app / admin123) ----------
+-- Permitir el tipo 'admin' en profiles (la regla vieja solo dejaba creator/company)
+ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_user_type_check;
+ALTER TABLE public.profiles ADD CONSTRAINT profiles_user_type_check CHECK (user_type IN ('creator','company','admin'));
+
 -- Requiere pgcrypto (Supabase lo trae por defecto).
 DO $$
 DECLARE
