@@ -23,6 +23,11 @@ interface Gig {
   applicants_count?: number
 }
 
+// TEMPORAL: mientras no esté lista la conexión de redes (TikTok/IG),
+// permitimos aplicar sin verificar cuenta. Poner en true para re-activar
+// el requisito de verificación antes de aplicar.
+const REQUIRE_VERIFICATION = false
+
 const CATEGORIES = [
   { key: 'todas', label: 'Todas' },
   { key: 'ugc', label: 'UGC' },
@@ -140,8 +145,8 @@ export default function GigsPage() {
       return
     }
 
-    // Check if user is verified before allowing application
-    if (!isVerified) {
+    // Check if user is verified before allowing application (temporalmente desactivado)
+    if (REQUIRE_VERIFICATION && !isVerified) {
       setSelectedGig(null) // Close gig detail modal first
       setTimeout(() => setShowVerificationModal(true), 100) // Then show verification modal
       return
@@ -480,7 +485,7 @@ export default function GigsPage() {
                         router.push('/creator/applications')
                       } else if (!user) {
                         router.push('/auth/login')
-                      } else if (!isVerified) {
+                      } else if (REQUIRE_VERIFICATION && !isVerified) {
                         setShowVerificationModal(true)
                       } else {
                         setSelectedGig(gig)
