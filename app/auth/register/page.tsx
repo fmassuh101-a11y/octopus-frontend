@@ -22,6 +22,11 @@ export default function RegisterPage() {
     : focusedField === 'email' ? 'happy'
     : 'idle'
 
+  const octoLook =
+    focusedField === 'email'
+      ? { x: Math.min(1, (email.length / 24) * 2 - 1), y: 0.7 }
+      : null
+
   const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -147,7 +152,7 @@ export default function RegisterPage() {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <div className="flex justify-center -mb-1">
-            <OctopusMascot mood={octoMood} size={150} />
+            <OctopusMascot mood={octoMood} look={octoLook} size={150} />
           </div>
           <Link href="/" className="inline-block">
             <span className="text-2xl font-bold text-white block tracking-tight">Octopus</span>

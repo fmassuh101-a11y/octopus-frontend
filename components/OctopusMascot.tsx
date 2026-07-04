@@ -20,9 +20,13 @@ export type OctoMood = 'idle' | 'happy' | 'hiding' | 'success' | 'error'
 export default function OctopusMascot({
   mood = 'idle',
   size = 180,
+  look = null,
 }: {
   mood?: OctoMood
   size?: number
+  // Cuando el usuario escribe su email, Octo "lee" y sigue el texto con la mirada.
+  // look.x: -1 (inicio del campo) a 1 (final). look.y opcional (mira hacia abajo).
+  look?: { x: number; y: number } | null
 }) {
   const [blink, setBlink] = useState(false)
   const [gaze, setGaze] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
@@ -57,6 +61,8 @@ export default function OctopusMascot({
   // Mirada viva: en idle mira despacio a distintos lados; según el mood, dirige la vista
   useEffect(() => {
     if (reduced.current) return
+    // si el padre manda una mirada (siguiendo el texto que escribís), Octo la sigue
+    if (look) { setGaze({ x: Math.max(-6, Math.min(6, look.x * 6)), y: (look.y ?? 0.6) * 6 }); return }
     if (mood === 'happy' || mood === 'success') { setGaze({ x: 0, y: -3 }); return }
     if (mood === 'error') { setGaze({ x: 0, y: 3 }); return }
     if (mood === 'hiding') return
@@ -72,7 +78,7 @@ export default function OctopusMascot({
     }
     schedule()
     return () => { alive = false; clearTimeout(handle) }
-  }, [mood])
+  }, [mood, look?.x, look?.y])
 
   const hiding = mood === 'hiding'
   const happy = mood === 'happy' || mood === 'success'

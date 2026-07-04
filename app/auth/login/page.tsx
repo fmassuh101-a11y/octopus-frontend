@@ -23,6 +23,12 @@ export default function LoginPage() {
     : focusedField === 'email' ? 'happy'
     : 'idle'
 
+  // Cuando escribís el email, Octo "lee" y sigue el texto con la mirada.
+  const octoLook =
+    focusedField === 'email'
+      ? { x: Math.min(1, (email.length / 24) * 2 - 1), y: 0.7 }
+      : null
+
   // Check if already logged in using localStorage
   useEffect(() => {
     const checkSession = async () => {
@@ -262,7 +268,7 @@ export default function LoginPage() {
         <div className="text-center">
           {/* Octo, la mascota que reacciona */}
           <div className="flex justify-center -mb-2">
-            <OctopusMascot mood={octoMood} size={150} />
+            <OctopusMascot mood={octoMood} look={octoLook} size={150} />
           </div>
           <Link href="/" className="inline-flex items-center gap-2">
             <span className="text-2xl font-bold text-white tracking-tight">Octopus</span>
