@@ -380,6 +380,11 @@ export default function CreatorProfilePage() {
       {/* Social Profiles */}
       <div className="px-4 py-4">
         <h2 className="text-lg font-semibold mb-3">Redes Sociales</h2>
+        {!tiktokAccount && !creator.bio?.instagram && !creator.bio?.linkedin && (
+          <div className="bg-neutral-900 border border-dashed border-neutral-800 rounded-2xl p-6 text-center text-neutral-500 text-sm">
+            Este creador aún no conectó sus redes sociales.
+          </div>
+        )}
         <div className="space-y-3">
           {/* TikTok */}
           {tiktokAccount && (

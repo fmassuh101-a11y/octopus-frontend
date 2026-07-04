@@ -6,6 +6,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import UserAvatar from '@/components/ui/UserAvatar'
 import CreatorBottomNav from '@/components/ui/CreatorBottomNav'
 import CreatorLevelBadge from '@/components/ui/CreatorLevelBadge'
+import WorkspaceSwitcher from '@/components/ui/WorkspaceSwitcher'
 import { Search, ClipboardList, Target, Lightbulb, Briefcase, LayoutDashboard, Wallet, MessageCircle, User } from 'lucide-react'
 
 interface Application {
@@ -216,6 +217,7 @@ export default function CreatorDashboard() {
     <div className="min-h-screen bg-black text-white pb-24">
       {/* Header */}
       <div className="px-4 pt-6 pb-4">
+        <div className="mb-3"><WorkspaceSwitcher /></div>
         <div className="flex items-center justify-between mb-6">
           <div>
             <p className="text-white/50 text-sm">{greeting}</p>

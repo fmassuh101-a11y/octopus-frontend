@@ -172,7 +172,7 @@ export default function AcceptAndMessageModal({
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Escribe tu mensaje de bienvenida..."
                 rows={6}
-                className="w-full px-4 py-3 border border-neutral-800 rounded-xl focus:outline-none bg-neutral-900 focus:ring-2 focus:ring-emerald-500 resize-none"
+                className="w-full px-4 py-3 border border-neutral-800 rounded-xl focus:outline-none bg-neutral-900 focus:ring-2 focus:ring-emerald-500 resize-none text-white placeholder-neutral-500"
               />
 
               <p className="text-xs text-neutral-500">

@@ -34,9 +34,14 @@ export default function WorkspaceSwitcher() {
   }, [])
 
   const switchTo = (w: Workspace) => {
-    if (w.own) { setActiveCompany(null); setActivePerms(null) }
-    else { setActiveCompany({ id: w.id, name: w.name }); setActivePerms(w.permissions || []) }
-    window.location.href = '/company/dashboard'
+    if (w.own) {
+      setActiveCompany(null); setActivePerms(null)
+      // select-type enruta solo según tu tipo (creador → su dashboard, empresa → el suyo)
+      window.location.href = '/auth/select-type'
+    } else {
+      setActiveCompany({ id: w.id, name: w.name }); setActivePerms(w.permissions || [])
+      window.location.href = '/company/dashboard'
+    }
   }
 
   const accept = async (inv: any) => {

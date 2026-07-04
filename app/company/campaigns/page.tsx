@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { getActiveCompanyId } from '@/lib/workspace'
+import { Eye } from 'lucide-react'
 
 interface Gig {
   id: string
@@ -116,20 +117,20 @@ export default function CampaignsPage() {
   const getPaymentBadge = (budget: string) => {
     if (budget.includes('CPM')) {
       return (
-        <span className="px-2 py-1 bg-gradient-to-r from-orange-100 to-emerald-100 text-orange-700 text-xs font-medium rounded-full">
+        <span className="px-2 py-1 bg-emerald-500/15 text-emerald-400 text-xs font-medium rounded-full">
           {budget}
         </span>
       )
     }
     if (budget.includes('/hora')) {
       return (
-        <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+        <span className="px-2 py-1 bg-blue-500/15 text-blue-400 text-xs font-medium rounded-full">
           {budget}
         </span>
       )
     }
     return (
-      <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+      <span className="px-2 py-1 bg-emerald-500/15 text-emerald-400 text-xs font-medium rounded-full">
         {budget}
       </span>
     )
@@ -188,9 +189,9 @@ export default function CampaignsPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
-        return <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">Activo</span>
+        return <span className="px-2 py-1 bg-emerald-500/15 text-emerald-400 text-xs font-medium rounded-full">Activo</span>
       case 'draft':
-        return <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-full">Borrador</span>
+        return <span className="px-2 py-1 bg-amber-500/15 text-amber-400 text-xs font-medium rounded-full">Borrador</span>
       case 'closed':
         return <span className="px-2 py-1 bg-neutral-800 text-neutral-400 text-xs font-medium rounded-full">Cerrado</span>
       default:
@@ -432,7 +433,7 @@ export default function CampaignsPage() {
                     <div className="flex flex-wrap items-center gap-3">
                       {getPaymentBadge(gig.budget)}
 
-                      <span className="px-2 py-1 bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full">
+                      <span className="px-2 py-1 bg-emerald-500/15 text-emerald-400 text-xs font-medium rounded-full">
                         {gig.category}
                       </span>
 
@@ -443,17 +444,23 @@ export default function CampaignsPage() {
                   </div>
 
                   <div className="flex items-center gap-2">
+                    {/* Ojo con número de aplicantes (estilo SideShift) */}
                     <Link
                       href="/company/applicants"
-                      className="text-right mr-4 hidden sm:block hover:bg-emerald-50 p-2 rounded-lg transition-colors cursor-pointer"
+                      title={`${gig.applications_count || 0} ${(gig.applications_count || 0) === 1 ? 'aplicante' : 'aplicantes'}`}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-semibold transition-colors mr-2 ${
+                        (gig.applications_count || 0) > 0
+                          ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
+                          : 'border-neutral-800 text-neutral-500 hover:border-neutral-600'
+                      }`}
                     >
-                      <div className="text-2xl font-bold text-white">{gig.applications_count || 0}</div>
-                      <div className="text-xs text-neutral-500">Aplicaciones</div>
+                      <Eye className="w-4 h-4" strokeWidth={2} />
+                      {gig.applications_count || 0}
                     </Link>
 
                     <button
                       onClick={() => openDeleteModal(gig)}
-                      className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      className="p-2 text-red-400 hover:text-red-600 hover:bg-red-500/10 rounded-lg transition-colors"
                       title="Eliminar"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

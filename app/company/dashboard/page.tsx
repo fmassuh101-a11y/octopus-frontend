@@ -196,7 +196,7 @@ export default function CompanyDashboard() {
       {/* Mobile Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 bg-neutral-900 border-b border-neutral-800 z-50 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-emerald-600 rounded-lg flex items-center justify-center">
+          <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center">
             <span className="text-white text-sm font-black">O</span>
           </div>
           <span className="text-xl font-bold text-white">Octopus</span>
@@ -326,7 +326,7 @@ export default function CompanyDashboard() {
         {/* Logo */}
         <div className="p-6 border-b border-neutral-800">
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-emerald-600 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center">
               <span className="text-white text-sm font-black">O</span>
             </div>
             <span className="text-xl font-bold text-white">Octopus</span>
@@ -461,7 +461,7 @@ export default function CompanyDashboard() {
 
           {/* User Info */}
           <div className="flex items-center space-x-3 relative">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-emerald-600 rounded-full flex items-center justify-center overflow-hidden">
+            <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center overflow-hidden">
               {(profile?.avatar_url || profile?.logo || profile?.profile_photo_url) ? (
                 <img src={profile.avatar_url || profile.logo || profile.profile_photo_url} alt="" className="w-full h-full object-cover" />
               ) : (
@@ -541,31 +541,32 @@ export default function CompanyDashboard() {
         {/* Content Area */}
         <div className="flex-1 p-4 lg:p-8 overflow-y-auto pb-20 lg:pb-8">
           {/* Hero Section */}
-          <div className="bg-gradient-to-r from-blue-600 to-emerald-600 rounded-2xl p-6 lg:p-8 mb-6 lg:mb-8 text-white">
-            <div className="flex items-center justify-between">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 lg:p-8 mb-6 lg:mb-8 text-white relative overflow-hidden">
+            <div className="absolute -top-24 -right-24 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="flex items-center justify-between relative">
               <div>
                 <h2 className="text-2xl lg:text-3xl font-bold mb-2">Tu Motor de Creadores</h2>
-                <p className="text-blue-100 mb-6 max-w-lg">
+                <p className="text-neutral-400 mb-6 max-w-lg">
                   Encuentra, contrata y gestiona los mejores creadores de Latinoamérica para tu marca.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                   <Link
-                    href="/company/jobs/new"
-                    className="bg-neutral-900 text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors text-center"
+                    href="/company/campaigns/new"
+                    className="bg-emerald-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-emerald-600 transition-colors text-center"
                   >
                     Publicar Trabajo
                   </Link>
                   <Link
                     href="/company/recruit"
-                    className="bg-neutral-900/20 text-white px-6 py-3 rounded-lg font-semibold hover:bg-neutral-900/30 transition-colors border border-white/30 text-center"
+                    className="text-white px-6 py-3 rounded-xl font-semibold border border-neutral-700 hover:bg-neutral-800 transition-colors text-center"
                   >
                     Descubrir Creadores
                   </Link>
                 </div>
               </div>
               <div className="hidden lg:block">
-                <div className="w-48 h-48 bg-neutral-900/10 rounded-full flex items-center justify-center">
-                  <Briefcase className="w-16 h-16 text-neutral-600" strokeWidth={1.5} />
+                <div className="w-40 h-40 bg-emerald-500/10 rounded-full flex items-center justify-center">
+                  <Briefcase className="w-14 h-14 text-emerald-400" strokeWidth={1.5} />
                 </div>
               </div>
             </div>
@@ -645,7 +646,7 @@ export default function CompanyDashboard() {
       {/* Right Sidebar */}
       <div className="w-80 bg-neutral-900 border-l border-neutral-800 p-6 overflow-y-auto hidden xl:block">
         {/* Wallet Card */}
-        <Link href="/company/wallet" className="block mb-6 bg-gradient-to-r from-blue-500 to-emerald-600 rounded-2xl p-5 text-white hover:shadow-lg transition-shadow">
+        <Link href="/company/wallet" className="block mb-6 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-2xl p-5 text-white hover:shadow-lg transition-shadow">
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm text-blue-100">Balance Disponible</span>
             <Wallet className="w-5 h-5 text-emerald-400" strokeWidth={2} />

@@ -222,8 +222,22 @@ export default function CompanySettingsPage() {
     const file = e.target.files?.[0]
     if (file) {
       const reader = new FileReader()
-      reader.onloadend = () => {
-        setProfileImage(reader.result as string)
+      reader.onloadend = async () => {
+        const img = reader.result as string
+        setProfileImage(img)
+        // Auto-guardar la foto al subirla (antes solo se guardaba con "Guardar")
+        try {
+          const token = localStorage.getItem('sb-access-token')
+          if (token && profile) {
+            let bioData: any = {}
+            try { bioData = profile.bio ? JSON.parse(profile.bio) : {} } catch {}
+            await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${profile.id}`, {
+              method: 'PATCH',
+              headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ avatar_url: img, bio: JSON.stringify({ ...bioData, logo: img }) }),
+            })
+          }
+        } catch (err) { console.error('auto-save foto:', err) }
       }
       reader.readAsDataURL(file)
     }

@@ -31,8 +31,17 @@ export default function CompanyPhonePage() {
     setPhoneNumber(value)
   }
 
+  // Teléfono válido: 8-12 dígitos, sin empezar en 0, y no todos iguales
+  const isPhoneValid = (p: string) => {
+    const d = p.replace(/\D/g, '')
+    if (d.length < 8 || d.length > 12) return false
+    if (d.startsWith('0')) return false
+    if (/^(\d)\1+$/.test(d)) return false
+    return true
+  }
+
   const handleContinue = () => {
-    if (!phoneNumber || phoneNumber.length < 7) return
+    if (!isPhoneValid(phoneNumber)) return
 
     localStorage.setItem('companyOnboarding', JSON.stringify({
       ...formData,
@@ -141,8 +150,8 @@ export default function CompanyPhonePage() {
             </div>
           )}
 
-          {phoneNumber && phoneNumber.length < 7 && (
-            <p className="text-red-500 text-sm mt-2">El número debe tener al menos 7 dígitos</p>
+          {phoneNumber && !isPhoneValid(phoneNumber) && (
+            <p className="text-red-500 text-sm mt-2">Ingresa un número real: 8 a 12 dígitos, sin empezar en 0</p>
           )}
         </div>
 
@@ -157,7 +166,7 @@ export default function CompanyPhonePage() {
 
           <button
             onClick={handleContinue}
-            disabled={!phoneNumber}
+            disabled={!isPhoneValid(phoneNumber)}
             className="px-10 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl font-semibold hover:from-emerald-500 hover:to-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl"
           >
             Continuar
