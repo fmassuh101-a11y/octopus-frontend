@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { getActiveCompany, getActiveCompanyId } from '@/lib/workspace'
+import { ensureFreshToken } from '@/lib/session'
 import { hasPermission } from '@/lib/permissions'
 import { Megaphone } from 'lucide-react'
 
@@ -21,9 +22,10 @@ export default function NewCampaignPage() {
     setSaving(true)
     setError('')
     try {
-      const token = localStorage.getItem('sb-access-token')
-      const userStr = localStorage.getItem('sb-user')
-      if (!token || !userStr) { router.push('/auth/login'); return }
+      const userStr = localStorage.getItem("sb-user")
+      if (!userStr) { router.push("/auth/login"); return }
+      const token = await ensureFreshToken()
+      if (!token) { router.push("/auth/login"); return }
       const user = JSON.parse(userStr)
       const activeCompanyId = getActiveCompanyId(user.id)
       const activeWs = getActiveCompany()

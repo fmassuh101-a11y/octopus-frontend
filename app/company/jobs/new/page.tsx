@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { getActiveCompanyId } from '@/lib/workspace'
+import { ensureFreshToken } from '@/lib/session'
 import { Lightbulb } from 'lucide-react'
 
 type PaymentType = "fixed" | "hourly" | "cpm"
@@ -140,7 +141,7 @@ export default function NewJobPage() {
     setError("")
 
     try {
-      const token = localStorage.getItem('sb-access-token')
+      const token = await ensureFreshToken()
       const userStr = localStorage.getItem('sb-user')
 
       if (!token || !userStr) {

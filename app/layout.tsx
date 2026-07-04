@@ -4,6 +4,7 @@ import './globals.css'
 import { AuthProvider } from '../lib/contexts/AuthContext'
 import QueryProvider from '../lib/providers/QueryProvider'
 import SupportChatWidget from '../components/support/SupportChatWidget'
+import SessionRefresher from '../components/SessionRefresher'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -23,6 +24,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <QueryProvider>
           <AuthProvider>
+            <SessionRefresher />
             <div id="root" className="min-h-screen bg-neutral-950">
               {children}
             </div>
