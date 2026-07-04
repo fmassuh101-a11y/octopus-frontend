@@ -1,0 +1,25 @@
+CÓMO PONER TU PULPO 3D (el que hiciste con Gemini)
+====================================================
+
+Guardá tus imágenes PNG con FONDO TRANSPARENTE en esta carpeta
+(frontend/public/octo/) con estos nombres EXACTOS:
+
+  idle.png     ← OBLIGATORIO. Octo tranquilo, mirando al frente.
+  happy.png    ← opcional. Octo sonriendo / contento.
+  hiding.png   ← opcional. Octo tapándose los ojos con los tentáculos.
+  angry.png    ← opcional. Octo enojado.
+  sad.png      ← opcional. Octo triste.
+
+Versión EMPRESA (con traje), opcional:
+  idle-company.png, happy-company.png, etc.
+
+Notas:
+- Con SOLO idle.png ya funciona: Octo aparece y se mueve (flota, respira,
+  salta cuando está feliz, tiembla cuando se enoja, etc.).
+- Si agregás las otras poses, cada emoción muestra su propia imagen.
+- Mientras no haya idle.png, el pulpo simplemente no se muestra (no se rompe).
+- Ideal: imágenes cuadradas (ej. 600x600 o 800x800), pulpo centrado,
+  fondo transparente (PNG con alpha).
+
+Para subirlas: arrastrá los PNG a esta carpeta y hacé commit/push
+(o decime y yo las dejo listas si me pasás el archivo).

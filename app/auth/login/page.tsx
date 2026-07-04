@@ -23,12 +23,6 @@ export default function LoginPage() {
     : focusedField === 'email' ? 'happy'
     : 'idle'
 
-  // Cuando escribís el email, Octo "lee" y sigue el texto con la mirada.
-  const octoLook =
-    focusedField === 'email'
-      ? { x: Math.min(1, (email.length / 24) * 2 - 1), y: 0.7 }
-      : null
-
   // Check if already logged in using localStorage
   useEffect(() => {
     const checkSession = async () => {
@@ -264,13 +258,9 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-neutral-950 flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-4xl flex items-center justify-center gap-12">
-      <div className="max-w-md w-full space-y-8">
+      <div className="w-full max-w-4xl flex flex-col md:flex-row items-center justify-center gap-8 md:gap-14">
+      <div className="max-w-md w-full space-y-8 order-1">
         <div className="text-center">
-          {/* En móvil un Octo chico arriba (no tapa el login) */}
-          <div className="flex justify-center md:hidden -mb-1">
-            <OctopusMascot mood={octoMood} look={octoLook} size={92} />
-          </div>
           <Link href="/" className="inline-flex items-center gap-2">
             <span className="text-2xl font-bold text-white tracking-tight">Octopus</span>
           </Link>
@@ -363,16 +353,9 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Octo a la DERECHA del login (solo desktop) — no molesta, saluda */}
-      <div className="hidden md:flex flex-col items-center gap-3 shrink-0">
-        <OctopusMascot mood={octoMood} look={octoLook} size={220} />
-        <p className="text-neutral-500 text-sm max-w-[180px] text-center">
-          {octoMood === 'hiding' ? 'No miro tu contraseña 🙈'
-            : octoMood === 'error' ? 'Uy, revisá los datos…'
-            : octoMood === 'success' ? '¡Entrando! 🎉'
-            : octoMood === 'happy' ? '¡Hola! Te esperaba 👋'
-            : 'Tocame si querés 🐙'}
-        </p>
+      {/* Octo a la DERECHA del login (abajo en móvil) */}
+      <div className="flex items-center justify-center shrink-0 order-2">
+        <OctopusMascot mood={octoMood} size={260} variant="creator" />
       </div>
       </div>
     </div>
