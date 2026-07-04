@@ -41,6 +41,8 @@ export default function CompanyPricing() {
   const [periodKey, setPeriodKey] = useState<'anual' | 'semestral' | 'mensual'>('anual')
   const period = PERIODS.find(p => p.key === periodKey)!
   const [myProfile, setMyProfile] = useState<any>(null)
+  const [customOffer, setCustomOffer] = useState<any>(null)
+  const [acceptingOffer, setAcceptingOffer] = useState(false)
 
   useEffect(() => {
     const token = localStorage.getItem('sb-access-token')
@@ -50,7 +52,26 @@ export default function CompanyPricing() {
     fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${u.id}&select=plan,plan_source,discount_percent`,
       { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } })
       .then(r => r.ok ? r.json() : []).then(d => setMyProfile(d[0] || null)).catch(() => {})
+    // ¿tiene una oferta a medida del equipo Octopus?
+    fetch(`${SUPABASE_URL}/rest/v1/contact_requests?user_id=eq.${u.id}&offer_status=eq.offered&select=*&order=created_at.desc&limit=1`,
+      { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } })
+      .then(r => r.ok ? r.json() : []).then(d => setCustomOffer(d[0] || null)).catch(() => {})
   }, [])
+
+  const acceptOffer = async () => {
+    if (!customOffer) return
+    setAcceptingOffer(true)
+    try {
+      const token = localStorage.getItem('sb-access-token')
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/contact_requests?id=eq.${customOffer.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY },
+        body: JSON.stringify({ offer_status: 'accepted' }),
+      })
+      if (res.ok) { alert('¡Genial! Aceptaste la oferta. Nuestro equipo te contactará para activar tu plan.'); setCustomOffer(null) }
+      else alert('No se pudo aceptar. Intenta de nuevo.')
+    } catch { alert('Error al aceptar.') } finally { setAcceptingOffer(false) }
+  }
 
   const currentPlanKey = myProfile?.plan || 'starter'
   const discount = myProfile?.discount_percent || 0
@@ -105,6 +126,40 @@ export default function CompanyPricing() {
             ))}
           </div>
         </div>
+
+        {/* Oferta a medida del equipo Octopus */}
+        {customOffer && (
+          <div className="mb-8 max-w-2xl mx-auto bg-emerald-500/[0.06] border border-emerald-500/30 rounded-2xl p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles className="w-5 h-5 text-emerald-400" />
+              <h3 className="text-lg font-bold text-white">Tienes una oferta a medida</h3>
+            </div>
+            <p className="text-neutral-400 text-sm mb-4">Nuestro equipo preparó un plan especial para tu marca:</p>
+            <div className="grid sm:grid-cols-3 gap-3 mb-4">
+              <div className="bg-neutral-900 rounded-xl p-3 text-center">
+                <p className="text-2xl font-black text-white">{customOffer.offer_price}</p>
+                <p className="text-xs text-neutral-500">Precio</p>
+              </div>
+              <div className="bg-neutral-900 rounded-xl p-3 text-center">
+                <p className="text-2xl font-black text-emerald-400">{customOffer.offer_commission}</p>
+                <p className="text-xs text-neutral-500">Comisión</p>
+              </div>
+              <div className="bg-neutral-900 rounded-xl p-3 text-center">
+                <p className="text-lg font-bold text-white">{customOffer.offer_seats}</p>
+                <p className="text-xs text-neutral-500">Equipo</p>
+              </div>
+            </div>
+            {customOffer.offer_message && <p className="text-sm text-neutral-300 mb-4">{customOffer.offer_message}</p>}
+            <button onClick={acceptOffer} disabled={acceptingOffer}
+              className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 text-white font-semibold transition-colors mb-3">
+              {acceptingOffer ? 'Aceptando...' : 'Aceptar y contratar este plan'}
+            </button>
+            <button disabled
+              className="w-full py-2.5 rounded-xl border border-neutral-800 text-neutral-500 text-sm font-medium cursor-not-allowed">
+              ¿Sigues con dudas? Agenda una llamada con nosotros (pronto)
+            </button>
+          </div>
+        )}
 
         {/* Banner del plan actual / regalo / descuento */}
         {myProfile && (myProfile.plan_source === 'gifted' || (myProfile.discount_percent || 0) > 0 || currentPlanKey !== 'starter') && (

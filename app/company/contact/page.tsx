@@ -22,10 +22,13 @@ export default function CompanyContactPage() {
     }
     setSending(true); setError('')
     try {
+      // capturar el user_id si está logueado (para que la oferta le llegue)
+      let userId: string | null = null
+      try { const u = localStorage.getItem('sb-user'); if (u) userId = JSON.parse(u).id } catch {}
       const res = await fetch(`${SUPABASE_URL}/rest/v1/contact_requests`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, user_id: userId }),
       })
       if (!res.ok) throw new Error(await res.text())
       setSent(true)

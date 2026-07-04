@@ -20,3 +20,29 @@ export async function GET(request: NextRequest) {
   if (!res.ok) return NextResponse.json({ error: await res.text() }, { status: res.status })
   return NextResponse.json({ requests: await res.json() })
 }
+
+// POST /api/admin/contact — el admin envía una oferta a medida a una solicitud
+export async function POST(request: NextRequest) {
+  const user = await getAuthenticatedUser(request)
+  if (!user || !isAdminEmail((user as any).email)) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 403 })
+  }
+  if (!SERVICE_KEY) return NextResponse.json({ error: 'Falta service key' }, { status: 500 })
+
+  const { requestId, offer_price, offer_commission, offer_seats, offer_message } = await request.json()
+  if (!requestId) return NextResponse.json({ error: 'Falta la solicitud' }, { status: 400 })
+
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/contact_requests?id=eq.${requestId}`, {
+    method: 'PATCH',
+    headers: { 'Authorization': `Bearer ${SERVICE_KEY}`, 'apikey': SERVICE_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      offer_price: offer_price || null,
+      offer_commission: offer_commission || null,
+      offer_seats: offer_seats || null,
+      offer_message: offer_message || null,
+      offer_status: 'offered',
+    }),
+  })
+  if (!res.ok) return NextResponse.json({ error: await res.text() }, { status: 500 })
+  return NextResponse.json({ success: true })
+}
