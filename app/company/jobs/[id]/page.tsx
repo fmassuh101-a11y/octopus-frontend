@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import CreateContractModal from '@/components/contracts/CreateContractModal'
 
 interface Job {
   id: string
@@ -44,6 +45,7 @@ export default function JobDetailPage() {
   const [job, setJob] = useState<Job | null>(null)
   const [applications, setApplications] = useState<Application[]>([])
   const [activeTab, setActiveTab] = useState<'details' | 'applicants'>('details')
+  const [contractFor, setContractFor] = useState<Application | null>(null)
 
   useEffect(() => {
     loadJobDetails()
@@ -474,12 +476,12 @@ export default function JobDetailPage() {
 
                       {app.status === 'accepted' && (
                         <div className="flex gap-2 mt-3">
-                          <Link
-                            href={`/company/contracts/new?application_id=${app.id}&creator_id=${app.creator_id}&gig_id=${job.id}`}
+                          <button
+                            onClick={() => setContractFor(app)}
                             className="flex-1 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition text-center"
                           >
                             Crear Contrato
-                          </Link>
+                          </button>
                           <Link
                             href={`/company/messages?application_id=${app.id}`}
                             className="py-2 px-3 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg text-sm font-medium transition"
@@ -510,6 +512,20 @@ export default function JobDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Crear contrato desde el detalle del trabajo */}
+      {contractFor && job && (
+        <CreateContractModal
+          isOpen={!!contractFor}
+          onClose={() => setContractFor(null)}
+          onSuccess={() => { setContractFor(null); alert('Contrato creado y enviado al creador.') }}
+          applicationId={contractFor.id}
+          gigId={job.id}
+          companyId={JSON.parse(localStorage.getItem('sb-user') || '{}').id}
+          creatorId={contractFor.creator_id}
+          creatorName={contractFor.creator_name || 'Creador'}
+        />
+      )}
     </div>
   )
 }
