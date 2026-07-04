@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 
 // ─────────────────────────────────────────────────────────────────────────
 //  OCTO 3D — pulpo generado en tiempo real con WebGL (Three.js).
@@ -223,7 +224,11 @@ export default function OctopusMascot({
 
     // ── Modelo 3D del usuario (si existe /octo/octo.glb, reemplaza al procedural) ──
     let usingGLB = false
-    new GLTFLoader().load(
+    const dracoLoader = new DRACOLoader()
+    dracoLoader.setDecoderPath('/draco/')
+    const gltfLoader = new GLTFLoader()
+    gltfLoader.setDRACOLoader(dracoLoader)
+    gltfLoader.load(
       '/octo/octo.glb',
       (gltf) => {
         const model = gltf.scene
