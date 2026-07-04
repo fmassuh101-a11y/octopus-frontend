@@ -263,12 +263,13 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-950 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-neutral-950 flex items-center justify-center px-4 py-10">
+      <div className="w-full max-w-4xl flex items-center justify-center gap-12">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          {/* Octo, la mascota que reacciona */}
-          <div className="flex justify-center -mb-2">
-            <OctopusMascot mood={octoMood} look={octoLook} size={150} />
+          {/* En móvil un Octo chico arriba (no tapa el login) */}
+          <div className="flex justify-center md:hidden -mb-1">
+            <OctopusMascot mood={octoMood} look={octoLook} size={92} />
           </div>
           <Link href="/" className="inline-flex items-center gap-2">
             <span className="text-2xl font-bold text-white tracking-tight">Octopus</span>
@@ -360,6 +361,19 @@ export default function LoginPage() {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Octo a la DERECHA del login (solo desktop) — no molesta, saluda */}
+      <div className="hidden md:flex flex-col items-center gap-3 shrink-0">
+        <OctopusMascot mood={octoMood} look={octoLook} size={220} />
+        <p className="text-neutral-500 text-sm max-w-[180px] text-center">
+          {octoMood === 'hiding' ? 'No miro tu contraseña 🙈'
+            : octoMood === 'error' ? 'Uy, revisá los datos…'
+            : octoMood === 'success' ? '¡Entrando! 🎉'
+            : octoMood === 'happy' ? '¡Hola! Te esperaba 👋'
+            : 'Tocame si querés 🐙'}
+        </p>
+      </div>
       </div>
     </div>
   )
