@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { Crown, Wallet, Briefcase } from 'lucide-react'
 import WorkspaceSwitcher from '@/components/ui/WorkspaceSwitcher'
+import { getPlan } from '@/lib/plans'
 
 const ACTION_ITEMS = [
   { id: 1, label: 'Publica tu primer trabajo', completed: false, link: '/company/jobs/new' },
@@ -406,18 +407,20 @@ export default function CompanyDashboard() {
 
         {/* User Profile - with padding for dock */}
         <div className="p-4 pb-20 border-t border-neutral-800">
-          {/* Free Plan Badge */}
-          <div className="mb-3 px-3 py-2 bg-gradient-to-r from-neutral-950 to-neutral-900 rounded-lg border border-blue-100">
+          {/* Plan Badge (real) */}
+          <div className="mb-3 px-3 py-2 bg-gradient-to-r from-neutral-950 to-neutral-900 rounded-lg border border-emerald-500/20">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Crown className="w-5 h-5 text-amber-400" strokeWidth={2} />
+                <Crown className="w-5 h-5 text-emerald-400" strokeWidth={2} />
                 <div>
-                  <p className="text-xs font-semibold text-blue-600 uppercase">Free Plan</p>
-                  <p className="text-xs text-neutral-500">Upgrade for more features</p>
+                  <p className="text-xs font-semibold text-emerald-400 uppercase">Plan {getPlan(profile?.plan).name}</p>
+                  <p className="text-xs text-neutral-500">
+                    {profile?.plan_source === 'gifted' ? '🎁 Regalado' : profile?.plan === 'starter' || !profile?.plan ? 'Mejora para más features' : 'Activo'}
+                  </p>
                 </div>
               </div>
-              <a href="/company/settings?tab=payment" className="text-xs text-blue-600 hover:text-blue-700 font-medium">
-                Upgrade
+              <a href="/company/settings?tab=payment" className="text-xs text-emerald-400 hover:text-emerald-300 font-medium">
+                {profile?.plan === 'starter' || !profile?.plan ? 'Mejorar' : 'Ver'}
               </a>
             </div>
           </div>

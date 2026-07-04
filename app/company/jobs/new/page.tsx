@@ -585,9 +585,9 @@ export default function NewJobPage() {
                             />
                             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500">/1K vistas</span>
                           </div>
-                          <div className="mt-4 p-4 bg-gradient-to-r from-orange-50 to-neutral-900 rounded-xl border border-orange-100">
+                          <div className="mt-4 p-4 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
                             <div className="flex items-start gap-3">
-                              <Lightbulb className="w-5 h-5" strokeWidth={2} />
+                              <Lightbulb className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" strokeWidth={2} />
                               <div>
                                 <p className="font-medium text-white">Pago por rendimiento</p>
                                 <p className="text-sm text-neutral-400 mt-1">
@@ -807,6 +807,15 @@ export default function NewJobPage() {
                   </div>
                 )}
               </div>
+
+              {/* Error visible cerca del botón */}
+              {error && currentStep === 4 && (
+                <div className="px-6 sm:px-8 pt-4">
+                  <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm">
+                    {error}
+                  </div>
+                </div>
+              )}
 
               {/* Footer Navigation */}
               <div className="px-6 sm:px-8 py-5 bg-neutral-950 border-t border-neutral-800 flex items-center justify-between">

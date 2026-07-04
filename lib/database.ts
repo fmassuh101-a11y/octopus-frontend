@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config/supabase'
 
 // Database types matching MVP schema
 export interface DBProfile {
@@ -74,27 +75,31 @@ export async function getActiveGigs() {
 }
 
 export async function getGigById(id: string) {
-  const { data, error } = await supabase
-    .from('gigs')
-    .select(`
-      *,
-      profiles!company_id (
-        full_name,
-        company_name,
-        bio,
-        location,
-        website
-      )
-    `)
-    .eq('id', id)
-    .single()
+  // Fetch directo (el cliente supabase-js se cuelga en el navegador por los locks)
+  try {
+    const headers = { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+    const gigRes = await fetch(`${SUPABASE_URL}/rest/v1/gigs?id=eq.${id}&select=*`, { headers })
+    if (!gigRes.ok) return null
+    const gigs = await gigRes.json()
+    const gig = gigs[0]
+    if (!gig) return null
 
-  if (error) {
+    // Traer el perfil de la empresa por separado
+    if (gig.company_id) {
+      const pRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${gig.company_id}&select=full_name,company_name,bio,location,website`,
+        { headers }
+      )
+      if (pRes.ok) {
+        const profiles = await pRes.json()
+        gig.profiles = profiles[0] || null
+      }
+    }
+    return gig
+  } catch (error) {
     console.error('Error fetching gig:', error)
     return null
   }
-
-  return data
 }
 
 export async function createGig(gigData: {

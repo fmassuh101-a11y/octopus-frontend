@@ -900,7 +900,7 @@ export default function AdminDashboard() {
               </div>
               <div>
                 <h1 className="text-xl font-bold">Admin Dashboard</h1>
-                <p className="text-sm text-neutral-400">{ADMIN_EMAIL}</p>
+                <p className="text-sm text-neutral-400">Panel de administración</p>
               </div>
             </div>
             <Link href="/" className="text-neutral-400 hover:text-white transition-colors text-sm">

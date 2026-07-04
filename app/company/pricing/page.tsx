@@ -1,8 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Check, Sparkles } from 'lucide-react'
+import { Check, Sparkles, Gift } from 'lucide-react'
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { getPlan } from '@/lib/plans'
 
 // Periodos de facturación — más largo, más descuento (que "tenga sentido").
 // Por defecto mostramos ANUAL (con descuento) para anclar el precio bajo.
@@ -38,6 +40,19 @@ const PLANS = [
 export default function CompanyPricing() {
   const [periodKey, setPeriodKey] = useState<'anual' | 'semestral' | 'mensual'>('anual')
   const period = PERIODS.find(p => p.key === periodKey)!
+  const [myProfile, setMyProfile] = useState<any>(null)
+
+  useEffect(() => {
+    const token = localStorage.getItem('sb-access-token')
+    const userStr = localStorage.getItem('sb-user')
+    if (!token || !userStr) return
+    const u = JSON.parse(userStr)
+    fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${u.id}&select=plan,plan_source,discount_percent`,
+      { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } })
+      .then(r => r.ok ? r.json() : []).then(d => setMyProfile(d[0] || null)).catch(() => {})
+  }, [])
+
+  const currentPlanKey = myProfile?.plan || 'starter'
 
   const priceFor = (monthly: number | null) => {
     if (monthly === null) return null
@@ -83,9 +98,23 @@ export default function CompanyPricing() {
           </div>
         </div>
 
+        {/* Banner del plan actual / regalo / descuento */}
+        {myProfile && (myProfile.plan_source === 'gifted' || (myProfile.discount_percent || 0) > 0 || currentPlanKey !== 'starter') && (
+          <div className="mb-6 max-w-2xl mx-auto flex items-center justify-center gap-2 text-sm font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3 text-center">
+            <Gift className="w-4 h-4 flex-shrink-0" />
+            <span>
+              {myProfile.plan_source === 'gifted'
+                ? `Te regalaron el plan ${getPlan(currentPlanKey).name}`
+                : `Tu plan actual: ${getPlan(currentPlanKey).name}`}
+              {(myProfile.discount_percent || 0) > 0 && ` · ${myProfile.discount_percent}% de descuento en comisión`}
+            </span>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 items-start">
           {PLANS.map(plan => {
             const price = priceFor(plan.monthly)
+            const isCurrent = plan.key === currentPlanKey
             return (
               <div
                 key={plan.key}
@@ -124,10 +153,14 @@ export default function CompanyPricing() {
                   </div>
                 )}
 
-                {plan.key === 'enterprise' ? (
+                {isCurrent ? (
+                  <div className="w-full text-center py-2.5 rounded-xl font-semibold text-sm border border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
+                    ✓ Tu plan actual
+                  </div>
+                ) : plan.key === 'enterprise' ? (
                   <Link
                     href="/company/contact"
-                    className="w-full text-center py-2.5 rounded-xl font-semibold text-sm transition-colors border border-neutral-700 hover:bg-neutral-800"
+                    className="w-full block text-center py-2.5 rounded-xl font-semibold text-sm transition-colors border border-neutral-700 hover:bg-neutral-800"
                   >
                     {plan.cta}
                   </Link>
