@@ -4,7 +4,7 @@
 
 ## Estado
 - [x] 1. Métodos de pago LATAM
-- [ ] 2. SideShift a fondo + competidores + plan de crecimiento con $0
+- [x] 2. SideShift a fondo + competidores + plan de crecimiento con $0
 - [x] 3. Legal Chile/LATAM (SII, ley fintech, datos personales, escrow)
 - [x] 4. Auditoría de seguridad del código
 - [x] 5. Fixes críticos de seguridad preparados (`SECURITY_FIXES_2026-07-04.sql`)
@@ -54,8 +54,54 @@
 3. ¿Podemos cobrar nuestro % en el retiro (custom application fee) en vez de por pago?
 4. ¿Fund-hold timing y quién es merchant of record?
 
-## 2. SideShift + competidores + crecimiento
-_pendiente_
+## 2. SideShift + competidores + crecimiento ✅
+
+### 🔑 El hallazgo que cambia todo
+**SideShift NO es principalmente clipping por CPM — es un marketplace de UGC brand-deals** (marcas publican jobs, creadores aplican, producen, se aprueba, se paga; el pago-por-views es UNA modalidad entre 50+). El clipping puro por CPM lo domina **Whop Content Rewards** (~$40.000/día pagados, ~1M videos/mes, ~480K clippers). **Octopus puede combinar los dos: jobs estructurados estilo SideShift + campañas pay-per-view estilo Whop.** Ya tenemos las dos bases.
+
+### Datos clave verificados
+- SideShift fundada 2024, ~$2.18M levantado. **Pivotearon desde un marketplace de gigs universitarios** — sus primeros clippers fueron su base de estudiantes, y sus primeras ~10 marcas fueron indie hackers de apps que llegaron solos.
+- Sus cifras ("$100M pagados, 1M creadores") son **autorreportadas y sospechosas** (Whop, el líder, paga ~$14.6M/año). Marketing, no auditado.
+- **SideShift usa los payouts de Whop, igual que nosotros.** No tienen infra de pagos propia. Confirmado.
+- **La debilidad #1 de TODO el sector es la confianza en el pago** (quejas: pagos que tardan, retiros bloqueados, campañas que desaparecen). ← **Nuestra mayor oportunidad de diferenciación.**
+
+### El argumento que cierra ventas (para el pitch a marcas y creadores)
+- **A marcas:** CPM de clipping $0.30-$2 vs $40-80 de ads tradicionales. 1M de views ≈ $950.000 CLP con CPM $1 — comparable a 2 posts de micro-influencer pero con **views garantizadas**.
+- **A creadores:** **TikTok Creator Rewards NO existe en Chile** (solo Brasil y México en LATAM), y donde existe paga $0.02-0.06/1000 views. **Octopus pagando $0.30-1.00 ofrece 5-30× más.** Pitch: *"TikTok no te paga en Chile. Nosotros sí."*
+
+### Features que faltan (priorizadas, dificultad sobre nuestro stack)
+**ALTA (core):**
+1. **Campañas CPM con budget cap** (marca fija pool + $/1000 views + payout mín/máx por video) — Media
+2. **Tracking de views vía cuenta conectada** (TikTok Display API — ya tenemos OAuth; empezar solo-TikTok) — Media-alta
+3. **Aprobación de submissions + timer de auto-aprobación** (ya tenemos aprobación de la Fase A; falta timer + gatillo de pago) — Baja-media
+4. **Anti-fraude básico** (delay de pago 7 días + snapshot de views + revisión manual; con volumen bajo, NOSOTROS 2 somos el anti-fraude) — Media
+
+**MEDIA (retención/confianza):**
+5. Gamificación XP + niveles + leaderboard — Baja-media
+6. Dashboard de earnings transparente (ganado/adeudado/pendiente) — **Baja** (ataca la queja #1 del sector)
+7. Job Boosts (upsell B2B, empuja el listing al tope 48h) — Baja
+8. Escrow explícito (cobrar el pool por adelantado) — Media
+9. Derechos de uso + Spark Ads codes (checkbox en el brief) — Baja
+
+**BAJA (después):** contests/prize pool · PWA (en vez de app nativa) · perfiles públicos con precios · SideShift Pro (suscripción a creadores).
+
+### Modelos de negocio del sector (verificados)
+- **Whop: 7% al clipper** + marca fondea el pool. Simple, alineado con volumen → **recomendado como base.**
+- JoinBrands: **doble comisión** (8-15% marca + 15-20% creador). Monetiza ambos lados pero espanta cuando no hay liquidez.
+- **Concierge/agencia con retainer** ($2.500-10.000/mes, margen 30-50%): **este es nuestro MVP natural** — operar las primeras campañas a mano como agencia mientras el software madura.
+
+### Plan de lanzamiento LATAM con $0 (lección: NADIE lanzó two-sided)
+**Fase 0 (sem 1-2) — oferta primero, a mano:** reclutar 50-100 clippers hispanos donde YA están (Discords de "clipping"/"ganar dinero", "Clippers Flow" de Whop, TikTok orgánico). Crear el **Discord/WhatsApp de Octopus ANTES del producto perfecto** — en este sector la comunidad ES el canal.
+
+**Fase 1 (sem 2-6) — demanda concierge, 3-5 campañas a mano:** prospectar las **+700 marcas de CyberDay** (lista pública CCS: moda, tech, belleza) + indie hackers chilenos. Oferta irresistible: *"primera campaña al costo: pones $200.000 de pool, te conseguimos 500K views, solo pagas views reales"*. Emparejar clippers a mano por WhatsApp. Cada campaña = case study con números.
+
+**Fase 2 (mes 2-4) — motor orgánico:** **build in public en TikTok en español** (nadie lo hace — espacio vacío, y documentar Octopus ES una campaña de clipping). **SEO long-tail** estilo Collabstr ("creadores UGC en Santiago", "clipping en español" — casi sin competencia en español, Next.js lo hace trivial). Saturar Chile antes de escalar (1.000 usuarios densos > 100K dispersos).
+
+### ⚠️ Dato tributario corregido
+Si Octopus (empresa) paga directo a creadores, **retiene 15,25% en 2026** (no 14,5% — esa era 2025; sube a 17% en 2028). Definir con contador si operamos como empresa-pagadora o plataforma-intermediaria ANTES de la primera campaña.
+
+### Competencia LATAM
+Existen jugadores hispanos (UGC LATAM, Clipéalo Network, HICARI, agencias chilenas) pero **NINGUNO tiene el stack completo** (escrow + CPM self-serve + ratings + licencias + fees publicados). **El gap está abierto, la ventana no dura para siempre.**
 
 ## 3. Legal Chile/LATAM ✅
 
@@ -136,5 +182,44 @@ Riesgo BAJO en marketplace puro (el creador elige campañas, sus herramientas, m
 2. **Esta semana, juntos con pruebas:** A1 (PII) y A2 (permisos server-side).
 3. **Cuando se pueda:** M2, M3, M4.
 
-## Plan de mañana
-_se arma al final con todo lo anterior_
+## 🎯 PLAN MAESTRO (síntesis de las 4 investigaciones)
+
+### La tesis en una línea
+Octopus = **SideShift + Whop Content Rewards, en español, con la confianza en el pago que ninguno tiene**, lanzado como agencia-concierge en Chile y convertido en marketplace. El gap en español está abierto.
+
+### 🔴 MAÑANA, PRIMERO QUE TODO (bloquea todo lo demás)
+1. **Correr `SECURITY_FIXES_2026-07-04.sql`** (rotando el admin123 por clave fuerte). Cierra los 4 agujeros críticos.
+2. **Rotar `GEMINI_API_KEY`** en Google AI Studio (estuvo en git).
+3. Juntos, con pruebas: cerrar **A1 (PII de emails)** y **A2 (permisos server-side)** — NO de noche, para no romper.
+
+### SEMANA 1-2 — Producto: cerrar el modelo clipping (lo que nos falta del core)
+Construir sobre la Fase A que ya terminamos:
+1. **Campañas CPM con budget cap** (pool + $/1000 views + payout mín/máx por video).
+2. **Tracking de views con TikTok** (ya tenemos OAuth → Display API, solo-TikTok primero).
+3. **Timer de auto-aprobación** + gatillo de pago (extiende la aprobación de la Fase A).
+4. **Dashboard de earnings transparente** (baja dificultad, ataca la queja #1 del sector).
+
+### SEMANA 2-4 — Negocio: desbloquear pagos y legal
+5. **Zoom con Whop** (preguntas ya en este doc) → habilitar payouts reales.
+6. **MercadoPago + Flow** para cobrar a empresas (persona natural, activable ya) — detrás de adaptador para sumar PayPal después.
+7. **Crear la SpA** (gratis, 1 día) + inicio de actividades SII → desbloquea Wise/Rebill/Transbank y formaliza todo.
+8. **Escrow explícito**: cobrar el pool por adelantado → "fondos garantizados" al creador (la confianza es el diferenciador).
+
+### MES 1-2 — Lanzamiento concierge (sin gastar)
+9. Crear **Discord/WhatsApp de Octopus** + reclutar 50-100 clippers donde ya están.
+10. **3-5 campañas operadas a mano** con marcas de CyberDay/indie hackers → case studies con números.
+11. **Build in public en TikTok** + **SEO long-tail** en español.
+
+### MES 2-4 — Escala
+12. Gamificación (XP/niveles/leaderboard) · Job Boosts · derechos de uso + Spark codes · anti-fraude reforzado · PWA con push · cumplimiento Ley 21.719 (antes de dic-2026).
+
+### Tu tarea externa (Felipe, no técnica)
+- Zoom con Whop (desbloquea pagos reales).
+- Crear la SpA + SII (desbloquea legal + pagos).
+- Rotar las 2 llaves (Gemini + TikTok) y el admin.
+
+### Modelo de negocio elegido
+**7% al creador sobre payouts** (como Whop) + la marca fondea el pool. Suscripciones B2B (Starter/Pro/Scale, ya construidas) como capa 2. Empezar operando campañas como agencia (margen 30-50%) mientras el marketplace madura.
+
+---
+*Informe completo. 4 investigaciones + auditoría de seguridad, todo verificado. Buenos días, Felipe. 🐙*
