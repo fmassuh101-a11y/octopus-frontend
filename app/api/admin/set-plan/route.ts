@@ -25,9 +25,29 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { targetUserId, plan, discountPercent, gift } = body
+  const { targetUserId, plan, discountPercent, gift, grantBalance } = body
   if (!targetUserId) {
     return NextResponse.json({ error: 'Falta targetUserId' }, { status: 400 })
+  }
+
+  // Dar saldo a la wallet (para pruebas y depósitos manuales)
+  if (grantBalance !== undefined) {
+    const amount = Math.max(0, Number(grantBalance) || 0)
+    const H = { 'Authorization': `Bearer ${SERVICE_KEY}`, 'apikey': SERVICE_KEY, 'Content-Type': 'application/json' }
+    const wRes = await fetch(`${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${targetUserId}&select=id,balance`, { headers: H })
+    const wallets = wRes.ok ? await wRes.json() : []
+    if (wallets.length === 0) {
+      await fetch(`${SUPABASE_URL}/rest/v1/wallets`, {
+        method: 'POST', headers: H,
+        body: JSON.stringify({ user_id: targetUserId, user_type: 'company', balance: amount }),
+      })
+    } else {
+      await fetch(`${SUPABASE_URL}/rest/v1/wallets?id=eq.${wallets[0].id}`, {
+        method: 'PATCH', headers: H,
+        body: JSON.stringify({ balance: Number(wallets[0].balance || 0) + amount, updated_at: new Date().toISOString() }),
+      })
+    }
+    return NextResponse.json({ success: true, granted: amount })
   }
 
   const updates: any = {}

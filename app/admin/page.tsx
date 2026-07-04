@@ -922,6 +922,7 @@ export default function AdminDashboard() {
               { id: 'support', label: 'Soporte', icon: MessageCircle, href: '/admin/support' },
               { id: 'companies', label: 'Empresas', icon: Briefcase, href: '/admin/companies' },
               { id: 'contact', label: 'Solicitudes', icon: Inbox, href: '/admin/contact' },
+              { id: 'disputes', label: 'Disputas', icon: Ban, href: '/admin/disputes' },
             ].map((tab) => (
               tab.href ? (
                 <Link

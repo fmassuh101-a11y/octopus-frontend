@@ -61,6 +61,8 @@ export default function CreatorProfilePage() {
   const [applications, setApplications] = useState<Application[]>([])
   const [activeTab, setActiveTab] = useState<'overview' | 'content' | 'applications'>('overview')
   const [bookmarked, setBookmarked] = useState(false)
+  const [portfolio, setPortfolio] = useState<any[]>([])
+  const [avgRating, setAvgRating] = useState<{ avg: number; count: number } | null>(null)
 
   const getToken = () => localStorage.getItem('sb-access-token')
 
@@ -124,6 +126,29 @@ export default function CreatorProfilePage() {
           }
         }
       }
+
+      // Portfolio: entregas aprobadas (trabajos completados de verdad)
+      try {
+        const portRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/content_deliveries?creator_id=eq.${creatorId}&status=in.(approved,completed)&select=id,title,video_url,approved_at&order=approved_at.desc&limit=12`,
+          { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+        )
+        if (portRes.ok) setPortfolio(await portRes.json())
+      } catch (e) {}
+
+      // Reviews: calificación promedio del creador
+      try {
+        const revRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/reviews?reviewee_id=eq.${creatorId}&select=rating`,
+          { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+        )
+        if (revRes.ok) {
+          const revs = await revRes.json()
+          if (revs.length > 0) {
+            setAvgRating({ avg: revs.reduce((s: number, r: any) => s + r.rating, 0) / revs.length, count: revs.length })
+          }
+        }
+      } catch (e) {}
 
       // Load applications from this creator
       const userStr = localStorage.getItem('sb-user')
@@ -376,6 +401,35 @@ export default function CreatorProfilePage() {
           )}
         </div>
       </div>
+
+      {/* Calificación promedio */}
+      {avgRating && (
+        <div className="px-4 pt-2">
+          <div className="inline-flex items-center gap-2 bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-2">
+            <svg className="w-5 h-5 text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+            </svg>
+            <span className="font-bold">{avgRating.avg.toFixed(1)}</span>
+            <span className="text-neutral-500 text-sm">({avgRating.count} {avgRating.count === 1 ? 'reseña' : 'reseñas'})</span>
+          </div>
+        </div>
+      )}
+
+      {/* Portfolio: trabajos aprobados */}
+      {portfolio.length > 0 && (
+        <div className="px-4 py-4">
+          <h2 className="text-lg font-semibold mb-3">Portfolio <span className="text-neutral-500 font-normal">({portfolio.length})</span></h2>
+          <div className="space-y-2">
+            {portfolio.map(p => (
+              <a key={p.id} href={p.video_url} target="_blank" rel="noopener noreferrer"
+                className="flex items-center justify-between bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 hover:border-emerald-500/40 transition-colors">
+                <span className="text-sm text-white truncate">{p.title}</span>
+                <span className="text-xs text-emerald-400 flex-shrink-0 ml-3">Aprobado ✓</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Social Profiles */}
       <div className="px-4 py-4">

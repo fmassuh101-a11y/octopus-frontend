@@ -45,6 +45,7 @@ export default function CompanyReviewContentPage() {
   const [showFeedbackModal, setShowFeedbackModal] = useState(false)
   const [feedbackText, setFeedbackText] = useState('')
   const [actionType, setActionType] = useState<'approve' | 'revision'>('approve')
+  const [ratingValue, setRatingValue] = useState(0)
   const [processing, setProcessing] = useState(false)
   const [filter, setFilter] = useState<'all' | 'pending' | 'reviewed'>('pending')
   const [user, setUser] = useState<any>(null)
@@ -147,6 +148,31 @@ export default function CompanyReviewContentPage() {
     }
   }
 
+  const handleOpenDispute = async () => {
+    if (!selectedDelivery) return
+    const reason = prompt('Describe el problema. El equipo de Octopus mediará entre ambas partes:')
+    if (!reason?.trim()) return
+    try {
+      const token = localStorage.getItem('sb-access-token')
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/disputes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY },
+        body: JSON.stringify({
+          delivery_id: selectedDelivery.id,
+          opened_by: user?.id,
+          against: selectedDelivery.creator_id,
+          reason: reason.trim(),
+        }),
+      })
+      if (res.ok) {
+        alert('Disputa abierta. Nuestro equipo la revisará y mediará entre ambas partes.')
+        setShowFeedbackModal(false)
+      } else {
+        alert('No se pudo abrir la disputa. Intenta de nuevo.')
+      }
+    } catch { alert('Error al abrir la disputa.') }
+  }
+
   const handleApprove = async () => {
     if (!selectedDelivery) return
 
@@ -154,52 +180,27 @@ export default function CompanyReviewContentPage() {
     try {
       const token = localStorage.getItem('sb-access-token')
 
-      const response = await fetch(
-        `${SUPABASE_URL}/rest/v1/content_deliveries?id=eq.${selectedDelivery.id}`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-            'apikey': SUPABASE_ANON_KEY
-          },
-          body: JSON.stringify({
-            status: 'approved',
-            feedback: feedbackText || null,
-            feedback_history: [
-              ...selectedDelivery.feedback_history,
-              {
-                action: 'approved',
-                feedback: feedbackText || null,
-                created_at: new Date().toISOString(),
-                by: 'company'
-              }
-            ],
-            reviewed_at: new Date().toISOString(),
-            approved_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
-        }
-      )
-
-      if (!response.ok) throw new Error('Error al aprobar')
-
-      // Create notification for creator
-      await fetch(`${SUPABASE_URL}/rest/v1/delivery_notifications`, {
+      // Aprobar server-side: libera el pago al creador + califica + notifica (estilo SideShift)
+      const response = await fetch('/api/deliveries/approve', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'apikey': SUPABASE_ANON_KEY
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
-          delivery_id: selectedDelivery.id,
-          recipient_id: selectedDelivery.creator_id,
-          type: 'content_approved',
-          title: 'Tu contenido fue aprobado!',
-          message: `Tu contenido para "${selectedDelivery.gig_title}" fue aprobado.`
-        })
+          deliveryId: selectedDelivery.id,
+          feedback: feedbackText || null,
+          rating: ratingValue || null,
+        }),
       })
+      const data = await response.json()
+
+      if (!response.ok) {
+        if (data.needsFunds) {
+          alert(`No tienes fondos suficientes para liberar el pago de $${data.amount}. Deposita fondos en tu wallet y vuelve a aprobar.`)
+        } else {
+          alert(data.error || 'Error al aprobar el contenido')
+        }
+        setProcessing(false)
+        return
+      }
 
       setDeliveries(prev => prev.map(d =>
         d.id === selectedDelivery.id
@@ -210,6 +211,10 @@ export default function CompanyReviewContentPage() {
       setShowFeedbackModal(false)
       setSelectedDelivery(null)
       setFeedbackText('')
+      setRatingValue(0)
+      if (data.paid) {
+        alert(`Contenido aprobado. Se liberó el pago al creador ($${data.creatorReceives ?? data.amount} después de la comisión). Los derechos de uso del contenido ya son tuyos según el contrato.`)
+      }
 
     } catch (err) {
       console.error('Error:', err)
@@ -664,11 +669,38 @@ export default function CompanyReviewContentPage() {
                 />
               </div>
 
+              {/* Calificación del creador (al aprobar) */}
+              {actionType === 'approve' && (
+                <div>
+                  <label className="block text-sm font-medium text-neutral-300 mb-2">
+                    Califica al creador
+                  </label>
+                  <div className="flex items-center gap-1.5">
+                    {[1, 2, 3, 4, 5].map(star => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setRatingValue(star)}
+                        className="p-1 transition-transform hover:scale-110"
+                      >
+                        <svg
+                          className={`w-8 h-8 ${star <= ratingValue ? 'text-emerald-400' : 'text-neutral-700'}`}
+                          fill="currentColor" viewBox="0 0 20 20"
+                        >
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                      </button>
+                    ))}
+                    {ratingValue > 0 && <span className="ml-2 text-sm text-neutral-400">{ratingValue}/5</span>}
+                  </div>
+                </div>
+              )}
+
               {/* Info Box */}
               {actionType === 'approve' ? (
-                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
-                  <p className="text-sm text-yellow-400">
-                    Al aprobar, el creador será notificado y podrás liberar el pago.
+                <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4">
+                  <p className="text-sm text-emerald-400">
+                    Al aprobar se libera el pago al creador automáticamente y los derechos de uso del contenido pasan a tu empresa según el contrato.
                   </p>
                 </div>
               ) : (
@@ -712,6 +744,14 @@ export default function CompanyReviewContentPage() {
                 )}
               </button>
             </div>
+
+            {/* Disputa: para desacuerdos serios, media el equipo de Octopus */}
+            <button
+              onClick={handleOpenDispute}
+              className="w-full text-center text-xs text-neutral-500 hover:text-red-400 transition-colors pb-4"
+            >
+              ¿Problema serio con esta entrega? Abrir una disputa
+            </button>
           </div>
         </div>
       )}

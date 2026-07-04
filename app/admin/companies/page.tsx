@@ -74,6 +74,19 @@ export default function AdminCompaniesPage() {
     } catch (e: any) { setMsg('Error: ' + e.message) } finally { setSavingId(null) }
   }
 
+  const grantBalance = async (c: Company, amount: number) => {
+    setSavingId(c.user_id); setMsg('')
+    try {
+      const res = await fetch('/api/admin/set-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token()}` },
+        body: JSON.stringify({ targetUserId: c.user_id, grantBalance: amount }),
+      })
+      if (!res.ok) throw new Error((await res.json()).error || 'Error')
+      setMsg(`✓ ${c.company_name || c.email}: +$${amount} de saldo`)
+    } catch (e: any) { setMsg('Error: ' + e.message) } finally { setSavingId(null) }
+  }
+
   if (authorized === false) {
     return <div className="min-h-screen bg-neutral-950 flex items-center justify-center text-neutral-400">Acceso solo para el administrador.</div>
   }
@@ -134,7 +147,7 @@ export default function AdminCompaniesPage() {
                 </div>
 
                 {/* Descuento */}
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap mb-3">
                   <span className="text-xs text-neutral-500 flex items-center gap-1"><Percent className="w-3.5 h-3.5" /> Descuento:</span>
                   {[0, 20, 50, 100].map(d => (
                     <button
@@ -144,6 +157,21 @@ export default function AdminCompaniesPage() {
                       className="px-3 py-1 rounded-lg border border-neutral-700 hover:border-amber-500 hover:text-amber-400 text-xs font-medium disabled:opacity-50 transition-colors"
                     >
                       {d === 0 ? 'Quitar' : `${d}%`}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Dar saldo (para probar el escrow / depósitos manuales) */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs text-neutral-500">Dar saldo:</span>
+                  {[100, 500, 1000].map(amt => (
+                    <button
+                      key={amt}
+                      disabled={savingId === c.user_id}
+                      onClick={() => grantBalance(c, amt)}
+                      className="px-3 py-1 rounded-lg border border-neutral-700 hover:border-emerald-500 hover:text-emerald-400 text-xs font-medium disabled:opacity-50 transition-colors"
+                    >
+                      +${amt}
                     </button>
                   ))}
                 </div>
