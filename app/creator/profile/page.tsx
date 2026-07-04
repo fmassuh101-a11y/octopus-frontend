@@ -1,4 +1,5 @@
 'use client'
+import { safeExternalUrl } from '@/lib/safe'
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -261,7 +262,7 @@ export default function ProfilePage() {
             <span className="text-neutral-400">LinkedIn</span>
             <span className="font-medium text-white text-right max-w-[200px] truncate">
               {data.linkedInUrl ? (
-                <a href={data.linkedInUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">
+                <a href={safeExternalUrl(data.linkedInUrl)} target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">
                   Ver perfil
                 </a>
               ) : 'Sin configurar'}

@@ -1,4 +1,5 @@
 'use client'
+import { safeExternalUrl } from '@/lib/safe'
 
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
@@ -421,7 +422,7 @@ export default function CreatorProfilePage() {
           <h2 className="text-lg font-semibold mb-3">Portfolio <span className="text-neutral-500 font-normal">({portfolio.length})</span></h2>
           <div className="space-y-2">
             {portfolio.map(p => (
-              <a key={p.id} href={p.video_url} target="_blank" rel="noopener noreferrer"
+              <a key={p.id} href={safeExternalUrl(p.video_url)} target="_blank" rel="noopener noreferrer"
                 className="flex items-center justify-between bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 hover:border-emerald-500/40 transition-colors">
                 <span className="text-sm text-white truncate">{p.title}</span>
                 <span className="text-xs text-emerald-400 flex-shrink-0 ml-3">Aprobado ✓</span>

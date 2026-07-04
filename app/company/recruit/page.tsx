@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { pgSearchTerm } from '@/lib/safe'
 import { Home, ClipboardList, MessageCircle, Users } from 'lucide-react'
 
 interface CreatorProfile {
@@ -129,7 +130,7 @@ export default function RecruitPage() {
   const searchCreator = async () => {
     if (!handle.trim()) return
 
-    const cleanHandle = handle.replace('@', '').trim().toLowerCase()
+    const cleanHandle = pgSearchTerm(handle.replace('@', '').toLowerCase())
     setLoading(true)
     setError('')
 
@@ -151,7 +152,7 @@ export default function RecruitPage() {
       // Search in database by name or handle
       const token = localStorage.getItem('sb-access-token')
       const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?or=(tiktok.ilike.%25${cleanHandle}%25,instagram.ilike.%25${cleanHandle}%25,full_name.ilike.%25${cleanHandle}%25)&user_type=eq.creator&select=*`,
+        `${SUPABASE_URL}/rest/v1/profiles?or=(tiktok.ilike.%25${cleanHandle}%25,instagram.ilike.%25${cleanHandle}%25,full_name.ilike.%25${cleanHandle}%25)&user_type=eq.creator&select=user_id,full_name,username,avatar_url,profile_photo_url,tiktok,instagram,youtube,location,bio,verified`,
         { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
       )
 

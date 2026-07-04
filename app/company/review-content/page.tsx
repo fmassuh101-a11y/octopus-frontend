@@ -1,4 +1,5 @@
 'use client'
+import { safeExternalUrl } from '@/lib/safe'
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
@@ -523,7 +524,7 @@ export default function CompanyReviewContentPage() {
                   {/* Video Preview */}
                   <div className="p-5">
                     <a
-                      href={delivery.video_url}
+                      href={safeExternalUrl(delivery.video_url)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="block p-4 bg-neutral-800/50 border border-neutral-700 rounded-xl hover:border-yellow-500/50 transition-colors group/link text-white placeholder-neutral-500"
@@ -642,7 +643,7 @@ export default function CompanyReviewContentPage() {
             <div className="p-6 space-y-5">
               {/* Video Preview */}
               <a
-                href={selectedDelivery.video_url}
+                href={safeExternalUrl(selectedDelivery.video_url)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-4 p-4 bg-neutral-800/50 border border-neutral-700 rounded-xl hover:border-yellow-500/50 transition-colors text-white placeholder-neutral-500"
@@ -804,7 +805,7 @@ export default function CompanyReviewContentPage() {
 
               {/* Video */}
               <a
-                href={selectedDelivery.video_url}
+                href={safeExternalUrl(selectedDelivery.video_url)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block p-5 bg-neutral-800/50 border border-neutral-700 rounded-xl hover:border-yellow-500/50 transition-colors text-white placeholder-neutral-500"

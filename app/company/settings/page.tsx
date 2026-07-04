@@ -6,6 +6,7 @@ import { getPlan, effectiveFee } from '@/lib/plans'
 import { ROLES, PERMISSIONS, defaultPermsForRole } from '@/lib/permissions'
 import { useRouter } from 'next/navigation'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { pgSearchTerm } from '@/lib/safe'
 import { Check, Gift, Banknote, BarChart3, Bell, Briefcase, Crown, Users, Video } from 'lucide-react'
 
 type SettingsTab = 'payment' | 'paymentMethods' | 'profile' | 'team' | 'notifications'
@@ -39,7 +40,7 @@ export default function CompanySettingsPage() {
 
   const searchUsers = async (q: string) => {
     setInviteEmail(q)
-    const term = q.replace(/^@/, '').trim()
+    const term = pgSearchTerm(q.replace(/^@/, ''))
     if (term.length < 1 || q.includes('@') && q.indexOf('@') > 0) { setSearchResults([]); return }
     setSearching(true)
     try {

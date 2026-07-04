@@ -52,10 +52,23 @@ export async function POST(request: NextRequest) {
 
     console.log('[SaveProfile] Profile exists:', profileExists)
 
-    // Prepare profile data
+    // WHITELIST: solo campos que el usuario PUEDE editar de su perfil.
+    // NUNCA plan, plan_source, discount_percent, is_admin, verified, whop_*,
+    // kyc_status, user_type, id, user_id, email (escalada / robo de payouts).
+    const ALLOWED_FIELDS = [
+      'full_name', 'username', 'bio', 'avatar_url', 'profile_photo_url',
+      'phone_number', 'location', 'academic_level', 'studies', 'linkedin_url',
+      'instagram', 'tiktok', 'youtube', 'skills', 'company_name', 'website',
+    ]
+    const safeData: any = {}
+    for (const k of ALLOWED_FIELDS) {
+      if (profileData && profileData[k] !== undefined) safeData[k] = profileData[k]
+    }
+
+    // Prepare profile data (solo campos permitidos)
     const dataToSave = {
       user_id: userId,
-      ...profileData,
+      ...safeData,
       updated_at: new Date().toISOString()
     }
 

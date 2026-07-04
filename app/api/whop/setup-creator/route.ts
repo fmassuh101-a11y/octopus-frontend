@@ -19,10 +19,23 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { existingCompanyId } = body;
     const userId = user.id;
     const email = body.email || user.email;
     const fullName = body.fullName;
+
+    // SEGURIDAD: el companyId NO se acepta del body (IDOR → robo de payouts).
+    // Se deriva del perfil del usuario autenticado con la service key.
+    let existingCompanyId: string | null = null;
+    try {
+      const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+      const { SUPABASE_URL } = await import('@/lib/config/supabase');
+      const pRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userId}&select=whop_company_id`,
+        { headers: { 'Authorization': `Bearer ${SERVICE_KEY}`, 'apikey': SERVICE_KEY } }
+      );
+      const profiles = pRes.ok ? await pRes.json() : [];
+      existingCompanyId = profiles[0]?.whop_company_id || null;
+    } catch {}
 
     console.log("[Setup Creator] Processing:", { userId, email, hasExisting: !!existingCompanyId });
 

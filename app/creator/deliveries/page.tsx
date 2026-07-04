@@ -1,4 +1,5 @@
 'use client'
+import { safeExternalUrl } from '@/lib/safe'
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
@@ -419,7 +420,7 @@ export default function CreatorDeliveriesPage() {
                   <h4 className="font-semibold mb-3">Contenido Actual</h4>
                   <div className="bg-neutral-800 rounded-xl p-4">
                     <a
-                      href={selectedDelivery.video_url}
+                      href={safeExternalUrl(selectedDelivery.video_url)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-3 text-emerald-400 hover:text-emerald-300"
