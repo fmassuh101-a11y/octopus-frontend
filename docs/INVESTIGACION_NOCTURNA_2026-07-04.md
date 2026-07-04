@@ -3,10 +3,10 @@
 > Preparada mientras Felipe duerme. 4 investigaciones en paralelo + auditoría de seguridad.
 
 ## Estado
-- [ ] 1. Métodos de pago LATAM (payouts + cobros, plan B y C si Whop falla)
+- [x] 1. Métodos de pago LATAM
 - [ ] 2. SideShift a fondo + competidores + plan de crecimiento con $0
 - [x] 3. Legal Chile/LATAM (SII, ley fintech, datos personales, escrow)
-- [ ] 4. Auditoría de seguridad del código
+- [x] 4. Auditoría de seguridad del código
 - [x] 5. Fixes críticos de seguridad preparados (`SECURITY_FIXES_2026-07-04.sql`)
 
 ## Pregunta clave para el Zoom de Whop
@@ -20,8 +20,39 @@
 
 *(Las secciones siguientes se llenan cuando terminen los agentes.)*
 
-## 1. Métodos de pago LATAM
-_pendiente_
+## 1. Métodos de pago LATAM ✅
+
+### El stack recomendado
+
+**COBRAR a empresas (suscripciones + depósitos):**
+| Prioridad | Proveedor | Por qué |
+|---|---|---|
+| **Principal** | **MercadoPago Chile** | Acepta persona natural con RUT, cero costo fijo, API de suscripciones madura (`preapproval`), alta en minutos. Lo único activable HOY. Fee 2,89-3,19% + IVA |
+| Plan B | **Flow.cl** | También acepta persona natural. Transferencia bancaria a **0,99% + IVA** — imbatible para depósitos grandes. Usarlo EN PARALELO a MP para recargas por transferencia |
+| Plan C | **dLocal Go** (probar signup ya, gratis) → **Rebill** cuando haya SpA (6 países LATAM en un contrato, pero exige empresa + US$500/mes mínimo) |
+
+**PAGAR a creadores (payouts):**
+| Prioridad | Proveedor | Por qué |
+|---|---|---|
+| **Principal** | **Whop Platforms** (ya integrado) | Connected accounts aceptan individuos, 241+ territorios, expandiendo LATAM (inversión de Tether feb-2026). ⚠️ Riesgo: API invite-only — preguntar en el Zoom si aceptan operador persona natural chileno de 18 años |
+| Plan B | **PayPal Payouts** | El único mass-payout viable para persona natural (cuenta Business con RUT + aprobación de la feature). Fee 2% con tope $20. Cubre CL/AR/PE/MX/BR |
+| Plan C | **USDT/USDC como opción de retiro** (Binance/Airtm personal) | Casi gratis (0-0,35%), funciona hoy. Ofrecerlo como OPCIÓN, no riel único. Ojo: desde jun-2026 los exchanges reportan al SII |
+
+**Descartados:** Stripe (NO opera en Chile), Wise (exige empresa — pero excelente al tener la SpA), PayU (absorbido por Rapyd, recurrencia muerta), Deel/Remote ($29-49/creador/mes = carísimo para UGC), Bitwage (rechaza pagadores sin entidad), Trolley ($2.399/año).
+
+### Hallazgo clave
+**Casi todas las puertas cerradas se abren con la SpA** (gratis, 1 día): Rebill, Wise Business (rieles CLP/ARS confirmados), Binance Merchant, Transbank directo (2,35% crédito, lo más barato de Chile). → **La SpA no es solo tema legal, es el desbloqueador de pagos.**
+
+### Arquitectura sugerida
+- Cobros: MercadoPago (suscripciones+checkout) + Flow (transferencias grandes) → saldo interno.
+- Payouts: Whop detrás de un **patrón adaptador** en `app/api/` para poder enchufar PayPal como segundo riel sin tocar el resto del código.
+- LLC en EE.UU. (Stripe Atlas): NO por ahora — $500 + obligaciones fiscales serias (multa $25k por no presentar Form 5472). Solo si nos volvemos globales.
+
+### Preguntas para el Zoom de Whop (actualizadas)
+1. ¿Aceptan un operador persona natural chileno (18 años) o exigen entidad?
+2. ¿Fees exactos de "local bank transfer" para Chile/México/Argentina/Colombia? (no son públicos)
+3. ¿Podemos cobrar nuestro % en el retiro (custom application fee) en vez de por pago?
+4. ¿Fund-hold timing y quién es merchant of record?
 
 ## 2. SideShift + competidores + crecimiento
 _pendiente_
@@ -74,8 +105,36 @@ Riesgo BAJO en marketplace puro (el creador elige campañas, sus herramientas, m
 - [ ] Registrar marca "Octopus" en INAPI cuando haya tracción (⚠️ revisar disponibilidad, es nombre común)
 - [ ] Octubre 2026: revisión final Ley 21.719
 
-## 4. Auditoría de seguridad (agente)
-_pendiente_
+## 4. Auditoría de seguridad ✅ (el agente auditó TODO el código)
+
+> **ORDEN #1 DE MAÑANA: correr `SECURITY_FIXES_2026-07-04.sql` (ya actualizado con TODOS los fixes) antes que nada.**
+
+### 🔴 CRÍTICAS
+- **C1 — Backdoor admin `admin123`**: yo creé `admin@octopus.app` con contraseña `admin123` en un SQL versionado. Si el repo es visible, cualquiera entra como admin y con `/api/admin/set-plan` se acuña saldo ilimitado. **Fix: el SQL ahora rota la contraseña — CAMBIÁ el placeholder por una clave fuerte antes de correr.** (Ya no uses admin123.)
+- **C2 — `process_payment` robaba fondos** vía RPC (cualquiera drenaba la wallet de cualquier empresa, o con monto negativo inflaba la suya). Fix: REVOKE + guard de monto ≤0. ✅ en el SQL.
+- **C3 — Auto-escalada en profiles**: un usuario podía PATCH su propia fila y ponerse `plan=enterprise`, `verified=true`, y lo peor: **`whop_company_id` de otra empresa → secuestrar sus retiros de Whop**. Fix: trigger congela TODAS esas columnas (agregué whop_*). ✅
+- **A3 — Unirse a cualquier empresa**: podías cambiar `company_id` de tu propia invitación. Fix: trigger congela company_id/role/permissions. ✅
+
+### 🟠 ALTAS (requieren cambio con cuidado — hacerlas JUNTOS mañana, con pruebas)
+- **A1 — PII expuesta**: `profiles` deja a cualquier autenticado leer `email` y `phone_number` de TODOS. Un atacante se registra y baja todos los emails/teléfonos. **Fix necesita diseño** (vista pública sin PII o mover email/phone a tabla protegida) — NO lo toco de noche porque puede romper la app; lo hacemos mañana con pruebas.
+- **A2 — Permisos de equipo son solo cosméticos**: viven en localStorage; un miembro `viewer` puede igual INSERT/UPDATE gigs vía REST porque la RLS solo chequea `status='accepted'`, no los permisos. Fix: enforcar permisos server-side (mover acciones sensibles a `/api/*` + RLS con el operador JSONB `?`). También mañana, con pruebas.
+
+### 🟡 MEDIAS (en el SQL o pendientes)
+- **M1 — `create_delivery_notification`** llamable por cualquiera → notificaciones falsas de "pago recibido" (phishing). Fix: REVOKE. ✅ en el SQL.
+- **M2 — `withdrawal_requests`**: el usuario pone `amount`/`net_amount` libres, sin validar contra el balance. Fix: recalcular server-side al aprobar (pendiente).
+- **M3 — Rate limit en memoria** no sirve en Vercel serverless (cada instancia su propio Map). Fix: Upstash Redis / Vercel KV (pendiente).
+- **M4 — `/api/support/chat` sin auth** → abuso de quota Gemini. Fix: exigir sesión (pendiente, ojo que el widget sirve a visitantes anónimos).
+
+### 🟢 BAJAS
+- Rotar `GEMINI_API_KEY` (estuvo en git). `contact_requests` permite spam anónimo (agregar captcha). `campaigns`/`reviews` lectura pública (poco sensible).
+
+### ✅ Lo que está BIEN (no tocar)
+- `getAuthenticatedUser` valida el token real. Todas las rutas sensibles derivan el usuario de la sesión, no del body. El webhook de Whop valida firma HMAC. El service key NUNCA aparece en el cliente. El anon key hardcodeado es aceptable (es público por diseño). `isAdminEmail` hace match exacto (un email "parecido" no pasa).
+
+### Orden de acción de seguridad
+1. **Mañana primero:** correr el SQL de seguridad (cierra C1, C2, C3, A3, M1) + rotar GEMINI_API_KEY.
+2. **Esta semana, juntos con pruebas:** A1 (PII) y A2 (permisos server-side).
+3. **Cuando se pueda:** M2, M3, M4.
 
 ## Plan de mañana
 _se arma al final con todo lo anterior_
