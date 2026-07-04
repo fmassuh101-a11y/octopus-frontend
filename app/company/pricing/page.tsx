@@ -53,11 +53,19 @@ export default function CompanyPricing() {
   }, [])
 
   const currentPlanKey = myProfile?.plan || 'starter'
+  const discount = myProfile?.discount_percent || 0
 
-  const priceFor = (monthly: number | null) => {
+  // Precio base por periodo, SIN descuento personal
+  const basePrice = (monthly: number | null) => {
     if (monthly === null) return null
     if (monthly === 0) return 0
     return Math.round(monthly * (1 - period.off))
+  }
+  // Precio final CON el descuento regalado por el admin
+  const priceFor = (monthly: number | null) => {
+    const base = basePrice(monthly)
+    if (base === null || base === 0) return base
+    return Math.round(base * (1 - discount / 100))
   }
 
   return (
@@ -133,15 +141,20 @@ export default function CompanyPricing() {
                 </span>
 
                 <h3 className="text-lg font-bold mt-1">{plan.name}</h3>
-                <div className="mt-3 mb-1 h-12 flex items-end">
+                <div className="mt-3 mb-1 h-12 flex items-end gap-2">
                   {price === null ? (
                     <span className="text-3xl font-black">A medida</span>
                   ) : price === 0 ? (
                     <span className="text-4xl font-black">$0<span className="text-base font-medium text-neutral-500">/mes</span></span>
                   ) : (
-                    <span className="text-4xl font-black">
-                      ${price}<span className="text-base font-medium text-neutral-500">/mes</span>
-                    </span>
+                    <>
+                      <span className="text-4xl font-black">
+                        ${price}<span className="text-base font-medium text-neutral-500">/mes</span>
+                      </span>
+                      {discount > 0 && basePrice(plan.monthly)! > price && (
+                        <span className="text-sm text-neutral-500 line-through mb-1.5">${basePrice(plan.monthly)}</span>
+                      )}
+                    </>
                   )}
                 </div>
                 <p className="text-xs text-neutral-500 mb-2 h-4">{price && price > 0 && period.note ? period.note : ''}</p>
@@ -167,10 +180,12 @@ export default function CompanyPricing() {
                 ) : (
                   <button
                     className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-colors ${
-                      plan.highlight ? 'bg-emerald-500 hover:bg-emerald-600 text-white' : 'bg-neutral-800 hover:bg-neutral-700 text-white'
+                      currentPlanKey !== 'starter'
+                        ? 'border border-neutral-700 hover:bg-neutral-800 text-neutral-300'
+                        : plan.highlight ? 'bg-emerald-500 hover:bg-emerald-600 text-white' : 'bg-neutral-800 hover:bg-neutral-700 text-white'
                     }`}
                   >
-                    {plan.cta}
+                    {currentPlanKey !== 'starter' ? 'Cambiar a este plan' : plan.cta}
                   </button>
                 )}
 

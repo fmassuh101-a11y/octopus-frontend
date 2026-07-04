@@ -5,6 +5,7 @@ import { AuthProvider } from '../lib/contexts/AuthContext'
 import QueryProvider from '../lib/providers/QueryProvider'
 import SupportChatWidget from '../components/support/SupportChatWidget'
 import SessionRefresher from '../components/SessionRefresher'
+import InviteNotifier from '../components/InviteNotifier'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -25,6 +26,7 @@ export default function RootLayout({
         <QueryProvider>
           <AuthProvider>
             <SessionRefresher />
+            <InviteNotifier />
             <div id="root" className="min-h-screen bg-neutral-950">
               {children}
             </div>

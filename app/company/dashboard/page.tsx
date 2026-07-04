@@ -4,15 +4,16 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
-import { Crown, Wallet, Briefcase } from 'lucide-react'
+import { Crown, Wallet, Briefcase, Gift as GiftIcon } from 'lucide-react'
 import WorkspaceSwitcher from '@/components/ui/WorkspaceSwitcher'
 import { getPlan } from '@/lib/plans'
+import { getActiveCompany } from '@/lib/workspace'
 
 const ACTION_ITEMS = [
   { id: 1, label: 'Publica tu primer trabajo', completed: false, link: '/company/jobs/new' },
-  { id: 2, label: 'Invita usuarios a tu equipo', completed: false, link: '/company/settings' },
+  { id: 2, label: 'Invita usuarios a tu equipo', completed: false, link: '/company/settings?tab=team' },
   { id: 3, label: 'Revisa aplicaciones de creadores', completed: false, link: '/company/campaigns' },
-  { id: 4, label: 'Configura método de pago', completed: false, link: '/company/settings' },
+  { id: 4, label: 'Configura método de pago', completed: false, link: '/company/settings?tab=paymentMethods' },
   { id: 5, label: 'Completa el perfil de empresa', completed: true, link: '/company/settings' },
   { id: 6, label: 'Explora el marketplace de creadores', completed: false, link: '/company/recruit' },
   { id: 7, label: 'Crea tu primera campaña', completed: false, link: '/company/jobs/new' },
@@ -33,6 +34,7 @@ export default function CompanyDashboard() {
     activeCreators: 0
   })
   const [wallet, setWallet] = useState<{ balance: number; pending_balance: number } | null>(null)
+  const [giftModal, setGiftModal] = useState<{ plan: string; discount: number } | null>(null)
 
   useEffect(() => {
     checkAuth()
@@ -64,12 +66,20 @@ export default function CompanyDashboard() {
         if (profiles.length > 0) {
           const profileData = profiles[0]
 
-          // Check if user is a company
-          if (profileData.user_type !== 'company') {
+          // Check if user is a company (salvo que esté trabajando en un espacio de equipo)
+          if (profileData.user_type !== 'company' && !getActiveCompany()) {
             if (profileData.user_type === 'creator') {
               window.location.href = '/creator/dashboard'
               return
             }
+          }
+
+          // ¿Le regalaron un plan o un descuento y no lo ha visto? Mostrar notificación grande
+          const giftKey = `octopus-gift-seen-${profileData.plan || ''}-${profileData.discount_percent || 0}`
+          const hasGift = profileData.plan_source === 'gifted' || (profileData.discount_percent || 0) > 0
+          if (hasGift && !localStorage.getItem(giftKey)) {
+            setGiftModal({ plan: profileData.plan || 'starter', discount: profileData.discount_percent || 0 })
+            localStorage.setItem(giftKey, '1')
           }
 
           // Parse bio data if it exists
@@ -159,6 +169,30 @@ export default function CompanyDashboard() {
 
   return (
     <div className="min-h-screen bg-neutral-950 flex">
+      {/* Notificación grande: te regalaron un plan / descuento */}
+      {giftModal && (
+        <div className="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center px-4">
+          <div className="bg-neutral-900 border border-emerald-500/30 rounded-3xl p-8 max-w-md w-full text-center shadow-2xl shadow-emerald-500/10">
+            <div className="w-16 h-16 rounded-2xl bg-emerald-500/15 flex items-center justify-center mx-auto mb-5">
+              <GiftIcon className="w-8 h-8 text-emerald-400" strokeWidth={2} />
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-2">
+              {giftModal.plan !== 'starter' ? `Te regalaron el plan ${getPlan(giftModal.plan).name}` : 'Recibiste un regalo'}
+            </h2>
+            <p className="text-neutral-400 mb-6">
+              {giftModal.plan !== 'starter' && `Ya tienes acceso a todas las funciones del plan ${getPlan(giftModal.plan).name}.`}
+              {giftModal.discount > 0 && ` Además, tienes un ${giftModal.discount}% de descuento aplicado a tus comisiones y planes.`}
+            </p>
+            <button
+              onClick={() => setGiftModal(null)}
+              className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold transition-colors"
+            >
+              Recibir
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Mobile Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 bg-neutral-900 border-b border-neutral-800 z-50 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center space-x-2">
@@ -415,7 +449,7 @@ export default function CompanyDashboard() {
                 <div>
                   <p className="text-xs font-semibold text-emerald-400 uppercase">Plan {getPlan(profile?.plan).name}</p>
                   <p className="text-xs text-neutral-500">
-                    {profile?.plan_source === 'gifted' ? '🎁 Regalado' : profile?.plan === 'starter' || !profile?.plan ? 'Mejora para más features' : 'Activo'}
+                    {profile?.plan_source === 'gifted' ? 'Regalado' : profile?.plan === 'starter' || !profile?.plan ? 'Mejora para más features' : 'Activo'}
                   </p>
                 </div>
               </div>
@@ -427,8 +461,12 @@ export default function CompanyDashboard() {
 
           {/* User Info */}
           <div className="flex items-center space-x-3 relative">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-emerald-600 rounded-full flex items-center justify-center">
-              <span className="text-white font-medium">{userName.charAt(0).toUpperCase()}</span>
+            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-emerald-600 rounded-full flex items-center justify-center overflow-hidden">
+              {(profile?.avatar_url || profile?.logo || profile?.profile_photo_url) ? (
+                <img src={profile.avatar_url || profile.logo || profile.profile_photo_url} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-white font-medium">{userName.charAt(0).toUpperCase()}</span>
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-white truncate">{userName}</p>

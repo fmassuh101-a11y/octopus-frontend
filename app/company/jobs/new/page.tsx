@@ -82,6 +82,15 @@ export default function NewJobPage() {
     setFormData(prev => ({ ...prev, ...updates }))
   }
 
+  // Sanitiza montos: solo números, con tope razonable (nada de valores infinitos)
+  const cleanAmount = (raw: string, max: number) => {
+    let v = raw.replace(/[^0-9.]/g, '')
+    const parts = v.split('.')
+    if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('')
+    if (v && parseFloat(v) > max) v = String(max)
+    return v
+  }
+
   const canProceed = () => {
     switch (currentStep) {
       case 1:
@@ -503,7 +512,7 @@ export default function NewJobPage() {
                               <input
                                 type="number"
                                 value={formData.fixedAmount}
-                                onChange={e => updateFormData({ fixedAmount: e.target.value })}
+                                onChange={e => updateFormData({ fixedAmount: cleanAmount(e.target.value, 1000000) })}
                                 placeholder="0.00"
                                 className="w-full pl-8 pr-4 py-3 rounded-xl border border-neutral-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all outline-none bg-neutral-900 text-white"
                               />
@@ -548,7 +557,7 @@ export default function NewJobPage() {
                               <input
                                 type="number"
                                 value={formData.hourlyRate}
-                                onChange={e => updateFormData({ hourlyRate: e.target.value })}
+                                onChange={e => updateFormData({ hourlyRate: cleanAmount(e.target.value, 10000) })}
                                 placeholder="0.00"
                                 className="w-full pl-8 pr-16 py-3 rounded-xl border border-neutral-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all outline-none bg-neutral-900 text-white"
                               />
@@ -580,7 +589,7 @@ export default function NewJobPage() {
                             <input
                               type="number"
                               value={formData.cpmRate}
-                              onChange={e => updateFormData({ cpmRate: e.target.value })}
+                              onChange={e => updateFormData({ cpmRate: cleanAmount(e.target.value, 50) })}
                               placeholder="5.00"
                               className="w-full pl-8 pr-28 py-3 rounded-xl border border-neutral-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all outline-none bg-neutral-900 text-white"
                             />

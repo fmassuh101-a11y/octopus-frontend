@@ -6,7 +6,7 @@ import { getPlan, effectiveFee } from '@/lib/plans'
 import { ROLES, PERMISSIONS, defaultPermsForRole } from '@/lib/permissions'
 import { useRouter } from 'next/navigation'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
-import { Check, Banknote, BarChart3, Bell, Briefcase, Crown, Users, Video } from 'lucide-react'
+import { Check, Gift, Banknote, BarChart3, Bell, Briefcase, Crown, Users, Video } from 'lucide-react'
 
 type SettingsTab = 'payment' | 'paymentMethods' | 'profile' | 'team' | 'notifications'
 
@@ -32,54 +32,56 @@ export default function CompanySettingsPage() {
   const [inviting, setInviting] = useState(false)
   const [teamMsg, setTeamMsg] = useState('')
 
-  // Buscador de usuarios reales (por nombre, handle o email)
+  // Buscador de usuarios (SOLO nombre/handle por prefijo — nunca emails)
   const [searchResults, setSearchResults] = useState<any[]>([])
   const [searching, setSearching] = useState(false)
+  const [confirmUser, setConfirmUser] = useState<any>(null)
 
   const searchUsers = async (q: string) => {
     setInviteEmail(q)
-    if (q.trim().length < 2) { setSearchResults([]); return }
+    const term = q.replace(/^@/, '').trim()
+    if (term.length < 1 || q.includes('@') && q.indexOf('@') > 0) { setSearchResults([]); return }
     setSearching(true)
     try {
       const token = localStorage.getItem('sb-access-token')
-      const term = q.replace(/^@/, '').trim()
-      const orq = `or=(full_name.ilike.*${term}*,username.ilike.*${term}*,email.ilike.*${term}*,tiktok.ilike.*${term}*,instagram.ilike.*${term}*)`
+      // Prefijo: "f" encuentra "Felipe", "k" encuentra "Kevin". Solo campos públicos.
+      const orq = `or=(full_name.ilike.${term}*,username.ilike.${term}*)`
       const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?${orq}&select=user_id,full_name,username,email,tiktok,user_type,avatar_url&limit=6`,
+        `${SUPABASE_URL}/rest/v1/profiles?${orq}&select=user_id,full_name,username,avatar_url&limit=6`,
         { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
       )
       if (res.ok) {
         const data = await res.json()
-        setSearchResults(data.filter((u: any) => u.user_id !== user?.id && u.email))
+        setSearchResults(data.filter((u: any) => u.user_id !== user?.id && (u.full_name || u.username)))
       }
     } catch (e) { console.error(e) } finally { setSearching(false) }
   }
 
-  const inviteUser = async (u: any) => {
+  // Paso 1: elegir → abre confirmación. Paso 2: confirmar → invita vía API (email nunca llega al navegador)
+  const confirmInvite = async () => {
+    const u = confirmUser
+    if (!u) return
     setTeamMsg('')
     const plan = getPlan(profile?.plan)
     if (plan.seats >= 0 && teamMembers.length + 1 >= plan.seats) {
       setTeamMsg(`Tu plan ${plan.name} permite ${plan.seats} ${plan.seats === 1 ? 'asiento' : 'asientos'}. Mejora tu plan para invitar más.`)
+      setConfirmUser(null)
       return
     }
-    if (teamMembers.some(m => m.email === u.email?.toLowerCase())) { setTeamMsg('Esa persona ya está en tu equipo.'); return }
     setInviting(true)
     try {
       const token = localStorage.getItem('sb-access-token')
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/team_members`, {
+      const res = await fetch('/api/team/invite', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY, 'Prefer': 'return=representation' },
-        body: JSON.stringify({
-          company_id: user.id, email: u.email.toLowerCase(), name: u.full_name || u.username,
-          member_user_id: u.user_id, role: inviteRole, permissions: defaultPermsForRole(inviteRole), status: 'invited',
-        }),
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ targetUserId: u.user_id, role: inviteRole, permissions: defaultPermsForRole(inviteRole) }),
       })
-      if (!res.ok) throw new Error(await res.text())
-      const created = await res.json()
-      setTeamMembers(prev => [...(Array.isArray(created) ? created : [created]), ...prev])
-      setInviteEmail(''); setSearchResults([])
-      setTeamMsg(`✓ Invitaste a ${u.full_name || u.email}.`)
-    } catch (e: any) { setTeamMsg('Error al invitar.') } finally { setInviting(false) }
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Error')
+      setTeamMembers(prev => [data.member, ...prev])
+      setInviteEmail(''); setSearchResults([]); setConfirmUser(null)
+      setTeamMsg(`Invitaste a ${u.full_name || u.username}.`)
+    } catch (e: any) { setTeamMsg(e.message || 'Error al invitar.'); setConfirmUser(null) } finally { setInviting(false) }
   }
 
   const updateMemberRole = async (memberId: string, role: string) => {
@@ -162,6 +164,8 @@ export default function CompanySettingsPage() {
   })
 
   useEffect(() => {
+    const tab = new URLSearchParams(window.location.search).get("tab") as SettingsTab | null
+    if (tab && ["payment","paymentMethods","profile","team","notifications"].includes(tab)) setActiveTab(tab)
     loadProfile()
   }, [])
 
@@ -365,7 +369,7 @@ export default function CompanySettingsPage() {
                 <h3 className="font-semibold text-white mb-4">Plan actual</h3>
                 {profile?.plan_source === 'gifted' && (
                   <div className="mb-3 text-xs font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2">
-                    🎁 Te han regalado el plan {getPlan(profile?.plan).name}
+                    <Gift className="w-4 h-4 inline mr-1.5 -mt-0.5" />Te han regalado el plan {getPlan(profile?.plan).name}
                   </div>
                 )}
                 <div className="flex items-center gap-3 mb-2">
@@ -384,7 +388,7 @@ export default function CompanySettingsPage() {
                   href="/company/pricing"
                   className="inline-block px-4 py-2 bg-emerald-500 hover:bg-emerald-600 rounded-lg font-semibold text-sm transition-colors"
                 >
-                  Ver planes y mejorar
+                  {getPlan(profile?.plan).key !== "starter" ? "Cambiar de plan" : "Ver planes y mejorar"}
                 </Link>
               </div>
 
@@ -633,26 +637,56 @@ export default function CompanySettingsPage() {
                   placeholder="Busca por @handle, nombre o email"
                   className="w-full px-4 py-2.5 rounded-xl border border-neutral-800 bg-neutral-900 text-white placeholder-neutral-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none"
                 />
-                {/* Resultados de la búsqueda de usuarios reales */}
+                {/* Resultados: SOLO foto + nombre/handle (datos públicos) */}
                 {searchResults.length > 0 && (
                   <div className="absolute left-0 right-0 top-full mt-1 bg-neutral-900 border border-neutral-800 rounded-xl shadow-xl z-20 p-1.5 max-h-64 overflow-y-auto">
                     {searchResults.map(u => (
                       <button
                         key={u.user_id}
-                        onClick={() => inviteUser(u)}
+                        onClick={() => setConfirmUser(u)}
                         disabled={inviting}
                         className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-neutral-800 transition-colors text-left"
                       >
-                        <div className="w-8 h-8 rounded-full bg-neutral-800 overflow-hidden flex items-center justify-center flex-shrink-0">
-                          {u.avatar_url ? <img src={u.avatar_url} alt="" className="w-full h-full object-cover" /> : <span className="text-xs font-bold text-neutral-400">{(u.full_name || u.email)?.charAt(0)?.toUpperCase()}</span>}
+                        <div className="w-9 h-9 rounded-full bg-neutral-800 overflow-hidden flex items-center justify-center flex-shrink-0">
+                          {u.avatar_url ? <img src={u.avatar_url} alt="" className="w-full h-full object-cover" /> : <span className="text-xs font-bold text-neutral-400">{(u.full_name || u.username)?.charAt(0)?.toUpperCase()}</span>}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm text-white truncate">{u.full_name || u.username || u.email}</p>
-                          <p className="text-xs text-neutral-500 truncate">{u.tiktok ? `@${u.tiktok.replace(/^@/, '')} · ` : ''}{u.email} · {u.user_type === 'company' ? 'Empresa' : 'Creador'}</p>
+                          <p className="text-sm text-white truncate">{u.full_name || u.username}</p>
+                          {u.username && <p className="text-xs text-neutral-500 truncate">@{u.username}</p>}
                         </div>
-                        <span className="text-emerald-400 text-xs font-medium flex-shrink-0">Invitar</span>
+                        <span className="text-emerald-400 text-xs font-medium flex-shrink-0">Seleccionar</span>
                       </button>
                     ))}
+                  </div>
+                )}
+
+                {/* Confirmación antes de invitar */}
+                {confirmUser && (
+                  <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center px-4">
+                    <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 max-w-sm w-full text-center">
+                      <div className="w-16 h-16 rounded-full bg-neutral-800 overflow-hidden flex items-center justify-center mx-auto mb-4">
+                        {confirmUser.avatar_url
+                          ? <img src={confirmUser.avatar_url} alt="" className="w-full h-full object-cover" />
+                          : <span className="text-xl font-bold text-neutral-400">{(confirmUser.full_name || confirmUser.username)?.charAt(0)?.toUpperCase()}</span>}
+                      </div>
+                      <p className="text-white font-semibold mb-1">¿Invitar a {confirmUser.full_name || confirmUser.username}?</p>
+                      <p className="text-sm text-neutral-500 mb-5">Se unirá a tu equipo como {ROLES.find(r => r.key === inviteRole)?.name || 'Editor'}.</p>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => setConfirmUser(null)}
+                          className="flex-1 py-2.5 rounded-xl border border-neutral-700 text-neutral-300 hover:bg-neutral-800 font-medium text-sm transition-colors"
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          onClick={confirmInvite}
+                          disabled={inviting}
+                          className="flex-1 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 text-white font-semibold text-sm transition-colors"
+                        >
+                          {inviting ? 'Invitando...' : 'Sí, invitar'}
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -682,7 +716,7 @@ export default function CompanySettingsPage() {
                   <div key={m.id} className="bg-neutral-900 rounded-xl border border-neutral-800 p-4">
                     <div className="flex items-center justify-between mb-3">
                       <div>
-                        <p className="text-sm text-white font-medium">{m.email}</p>
+                        <p className="text-sm text-white font-medium">{m.name || m.email}</p>
                         <span className="text-xs text-neutral-500">{m.status === 'invited' ? 'Invitado · pendiente' : 'Miembro activo'}</span>
                       </div>
                       <select
