@@ -148,18 +148,19 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-950 flex items-center justify-center px-4 py-6">
-      <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 items-center gap-6 md:gap-8">
-      <div className="w-full max-w-md mx-auto space-y-6 order-1">
-        <div className="text-center">
-          <Link href="/" className="inline-block">
-            <span className="text-2xl font-bold text-white block tracking-tight">Octopus</span>
-          </Link>
+    <div className="min-h-screen bg-neutral-950 flex items-center justify-center px-4 py-10 relative overflow-hidden">
+      <div className="pointer-events-none absolute top-1/4 left-1/2 -translate-x-1/2 w-[560px] h-[560px] rounded-full bg-violet-600/20 blur-[120px]" />
+      <div className="pointer-events-none absolute bottom-0 left-1/4 w-[420px] h-[420px] rounded-full bg-emerald-500/10 blur-[120px]" />
+
+      <div className="relative w-full max-w-md mt-24">
+        <div className="absolute left-1/2 -translate-x-1/2 -top-[150px] z-20">
+          <OctopusMascot mood={octoMood} look={octoLook} size={210} variant="creator" />
         </div>
 
-        <div className="bg-neutral-900 rounded-3xl p-8 shadow-xl border border-neutral-800 text-white placeholder-neutral-500">
+        <div className="relative bg-neutral-900/80 backdrop-blur-xl rounded-[28px] pt-16 px-8 pb-8 shadow-2xl shadow-black/50 border border-white/10 text-white placeholder-neutral-500">
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-white mb-2">Crear cuenta</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-400 mb-2">Octopus</p>
+            <h2 className="text-3xl font-bold text-white mb-1">Crear cuenta</h2>
             <p className="text-neutral-400">Empieza a ganar con tu contenido</p>
           </div>
 
@@ -257,12 +258,6 @@ export default function RegisterPage() {
             </p>
           </div>
         </div>
-      </div>
-
-      {/* Octo 3D a la derecha (oculto en móvil) */}
-      <div className="hidden md:flex items-center justify-center order-2">
-        <OctopusMascot mood={octoMood} look={octoLook} size={340} variant="creator" />
-      </div>
       </div>
     </div>
   )
