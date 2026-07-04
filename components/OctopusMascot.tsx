@@ -54,23 +54,27 @@ export default function OctopusMascot({
     renderer.toneMappingExposure = 1.05
     mount.appendChild(renderer.domElement)
 
-    // ── Luces (para el look 3D brilloso) ────────────────────
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x4c1d95, 0.9))
-    const key = new THREE.DirectionalLight(0xffffff, 2.2)
+    // ── Luces (para el look 3D brilloso y parejo) ───────────
+    scene.add(new THREE.HemisphereLight(0xf5f3ff, 0x8b5cf6, 1.4))
+    scene.add(new THREE.AmbientLight(0xd8b4fe, 0.6)) // levanta las sombras (tentáculos)
+    const key = new THREE.DirectionalLight(0xffffff, 2.0)
     key.position.set(-4, 6, 6)
     scene.add(key)
-    const rim = new THREE.DirectionalLight(0xa78bfa, 1.6)
+    const rim = new THREE.DirectionalLight(0xa78bfa, 1.0)
     rim.position.set(5, 3, -4)
     scene.add(rim)
-    const fill = new THREE.DirectionalLight(0xffffff, 0.6)
-    fill.position.set(5, -2, 4)
+    const fill = new THREE.DirectionalLight(0xffffff, 0.9)
+    fill.position.set(5, 0, 5)
     scene.add(fill)
+    const under = new THREE.DirectionalLight(0xddd6fe, 1.5) // ilumina los tentáculos
+    under.position.set(0, -5, 5)
+    scene.add(under)
 
     // ── Materiales ──────────────────────────────────────────
     const bodyColor = variant === 'company' ? 0x6d28d9 : 0x7c3aed
     const bodyMat = new THREE.MeshPhysicalMaterial({
-      color: bodyColor, roughness: 0.42, metalness: 0.0,
-      clearcoat: 0.8, clearcoatRoughness: 0.35, sheen: 0.4, sheenColor: new THREE.Color(0xc4b5fd),
+      color: bodyColor, roughness: 0.5, metalness: 0.0,
+      clearcoat: 0.5, clearcoatRoughness: 0.45, sheen: 0.5, sheenColor: new THREE.Color(0xc4b5fd),
     })
     const bodyBase = new THREE.Color(bodyColor)
     const darkMat = new THREE.MeshStandardMaterial({ color: 0x1e1b2e, roughness: 0.5 })
@@ -129,24 +133,25 @@ export default function OctopusMascot({
     const NT = 8
     for (let i = 0; i < NT; i++) {
       const ang = (i / NT) * Math.PI * 2
-      const front = Math.cos(ang) > 0.15 && Math.abs(Math.sin(ang)) < 0.9 // los del frente se pueden levantar
+      const front = false
+      const coverArm = (i === 1 || i === 7) // front-derecha y front-izquierda: tapan los ojos
       const dirX = Math.sin(ang), dirZ = Math.cos(ang)
-      const baseX = dirX * 0.55, baseZ = dirZ * 0.55
-      const outX = dirX * 1.5, outZ = dirZ * 1.5
-      // curva: baja desde la base, se abre, y la punta se enrosca hacia arriba
+      const baseX = dirX * 0.6, baseZ = dirZ * 0.6
+      const outX = dirX * 1.95, outZ = dirZ * 1.95
+      // curva: baja desde la base, se abre bien, y la punta se enrosca hacia arriba
       const pts = [
-        new THREE.Vector3(baseX, -0.85, baseZ),
-        new THREE.Vector3(baseX * 1.4, -1.55, baseZ * 1.4),
-        new THREE.Vector3(outX, -2.05, outZ),
-        new THREE.Vector3(outX * 1.15, -1.5, outZ * 1.15),
-        new THREE.Vector3(outX * 1.05, -1.0, outZ * 1.05),
+        new THREE.Vector3(baseX, -0.9, baseZ),
+        new THREE.Vector3(baseX * 1.7, -1.65, baseZ * 1.7),
+        new THREE.Vector3(outX, -2.15, outZ),
+        new THREE.Vector3(outX * 1.2, -1.55, outZ * 1.2),
+        new THREE.Vector3(outX * 1.05, -0.95, outZ * 1.05),
       ]
       const pivot = new THREE.Group()
       const mesh = new THREE.Mesh(taperedTube(pts, 0.3), bodyMat)
       const tip = new THREE.Mesh(new THREE.SphereGeometry(0.055, 12, 12), bodyMat)
       tip.position.copy(pts[pts.length - 1])
       pivot.add(mesh); pivot.add(tip)
-      pivot.userData = { ang, front, phase: i * 0.7, baseX, baseZ }
+      pivot.userData = { ang, front, coverArm, phase: i * 0.7, baseX, baseZ }
       octo.add(pivot)
       tentacles.push(pivot)
     }
@@ -176,15 +181,15 @@ export default function OctopusMascot({
     const eyeR = makeEye(0.42)
 
     // Cejas
-    function makeBrow(x: number, flip: number) {
-      const b = new THREE.Mesh(new THREE.CapsuleGeometry(0.045, 0.28, 4, 8), darkMat)
-      b.rotation.z = flip * 0.15
-      b.position.set(x, 0.34, 0.18)
+    function makeBrow(x: number) {
+      const b = new THREE.Mesh(new THREE.CapsuleGeometry(0.04, 0.24, 4, 8), darkMat)
+      b.rotation.z = Math.PI / 2 // horizontal
+      b.position.set(x, 0.38, 0.2)
       face.add(b)
       return b
     }
-    const browL = makeBrow(-0.42, 1)
-    const browR = makeBrow(0.42, -1)
+    const browL = makeBrow(-0.42)
+    const browR = makeBrow(0.42)
 
     // Boca (arco) — la deformamos por ánimo cambiando escala/rotación
     const mouth = new THREE.Mesh(new THREE.TorusGeometry(0.24, 0.035, 10, 24, Math.PI), darkMat)
@@ -253,16 +258,21 @@ export default function OctopusMascot({
       octo.scale.set(breathe, 2 - breathe, breathe)
       octo.position.y = Math.sin(t * 1.2) * 0.08 + cur.bounce * Math.abs(Math.sin(t * 6)) * 0.35 - cur.slump * 0.18
       octo.rotation.z = Math.sin(t * 0.8) * 0.03 + cur.shake * Math.sin(t * 45) * 0.06
-      octo.rotation.x = cur.slump * 0.12
+      octo.rotation.x = cur.slump * 0.12 + cur.cover * 0.14 // se agacha timido al taparse
       octo.rotation.y = cur.shake * Math.sin(t * 40) * 0.04
 
-      // tentáculos ondulan; los del frente se levantan a tapar los ojos
+      // tentáculos ondulan; 2 del frente suben a tapar los ojos (simétrico)
       for (const p of tentacles) {
         const u = p.userData as any
         const wave = Math.sin(t * 2 + u.phase) * 0.12
-        p.rotation.x = wave + (u.front ? cur.cover * -1.15 : 0) + cur.slump * 0.15
-        p.rotation.z = Math.cos(t * 1.7 + u.phase) * 0.08 * u.baseX * 2
-        if (u.front) p.rotation.y = cur.cover * (u.baseX > 0 ? -0.5 : 0.5)
+        if (u.coverArm) {
+          p.rotation.x = wave * (1 - cur.cover) + cur.cover * 1.5   // suben al frente
+          p.rotation.z = cur.cover * (u.baseX > 0 ? 0.7 : -0.7)     // hacia el centro
+          p.rotation.y = cur.cover * (u.baseX > 0 ? -0.4 : 0.4)
+        } else {
+          p.rotation.x = wave + cur.slump * 0.2
+          p.rotation.z = Math.cos(t * 1.7 + u.phase) * 0.08 * u.baseX * 2
+        }
       }
 
       // ojos: pupilas siguen la mirada; se cierran al taparse
@@ -278,9 +288,9 @@ export default function OctopusMascot({
         ud.hi.visible = !closed
       }
 
-      // cejas
-      browL.position.y = 0.34 - cur.brow * 0.06; browL.rotation.z = 0.15 + cur.brow * 0.4
-      browR.position.y = 0.34 - cur.brow * 0.06; browR.rotation.z = -0.15 - cur.brow * 0.4
+      // cejas (horizontales; se inclinan según ánimo)
+      browL.position.y = 0.38 - cur.brow * 0.05; browL.rotation.z = Math.PI / 2 - 0.12 - cur.brow * 0.32
+      browR.position.y = 0.38 - cur.brow * 0.05; browR.rotation.z = Math.PI / 2 + 0.12 + cur.brow * 0.32
 
       // boca: sonrisa/enojo (invierte el arco)
       mouth.scale.y = cur.smile >= 0 ? 1 : -1
