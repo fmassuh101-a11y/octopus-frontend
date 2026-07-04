@@ -63,6 +63,7 @@ export default function OctopusMascot({
     const inner = new THREE.Group(); hang.add(inner)
 
     let loaded = false
+    const waveUniforms: { value: number }[] = []   // para ondular los tentáculos
     const draco = new DRACOLoader(); draco.setDecoderPath('/draco/')
     const loader = new GLTFLoader(); loader.setDRACOLoader(draco)
     const file = variant === 'company' ? '/octo/octo-company.glb' : '/octo/octo.glb'
@@ -79,6 +80,35 @@ export default function OctopusMascot({
       hang.position.y = -H / 2          // el pivote (swing) queda en la CABEZA
       camera.position.set(0, -H / 2, Math.max(6.5, H * 2.15))
       camera.lookAt(0, -H / 2, 0)
+
+      // ONDULACIÓN de tentáculos: deforma los vértices más bajos (los tentáculos)
+      // con una onda suave → se mueven solos como pulpo real (sin necesitar huesos).
+      inner.updateWorldMatrix(true, true)
+      const wbox = new THREE.Box3().setFromObject(inner)
+      const topY = wbox.max.y, botY = wbox.min.y
+      model.traverse((o: any) => {
+        if (!o.isMesh || !o.material) return
+        const mats = Array.isArray(o.material) ? o.material : [o.material]
+        mats.forEach((mat: THREE.Material) => {
+          mat.onBeforeCompile = (shader) => {
+            shader.uniforms.uTime = { value: 0 }
+            shader.uniforms.uTop = { value: topY }
+            shader.uniforms.uBot = { value: botY }
+            waveUniforms.push(shader.uniforms.uTime)
+            shader.vertexShader = 'uniform float uTime;\nuniform float uTop;\nuniform float uBot;\n' + shader.vertexShader
+            shader.vertexShader = shader.vertexShader.replace(
+              '#include <begin_vertex>',
+              `#include <begin_vertex>
+               vec3 wp = (modelMatrix * vec4(transformed, 1.0)).xyz;
+               float f = clamp((uTop - wp.y) / max(0.001, (uTop - uBot)), 0.0, 1.0);
+               f = pow(f, 1.6); // los tentáculos (abajo) se mueven más que la cabeza
+               transformed.x += sin(uTime * 1.7 + wp.y * 2.6 + wp.x * 2.2) * 0.09 * f;
+               transformed.z += cos(uTime * 1.3 + wp.y * 2.2 + wp.x * 1.6) * 0.07 * f;`
+            )
+          }
+          mat.needsUpdate = true
+        })
+      })
       loaded = true
     }, undefined, () => {})
 
@@ -121,6 +151,8 @@ export default function OctopusMascot({
       swing.rotation.z = angle
 
       if (loaded) {
+        // ondular tentáculos
+        for (const u of waveUniforms) u.value = t
         // respira
         const br = 1 + Math.sin(t * 1.9) * 0.02
         inner.scale.set(br, 2 - br, br)
