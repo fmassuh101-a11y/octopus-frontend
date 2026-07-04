@@ -340,28 +340,44 @@ export async function saveCreatorOnboarding(onboardingData: {
 // === APPLICATION OPERATIONS ===
 
 export async function applyToGig(gigId: string, proposalText: string) {
-  const { data: { user } } = await supabase.auth.getUser()
+  // Fetch directo (el cliente supabase-js se cuelga en el navegador)
+  const token = typeof window !== 'undefined' ? localStorage.getItem('sb-access-token') : null
+  const userStr = typeof window !== 'undefined' ? localStorage.getItem('sb-user') : null
+  if (!token || !userStr) throw new Error('User not authenticated')
+  const user = JSON.parse(userStr)
 
-  if (!user) {
-    throw new Error('User not authenticated')
-  }
+  // Traer el company_id del gig (la aplicación lo necesita)
+  let companyId: string | null = null
+  try {
+    const gRes = await fetch(`${SUPABASE_URL}/rest/v1/gigs?id=eq.${gigId}&select=company_id`, {
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}` },
+    })
+    if (gRes.ok) { const g = await gRes.json(); companyId = g[0]?.company_id || null }
+  } catch {}
 
-  const { data, error } = await supabase
-    .from('applications')
-    .insert({
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/applications`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${token}`,
+      'Prefer': 'return=representation',
+    },
+    body: JSON.stringify({
       gig_id: gigId,
       creator_id: user.id,
-      message: proposalText
-    })
-    .select()
-    .single()
-
-  if (error) {
-    console.error('Error creating application:', error)
-    throw error
+      company_id: companyId,
+      message: proposalText || 'Me interesa esta oportunidad',
+      status: 'pending',
+    }),
+  })
+  if (!res.ok) {
+    const t = await res.text()
+    if (t.includes('duplicate')) throw new Error('Ya aplicaste a este trabajo.')
+    throw new Error(t || 'Error al aplicar')
   }
-
-  return data
+  const data = await res.json()
+  return Array.isArray(data) ? data[0] : data
 }
 
 export async function getUserApplications() {
