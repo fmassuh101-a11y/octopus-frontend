@@ -1,13 +1,20 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
-// Estados de ánimo del pulpo Octo.
-//  - idle:   flota tranquilo, parpadea, mueve los tentáculos
-//  - happy:  sonríe y rebota (cuando escribís tu nombre/email)
-//  - hiding: se tapa los ojos con los tentáculos (cuando escribís la contraseña)
-//  - success: celebra
-//  - error:  se pone triste un segundo
+// ─────────────────────────────────────────────────────────────────────────
+//  OCTO — la mascota de Octopus.
+//  Diseño estilo Pixar/Disney: redondo, suave, expresivo. SIEMPRE está vivo
+//  (respira, flota, mueve los tentáculos, parpadea, mira alrededor). Reacciona
+//  a lo que hace el usuario. Todo con SVG + CSS puro (rápido, sin librerías).
+//
+//  Moods:
+//   - idle:    respira, flota, mira de a ratos, parpadea
+//   - happy:   sonríe, mira arriba, rebota suave (al escribir tu email/nombre)
+//   - hiding:  se tapa los ojos con los tentáculos (al escribir la contraseña)
+//   - success: celebra con estrellitas
+//   - error:   se pone triste y tiembla un segundo
+// ─────────────────────────────────────────────────────────────────────────
 export type OctoMood = 'idle' | 'happy' | 'hiding' | 'success' | 'error'
 
 export default function OctopusMascot({
@@ -18,165 +25,272 @@ export default function OctopusMascot({
   size?: number
 }) {
   const [blink, setBlink] = useState(false)
+  const [gaze, setGaze] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
+  const reduced = useRef(false)
 
-  // parpadeo natural cada pocos segundos (pausado cuando se tapa los ojos)
   useEffect(() => {
-    if (mood === 'hiding') return
+    reduced.current = typeof window !== 'undefined'
+      && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  }, [])
+
+  // Parpadeo natural e irregular (se pausa cuando se tapa los ojos)
+  useEffect(() => {
+    if (mood === 'hiding' || reduced.current) return
     let alive = true
-    const loop = () => {
-      const next = 2200 + Math.random() * 2600
-      const t = setTimeout(() => {
+    let handle: ReturnType<typeof setTimeout>
+    const schedule = () => {
+      handle = setTimeout(() => {
         if (!alive) return
         setBlink(true)
-        setTimeout(() => setBlink(false), 140)
-        loop()
-      }, next)
-      return t
+        setTimeout(() => setBlink(false), 130)
+        // de vez en cuando, doble parpadeo (más natural)
+        if (Math.random() > 0.7) {
+          setTimeout(() => { setBlink(true); setTimeout(() => setBlink(false), 120) }, 280)
+        }
+        schedule()
+      }, 2400 + Math.random() * 2800)
     }
-    const t = loop()
-    return () => { alive = false; clearTimeout(t) }
+    schedule()
+    return () => { alive = false; clearTimeout(handle) }
+  }, [mood])
+
+  // Mirada viva: en idle mira despacio a distintos lados; según el mood, dirige la vista
+  useEffect(() => {
+    if (reduced.current) return
+    if (mood === 'happy' || mood === 'success') { setGaze({ x: 0, y: -3 }); return }
+    if (mood === 'error') { setGaze({ x: 0, y: 3 }); return }
+    if (mood === 'hiding') return
+    let alive = true
+    let handle: ReturnType<typeof setTimeout>
+    const targets = [{ x: 0, y: 0 }, { x: -4, y: -1 }, { x: 4, y: -1 }, { x: 0, y: 2 }, { x: -3, y: 2 }, { x: 3, y: 1 }]
+    const schedule = () => {
+      handle = setTimeout(() => {
+        if (!alive) return
+        setGaze(targets[Math.floor(Math.random() * targets.length)])
+        schedule()
+      }, 1600 + Math.random() * 2200)
+    }
+    schedule()
+    return () => { alive = false; clearTimeout(handle) }
   }, [mood])
 
   const hiding = mood === 'hiding'
   const happy = mood === 'happy' || mood === 'success'
-  const eyesClosed = blink || hiding || mood === 'error'
+  const eyesClosed = blink || hiding
+  const pupilStyle = { transform: `translate(${gaze.x}px, ${gaze.y}px)` }
 
   return (
     <div className={`octo octo--${mood}`} style={{ width: size, height: size }} aria-hidden>
-      <svg viewBox="0 0 200 200" width={size} height={size}>
+      <svg viewBox="0 0 240 240" width={size} height={size}>
         <defs>
-          <radialGradient id="octoBody" cx="42%" cy="34%" r="72%">
-            <stop offset="0%" stopColor="#4ade80" />
-            <stop offset="55%" stopColor="#10b981" />
-            <stop offset="100%" stopColor="#059669" />
+          <radialGradient id="octoBody" cx="40%" cy="30%" r="80%">
+            <stop offset="0%" stopColor="#6ee7b7" />
+            <stop offset="45%" stopColor="#10b981" />
+            <stop offset="100%" stopColor="#047857" />
           </radialGradient>
-          <radialGradient id="octoBelly" cx="50%" cy="40%" r="60%">
-            <stop offset="0%" stopColor="#d1fae5" />
-            <stop offset="100%" stopColor="#a7f3d0" />
+          <radialGradient id="octoBelly" cx="50%" cy="42%" r="62%">
+            <stop offset="0%" stopColor="#ecfdf5" />
+            <stop offset="100%" stopColor="#a7f3d0" stopOpacity="0" />
           </radialGradient>
-          <filter id="octoSoft" x="-30%" y="-30%" width="160%" height="160%">
-            <feDropShadow dx="0" dy="6" stdDeviation="6" floodColor="#059669" floodOpacity="0.35" />
+          <linearGradient id="octoLeg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#10b981" />
+            <stop offset="100%" stopColor="#047857" />
+          </linearGradient>
+          <radialGradient id="octoRim" cx="35%" cy="22%" r="40%">
+            <stop offset="0%" stopColor="#d1fae5" stopOpacity="0.9" />
+            <stop offset="100%" stopColor="#d1fae5" stopOpacity="0" />
+          </radialGradient>
+          <filter id="octoSoft" x="-40%" y="-40%" width="180%" height="180%">
+            <feDropShadow dx="0" dy="7" stdDeviation="7" floodColor="#065f46" floodOpacity="0.35" />
           </filter>
+          <clipPath id="clipEyeL"><ellipse cx="94" cy="104" rx="18" ry="20" /></clipPath>
+          <clipPath id="clipEyeR"><ellipse cx="146" cy="104" rx="18" ry="20" /></clipPath>
         </defs>
 
-        {/* grupo que flota */}
-        <g className="octo-float" filter="url(#octoSoft)">
-          {/* tentáculos traseros */}
-          <g className="octo-legs">
-            <path className="leg leg1" d="M62 128 q-22 20 -14 44 q4 12 16 4 q-8 -18 6 -34 z" fill="#0ea371" />
-            <path className="leg leg2" d="M80 138 q-10 26 -4 44 q4 10 14 2 q-6 -20 2 -40 z" fill="#12b981" />
-            <path className="leg leg3" d="M120 138 q10 26 4 44 q-4 10 -14 2 q6 -20 -2 -40 z" fill="#12b981" />
-            <path className="leg leg4" d="M138 128 q22 20 14 44 q-4 12 -16 4 q8 -18 -6 -34 z" fill="#0ea371" />
-            <path className="leg leg5" d="M100 146 q0 24 0 40 q0 8 0 8 q0 -22 0 -46 z" fill="#0d9c6f" />
-          </g>
+        {/* sombra en el piso */}
+        <ellipse className="octo-shadow" cx="120" cy="226" rx="52" ry="9" fill="#065f46" opacity="0.25" />
 
-          {/* cuerpo / cabeza */}
-          <ellipse cx="100" cy="92" rx="64" ry="60" fill="url(#octoBody)" />
-          {/* pancita clara */}
-          <ellipse cx="100" cy="108" rx="40" ry="34" fill="url(#octoBelly)" opacity="0.75" />
+        {/* flotación (siempre activa) */}
+        <g className="octo-float">
+          {/* respiración (siempre activa) */}
+          <g className="octo-breathe" filter="url(#octoSoft)">
 
-          {/* brillo */}
-          <ellipse cx="74" cy="60" rx="16" ry="11" fill="#ffffff" opacity="0.35" />
+            {/* tentáculos traseros */}
+            <g className="octo-legs">
+              <path className="leg lg1" d="M78 150 q-30 18 -34 52 q-2 16 12 16 q12 0 10 -14 q-3 -26 22 -42 z" fill="url(#octoLeg)" />
+              <path className="leg lg2" d="M96 158 q-20 26 -18 56 q1 15 13 12 q10 -3 6 -18 q-6 -24 10 -46 z" fill="url(#octoLeg)" />
+              <path className="leg lg3" d="M144 158 q20 26 18 56 q-1 15 -13 12 q-10 -3 -6 -18 q6 -24 -10 -46 z" fill="url(#octoLeg)" />
+              <path className="leg lg4" d="M162 150 q30 18 34 52 q2 16 -12 16 q-12 0 -10 -14 q3 -26 -22 -42 z" fill="url(#octoLeg)" />
+              <path className="leg lg5" d="M116 162 q-8 28 -4 52 q2 14 8 14 q6 0 6 -14 q-2 -26 2 -50 z" fill="#0d9668" />
+              <path className="leg lg6" d="M124 162 q8 28 4 52 q-2 14 -8 14 q-6 0 -6 -14 q2 -26 -2 -50 z" fill="#0d9668" />
+            </g>
 
-          {/* cachetes */}
-          <circle className="cheek" cx="60" cy="104" r="10" fill="#fb7185" opacity="0.55" />
-          <circle className="cheek" cx="140" cy="104" r="10" fill="#fb7185" opacity="0.55" />
+            {/* cuerpo / cabeza */}
+            <path className="octo-head" d="M120 44
+              C 80 44 54 74 54 112
+              C 54 146 82 168 120 168
+              C 158 168 186 146 186 112
+              C 186 74 160 44 120 44 Z" fill="url(#octoBody)" />
+            {/* pancita clara */}
+            <ellipse cx="120" cy="126" rx="46" ry="38" fill="url(#octoBelly)" />
+            {/* luz de borde arriba-izq */}
+            <ellipse cx="90" cy="72" rx="26" ry="18" fill="url(#octoRim)" />
 
-          {/* ojos */}
-          <g className="octo-eyes">
-            {eyesClosed ? (
-              <>
-                <path d="M64 86 q14 10 28 0" stroke="#0f172a" strokeWidth="5" fill="none" strokeLinecap="round" />
-                <path d="M108 86 q14 10 28 0" stroke="#0f172a" strokeWidth="5" fill="none" strokeLinecap="round" />
-              </>
+            {/* cachetes */}
+            <ellipse className="cheek" cx="72" cy="122" rx="12" ry="9" fill="#fb7185" opacity="0.5" />
+            <ellipse className="cheek" cx="168" cy="122" rx="12" ry="9" fill="#fb7185" opacity="0.5" />
+
+            {/* OJOS (con párpados suaves) */}
+            <g className="octo-eyes">
+              {/* ojo izquierdo */}
+              <g clipPath="url(#clipEyeL)">
+                <ellipse cx="94" cy="104" rx="18" ry="20" fill="#ffffff" />
+                <g className="pupil" style={pupilStyle}>
+                  <circle cx="96" cy="106" r="9" fill="#0f172a" />
+                  <circle cx="99.5" cy="102" r="3" fill="#ffffff" />
+                  <circle cx="92" cy="110" r="1.6" fill="#ffffff" opacity="0.8" />
+                </g>
+                <rect className={`lid ${eyesClosed ? 'shut' : ''}`} x="74" y="82" width="40" height="44" fill="#12b981" />
+              </g>
+              {/* ojo derecho */}
+              <g clipPath="url(#clipEyeR)">
+                <ellipse cx="146" cy="104" rx="18" ry="20" fill="#ffffff" />
+                <g className="pupil" style={pupilStyle}>
+                  <circle cx="148" cy="106" r="9" fill="#0f172a" />
+                  <circle cx="151.5" cy="102" r="3" fill="#ffffff" />
+                  <circle cx="144" cy="110" r="1.6" fill="#ffffff" opacity="0.8" />
+                </g>
+                <rect className={`lid ${eyesClosed ? 'shut' : ''}`} x="126" y="82" width="40" height="44" fill="#12b981" />
+              </g>
+            </g>
+
+            {/* BOCA */}
+            {mood === 'success' ? (
+              <g className="mouth-happy">
+                <path d="M104 134 q16 22 32 0 q-16 10 -32 0 z" fill="#0f172a" />
+                <path d="M110 138 q10 8 20 0 q-10 4 -20 0 z" fill="#fb7185" />
+              </g>
+            ) : happy ? (
+              <path d="M104 134 q16 18 32 0" stroke="#0f172a" strokeWidth="5" fill="none" strokeLinecap="round" />
+            ) : mood === 'error' ? (
+              <path d="M106 140 q14 -12 28 0" stroke="#0f172a" strokeWidth="5" fill="none" strokeLinecap="round" />
             ) : (
-              <>
-                <ellipse cx="78" cy="84" rx="13" ry="15" fill="#ffffff" />
-                <ellipse cx="122" cy="84" rx="13" ry="15" fill="#ffffff" />
-                <circle className="pupil" cx="80" cy="86" r="7" fill="#0f172a" />
-                <circle className="pupil" cx="124" cy="86" r="7" fill="#0f172a" />
-                <circle cx="83" cy="83" r="2.4" fill="#ffffff" />
-                <circle cx="127" cy="83" r="2.4" fill="#ffffff" />
-              </>
+              <path d="M108 136 q12 9 24 0" stroke="#0f172a" strokeWidth="5" fill="none" strokeLinecap="round" />
+            )}
+
+            {/* BRAZOS que tapan los ojos (peek-a-boo) */}
+            <g className={`octo-arms ${hiding ? 'is-hiding' : ''}`}>
+              <path className="arm arm-l" d="M58 132 q-26 -6 -30 -34 q-2 -16 12 -16 q13 0 11 16 q-3 22 26 30 z" fill="url(#octoLeg)" />
+              <path className="arm arm-r" d="M182 132 q26 -6 30 -34 q2 -16 -12 -16 q-13 0 -11 16 q3 22 -26 30 z" fill="url(#octoLeg)" />
+            </g>
+
+            {/* estrellitas al lograrlo */}
+            {mood === 'success' && (
+              <g className="octo-stars">
+                <path className="st st1" d="M46 54 l3.5 8 l8 3.5 l-8 3.5 l-3.5 8 l-3.5 -8 l-8 -3.5 l8 -3.5 z" fill="#fde047" />
+                <path className="st st2" d="M196 46 l2.5 6 l6 2.5 l-6 2.5 l-2.5 6 l-2.5 -6 l-6 -2.5 l6 -2.5 z" fill="#fde047" />
+                <path className="st st3" d="M182 92 l2 5 l5 2 l-5 2 l-2 5 l-2 -5 l-5 -2 l5 -2 z" fill="#fcd34d" />
+              </g>
             )}
           </g>
-
-          {/* boca */}
-          {happy ? (
-            <path d="M84 110 q16 16 32 0" stroke="#0f172a" strokeWidth="4.5" fill="none" strokeLinecap="round" />
-          ) : mood === 'error' ? (
-            <path d="M86 116 q14 -12 28 0" stroke="#0f172a" strokeWidth="4.5" fill="none" strokeLinecap="round" />
-          ) : (
-            <path d="M88 112 q12 8 24 0" stroke="#0f172a" strokeWidth="4.5" fill="none" strokeLinecap="round" />
-          )}
-
-          {/* brazos que tapan los ojos */}
-          <g className={`octo-arms ${hiding ? 'is-hiding' : ''}`}>
-            <path className="arm arm-left" d="M46 118 q-20 -8 -22 -30 q-1 -12 10 -12 q10 0 8 12 q-2 16 18 22 z" fill="#10b981" />
-            <path className="arm arm-right" d="M154 118 q20 -8 22 -30 q1 -12 -10 -12 q-10 0 -8 12 q2 16 -18 22 z" fill="#10b981" />
-          </g>
-
-          {/* estrellitas de éxito */}
-          {mood === 'success' && (
-            <g className="octo-stars">
-              <path d="M40 40 l3 7 l7 3 l-7 3 l-3 7 l-3 -7 l-7 -3 l7 -3 z" fill="#fde047" />
-              <path d="M162 34 l2 5 l5 2 l-5 2 l-2 5 l-2 -5 l-5 -2 l5 -2 z" fill="#fde047" />
-            </g>
-          )}
         </g>
       </svg>
 
       <style jsx>{`
-        .octo { position: relative; display: inline-block; }
+        .octo { position: relative; display: inline-block; user-select: none; }
         .octo svg { display: block; overflow: visible; }
 
-        .octo-float { transform-origin: 100px 100px; animation: octoFloat 3.6s ease-in-out infinite; }
+        /* flotación suave y continua */
+        .octo-float {
+          transform-box: fill-box; transform-origin: 50% 60%;
+          animation: octoFloat 4.2s ease-in-out infinite;
+          will-change: transform;
+        }
         @keyframes octoFloat {
-          0%, 100% { transform: translateY(0) rotate(-1.5deg); }
-          50%      { transform: translateY(-8px) rotate(1.5deg); }
+          0%, 100% { transform: translateY(2px) rotate(-2deg); }
+          50%      { transform: translateY(-8px) rotate(2deg); }
         }
 
-        .leg { transform-origin: top center; animation: legSway 2.8s ease-in-out infinite; }
-        .leg2 { animation-delay: .15s; } .leg3 { animation-delay: .3s; }
-        .leg4 { animation-delay: .45s; } .leg5 { animation-delay: .1s; }
-        @keyframes legSway {
-          0%, 100% { transform: rotate(-3deg); }
-          50%      { transform: rotate(3deg); }
+        /* respiración: sutil squash & stretch, SIEMPRE viva */
+        .octo-breathe {
+          transform-box: fill-box; transform-origin: 50% 72%;
+          animation: octoBreathe 2.9s ease-in-out infinite;
+          will-change: transform;
+        }
+        @keyframes octoBreathe {
+          0%, 100% { transform: scale(1, 1); }
+          50%      { transform: scale(1.035, 0.965); }
         }
 
-        .pupil { transition: transform .25s ease; }
+        /* sombra late con la respiración */
+        .octo-shadow { animation: octoShadow 4.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+        @keyframes octoShadow {
+          0%, 100% { transform: scaleX(1); opacity: .25; }
+          50%      { transform: scaleX(.82); opacity: .18; }
+        }
+
+        /* tentáculos: cada uno ondula con su propio ritmo (movimiento orgánico) */
+        .leg { transform-box: fill-box; transform-origin: top center; will-change: transform; }
+        .lg1 { animation: legWave 2.6s ease-in-out infinite; }
+        .lg2 { animation: legWave 2.9s ease-in-out infinite .18s; }
+        .lg3 { animation: legWave 3.1s ease-in-out infinite .32s; }
+        .lg4 { animation: legWave 2.7s ease-in-out infinite .12s; }
+        .lg5 { animation: legWave 2.4s ease-in-out infinite .24s; }
+        .lg6 { animation: legWave 2.55s ease-in-out infinite .4s; }
+        @keyframes legWave {
+          0%, 100% { transform: rotate(-4deg); }
+          50%      { transform: rotate(4deg); }
+        }
+
+        .pupil { transition: transform .5s cubic-bezier(.22,1,.36,1); }
         .cheek { transition: opacity .3s ease; }
 
-        /* brazos: normalmente abajo, escondidos; cuando se tapa, suben a los ojos */
-        .octo-arms .arm { transform-origin: center bottom; opacity: 0; transition: transform .4s cubic-bezier(.34,1.56,.64,1), opacity .3s ease; }
-        .arm-left  { transform: translate(18px, 26px) rotate(35deg); }
-        .arm-right { transform: translate(-18px, 26px) rotate(-35deg); }
+        /* párpados: bajan suave para parpadear/cerrar */
+        .lid {
+          transform-box: fill-box; transform-origin: top center;
+          transform: translateY(-100%); transition: transform .12s ease;
+        }
+        .lid.shut { transform: translateY(0); }
+
+        /* brazos peek-a-boo */
+        .octo-arms .arm {
+          transform-box: fill-box; transform-origin: 50% 100%;
+          opacity: 0; transition: transform .42s cubic-bezier(.34,1.56,.64,1), opacity .25s ease;
+        }
+        .arm-l { transform: translate(24px, 34px) rotate(28deg) scale(.9); }
+        .arm-r { transform: translate(-24px, 34px) rotate(-28deg) scale(.9); }
         .octo-arms.is-hiding .arm { opacity: 1; }
-        .octo-arms.is-hiding .arm-left  { transform: translate(30px, -8px) rotate(-8deg); }
-        .octo-arms.is-hiding .arm-right { transform: translate(-30px, -8px) rotate(8deg); }
+        .octo-arms.is-hiding .arm-l { transform: translate(40px, -6px) rotate(-6deg); }
+        .octo-arms.is-hiding .arm-r { transform: translate(-40px, -6px) rotate(6deg); }
 
-        /* feliz: rebote */
-        .octo--happy .octo-float, .octo--success .octo-float { animation: octoBounce 1.4s ease-in-out infinite; }
+        /* feliz: rebote alegre encima de la flotación */
+        .octo--happy .octo-float, .octo--success .octo-float { animation: octoBounce 1.5s cubic-bezier(.34,1.56,.64,1) infinite; }
         @keyframes octoBounce {
-          0%, 100% { transform: translateY(0) rotate(0); }
-          30%      { transform: translateY(-12px) rotate(-3deg); }
-          60%      { transform: translateY(-4px) rotate(3deg); }
+          0%, 100% { transform: translateY(2px) rotate(0deg); }
+          35%      { transform: translateY(-14px) rotate(-3deg); }
+          65%      { transform: translateY(-3px) rotate(3deg); }
         }
-        .octo--happy .cheek, .octo--success .cheek { opacity: .8; }
 
-        /* error: temblorcito */
-        .octo--error .octo-float { animation: octoShake .4s ease-in-out 2; }
+        /* error: temblorcito triste */
+        .octo--error .octo-breathe { animation: octoShake .38s ease-in-out 2; }
         @keyframes octoShake {
-          0%,100% { transform: translateX(0); }
-          25% { transform: translateX(-6px) rotate(-2deg); }
-          75% { transform: translateX(6px) rotate(2deg); }
+          0%,100% { transform: translateX(0) scale(1,1); }
+          25% { transform: translateX(-7px) rotate(-3deg); }
+          75% { transform: translateX(7px) rotate(3deg); }
         }
 
-        .octo-stars { animation: starsPop .5s ease-out; transform-origin: center; }
-        @keyframes starsPop { 0% { opacity: 0; transform: scale(.4); } 100% { opacity: 1; transform: scale(1); } }
+        .octo-stars .st { transform-box: fill-box; transform-origin: center; }
+        .st1 { animation: starPop .6s ease-out both; }
+        .st2 { animation: starPop .6s ease-out .1s both; }
+        .st3 { animation: starPop .6s ease-out .2s both; }
+        @keyframes starPop {
+          0% { opacity: 0; transform: scale(.2) rotate(-40deg); }
+          70% { opacity: 1; transform: scale(1.2) rotate(8deg); }
+          100% { opacity: 1; transform: scale(1) rotate(0deg); }
+        }
 
         @media (prefers-reduced-motion: reduce) {
-          .octo-float, .leg { animation: none !important; }
+          .octo-float, .octo-breathe, .octo-shadow, .leg { animation: none !important; }
         }
       `}</style>
     </div>
