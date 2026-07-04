@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { getBotResponse } from '@/lib/chatbot'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 
 const QUICK_SUGGESTIONS = [
@@ -386,29 +387,12 @@ export default function SupportChatWidget() {
     saveCurrentChat()
   }
 
-  const sendToAI = async (userMessage: string): Promise<string> => {
-    try {
-      const response = await fetch('/api/support/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: userMessage,
-          conversationHistory: messages.slice(-8).map(m => ({
-            type: m.type,
-            content: m.content
-          }))
-        })
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        return data.reply || 'No pude procesar tu mensaje.'
-      }
-      return 'Error de conexion. Intenta de nuevo.'
-    } catch (err) {
-      console.error('Error calling AI:', err)
-      return 'Error de conexion. Intenta de nuevo.'
-    }
+  // Chatbot propio (sin APIs externas). Devuelve la respuesta y si hay que escalar a un admin.
+  const sendToAI = async (userMessage: string): Promise<{ text: string; escalate: boolean }> => {
+    const { answer, escalate } = getBotResponse(userMessage)
+    // pequeña demora para que se sienta natural
+    await new Promise(r => setTimeout(r, 500))
+    return { text: answer, escalate }
   }
 
   const handleSendMessage = async () => {
@@ -442,15 +426,16 @@ export default function SupportChatWidget() {
     const botMsg: ChatMessage = {
       id: `bot-${Date.now()}`,
       type: 'bot',
-      content: aiResponse,
+      content: aiResponse.text,
       timestamp: new Date()
     }
     const finalMessages = [...newMessages, botMsg]
     setMessages(finalMessages)
     saveCurrentChat(finalMessages)
+    if (aiResponse.escalate) setIsEscalated(true)
 
     if (conversationId) {
-      await saveMessageToDb(aiResponse, 'bot')
+      await saveMessageToDb(aiResponse.text, 'bot')
     }
   }
 
@@ -482,12 +467,13 @@ export default function SupportChatWidget() {
     const botMsg: ChatMessage = {
       id: `bot-${Date.now()}`,
       type: 'bot',
-      content: aiResponse,
+      content: aiResponse.text,
       timestamp: new Date()
     }
     const finalMessages = [...newMessages, botMsg]
     setMessages(finalMessages)
     saveCurrentChat(finalMessages)
+    if (aiResponse.escalate) setIsEscalated(true)
   }
 
   const handleEscalateToAgent = async () => {
@@ -649,8 +635,9 @@ export default function SupportChatWidget() {
                 </button>
                 <div>
                   <h3 className="font-semibold text-white text-sm">Soporte Octopus</h3>
-                  <p className="text-xs text-neutral-400">
-                    {isEscalated ? 'Conectado con agente' : 'Asistente virtual'}
+                  <p className="text-xs text-neutral-400 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                    {isEscalated ? 'Un agente te responderá pronto' : 'Asistente · respuesta humana en ~2 h'}
                   </p>
                 </div>
               </div>
