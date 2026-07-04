@@ -152,14 +152,14 @@ export default function RegisterPage() {
       <div className="pointer-events-none absolute top-1/4 left-1/2 -translate-x-1/2 w-[560px] h-[560px] rounded-full bg-violet-600/20 blur-[120px]" />
       <div className="pointer-events-none absolute bottom-0 left-1/4 w-[420px] h-[420px] rounded-full bg-emerald-500/10 blur-[120px]" />
 
-      <div className="relative w-full max-w-md mt-24">
-        <div className="absolute left-1/2 -translate-x-1/2 -top-[150px] z-20">
-          <OctopusMascot mood={octoMood} look={octoLook} size={210} variant="creator" />
+      <div className="relative w-full max-w-md mt-32">
+        <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-[150px] w-64 h-64 rounded-full bg-violet-500/25 blur-3xl z-0" />
+        <div className="absolute left-1/2 -translate-x-1/2 -top-[210px] z-20">
+          <OctopusMascot mood={octoMood} look={octoLook} size={340} variant="creator" />
         </div>
 
-        <div className="relative bg-neutral-900/80 backdrop-blur-xl rounded-[28px] pt-16 px-8 pb-8 shadow-2xl shadow-black/50 border border-white/10 text-white placeholder-neutral-500">
+        <div className="relative z-10 bg-gradient-to-b from-neutral-800/90 to-neutral-950/95 rounded-[28px] pt-36 px-8 pb-8 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)] border border-white/10 ring-1 ring-inset ring-white/5 text-white placeholder-neutral-500">
           <div className="text-center mb-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-400 mb-2">Octopus</p>
             <h2 className="text-3xl font-bold text-white mb-1">Crear cuenta</h2>
             <p className="text-neutral-400">Empieza a ganar con tu contenido</p>
           </div>
