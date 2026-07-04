@@ -148,18 +148,18 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-950 flex items-center justify-center px-4 py-10 relative overflow-hidden">
+    <div className="min-h-screen bg-neutral-950 flex items-center justify-center px-4 py-4 relative overflow-hidden">
       <div className="pointer-events-none absolute top-1/4 left-1/2 -translate-x-1/2 w-[560px] h-[560px] rounded-full bg-violet-600/20 blur-[120px]" />
       <div className="pointer-events-none absolute bottom-0 left-1/4 w-[420px] h-[420px] rounded-full bg-emerald-500/10 blur-[120px]" />
 
-      <div className="relative w-full max-w-md mt-32">
-        <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-[150px] w-64 h-64 rounded-full bg-violet-500/25 blur-3xl z-0" />
-        <div className="absolute left-1/2 -translate-x-1/2 -top-[210px] z-20">
-          <OctopusMascot mood={octoMood} look={octoLook} size={340} variant="creator" />
+      <div className="relative z-10 w-full max-w-md flex flex-col items-center">
+        <div className="relative z-20 -mb-[104px]">
+          <div className="pointer-events-none absolute inset-0 top-6 rounded-full bg-violet-500/20 blur-3xl -z-10" />
+          <OctopusMascot mood={octoMood} look={octoLook} size={270} variant="creator" />
         </div>
 
-        <div className="relative z-10 bg-gradient-to-b from-neutral-800/90 to-neutral-950/95 rounded-[28px] pt-36 px-8 pb-8 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)] border border-white/10 ring-1 ring-inset ring-white/5 text-white placeholder-neutral-500">
-          <div className="text-center mb-8">
+        <div className="relative z-10 w-full bg-gradient-to-b from-neutral-800/90 to-neutral-950/95 rounded-[28px] pt-28 px-8 pb-7 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)] border border-white/10 ring-1 ring-inset ring-white/5 text-white placeholder-neutral-500">
+          <div className="text-center mb-6">
             <h2 className="text-3xl font-bold text-white mb-1">Crear cuenta</h2>
             <p className="text-neutral-400">Empieza a ganar con tu contenido</p>
           </div>

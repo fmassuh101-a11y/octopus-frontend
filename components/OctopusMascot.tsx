@@ -6,9 +6,10 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 
 // ─────────────────────────────────────────────────────────────────────────
-//  OCTO 3D — carga el modelo 3D real (Meshy) y lo trae a la vida en WebGL.
-//  Se inclina hacia adelante (asomándose), respira, flota, gira hacia el
-//  texto que escribís, y reacciona a cada estado. NADA de dibujos 2D.
+//  OCTO 3D — el modelo real cuelga del login con FÍSICA de péndulo.
+//  Pivotea desde arriba (como agarrado del borde), se balancea suave (chill),
+//  y cada interacción le da un envión que se amortigua solo. Mira el texto que
+//  escribís. En la contraseña mira para otro lado (no espía). Nada 2D.
 // ─────────────────────────────────────────────────────────────────────────
 export type OctoMood = 'idle' | 'happy' | 'hiding' | 'success' | 'error' | 'angry'
 interface Look { x: number; y: number }
@@ -27,7 +28,7 @@ export default function OctopusMascot({
   interactive?: boolean
 }) {
   const mountRef = useRef<HTMLDivElement>(null)
-  const state = useRef({ mood, look, poke: null as null | 'happy' | 'angry', pokeUntil: 0 })
+  const state = useRef({ mood, look, impulse: 0 })
   state.current.mood = mood
   state.current.look = look
   const clicks = useRef<number[]>([])
@@ -37,8 +38,7 @@ export default function OctopusMascot({
     if (!mount) return
 
     const scene = new THREE.Scene()
-    const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100)
-    camera.position.set(0, 0.1, 8.5)
+    const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100)
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
     renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1))
@@ -51,15 +51,16 @@ export default function OctopusMascot({
     renderer.domElement.style.height = '100%'
     renderer.domElement.style.cursor = interactive ? 'pointer' : 'default'
 
-    // luz pareja y brillosa (para que se vea 3D, no plano)
     scene.add(new THREE.HemisphereLight(0xffffff, 0x6d28d9, 1.5))
     scene.add(new THREE.AmbientLight(0xd8b4fe, 0.5))
     const key = new THREE.DirectionalLight(0xffffff, 2.4); key.position.set(-4, 6, 6); scene.add(key)
     const rim = new THREE.DirectionalLight(0xc4b5fd, 1.3); rim.position.set(5, 2, -4); scene.add(rim)
     const fill = new THREE.DirectionalLight(0xffffff, 1.0); fill.position.set(4, -2, 5); scene.add(fill)
 
-    const octo = new THREE.Group()
-    scene.add(octo)
+    // swing = pivote arriba (péndulo).  hang baja el modelo.  inner = pose/mirada.
+    const swing = new THREE.Group(); scene.add(swing)
+    const hang = new THREE.Group(); swing.add(hang)
+    const inner = new THREE.Group(); hang.add(inner)
 
     let loaded = false
     const draco = new DRACOLoader(); draco.setDecoderPath('/draco/')
@@ -70,49 +71,72 @@ export default function OctopusMascot({
       const box = new THREE.Box3().setFromObject(model)
       const dim = new THREE.Vector3(); box.getSize(dim)
       const center = new THREE.Vector3(); box.getCenter(center)
-      const s = 4.6 / Math.max(dim.x, dim.y, dim.z)
+      const s = 3.7 / Math.max(dim.x, dim.y, dim.z)
       model.scale.setScalar(s)
-      // centrado horizontal; un poco elevado para que los tentáculos cuelguen abajo
-      model.position.set(-center.x * s, -center.y * s + 0.3, -center.z * s)
-      octo.add(model)
+      model.position.set(-center.x * s, -center.y * s, -center.z * s) // centrado en inner
+      inner.add(model)
+      const H = dim.y * s
+      hang.position.y = -H / 2          // el pivote (swing) queda en la CABEZA
+      camera.position.set(0, -H / 2, Math.max(6.5, H * 2.15))
+      camera.lookAt(0, -H / 2, 0)
       loaded = true
-    }, undefined, () => { /* si falla, queda vacío (no mostramos nada feo) */ })
+    }, undefined, () => {})
 
-    // valores interpolados (fluido)
-    const cur = { bounce: 0, shake: 0, cover: 0, red: 0, slump: 0, gx: 0, gy: 0, lean: 0 }
-    const tgt = { ...cur }
-    const lerp = (a: number, b: number, k: number) => a + (b - a) * k
+    // física del péndulo
+    let angle = 0, vel = 0
+    let prevMood: OctoMood = 'idle'
+    // pose interpolada
+    const cur = { lean: 0.28, gy: 0, gx: 0, look: 0, shakeAmt: 0 }
 
     let raf = 0
     const clock = new THREE.Clock()
+    const lerp = (a: number, b: number, k: number) => a + (b - a) * k
+
     function animate() {
       raf = requestAnimationFrame(animate)
-      const t = clock.getElapsedTime()
+      const dt = Math.min(0.033, clock.getDelta())
+      const t = clock.elapsedTime
       const st = state.current
-      const poke = st.poke && performance.now() < st.pokeUntil ? st.poke : null
-      const m: OctoMood = poke ? poke : st.mood
+      const m = st.mood
 
-      tgt.bounce = (m === 'happy' || m === 'success') ? 1 : 0
-      tgt.shake = m === 'angry' ? 1 : 0
-      tgt.cover = m === 'hiding' ? 1 : 0
-      tgt.slump = m === 'error' ? 1 : 0
-      tgt.lean = 1 // siempre inclinado hacia adelante (asomándose)
-      const look = st.look
-      tgt.gx = look ? Math.max(-1, Math.min(1, look.x)) : 0
-      tgt.gy = look ? (look.y ?? 0.3) : 0
-      for (const k in tgt) (cur as any)[k] = lerp((cur as any)[k], (tgt as any)[k], 0.1)
+      // impulso al cambiar de estado o al tocarlo
+      if (m !== prevMood) {
+        if (m === 'happy' || m === 'success') vel += 1.1
+        else if (m === 'angry') vel += 2.2
+        else if (m === 'hiding') vel -= 0.8
+        else vel += 0.5
+        prevMood = m
+      }
+      if (st.impulse) { vel += st.impulse; st.impulse = 0 }
+
+      // brisa suave (chill) — se mece siempre un poquito
+      const breeze = Math.sin(t * 0.9) * 0.35 + Math.sin(t * 1.7 + 1) * 0.18
+      const angryExtra = m === 'angry' ? Math.sin(t * 22) * 3.2 : 0
+      // péndulo: rigidez + amortiguación
+      const stiffness = 9, damping = m === 'angry' ? 1.4 : 2.2
+      const acc = -stiffness * angle - damping * vel + breeze + angryExtra
+      vel += acc * dt
+      angle += vel * dt
+      angle = Math.max(-0.45, Math.min(0.45, angle))
+      swing.rotation.z = angle
 
       if (loaded) {
-        // respira (squash & stretch)
-        const br = 1 + Math.sin(t * 1.9) * 0.022
-        octo.scale.set(br, 2 - br, br)
-        // flota + rebota
-        octo.position.y = Math.sin(t * 1.15) * 0.09 + cur.bounce * Math.abs(Math.sin(t * 6)) * 0.4 - cur.slump * 0.2
-        // INCLINADO hacia adelante (asomándose sobre el login) + se agacha al taparse
-        octo.rotation.x = cur.lean * 0.34 + cur.cover * 0.4 + cur.slump * 0.15
-        // gira hacia el texto + vaivén vivo + temblor de enojo
-        octo.rotation.y = (loaded ? cur.gx * 0.55 : 0) + Math.sin(t * 0.6) * 0.12 + cur.shake * Math.sin(t * 40) * 0.06
-        octo.rotation.z = Math.sin(t * 0.8) * 0.03 + cur.shake * Math.sin(t * 46) * 0.05
+        // respira
+        const br = 1 + Math.sin(t * 1.9) * 0.02
+        inner.scale.set(br, 2 - br, br)
+        // pose objetivo según ánimo
+        const tgtLean = m === 'error' ? 0.42 : m === 'hiding' ? 0.02 : 0.28
+        const tgtLookUp = m === 'hiding' ? -0.55 : 0          // en contraseña mira arriba/otro lado
+        const look = st.look
+        const tgtGx = m === 'hiding' ? 0.7 : look ? Math.max(-1, Math.min(1, look.x)) * 0.5 : Math.sin(t * 0.5) * 0.12
+        const tgtGy = look ? (look.y ?? 0.3) : 0
+        cur.lean = lerp(cur.lean, tgtLean, 0.08)
+        cur.look = lerp(cur.look, tgtLookUp, 0.08)
+        cur.gx = lerp(cur.gx, tgtGx, 0.08)
+        cur.gy = lerp(cur.gy, tgtGy, 0.08)
+        inner.rotation.x = cur.lean + cur.look        // inclina adelante (asoma) / arriba (no espía)
+        inner.rotation.y = cur.gx                     // gira hacia el texto
+        inner.rotation.z = -angle * 0.35              // contrarresta un poco el swing (cuerpo flexible)
       }
       renderer.render(scene, camera)
     }
@@ -121,10 +145,8 @@ export default function OctopusMascot({
     const onClick = () => {
       if (!interactive) return
       const now = Date.now()
-      clicks.current = [...clicks.current.filter(x => now - x < 1600), now]
-      const angry = clicks.current.length >= 4
-      state.current.poke = angry ? 'angry' : 'happy'
-      state.current.pokeUntil = performance.now() + (angry ? 1500 : 1200)
+      clicks.current = [...clicks.current.filter(x => now - x < 1400), now]
+      state.current.impulse = clicks.current.length >= 4 ? 3.0 : 1.4
     }
     renderer.domElement.addEventListener('pointerdown', onClick)
 
