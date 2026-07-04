@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 
 // ─────────────────────────────────────────────────────────────────────────
 //  OCTO 3D — pulpo generado en tiempo real con WebGL (Three.js).
@@ -220,6 +221,26 @@ export default function OctopusMascot({
       octo.add(bow)
     }
 
+    // ── Modelo 3D del usuario (si existe /octo/octo.glb, reemplaza al procedural) ──
+    let usingGLB = false
+    new GLTFLoader().load(
+      '/octo/octo.glb',
+      (gltf) => {
+        const model = gltf.scene
+        const box = new THREE.Box3().setFromObject(model)
+        const dim = new THREE.Vector3(); box.getSize(dim)
+        const center = new THREE.Vector3(); box.getCenter(center)
+        const s = 3.4 / Math.max(dim.x, dim.y, dim.z)
+        model.scale.setScalar(s)
+        model.position.set(-center.x * s, -center.y * s, -center.z * s)
+        octo.children.slice().forEach((c) => { c.visible = false }) // ocultar el procedural
+        octo.add(model)
+        usingGLB = true
+      },
+      undefined,
+      () => { /* no hay .glb todavía → se queda el pulpo procedural */ }
+    )
+
     // ── Valores animados (se interpolan → fluido, no "bot") ──
     const cur = { bounce: 0, shake: 0, cover: 0, brow: 0, red: 0, tearO: 0, smile: 1, gx: 0, gy: 0, slump: 0 }
     const tgt = { ...cur }
@@ -259,7 +280,8 @@ export default function OctopusMascot({
       octo.position.y = Math.sin(t * 1.2) * 0.08 + cur.bounce * Math.abs(Math.sin(t * 6)) * 0.35 - cur.slump * 0.18
       octo.rotation.z = Math.sin(t * 0.8) * 0.03 + cur.shake * Math.sin(t * 45) * 0.06
       octo.rotation.x = cur.slump * 0.12 + cur.cover * 0.14 // se agacha timido al taparse
-      octo.rotation.y = cur.shake * Math.sin(t * 40) * 0.04
+      // el modelo .glb gira la cabeza hacia el texto (sigue lo que escribís)
+      octo.rotation.y = cur.shake * Math.sin(t * 40) * 0.04 + (usingGLB ? cur.gx * 0.5 : 0)
 
       // tentáculos ondulan; 2 del frente suben a tapar los ojos (simétrico)
       for (const p of tentacles) {
