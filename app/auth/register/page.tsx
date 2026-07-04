@@ -22,6 +22,11 @@ export default function RegisterPage() {
     : focusedField === 'email' ? 'happy'
     : 'idle'
 
+  const octoLook =
+    focusedField === 'email'
+      ? { x: Math.max(-0.85, Math.min(0.85, (email.length / 22) * 1.7 - 0.85)), y: 0.42 }
+      : null
+
   const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -143,9 +148,9 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-950 flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-4xl flex flex-col md:flex-row items-center justify-center gap-8 md:gap-14">
-      <div className="max-w-md w-full space-y-8 order-1">
+    <div className="min-h-screen bg-neutral-950 flex items-center justify-center px-4 py-6">
+      <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 items-center gap-6 md:gap-8">
+      <div className="w-full max-w-md mx-auto space-y-6 order-1">
         <div className="text-center">
           <Link href="/" className="inline-block">
             <span className="text-2xl font-bold text-white block tracking-tight">Octopus</span>
@@ -254,9 +259,9 @@ export default function RegisterPage() {
         </div>
       </div>
 
-      {/* Octo a la derecha (abajo en móvil) */}
-      <div className="flex items-center justify-center shrink-0 order-2">
-        <OctopusMascot mood={octoMood} size={260} variant="creator" />
+      {/* Octo 3D a la derecha (oculto en móvil) */}
+      <div className="hidden md:flex items-center justify-center order-2">
+        <OctopusMascot mood={octoMood} look={octoLook} size={340} variant="creator" />
       </div>
       </div>
     </div>
