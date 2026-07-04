@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { isAdminEmail } from '@/lib/isAdmin'
+import OctopusMascot, { OctoMood } from '@/components/OctopusMascot'
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false)
@@ -12,6 +13,15 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [checkingSession, setCheckingSession] = useState(true)
+  const [focusedField, setFocusedField] = useState<'email' | 'password' | null>(null)
+
+  // Estado de ánimo del pulpo según lo que hace el usuario
+  const octoMood: OctoMood =
+    error ? 'error'
+    : loading ? 'success'
+    : focusedField === 'password' ? 'hiding'
+    : focusedField === 'email' ? 'happy'
+    : 'idle'
 
   // Check if already logged in using localStorage
   useEffect(() => {
@@ -250,10 +260,11 @@ export default function LoginPage() {
     <div className="min-h-screen bg-neutral-950 flex items-center justify-center px-4">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <Link href="/" className="inline-flex items-center gap-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
-              <span className="text-2xl font-black text-white">O</span>
-            </div>
+          {/* Octo, la mascota que reacciona */}
+          <div className="flex justify-center -mb-2">
+            <OctopusMascot mood={octoMood} size={150} />
+          </div>
+          <Link href="/" className="inline-flex items-center gap-2">
             <span className="text-2xl font-bold text-white tracking-tight">Octopus</span>
           </Link>
         </div>
@@ -278,6 +289,8 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                onFocus={() => setFocusedField('email')}
+                onBlur={() => setFocusedField(null)}
                 disabled={loading}
                 className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
                 placeholder="tu@email.com"
@@ -291,6 +304,8 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                onFocus={() => setFocusedField('password')}
+                onBlur={() => setFocusedField(null)}
                 disabled={loading}
                 className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
                 placeholder="••••••••"

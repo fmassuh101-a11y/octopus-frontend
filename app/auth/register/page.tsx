@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import OctopusMascot, { OctoMood } from '@/components/OctopusMascot'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
@@ -12,6 +13,14 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [focusedField, setFocusedField] = useState<'email' | 'password' | 'confirm' | null>(null)
+
+  const octoMood: OctoMood =
+    error ? 'error'
+    : loading ? 'success'
+    : (focusedField === 'password' || focusedField === 'confirm') ? 'hiding'
+    : focusedField === 'email' ? 'happy'
+    : 'idle'
 
   const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -137,11 +146,11 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-neutral-950 flex items-center justify-center px-4">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
+          <div className="flex justify-center -mb-1">
+            <OctopusMascot mood={octoMood} size={150} />
+          </div>
           <Link href="/" className="inline-block">
-            <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20 mx-auto">
-              <span className="text-3xl font-black text-white">O</span>
-            </div>
-            <span className="text-2xl font-bold text-white block mt-3 tracking-tight">Octopus</span>
+            <span className="text-2xl font-bold text-white block tracking-tight">Octopus</span>
           </Link>
         </div>
 
@@ -165,6 +174,8 @@ export default function RegisterPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                onFocus={() => setFocusedField("email")}
+                onBlur={() => setFocusedField(null)}
                 disabled={loading}
                 className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
                 placeholder="tu@email.com"
@@ -178,6 +189,8 @@ export default function RegisterPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                onFocus={() => setFocusedField("password")}
+                onBlur={() => setFocusedField(null)}
                 disabled={loading}
                 className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
                 placeholder="••••••••"
@@ -191,6 +204,8 @@ export default function RegisterPage() {
                 required
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
+                onFocus={() => setFocusedField("confirm")}
+                onBlur={() => setFocusedField(null)}
                 disabled={loading}
                 className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
                 placeholder="••••••••"
