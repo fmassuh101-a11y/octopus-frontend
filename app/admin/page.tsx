@@ -314,113 +314,23 @@ function UsersManagement() {
     const amount = parseFloat(addMoneyAmount)
 
     try {
-      // Check if user has a wallet
-      if (selectedUser.wallet) {
-        // Update existing wallet
-        const newBalance = (selectedUser.wallet.balance || 0) + amount
-        const res = await fetch(
-          `${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${selectedUser.user_id}`,
-          {
-            method: 'PATCH',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'apikey': SUPABASE_ANON_KEY,
-              'Content-Type': 'application/json',
-              'Prefer': 'return=minimal'
-            },
-            body: JSON.stringify({
-              balance: newBalance,
-              updated_at: new Date().toISOString()
-            })
-          }
-        )
-
-        if (!res.ok) {
-          const errorText = await res.text()
-          console.error('Wallet update error:', res.status, errorText)
-          throw new Error(`Failed to update wallet: ${res.status}`)
-        }
-
-        // Create transaction record
-        await fetch(`${SUPABASE_URL}/rest/v1/transactions`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'apikey': SUPABASE_ANON_KEY,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=minimal'
-          },
-          body: JSON.stringify({
-            wallet_id: selectedUser.wallet.id,
-            type: 'bonus',
-            amount: amount,
-            fee: 0,
-            net_amount: amount,
-            status: 'completed',
-            description: addMoneyNote || 'Admin: Fondos agregados para pruebas',
-            metadata: { added_by: 'admin', reason: 'testing' }
-          })
-        })
-
-      } else {
-        // Create new wallet with initial balance
-        const walletRes = await fetch(`${SUPABASE_URL}/rest/v1/wallets`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'apikey': SUPABASE_ANON_KEY,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=representation'
-          },
-          body: JSON.stringify({
-            user_id: selectedUser.user_id,
-            user_type: selectedUser.user_type,
-            balance: amount,
-            pending_balance: 0,
-            total_earned: 0,
-            total_withdrawn: 0,
-            currency: 'USD'
-          })
-        })
-
-        if (!walletRes.ok) {
-          const errorText = await walletRes.text()
-          console.error('Wallet create error:', walletRes.status, errorText)
-          throw new Error(`Failed to create wallet: ${walletRes.status}`)
-        }
-
-        const newWallet = await walletRes.json()
-
-        // Create transaction record
-        await fetch(`${SUPABASE_URL}/rest/v1/transactions`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'apikey': SUPABASE_ANON_KEY,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=minimal'
-          },
-          body: JSON.stringify({
-            wallet_id: newWallet[0].id,
-            type: 'bonus',
-            amount: amount,
-            fee: 0,
-            net_amount: amount,
-            status: 'completed',
-            description: addMoneyNote || 'Admin: Fondos agregados para pruebas',
-            metadata: { added_by: 'admin', reason: 'testing' }
-          })
-        })
-      }
+      // Ruteado por la API server-side (RLS bloquea escribir wallets desde el cliente)
+      const res = await fetch('/api/admin/set-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ targetUserId: selectedUser.user_id, grantBalance: amount }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Error')
 
       alert(`$${amount} agregados a la cuenta de ${selectedUser.full_name}`)
       setSelectedUser(null)
       setAddMoneyAmount('')
       setAddMoneyNote('')
-      await loadUsers() // Reload to see updated balances
-    } catch (err) {
+      await loadUsers()
+    } catch (err: any) {
       console.error('Error adding money:', err)
-      alert('Error al agregar fondos')
+      alert('Error al agregar fondos: ' + (err.message || ''))
     }
     setProcessing(false)
   }

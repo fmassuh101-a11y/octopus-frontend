@@ -56,7 +56,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Plan inválido' }, { status: 400 })
     }
     updates.plan = plan
-    updates.plan_source = gift ? 'gifted' : 'paid'
+    // starter = cancelar/volver al plan base; si no, regalado o pagado
+    updates.plan_source = plan === 'starter' ? 'default' : (gift ? 'gifted' : 'paid')
   }
   if (discountPercent !== undefined) {
     updates.discount_percent = Math.max(0, Math.min(100, Number(discountPercent) || 0))

@@ -34,7 +34,7 @@ export default function CompanyDashboard() {
     activeCreators: 0
   })
   const [wallet, setWallet] = useState<{ balance: number; pending_balance: number } | null>(null)
-  const [giftModal, setGiftModal] = useState<{ plan: string; discount: number } | null>(null)
+  const [giftModal, setGiftModal] = useState<{ type: 'plan' | 'discount'; plan: string; discount: number } | null>(null)
 
   useEffect(() => {
     checkAuth()
@@ -74,13 +74,17 @@ export default function CompanyDashboard() {
             }
           }
 
-          // ¿Le regalaron un plan o un descuento y no lo ha visto? Mostrar notificación grande
-          const giftKey = `octopus-gift-seen-${profileData.plan || ''}-${profileData.discount_percent || 0}`
-          const hasGift = profileData.plan_source === 'gifted' || (profileData.discount_percent || 0) > 0
-          if (hasGift && !localStorage.getItem(giftKey)) {
-            setGiftModal({ plan: profileData.plan || 'starter', discount: profileData.discount_percent || 0 })
-            localStorage.setItem(giftKey, '1')
+          // Notificación PRECISA: solo dispara cuando REALMENTE se agrega algo nuevo
+          // (no al quitar un descuento ni al bajar de plan)
+          const lastSeen = JSON.parse(localStorage.getItem('octopus-gift-state') || '{}')
+          const curPlan = profileData.plan_source === 'gifted' ? profileData.plan : null
+          const curDiscount = profileData.discount_percent || 0
+          if (curPlan && lastSeen.plan !== curPlan) {
+            setGiftModal({ type: 'plan', plan: curPlan, discount: 0 })
+          } else if (curDiscount > (lastSeen.discount || 0)) {
+            setGiftModal({ type: 'discount', plan: profileData.plan || 'starter', discount: curDiscount })
           }
+          localStorage.setItem('octopus-gift-state', JSON.stringify({ plan: curPlan, discount: curDiscount }))
 
           // Parse bio data if it exists
           let finalProfile = profileData
@@ -177,11 +181,14 @@ export default function CompanyDashboard() {
               <GiftIcon className="w-8 h-8 text-emerald-400" strokeWidth={2} />
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">
-              {giftModal.plan !== 'starter' ? `Te regalaron el plan ${getPlan(giftModal.plan).name}` : 'Recibiste un regalo'}
+              {giftModal.type === 'plan'
+                ? `Te regalaron el plan ${getPlan(giftModal.plan).name}`
+                : `Tienes ${giftModal.discount}% de descuento`}
             </h2>
             <p className="text-neutral-400 mb-6">
-              {giftModal.plan !== 'starter' && `Ya tienes acceso a todas las funciones del plan ${getPlan(giftModal.plan).name}.`}
-              {giftModal.discount > 0 && ` Además, tienes un ${giftModal.discount}% de descuento aplicado a tus comisiones y planes.`}
+              {giftModal.type === 'plan'
+                ? `Ya tienes acceso a todas las funciones del plan ${getPlan(giftModal.plan).name}, sin costo.`
+                : `Aplicamos un ${giftModal.discount}% de descuento a tus comisiones y planes. ¡Aprovéchalo!`}
             </p>
             <button
               onClick={() => setGiftModal(null)}

@@ -144,6 +144,13 @@ export default function AdminCompaniesPage() {
                       {PLANS[pk].name}
                     </button>
                   ))}
+                  <button
+                    disabled={savingId === c.user_id}
+                    onClick={() => { if (confirm(`¿Cancelar la suscripción de ${c.company_name || c.email}? Vuelve a Starter.`)) setPlan(c, 'starter' as PlanKey, false) }}
+                    className="px-3 py-1 rounded-lg border border-red-500/40 text-red-400 hover:bg-red-500/10 text-xs font-medium disabled:opacity-50 transition-colors"
+                  >
+                    Cancelar sub
+                  </button>
                 </div>
 
                 {/* Descuento */}
