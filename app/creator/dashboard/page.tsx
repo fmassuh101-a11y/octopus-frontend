@@ -8,6 +8,8 @@ import UserAvatar from '@/components/ui/UserAvatar'
 import CreatorBottomNav from '@/components/ui/CreatorBottomNav'
 import CreatorLevelBadge from '@/components/ui/CreatorLevelBadge'
 import CreatorRewards from '@/components/ui/CreatorRewards'
+import CreatorLeagueCard from '@/components/ui/CreatorLeagueCard'
+import { computeXP } from '@/lib/xp'
 import WorkspaceSwitcher from '@/components/ui/WorkspaceSwitcher'
 import { Search, ClipboardList, Target, Lightbulb, Briefcase, LayoutDashboard, Wallet, MessageCircle, User } from 'lucide-react'
 
@@ -32,7 +34,8 @@ export default function CreatorDashboard() {
   const [stats, setStats] = useState({
     pending: 0,
     accepted: 0,
-    completed: 0
+    completed: 0,
+    total: 0
   })
   const [unreadMessages, setUnreadMessages] = useState(0)
 
@@ -86,12 +89,15 @@ export default function CreatorDashboard() {
           }
           setProfile(finalProfile)
 
-          // PARALLEL FETCH: wallet + applications + unread messages
-          const [walletRes, appsRes, unreadRes] = await Promise.all([
+          // PARALLEL FETCH: wallet + applications + unread messages + entregas completadas
+          const [walletRes, appsRes, unreadRes, delivRes] = await Promise.all([
             fetch(`${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${userData.id}&select=*`, { headers }),
             fetch(`${SUPABASE_URL}/rest/v1/applications?creator_id=eq.${userData.id}&select=id,status,created_at,gig:gigs(title,budget_min,budget_max)&order=created_at.desc`, { headers }),
-            fetch(`${SUPABASE_URL}/rest/v1/messages?sender_type=eq.company&read_at=is.null&select=id,conversation_id`, { headers })
+            fetch(`${SUPABASE_URL}/rest/v1/messages?sender_type=eq.company&read_at=is.null&select=id,conversation_id`, { headers }),
+            fetch(`${SUPABASE_URL}/rest/v1/content_deliveries?creator_id=eq.${userData.id}&status=in.(approved,completed)&select=id`, { headers })
           ])
+          let completedDeliveries = 0
+          if (delivRes.ok) { try { completedDeliveries = (await delivRes.json()).length } catch {} }
 
           // Process wallet
           if (walletRes.ok) {
@@ -117,8 +123,9 @@ export default function CreatorDashboard() {
             // Calculate stats from same data (no extra fetch!)
             setStats({
               pending: allApps.filter((a: any) => a.status === 'pending').length,
-              accepted: allApps.filter((a: any) => a.status === 'accepted').length,
-              completed: allApps.filter((a: any) => a.status === 'completed').length
+              accepted: allApps.filter((a: any) => a.status === 'accepted' || a.status === 'completed').length,
+              completed: completedDeliveries,
+              total: allApps.length
             })
           }
 
@@ -215,6 +222,16 @@ export default function CreatorDashboard() {
   const displayName = profile?.full_name || user?.email?.split('@')[0] || 'Usuario'
   const greeting = new Date().getHours() < 12 ? 'Buenos días' : new Date().getHours() < 18 ? 'Buenas tardes' : 'Buenas noches'
 
+  // XP del creador (derivado de acciones reales)
+  const xpInput = {
+    applications: stats.total,
+    accepted: stats.accepted,
+    completed: stats.completed,
+    hasPhoto: !!(profile?.profile_photo_url || profile?.avatar_url),
+    hasSocials: !!(profile?.tiktok || profile?.instagram || profile?.youtube),
+  }
+  const xp = computeXP(xpInput)
+
   return (
     <div className="min-h-screen bg-black text-white pb-24">
       <GuidedTour storageKey="octopus-tour-creator" steps={[
@@ -296,21 +313,14 @@ export default function CreatorDashboard() {
         </div>
       </div>
 
-      {/* Nivel del creador (gamificación estilo SideShift) */}
-      <div className="px-4 mb-6">
-        <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 text-white placeholder-neutral-500">
-          <h3 className="font-semibold text-white mb-3">Tu nivel</h3>
-          <CreatorLevelBadge completed={stats.completed} showProgress />
-        </div>
+      {/* Liga del creador (XP + nivel + beneficio) */}
+      <div className="px-4 mb-4">
+        <CreatorLeagueCard xp={xp} />
       </div>
 
-      {/* Logros / recompensas */}
+      {/* Misiones (dan XP para subir de liga) */}
       <div className="px-4 mb-6">
-        <CreatorRewards
-          completed={stats.completed}
-          hasPhoto={!!(profile?.profile_photo_url || profile?.avatar_url)}
-          hasSocials={!!(profile?.tiktok || profile?.instagram || profile?.youtube)}
-        />
+        <CreatorRewards {...xpInput} />
       </div>
 
       {/* Quick Actions */}

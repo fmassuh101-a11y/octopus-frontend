@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { getCreatorLevel } from '@/lib/creatorLevel'
+import { getLevel } from '@/lib/xp'
 import { ArrowLeft } from 'lucide-react'
 
 interface Row {
   user_id: string; name: string; avatar: string | null
   tiktok: string | null; instagram: string | null; verified: boolean
-  location: string | null; completed: number
+  location: string | null; completed: number; xp: number; level: string
 }
 
 // colores del podio (1° oro, 2° plata, 3° bronce) — badge numerado, sin emojis
@@ -50,7 +50,7 @@ export default function LeaderboardPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-400 mb-2">Octopus</p>
           <h1 className="text-3xl md:text-4xl font-black tracking-tight">Ranking de creadores</h1>
           <p className="text-neutral-400 mt-2 max-w-md mx-auto">
-            Los creadores que más contenido entregan y cobran en Octopus. Subí de nivel completando trabajos.
+            Los creadores que más contenido entregan y cobran en Octopus. Ganá XP completando trabajos y misiones para subir de liga.
           </p>
         </div>
       </div>
@@ -72,7 +72,7 @@ export default function LeaderboardPage() {
               {[1, 0, 2].map((idx) => {
                 const r = top3[idx]
                 if (!r) return <div key={idx} />
-                const lvl = getCreatorLevel(r.completed).level
+                const lvl = getLevel(r.xp).level
                 const tall = idx === 0
                 return (
                   <div key={r.user_id} className={`flex flex-col items-center ${tall ? '-mt-4' : ''}`}>
@@ -83,9 +83,9 @@ export default function LeaderboardPage() {
                       <Avatar r={r} size={tall ? 76 : 60} />
                     </div>
                     <p className="mt-2 font-semibold text-sm text-center line-clamp-1 max-w-[100px]">{r.name}</p>
-                    <span className={`mt-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${lvl.bg} ${lvl.color}`}>{lvl.name}</span>
+                    <span className={`mt-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${lvl.chipBg} ${lvl.text}`}>{lvl.name}</span>
                     <div className={`mt-2 w-full rounded-t-xl bg-gradient-to-b from-neutral-800 to-neutral-900 border border-neutral-800 flex items-center justify-center ${tall ? 'h-24' : 'h-16'}`}>
-                      <span className="text-lg font-black text-emerald-400">{r.completed}</span>
+                      <span className="text-base font-black text-emerald-400 tabular-nums">{r.xp.toLocaleString("es")}</span><span className="text-[10px] text-neutral-500 block -mt-1">XP</span>
                     </div>
                   </div>
                 )
@@ -95,7 +95,7 @@ export default function LeaderboardPage() {
             {/* Resto de la lista */}
             <div className="mt-6 space-y-2">
               {rest.map((r, i) => {
-                const lvl = getCreatorLevel(r.completed).level
+                const lvl = getLevel(r.xp).level
                 return (
                   <div key={r.user_id} className="flex items-center gap-3 bg-neutral-900 border border-neutral-800 rounded-2xl px-4 py-3">
                     <span className="w-6 text-center font-bold text-neutral-500 tabular-nums">{i + 4}</span>
@@ -111,10 +111,10 @@ export default function LeaderboardPage() {
                         </p>
                       )}
                     </div>
-                    <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${lvl.bg} ${lvl.color}`}>{lvl.name}</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${lvl.chipBg} ${lvl.text}`}>{lvl.name}</span>
                     <div className="text-right w-16">
-                      <span className="font-black text-emerald-400">{r.completed}</span>
-                      <p className="text-[10px] text-neutral-500 -mt-0.5">trabajos</p>
+                      <span className="font-black text-emerald-400 tabular-nums">{r.xp.toLocaleString("es")}</span>
+                      <p className="text-[10px] text-neutral-500 -mt-0.5">XP</p>
                     </div>
                   </div>
                 )
