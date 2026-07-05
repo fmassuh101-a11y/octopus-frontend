@@ -352,6 +352,10 @@ export default function GigsPage() {
                 className="w-full pl-12 pr-4 py-3 bg-neutral-800 rounded-full text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 border border-neutral-700"
               />
             </div>
+            <Link href="/leaderboard" title="Ranking de creadores"
+              className="shrink-0 w-11 h-11 rounded-full bg-neutral-800 border border-neutral-700 hover:border-emerald-500 flex items-center justify-center text-lg transition-colors">
+              🏆
+            </Link>
             <UserAvatar email={user?.email} size={44} />
           </div>
 
