@@ -274,8 +274,10 @@ export default function LoginPage() {
           <OctopusMascot mood={octoMood} look={octoLook} size={270} variant="creator" />
         </div>
 
-        <div className="relative z-10 w-full bg-gradient-to-b from-neutral-800/90 to-neutral-950/95 rounded-[28px] pt-28 px-8 pb-7 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)] border border-white/10 ring-1 ring-inset ring-white/5 text-white placeholder-neutral-500">
-          <div className="text-center mb-6">
+        <div className="relative z-10 w-full bg-gradient-to-b from-neutral-800/90 to-neutral-950/95 rounded-[28px] pt-28 px-8 pb-7 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)] border border-white/10 ring-1 ring-inset ring-white/5 text-white placeholder-neutral-500 overflow-hidden">
+          {/* sombra de contacto: el pulpo se apoya sobre la tarjeta (no flota) */}
+          <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-64 h-20 -mt-4 bg-black/50 blur-2xl rounded-[50%]" />
+          <div className="relative text-center mb-6">
             <h2 className="text-3xl font-bold text-white mb-1">Bienvenido</h2>
             <p className="text-neutral-400">Inicia sesión en tu cuenta</p>
           </div>
