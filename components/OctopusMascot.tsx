@@ -6,26 +6,23 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 
 // ─────────────────────────────────────────────────────────────────────────
-//  OCTO 3D — el modelo real cuelga del login con FÍSICA de péndulo.
-//  Pivotea desde arriba (como agarrado del borde), se balancea suave (chill),
-//  y cada interacción le da un envión que se amortigua solo. Mira el texto que
-//  escribís. En la contraseña mira para otro lado (no espía). Nada 2D.
+//  OCTO 3D — modelo RIGGED (con huesos). Controlo los tentáculos por código:
+//   · idle: los tentáculos ondulan chill (cada uno su ritmo)
+//   · email: la cabeza sigue el texto que escribís
+//   · contraseña: los 2 tentáculos del frente SUBEN a taparse los ojos (como el oso)
+//  Cuelga del login con física de péndulo.
+//  Huesos front (tapar ojos): Bone_008 y Bone_014.
 // ─────────────────────────────────────────────────────────────────────────
 export type OctoMood = 'idle' | 'happy' | 'hiding' | 'success' | 'error' | 'angry'
 interface Look { x: number; y: number }
 
+const TENTACLE_ROOTS = ['Bone_008', 'Bone_014', 'Bone_020', 'Bone_026', 'Bone_032', 'Bone_038']
+const FRONT = ['Bone_008', 'Bone_014'] // los que tapan los ojos
+
 export default function OctopusMascot({
-  mood = 'idle',
-  size = 300,
-  look = null,
-  variant = 'creator',
-  interactive = true,
+  mood = 'idle', size = 300, look = null, variant = 'creator', interactive = true,
 }: {
-  mood?: OctoMood
-  size?: number
-  look?: Look | null
-  variant?: 'creator' | 'company'
-  interactive?: boolean
+  mood?: OctoMood; size?: number; look?: Look | null; variant?: 'creator' | 'company'; interactive?: boolean
 }) {
   const mountRef = useRef<HTMLDivElement>(null)
   const state = useRef({ mood, look, impulse: 0 })
@@ -39,7 +36,6 @@ export default function OctopusMascot({
 
     const scene = new THREE.Scene()
     const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100)
-
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
     renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1))
     renderer.setSize(size, size)
@@ -57,72 +53,53 @@ export default function OctopusMascot({
     const rim = new THREE.DirectionalLight(0xc4b5fd, 1.3); rim.position.set(5, 2, -4); scene.add(rim)
     const fill = new THREE.DirectionalLight(0xffffff, 1.0); fill.position.set(4, -2, 5); scene.add(fill)
 
-    // swing = pivote arriba (péndulo).  hang baja el modelo.  inner = pose/mirada.
-    const swing = new THREE.Group(); scene.add(swing)
+    const swing = new THREE.Group(); scene.add(swing)   // péndulo (cuelga)
     const hang = new THREE.Group(); swing.add(hang)
-    const inner = new THREE.Group(); hang.add(inner)
 
     let loaded = false
-    const waveUniforms: { value: number }[] = []   // para ondular los tentáculos
+    const bones = new Map<string, THREE.Bone>()
+    const rest = new Map<string, THREE.Quaternion>()
+    const qTmp = new THREE.Quaternion()
+    const eTmp = new THREE.Euler()
+    const setBone = (name: string, rx: number, ry: number, rz: number) => {
+      const b = bones.get(name); const r = rest.get(name); if (!b || !r) return
+      eTmp.set(rx, ry, rz); qTmp.setFromEuler(eTmp)
+      b.quaternion.copy(r).multiply(qTmp)
+    }
+
     const draco = new DRACOLoader(); draco.setDecoderPath('/draco/')
     const loader = new GLTFLoader(); loader.setDRACOLoader(draco)
     const file = variant === 'company' ? '/octo/octo-company.glb' : '/octo/octo.glb'
     loader.load(file, (gltf) => {
       const model = gltf.scene
-      const box = new THREE.Box3().setFromObject(model)
-      const dim = new THREE.Vector3(); box.getSize(dim)
-      const center = new THREE.Vector3(); box.getCenter(center)
-      const s = 3.7 / Math.max(dim.x, dim.y, dim.z)
-      model.scale.setScalar(s)
-      model.position.set(-center.x * s, -center.y * s, -center.z * s) // centrado en inner
-      inner.add(model)
-      const H = dim.y * s
-      hang.position.y = -H / 2          // el pivote (swing) queda en la CABEZA
-      camera.position.set(0, -H / 2, Math.max(6.5, H * 2.15))
-      camera.lookAt(0, -H / 2, 0)
+      model.traverse((o: any) => { if (o.isBone) bones.set(o.name, o as THREE.Bone) })
+      bones.forEach((b, n) => rest.set(n, b.quaternion.clone()))
 
-      // ONDULACIÓN de tentáculos: deforma los vértices más bajos (los tentáculos)
-      // con una onda suave → se mueven solos como pulpo real (sin necesitar huesos).
-      inner.updateWorldMatrix(true, true)
-      const wbox = new THREE.Box3().setFromObject(inner)
-      const topY = wbox.max.y, botY = wbox.min.y
-      model.traverse((o: any) => {
-        if (!o.isMesh || !o.material) return
-        const mats = Array.isArray(o.material) ? o.material : [o.material]
-        mats.forEach((mat: THREE.Material) => {
-          mat.onBeforeCompile = (shader) => {
-            shader.uniforms.uTime = { value: 0 }
-            shader.uniforms.uTop = { value: topY }
-            shader.uniforms.uBot = { value: botY }
-            waveUniforms.push(shader.uniforms.uTime)
-            shader.vertexShader = 'uniform float uTime;\nuniform float uTop;\nuniform float uBot;\n' + shader.vertexShader
-            shader.vertexShader = shader.vertexShader.replace(
-              '#include <begin_vertex>',
-              `#include <begin_vertex>
-               vec3 wp = (modelMatrix * vec4(transformed, 1.0)).xyz;
-               float f = clamp((uTop - wp.y) / max(0.001, (uTop - uBot)), 0.0, 1.0);
-               f = pow(f, 1.6); // los tentáculos (abajo) se mueven más que la cabeza
-               transformed.x += sin(uTime * 1.7 + wp.y * 2.6 + wp.x * 2.2) * 0.14 * f;
-               transformed.z += cos(uTime * 1.3 + wp.y * 2.2 + wp.x * 1.6) * 0.11 * f;
-               transformed.y += sin(uTime * 2.1 + wp.x * 3.0) * 0.05 * f;`
-            )
-          }
-          mat.needsUpdate = true
-        })
-      })
+      // encuadrar SOLO la malla (no el esqueleto, que descuadra el bbox)
+      let mesh: THREE.Object3D = model
+      model.traverse((o: any) => { if (o.isSkinnedMesh || o.isMesh) mesh = o })
+      const box = new THREE.Box3().setFromObject(mesh)
+      const sphere = box.getBoundingSphere(new THREE.Sphere())
+      const R = 1.7
+      const s = R / sphere.radius
+      model.scale.setScalar(s)
+      model.position.set(-sphere.center.x * s, -sphere.center.y * s, -sphere.center.z * s)
+      hang.add(model)
+      hang.position.y = -R          // el pivote (swing) queda arriba de la cabeza → cuelga
+      const fov = (camera.fov * Math.PI) / 180
+      const dist = (R / Math.sin(fov / 2)) * 1.55
+      camera.position.set(0, -R, dist)
+      camera.lookAt(0, -R, 0)
       loaded = true
     }, undefined, () => {})
 
-    // física del péndulo
     let angle = 0, vel = 0
     let prevMood: OctoMood = 'idle'
-    // pose interpolada
-    const cur = { lean: 0.28, gy: 0, gx: 0, look: 0, shakeAmt: 0 }
+    const cur = { cover: 0, gx: 0, gy: 0, lean: 0, happy: 0, angry: 0 }
+    const lerp = (a: number, b: number, k: number) => a + (b - a) * k
 
     let raf = 0
     const clock = new THREE.Clock()
-    const lerp = (a: number, b: number, k: number) => a + (b - a) * k
-
     function animate() {
       raf = requestAnimationFrame(animate)
       const dt = Math.min(0.033, clock.getDelta())
@@ -130,46 +107,56 @@ export default function OctopusMascot({
       const st = state.current
       const m = st.mood
 
-      // impulso al cambiar de estado o al tocarlo
       if (m !== prevMood) {
-        if (m === 'happy' || m === 'success') vel += 1.1
-        else if (m === 'angry') vel += 2.2
-        else if (m === 'hiding') vel -= 0.8
-        else vel += 0.5
+        if (m === 'happy' || m === 'success') vel += 0.9
+        else if (m === 'angry') vel += 1.8
+        else if (m === 'hiding') vel -= 0.5
         prevMood = m
       }
       if (st.impulse) { vel += st.impulse; st.impulse = 0 }
 
-      // brisa suave (chill) — se mece siempre un poquito
-      const breeze = Math.sin(t * 0.9) * 0.35 + Math.sin(t * 1.7 + 1) * 0.18
-      const angryExtra = m === 'angry' ? Math.sin(t * 22) * 3.2 : 0
-      // péndulo: rigidez + amortiguación
-      const stiffness = 9, damping = m === 'angry' ? 1.4 : 2.2
-      const acc = -stiffness * angle - damping * vel + breeze + angryExtra
+      // péndulo: cuelga y se mece chill
+      const breeze = Math.sin(t * 0.9) * 0.3 + Math.sin(t * 1.7 + 1) * 0.15
+      const angryExtra = m === 'angry' ? Math.sin(t * 22) * 2.6 : 0
+      const acc = -9 * angle - (m === 'angry' ? 1.4 : 2.4) * vel + breeze + angryExtra
       vel += acc * dt
-      angle += vel * dt
-      angle = Math.max(-0.45, Math.min(0.45, angle))
+      angle = Math.max(-0.4, Math.min(0.4, angle + vel * dt))
       swing.rotation.z = angle
 
+      // objetivos suaves
+      cur.cover = lerp(cur.cover, m === 'hiding' ? 1 : 0, 0.12)
+      cur.happy = lerp(cur.happy, (m === 'happy' || m === 'success') ? 1 : 0, 0.1)
+      cur.angry = lerp(cur.angry, m === 'angry' ? 1 : 0, 0.1)
+      const look = st.look
+      cur.gx = lerp(cur.gx, look ? Math.max(-1, Math.min(1, look.x)) : 0, 0.08)
+      cur.gy = lerp(cur.gy, look ? (look.y ?? 0.3) : 0, 0.08)
+
       if (loaded) {
-        // ondular tentáculos
-        for (const u of waveUniforms) u.value = t
+        // tentáculos ondulan (chill) + los del frente tapan los ojos
+        TENTACLE_ROOTS.forEach((name, i) => {
+          const ph = i * 1.4
+          let rx = Math.sin(t * 1.25 + ph) * 0.14
+          let rz = Math.cos(t * 1.05 + ph) * 0.12
+          if (FRONT.includes(name)) {
+            const side = name === 'Bone_008' ? 1 : -1
+            rx += cur.cover * (-2.3)           // sube el tentáculo alto, a los ojos
+            rz += cur.cover * (1.05 * side)     // lo cierra hacia el centro
+          }
+          setBone(name, rx, 0, rz)
+        })
+        // curl de las puntas frontales para tapar los ojos
+        setBone('Bone_006', cur.cover * -1.4, 0, 0)
+        setBone('Bone_012', cur.cover * -1.4, 0, 0)
+        // cabeza sigue el texto
+        setBone('Bone_002', 0, cur.gx * 0.5, 0)
+        setBone('Bone_040', -cur.gy * 0.2, cur.gx * 0.3, 0)
+
         // respira
         const br = 1 + Math.sin(t * 1.9) * 0.02
-        inner.scale.set(br, 2 - br, br)
-        // pose objetivo según ánimo
-        const tgtLean = m === 'error' ? 0.42 : m === 'hiding' ? 0.02 : 0.28
-        const tgtLookUp = m === 'hiding' ? -0.55 : 0          // en contraseña mira arriba/otro lado
-        const look = st.look
-        const tgtGx = m === 'hiding' ? 0.7 : look ? Math.max(-1, Math.min(1, look.x)) * 0.5 : Math.sin(t * 0.5) * 0.12
-        const tgtGy = look ? (look.y ?? 0.3) : 0
-        cur.lean = lerp(cur.lean, tgtLean, 0.08)
-        cur.look = lerp(cur.look, tgtLookUp, 0.08)
-        cur.gx = lerp(cur.gx, tgtGx, 0.08)
-        cur.gy = lerp(cur.gy, tgtGy, 0.08)
-        inner.rotation.x = cur.lean + cur.look        // inclina adelante (asoma) / arriba (no espía)
-        inner.rotation.y = cur.gx                     // gira hacia el texto
-        inner.rotation.z = -angle * 0.35              // contrarresta un poco el swing (cuerpo flexible)
+        hang.scale.set(br, 2 - br, br)
+        // inclinado hacia adelante (asoma) + temblor de enojo
+        hang.rotation.x = 0.1 + cur.angry * Math.sin(t * 40) * 0.02
+        hang.rotation.y = cur.angry * Math.sin(t * 38) * 0.03
       }
       renderer.render(scene, camera)
     }
@@ -179,7 +166,7 @@ export default function OctopusMascot({
       if (!interactive) return
       const now = Date.now()
       clicks.current = [...clicks.current.filter(x => now - x < 1400), now]
-      state.current.impulse = clicks.current.length >= 4 ? 3.0 : 1.4
+      state.current.impulse = clicks.current.length >= 4 ? 2.6 : 1.2
     }
     renderer.domElement.addEventListener('pointerdown', onClick)
 
