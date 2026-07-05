@@ -354,8 +354,8 @@ export default function GigsPage() {
               />
             </div>
             <Link href="/leaderboard" title="Ranking de creadores"
-              className="shrink-0 w-11 h-11 rounded-full bg-neutral-800 border border-neutral-700 hover:border-emerald-500 text-neutral-300 hover:text-emerald-400 flex items-center justify-center transition-colors">
-              <Trophy className="w-5 h-5" />
+              className="shrink-0 h-11 px-4 rounded-full bg-neutral-800 border border-neutral-700 hover:border-emerald-500 text-neutral-200 hover:text-emerald-400 flex items-center gap-2 font-semibold text-sm transition-colors">
+              <Trophy className="w-4 h-4" /> Ranking
             </Link>
             <UserAvatar email={user?.email} size={44} />
           </div>

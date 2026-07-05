@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { getCreatorLevel } from '@/lib/creatorLevel'
+import { ArrowLeft } from 'lucide-react'
 
 interface Row {
   user_id: string; name: string; avatar: string | null
@@ -34,6 +35,14 @@ export default function LeaderboardPage() {
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white pb-24">
+      {/* Botón volver */}
+      <div className="max-w-3xl mx-auto px-4 pt-4">
+        <button onClick={() => (window.history.length > 1 ? window.history.back() : (window.location.href = '/gigs'))}
+          className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-white transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Volver
+        </button>
+      </div>
+
       {/* Header */}
       <div className="relative overflow-hidden border-b border-neutral-800">
         <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-[520px] h-[320px] rounded-full bg-emerald-500/15 blur-[120px]" />
