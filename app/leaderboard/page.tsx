@@ -10,7 +10,12 @@ interface Row {
   location: string | null; completed: number
 }
 
-const MEDAL = ['🥇', '🥈', '🥉']
+// colores del podio (1° oro, 2° plata, 3° bronce) — badge numerado, sin emojis
+const PODIUM = [
+  { ring: 'ring-yellow-400', bg: 'bg-yellow-400', text: 'text-yellow-950' },
+  { ring: 'ring-neutral-300', bg: 'bg-neutral-300', text: 'text-neutral-900' },
+  { ring: 'ring-amber-600', bg: 'bg-amber-600', text: 'text-amber-50' },
+]
 
 export default function LeaderboardPage() {
   const [rows, setRows] = useState<Row[]>([])
@@ -62,8 +67,12 @@ export default function LeaderboardPage() {
                 const tall = idx === 0
                 return (
                   <div key={r.user_id} className={`flex flex-col items-center ${tall ? '-mt-4' : ''}`}>
-                    <div className="text-2xl mb-1">{MEDAL[idx]}</div>
-                    <Avatar r={r} size={tall ? 76 : 60} />
+                    <div className={`mb-1 w-7 h-7 rounded-full ${PODIUM[idx].bg} ${PODIUM[idx].text} flex items-center justify-center text-sm font-black`}>
+                      {idx + 1}
+                    </div>
+                    <div className={`rounded-full ring-2 ${PODIUM[idx].ring}`}>
+                      <Avatar r={r} size={tall ? 76 : 60} />
+                    </div>
                     <p className="mt-2 font-semibold text-sm text-center line-clamp-1 max-w-[100px]">{r.name}</p>
                     <span className={`mt-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${lvl.bg} ${lvl.color}`}>{lvl.name}</span>
                     <div className={`mt-2 w-full rounded-t-xl bg-gradient-to-b from-neutral-800 to-neutral-900 border border-neutral-800 flex items-center justify-center ${tall ? 'h-24' : 'h-16'}`}>
