@@ -64,6 +64,11 @@ export async function POST(request: NextRequest) {
     for (const k of ALLOWED_FIELDS) {
       if (profileData && profileData[k] !== undefined) safeData[k] = profileData[k]
     }
+    // user_type: permitido SOLO 'creator' o 'company' (nunca 'admin' ni otro).
+    // Necesario para el onboarding; seguro porque admin se decide por email, no por user_type.
+    if (profileData?.user_type === 'creator' || profileData?.user_type === 'company') {
+      safeData.user_type = profileData.user_type
+    }
 
     // Prepare profile data (solo campos permitidos)
     const dataToSave = {

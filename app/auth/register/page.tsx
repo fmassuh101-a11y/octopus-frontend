@@ -152,14 +152,10 @@ export default function RegisterPage() {
       <div className="pointer-events-none absolute top-1/4 left-1/2 -translate-x-1/2 w-[560px] h-[560px] rounded-full bg-violet-600/20 blur-[120px]" />
       <div className="pointer-events-none absolute bottom-0 left-1/4 w-[420px] h-[420px] rounded-full bg-emerald-500/10 blur-[120px]" />
 
-      <div className="relative z-10 w-full max-w-md flex flex-col items-center">
-        <div className="relative z-20 -mb-[104px]">
-          <div className="pointer-events-none absolute inset-0 top-6 rounded-full bg-violet-500/20 blur-3xl -z-10" />
-          <OctopusMascot mood={octoMood} look={octoLook} size={280} variant="creator" />
-        </div>
-        <div className="relative z-10 w-full bg-gradient-to-b from-neutral-800/90 to-neutral-950/95 rounded-[28px] pt-28 px-8 pb-7 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)] border border-white/10 ring-1 ring-inset ring-white/5 text-white placeholder-neutral-500 overflow-hidden">
-          <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-64 h-20 -mt-4 bg-black/50 blur-2xl rounded-[50%]" />
-          <div className="relative text-center mb-6">
+      <div className="relative z-10 w-full max-w-md">
+        <div className="relative z-10 w-full bg-gradient-to-b from-neutral-800/90 to-neutral-950/95 rounded-[28px] pt-8 px-8 pb-7 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)] border border-white/10 ring-1 ring-inset ring-white/5 text-white placeholder-neutral-500">
+          <div className="text-center mb-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-400 mb-2">Octopus</p>
             <h2 className="text-3xl font-bold text-white mb-1">Crear cuenta</h2>
             <p className="text-neutral-400">Empieza a ganar con tu contenido</p>
           </div>
