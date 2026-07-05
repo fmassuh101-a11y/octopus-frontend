@@ -32,14 +32,29 @@ const CATEGORIES = [
   { key: 'todas', label: 'Todas' },
   { key: 'ugc', label: 'UGC' },
   { key: 'clipping', label: 'Clipping' },
-  { key: 'marketing', label: 'Marketing' },
-  { key: 'belleza', label: 'Belleza' },
-  { key: 'moda', label: 'Moda' },
-  { key: 'gaming', label: 'Gaming' },
-  { key: 'comida', label: 'Comida' },
-  { key: 'fitness', label: 'Fitness' },
-  { key: 'tech', label: 'Tech' },
+  { key: 'faceless', label: 'Faceless' },
+  { key: 'social', label: 'Social Media' },
+  { key: 'slideshow', label: 'Slideshows' },
+  { key: 'review', label: 'Reseñas' },
+  { key: 'unboxing', label: 'Unboxing' },
+  { key: 'ambassador', label: 'Embajador' },
 ]
+
+// Tipo de contenido → etiqueta + color (para el badge en las tarjetas)
+const TYPE_META: Record<string, { label: string; cls: string }> = {
+  ugc: { label: 'UGC', cls: 'bg-emerald-500/20 text-emerald-300' },
+  clipping: { label: 'Clipping', cls: 'bg-violet-500/20 text-violet-300' },
+  faceless: { label: 'Faceless', cls: 'bg-sky-500/20 text-sky-300' },
+  social: { label: 'Social Media', cls: 'bg-pink-500/20 text-pink-300' },
+  slideshow: { label: 'Slideshows', cls: 'bg-amber-500/20 text-amber-300' },
+  review: { label: 'Reseña', cls: 'bg-teal-500/20 text-teal-300' },
+  unboxing: { label: 'Unboxing', cls: 'bg-orange-500/20 text-orange-300' },
+  ambassador: { label: 'Embajador', cls: 'bg-fuchsia-500/20 text-fuchsia-300' },
+}
+function typeMeta(cat?: string) {
+  const k = (cat || '').toLowerCase()
+  return TYPE_META[k] || { label: cat || 'UGC', cls: 'bg-neutral-700/50 text-neutral-300' }
+}
 
 export default function GigsPage() {
   const router = useRouter()
@@ -472,6 +487,11 @@ export default function GigsPage() {
 
                 {/* Card Content */}
                 <div className="p-4">
+                  <div className="mb-2">
+                    <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${typeMeta(gig.category).cls}`}>
+                      {typeMeta(gig.category).label}
+                    </span>
+                  </div>
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xl font-bold text-emerald-400">{formatBudget(gig.budget)}</span>
                     <span className="text-sm text-neutral-500">{getTimeAgo(gig.created_at)}</span>
@@ -621,7 +641,9 @@ export default function GigsPage() {
                 </div>
                 <div className="flex-1">
                   <h3 className="font-bold text-white">{selectedGig.company_name || 'Empresa'}</h3>
-                  <p className="text-neutral-500 text-sm">{selectedGig.category}</p>
+                  <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-semibold ${typeMeta(selectedGig.category).cls}`}>
+                    {typeMeta(selectedGig.category).label}
+                  </span>
                 </div>
                 <div className="text-right">
                   <div className="text-2xl font-bold text-emerald-400">{formatBudget(selectedGig.budget)}</div>
