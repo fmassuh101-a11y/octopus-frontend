@@ -102,8 +102,9 @@ export default function OctopusMascot({
                vec3 wp = (modelMatrix * vec4(transformed, 1.0)).xyz;
                float f = clamp((uTop - wp.y) / max(0.001, (uTop - uBot)), 0.0, 1.0);
                f = pow(f, 1.6); // los tentáculos (abajo) se mueven más que la cabeza
-               transformed.x += sin(uTime * 1.7 + wp.y * 2.6 + wp.x * 2.2) * 0.09 * f;
-               transformed.z += cos(uTime * 1.3 + wp.y * 2.2 + wp.x * 1.6) * 0.07 * f;`
+               transformed.x += sin(uTime * 1.7 + wp.y * 2.6 + wp.x * 2.2) * 0.14 * f;
+               transformed.z += cos(uTime * 1.3 + wp.y * 2.2 + wp.x * 1.6) * 0.11 * f;
+               transformed.y += sin(uTime * 2.1 + wp.x * 3.0) * 0.05 * f;`
             )
           }
           mat.needsUpdate = true
