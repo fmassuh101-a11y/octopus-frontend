@@ -1,4 +1,5 @@
 'use client'
+import GuidedTour from '@/components/GuidedTour'
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
@@ -173,6 +174,12 @@ export default function CompanyDashboard() {
 
   return (
     <div className="min-h-screen bg-neutral-950 flex">
+      <GuidedTour storageKey="octopus-tour-company" steps={[
+        { title: 'Bienvenido a Octopus', body: 'Acá conseguís creadores para promocionar tu marca. Te muestro en 4 pasos cómo funciona.' },
+        { title: 'Creá una campaña', body: 'Elegí el tipo de contenido que necesitás (UGC, Clipping, Faceless y más) y publicá tu campaña. El formulario se adapta al tipo.' },
+        { title: 'Revisá aplicantes', body: 'Los creadores aplican a tu campaña. Aceptá a los que te gusten y mandales un contrato con los términos.' },
+        { title: 'Aprobá y pagá', body: 'Cuando el creador entrega, revisás el contenido. Al aprobarlo, se libera el pago. Mejorá tu plan para bajar la comisión.' },
+      ]} />
       {/* Notificación grande: te regalaron un plan / descuento */}
       {giftModal && (
         <div className="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center px-4">

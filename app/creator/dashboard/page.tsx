@@ -1,4 +1,5 @@
 'use client'
+import GuidedTour from '@/components/GuidedTour'
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
@@ -6,6 +7,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import UserAvatar from '@/components/ui/UserAvatar'
 import CreatorBottomNav from '@/components/ui/CreatorBottomNav'
 import CreatorLevelBadge from '@/components/ui/CreatorLevelBadge'
+import CreatorRewards from '@/components/ui/CreatorRewards'
 import WorkspaceSwitcher from '@/components/ui/WorkspaceSwitcher'
 import { Search, ClipboardList, Target, Lightbulb, Briefcase, LayoutDashboard, Wallet, MessageCircle, User } from 'lucide-react'
 
@@ -215,6 +217,12 @@ export default function CreatorDashboard() {
 
   return (
     <div className="min-h-screen bg-black text-white pb-24">
+      <GuidedTour storageKey="octopus-tour-creator" steps={[
+        { title: 'Bienvenido a Octopus', body: 'Acá vas a ganar dinero con tu contenido. Te muestro en 4 pasos cómo funciona.' },
+        { title: 'Explorá trabajos', body: 'En "Trabajos" están las campañas de las marcas (UGC, Clipping, Faceless y más). Filtrá por tipo y aplicá a las que te interesen.' },
+        { title: 'Contrato y entrega', body: 'Cuando una marca te acepta, te llega un contrato. Lo aceptás con tus redes, hacés el contenido y lo entregás desde la app.' },
+        { title: 'Cobrá y subí de nivel', body: 'Al aprobar tu contenido, el pago se libera a tu Wallet. Completá trabajos para subir de Bronce a Platino y aparecer en el ranking.' },
+      ]} />
       {/* Header */}
       <div className="px-4 pt-6 pb-4">
         <div className="mb-3"><WorkspaceSwitcher /></div>
@@ -294,6 +302,15 @@ export default function CreatorDashboard() {
           <h3 className="font-semibold text-white mb-3">Tu nivel</h3>
           <CreatorLevelBadge completed={stats.completed} showProgress />
         </div>
+      </div>
+
+      {/* Logros / recompensas */}
+      <div className="px-4 mb-6">
+        <CreatorRewards
+          completed={stats.completed}
+          hasPhoto={!!(profile?.profile_photo_url || profile?.avatar_url)}
+          hasSocials={!!(profile?.tiktok || profile?.instagram || profile?.youtube)}
+        />
       </div>
 
       {/* Quick Actions */}
