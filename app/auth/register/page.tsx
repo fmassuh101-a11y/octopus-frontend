@@ -157,8 +157,8 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-[100dvh] bg-[#F7FAFD] flex items-center justify-center px-4 py-4 relative overflow-hidden">
-      <div className="pointer-events-none absolute top-1/4 left-1/2 -translate-x-1/2 w-[560px] h-[560px] rounded-full bg-sky-300/40 blur-[120px]" />
-      <div className="pointer-events-none absolute bottom-0 left-1/4 w-[420px] h-[420px] rounded-full bg-sky-200/40 blur-[120px]" />
+      <div className="pointer-events-none absolute top-1/4 left-1/2 -translate-x-1/2 w-[560px] h-[560px] rounded-full bg-cyan-300/45 blur-[120px]" />
+      <div className="pointer-events-none absolute bottom-0 left-1/4 w-[420px] h-[420px] rounded-full bg-teal-300/40 blur-[120px]" />
 
       <div className="relative z-10 w-full max-w-md">
         <div className="relative z-10 w-full bg-white rounded-[28px] pt-8 px-8 pb-7 shadow-[0_24px_60px_-20px_rgba(56,130,200,0.25)] border border-neutral-100 text-neutral-900">
