@@ -256,34 +256,34 @@ export default function LoginPage() {
 
   if (checkingSession) {
     return (
-      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-[100dvh] bg-[#F7FAFD] flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-sky-400 border-t-transparent rounded-full animate-spin"></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-neutral-950 flex items-center justify-center px-4 py-4 relative overflow-hidden">
-      <div className="pointer-events-none absolute top-1/4 left-1/2 -translate-x-1/2 w-[560px] h-[560px] rounded-full bg-violet-600/20 blur-[120px]" />
-      <div className="pointer-events-none absolute bottom-0 right-1/4 w-[420px] h-[420px] rounded-full bg-emerald-500/10 blur-[120px]" />
+    <div className="min-h-[100dvh] bg-[#F7FAFD] flex items-center justify-center px-4 py-4 relative overflow-hidden">
+      <div className="pointer-events-none absolute top-1/4 left-1/2 -translate-x-1/2 w-[560px] h-[560px] rounded-full bg-sky-300/40 blur-[120px]" />
+      <div className="pointer-events-none absolute bottom-0 right-1/4 w-[420px] h-[420px] rounded-full bg-sky-200/40 blur-[120px]" />
 
       <div className="relative z-10 w-full max-w-md">
-        <div className="relative z-10 w-full bg-gradient-to-b from-neutral-800/90 to-neutral-950/95 rounded-[28px] pt-8 px-8 pb-7 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)] border border-white/10 ring-1 ring-inset ring-white/5 text-white placeholder-neutral-500">
+        <div className="relative z-10 w-full bg-white rounded-[28px] pt-8 px-8 pb-7 shadow-[0_24px_60px_-20px_rgba(56,130,200,0.25)] border border-neutral-100 text-neutral-900">
           <div className="text-center mb-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-400 mb-2">Octopus</p>
-            <h2 className="text-3xl font-bold text-white mb-1">Bienvenido</h2>
-            <p className="text-neutral-400">Inicia sesión en tu cuenta</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-500 mb-2">Octopus</p>
+            <h2 className="text-3xl font-extrabold text-neutral-900 mb-1">Bienvenido</h2>
+            <p className="text-neutral-500">Inicia sesión en tu cuenta</p>
           </div>
 
           {error && (
-            <div className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-lg">
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-red-200 text-sm">{error}</p>
             </div>
           )}
 
           <form onSubmit={handleEmailSignIn} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-neutral-300 mb-2">Email</label>
+              <label className="block text-sm font-medium text-neutral-600 mb-2">Email</label>
               <input
                 type="email"
                 required
@@ -292,13 +292,13 @@ export default function LoginPage() {
                 onFocus={() => setFocusedField('email')}
                 onBlur={() => setFocusedField(null)}
                 disabled={loading}
-                className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
+                className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-2xl text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-sky-400 disabled:opacity-50"
                 placeholder="tu@email.com"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-300 mb-2">Contraseña</label>
+              <label className="block text-sm font-medium text-neutral-600 mb-2">Contraseña</label>
               <input
                 type="password"
                 required
@@ -307,7 +307,7 @@ export default function LoginPage() {
                 onFocus={() => setFocusedField('password')}
                 onBlur={() => setFocusedField(null)}
                 disabled={loading}
-                className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
+                className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-2xl text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-sky-400 disabled:opacity-50"
                 placeholder="••••••••"
               />
             </div>
@@ -315,7 +315,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-emerald-500 text-white py-3 px-4 rounded-lg font-semibold hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-gradient-to-b from-[#66B9F9] to-[#4BA0EF] text-white py-3.5 px-4 rounded-full font-bold shadow-lg shadow-sky-200 active:scale-[0.98] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
             </button>
@@ -323,10 +323,10 @@ export default function LoginPage() {
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-white/20"></div>
+              <div className="w-full border-t border-neutral-200"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-transparent text-neutral-300">o</span>
+              <span className="px-2 bg-transparent text-neutral-600">o</span>
             </div>
           </div>
 
@@ -334,7 +334,7 @@ export default function LoginPage() {
             type="button"
             onClick={handleGoogleSignIn}
             disabled={loading}
-            className="w-full bg-neutral-900 text-white py-3 px-4 rounded-lg font-semibold hover:bg-neutral-950 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+            className="w-full bg-white text-neutral-800 py-3.5 px-4 rounded-full font-bold border border-neutral-200 shadow-sm active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -346,9 +346,9 @@ export default function LoginPage() {
           </button>
 
           <div className="mt-6 text-center">
-            <p className="text-neutral-300 text-sm">
+            <p className="text-neutral-600 text-sm">
               ¿No tienes una cuenta?{' '}
-              <Link href="/auth/register" className="font-medium text-emerald-400 hover:text-emerald-300">
+              <Link href="/auth/register" className="font-medium text-sky-500 hover:text-emerald-300">
                 Regístrate
               </Link>
             </p>
