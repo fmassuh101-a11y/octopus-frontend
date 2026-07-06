@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { Drawer } from 'vaul'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import Sky from '@/components/oct/Sky'
+import { toast } from '@/components/oct/toast'
 import { Search, SlidersHorizontal, Check, Sparkles, TrendingUp, DollarSign, Video, EyeOff, Share2, Layers as Images, Star, Package, Crown, History as HistoryIcon, Send } from 'lucide-react'
 
 interface Gig {
@@ -104,6 +105,7 @@ export default function GigsPage() {
     if (appliedGigs.has(gig.id)) return
     setAppliedGigs(prev => new Set([...Array.from(prev), gig.id]))
     setSelectedGig(null)
+    toast('Postulaste con éxito')
     try {
       const token = localStorage.getItem('sb-access-token')
       const res = await fetch(`${SUPABASE_URL}/rest/v1/applications`, {
@@ -115,11 +117,11 @@ export default function GigsPage() {
         const err = await res.text()
         if (err.includes('duplicate')) return
         setAppliedGigs(prev => { const n = new Set(prev); n.delete(gig.id); return n })
-        alert('No se pudo postular. Intentá de nuevo.')
+        toast('No se pudo postular. Intentá de nuevo.', 'error')
       }
     } catch {
       setAppliedGigs(prev => { const n = new Set(prev); n.delete(gig.id); return n })
-      alert('No se pudo postular. Revisá tu conexión.')
+      toast('No se pudo postular. Revisá tu conexión.', 'error')
     }
   }
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import BottomBar from '@/components/oct/BottomBar'
+import Toaster from '@/components/oct/toast'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 
 // Shell persistente del creador (estilo SideShift): la barra flotante se monta
@@ -24,6 +25,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-[100dvh] bg-[#F7FAFD]">
       <main>{children}</main>
       <BottomBar unread={unread} />
+      <Toaster />
     </div>
   )
 }
