@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import Link from 'next/link'
-import { Trophy } from 'lucide-react'
+import { Trophy, Check } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import UserAvatar from '@/components/ui/UserAvatar'
@@ -154,23 +154,26 @@ export default function GigsPage() {
     }
   }
 
+  // One-tap apply optimista: marca "Postulado" al instante y reconcilia en
+  // background; si falla, hace rollback. Sin formulario ni toast de espera.
   const handleApply = async (gig: Gig) => {
     if (!user) {
       router.push('/auth/login')
       return
     }
-
-    // Check if user is verified before allowing application (temporalmente desactivado)
     if (REQUIRE_VERIFICATION && !isVerified) {
-      setSelectedGig(null) // Close gig detail modal first
-      setTimeout(() => setShowVerificationModal(true), 100) // Then show verification modal
+      setSelectedGig(null)
+      setTimeout(() => setShowVerificationModal(true), 100)
       return
     }
+    if (appliedGigs.has(gig.id)) return
 
-    setIsApplying(true)
+    // Optimista: se ve postulado YA
+    setAppliedGigs(prev => new Set([...Array.from(prev), gig.id]))
+    setSelectedGig(null)
+
     try {
       const token = localStorage.getItem('sb-access-token')
-
       const response = await fetch(`${SUPABASE_URL}/rest/v1/applications`, {
         method: 'POST',
         headers: {
@@ -183,35 +186,22 @@ export default function GigsPage() {
           gig_id: gig.id,
           creator_id: user.id,
           company_id: gig.company_id,
-          message: applicationMessage || 'Me interesa esta oportunidad',
+          message: 'Me interesa esta oportunidad',
           status: 'pending'
         })
       })
 
-      if (response.ok) {
-        setAppliedGigs(prev => new Set([...Array.from(prev), gig.id]))
-        setSelectedGig(null)
-        setApplicationMessage('')
-        // Show success toast
-        setShowSuccessToast(true)
-        setCountdown(5)
-      } else {
+      if (!response.ok) {
         const error = await response.text()
-        console.error('Error applying:', response.status, error)
-        // Show specific error to help debug
-        if (error.includes('duplicate')) {
-          alert('Ya aplicaste a este trabajo.')
-        } else if (error.includes('violates row-level security')) {
-          alert('Error de permisos. Contacta soporte. (RLS)')
-        } else {
-          alert(`Error al aplicar: ${error}`)
-        }
+        if (error.includes('duplicate')) return // ya estaba postulado: lo dejamos así
+        // rollback
+        setAppliedGigs(prev => { const n = new Set(prev); n.delete(gig.id); return n })
+        alert('No se pudo postular. Intentá de nuevo.')
       }
     } catch (err) {
       console.error('Error applying to gig:', err)
-      alert('Error al aplicar. Intenta de nuevo.')
-    } finally {
-      setIsApplying(false)
+      setAppliedGigs(prev => { const n = new Set(prev); n.delete(gig.id); return n })
+      alert('No se pudo postular. Revisá tu conexión.')
     }
   }
 
@@ -506,21 +496,17 @@ export default function GigsPage() {
                       e.stopPropagation()
                       if (appliedGigs.has(gig.id)) {
                         router.push('/creator/applications')
-                      } else if (!user) {
-                        router.push('/auth/login')
-                      } else if (REQUIRE_VERIFICATION && !isVerified) {
-                        setShowVerificationModal(true)
                       } else {
-                        setSelectedGig(gig)
+                        handleApply(gig)   // un tap: postula al instante
                       }
                     }}
-                    className={`w-full py-3 rounded-xl font-bold text-sm transition-all ${
+                    className={`w-full py-3 rounded-xl font-bold text-sm transition-transform active:scale-[0.98] flex items-center justify-center gap-1.5 ${
                       appliedGigs.has(gig.id)
-                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                        ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
                         : 'bg-emerald-500 text-white hover:bg-emerald-600'
                     }`}
                   >
-                    {appliedGigs.has(gig.id) ? 'Ver Aplicacion' : 'Aplicar'}
+                    {appliedGigs.has(gig.id) ? (<><Check className="w-4 h-4" /> Postulado</>) : 'Aplicar'}
                   </button>
                 </div>
               </div>
@@ -699,34 +685,12 @@ export default function GigsPage() {
                   </Link>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  <textarea
-                    value={applicationMessage}
-                    onChange={(e) => setApplicationMessage(e.target.value)}
-                    placeholder="Escribe un mensaje para la empresa (opcional)..."
-                    className="w-full p-4 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none"
-                    rows={3}
-                  />
-                  <button
-                    onClick={() => handleApply(selectedGig)}
-                    disabled={isApplying}
-                    className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  >
-                    {isApplying ? (
-                      <>
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        Enviando...
-                      </>
-                    ) : (
-                      <>
-                        <span>Aplicar Ahora</span>
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                        </svg>
-                      </>
-                    )}
-                  </button>
-                </div>
+                <button
+                  onClick={() => handleApply(selectedGig)}
+                  className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] text-white rounded-xl font-bold text-lg transition-transform flex items-center justify-center gap-2"
+                >
+                  Postularme
+                </button>
               )}
             </div>
           </div>
