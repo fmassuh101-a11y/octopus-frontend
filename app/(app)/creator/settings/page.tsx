@@ -19,7 +19,7 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-[100dvh] bg-[#F7FAFD] pb-32 text-neutral-900">
-      <div className="mx-auto max-w-md px-5 pt-6">
+      <div className="mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl px-5 pt-6">
         {/* header */}
         <div className="relative flex items-center justify-center py-2">
           <button onClick={() => (window.history.length > 1 ? router.back() : router.push('/creator/profile'))}
@@ -35,7 +35,8 @@ export default function SettingsPage() {
             <p className="font-bold">Free</p>
             <p className="text-sm text-neutral-500">Completá trabajos para subir de liga y ganar beneficios</p>
           </div>
-          <Row icon={<Crown className="h-5 w-5 text-amber-500" />} label="Ver mi liga y beneficios" onClick={() => router.push('/leaderboard')} last />
+          <Row icon={<Crown className="h-5 w-5 text-amber-500" />} label="Pasate a Pro" onClick={() => router.push('/creator/pro')} />
+          <Row icon={<Crown className="h-5 w-5 text-neutral-400" />} label="Ver mi liga y beneficios" onClick={() => router.push('/leaderboard')} last />
         </div>
 
         {/* cuenta */}

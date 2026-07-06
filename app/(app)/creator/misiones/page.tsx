@@ -51,7 +51,7 @@ export default function MisionesPage() {
   return (
     <div className="relative min-h-[100dvh] pb-32 text-neutral-900">
       <Sky hue="yellow" />
-      <div className="relative mx-auto max-w-md px-5 pt-10">
+      <div className="relative mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl px-5 pt-10">
         <div className="flex items-center justify-between">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-200/80 shadow-sm">
             <Layers className="h-6 w-6 text-amber-600" />

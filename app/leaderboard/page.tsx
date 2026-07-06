@@ -58,7 +58,7 @@ export default function LigasPage() {
   return (
     <div className="relative min-h-[100dvh] bg-white pb-32 text-neutral-900">
       <Sky />
-      <div className="relative mx-auto max-w-md px-5 pt-4">
+      <div className="relative mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl px-5 pt-4">
         <button onClick={() => (window.history.length > 1 ? router.back() : router.push('/creator/dashboard'))}
           className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100/90 shadow-sm transition-transform active:scale-90" aria-label="Cerrar">
           <X className="h-5 w-5" />
@@ -174,26 +174,59 @@ export default function LigasPage() {
 
 const HEX = 'polygon(50% 0%, 96% 26%, 96% 74%, 50% 100%, 4% 74%, 4% 26%)'
 
-// Insignia hexagonal con relieve: base con sombra proyectada, bisel oscuro,
-// gema interior con degradado y brillo superior (gloss) — nada de "plano".
-function Hexagon({ size, from, to, muted, locked }: { size: number; from: string; to: string; muted?: boolean; locked?: boolean }) {
+// Hoja de laurel: óvalo con degradado del color de la liga
+function Leaf({ from, to, style }: { from: string; to: string; style: React.CSSProperties }) {
   return (
-    <div className={`relative ${muted ? 'opacity-75' : ''}`} style={{ width: size, height: size * 1.06, filter: muted ? undefined : 'drop-shadow(0 10px 18px rgba(0,0,0,0.18))' }}>
-      {/* base / bisel exterior */}
-      <div className={`absolute inset-0 bg-gradient-to-b ${from} ${to}`} style={{ clipPath: HEX }} />
-      {/* sombra interna del bisel (borde inferior oscuro) */}
-      <div className="absolute inset-0 bg-black/20" style={{ clipPath: HEX, transform: 'translateY(2.5%)' }} />
-      <div className={`absolute inset-[3%] bg-gradient-to-b ${from} ${to}`} style={{ clipPath: HEX }} />
-      {/* gema interior */}
-      <div className="absolute inset-[14%] bg-black/15" style={{ clipPath: HEX }} />
-      <div className={`absolute inset-[16%] bg-gradient-to-br ${from} ${to} brightness-110`} style={{ clipPath: HEX }} />
-      {/* gloss: brillo superior */}
-      <div className="absolute inset-[16%] bg-gradient-to-b from-white/55 via-white/10 to-transparent" style={{ clipPath: HEX, height: '52%' }} />
-      {/* destello */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        {locked
-          ? <span className="flex h-[36%] w-[36%] items-center justify-center rounded-full bg-white/85 shadow-inner"><Lock className="h-1/2 w-1/2 text-neutral-500" /></span>
-          : <Sparkles className="h-[26%] w-[26%] text-white drop-shadow" />}
+    <div className={`absolute rounded-full bg-gradient-to-b ${from} ${to} shadow-sm`}
+      style={{ borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%', ...style }} />
+  )
+}
+
+// Insignia hexagonal detallada (todas las ligas): bisel, gema con FACETAS,
+// gloss, sombra proyectada y LAURELES a los costados como SideShift.
+function Hexagon({ size, from, to, muted, locked }: { size: number; from: string; to: string; muted?: boolean; locked?: boolean }) {
+  const leaves = [
+    { b: '2%', o: '20%', r: -62, s: 1.0 },
+    { b: '22%', o: '10%', r: -38, s: 0.92 },
+    { b: '42%', o: '5%', r: -16, s: 0.84 },
+    { b: '60%', o: '7%', r: 6, s: 0.72 },
+  ]
+  return (
+    <div className={`relative ${muted ? 'opacity-75' : ''}`} style={{ width: size * (muted ? 1 : 1.36), height: size * 1.12 }}>
+      {/* laureles (solo insignia principal) */}
+      {!muted && leaves.map((l, i) => (
+        <Leaf key={`l${i}`} from={from} to={to}
+          style={{ width: size * 0.16 * l.s, height: size * 0.3 * l.s, left: l.o, bottom: l.b, transform: `rotate(${l.r}deg)`, opacity: 0.9 }} />
+      ))}
+      {!muted && leaves.map((l, i) => (
+        <Leaf key={`r${i}`} from={from} to={to}
+          style={{ width: size * 0.16 * l.s, height: size * 0.3 * l.s, right: l.o, bottom: l.b, transform: `rotate(${-l.r}deg)`, opacity: 0.9 }} />
+      ))}
+      {/* sombra elíptica en el piso */}
+      {!muted && <div className="absolute bottom-[-4%] left-1/2 h-[7%] w-[46%] -translate-x-1/2 rounded-[50%] bg-black/10 blur-[3px]" />}
+
+      <div className="absolute left-1/2 top-0 -translate-x-1/2" style={{ width: size, height: size * 1.06, filter: muted ? undefined : 'drop-shadow(0 10px 16px rgba(0,0,0,0.2))' }}>
+        {/* bisel exterior */}
+        <div className={`absolute inset-0 bg-gradient-to-b ${from} ${to}`} style={{ clipPath: HEX }} />
+        <div className="absolute inset-0 bg-black/25" style={{ clipPath: HEX, transform: 'translateY(2.5%)' }} />
+        <div className={`absolute inset-[3%] bg-gradient-to-b ${from} ${to}`} style={{ clipPath: HEX }} />
+        {/* gema interior */}
+        <div className="absolute inset-[13%] bg-black/20" style={{ clipPath: HEX }} />
+        <div className={`absolute inset-[15%] bg-gradient-to-br ${from} ${to} brightness-110`} style={{ clipPath: HEX }} />
+        {/* FACETAS de la gema */}
+        <div className="absolute inset-[15%] bg-white/20" style={{ clipPath: 'polygon(50% 0%, 96% 26%, 50% 50%)' }} />
+        <div className="absolute inset-[15%] bg-black/10" style={{ clipPath: 'polygon(96% 26%, 96% 74%, 50% 50%)' }} />
+        <div className="absolute inset-[15%] bg-black/20" style={{ clipPath: 'polygon(50% 100%, 96% 74%, 50% 50%)' }} />
+        <div className="absolute inset-[15%] bg-white/10" style={{ clipPath: 'polygon(4% 26%, 50% 0%, 50% 50%)' }} />
+        <div className="absolute inset-[15%] bg-black/5" style={{ clipPath: 'polygon(4% 74%, 4% 26%, 50% 50%)' }} />
+        {/* gloss superior */}
+        <div className="absolute inset-[15%] bg-gradient-to-b from-white/60 via-white/15 to-transparent" style={{ clipPath: HEX, height: '48%' }} />
+        {/* contenido */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          {locked
+            ? <span className="flex h-[34%] w-[34%] items-center justify-center rounded-full bg-white/85 shadow-inner"><Lock className="h-1/2 w-1/2 text-neutral-500" /></span>
+            : <Sparkles className="h-[24%] w-[24%] text-white drop-shadow-md" />}
+        </div>
       </div>
     </div>
   )

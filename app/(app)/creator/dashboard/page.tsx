@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import Sky from '@/components/oct/Sky'
@@ -94,20 +95,20 @@ export default function CreatorHome() {
   const progress = Math.min(100, Math.round((earned / goal) * 100))
 
   // ícono + degradado pastel por misión (estilo ilustraciones de SideShift)
-  const MISSION_META: Record<string, { icon: any; tile: string; ink: string }> = {
-    photo:    { icon: Camera,   tile: 'from-sky-100 to-blue-200',      ink: 'text-blue-500' },
-    social:   { icon: Send,     tile: 'from-violet-100 to-purple-200', ink: 'text-purple-500' },
-    apply:    { icon: Target,   tile: 'from-amber-100 to-orange-200',  ink: 'text-orange-500' },
-    contract: { icon: FileText, tile: 'from-rose-100 to-pink-200',     ink: 'text-rose-500' },
-    first:    { icon: Check,    tile: 'from-emerald-100 to-teal-200',  ink: 'text-emerald-600' },
-    five:     { icon: Trophy,   tile: 'from-yellow-100 to-amber-200',  ink: 'text-amber-500' },
+  const MISSION_META: Record<string, { icon: any; tileSoft: string; ink: string }> = {
+    photo:    { icon: Camera,   tileSoft: 'bg-blue-50',    ink: 'text-blue-500' },
+    social:   { icon: Send,     tileSoft: 'bg-violet-50',  ink: 'text-violet-500' },
+    apply:    { icon: Target,   tileSoft: 'bg-orange-50',  ink: 'text-orange-500' },
+    contract: { icon: FileText, tileSoft: 'bg-rose-50',    ink: 'text-rose-500' },
+    first:    { icon: Check,    tileSoft: 'bg-emerald-50', ink: 'text-emerald-600' },
+    five:     { icon: Trophy,   tileSoft: 'bg-amber-50',   ink: 'text-amber-500' },
   }
 
   if (loading) {
     return (
       <div className="relative min-h-[100dvh]">
         <Sky />
-        <div className="relative mx-auto max-w-md px-5 pt-14">
+        <div className="relative mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl px-5 pt-14">
           <div className="flex gap-2">{[1, 2, 3, 4].map((i) => <div key={i} className="h-10 w-20 animate-pulse rounded-full bg-white/70" />)}</div>
           <div className="mt-10 h-7 w-40 animate-pulse rounded-lg bg-neutral-200/70" />
           <div className="mt-3 h-14 w-56 animate-pulse rounded-xl bg-neutral-200/70" />
@@ -121,7 +122,7 @@ export default function CreatorHome() {
   return (
     <div className="relative min-h-[100dvh] pb-32 text-neutral-900">
       <Sky />
-      <div className="relative mx-auto max-w-md px-5 pt-14">
+      <div className="relative mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl px-5 pt-14">
         {/* chips superiores */}
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
           <Link href="/leaderboard" prefetch className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/60 bg-white px-3.5 py-2 text-sm font-bold shadow-sm active:scale-95 transition-transform">
@@ -136,9 +137,9 @@ export default function CreatorHome() {
           <Link href="/creator/racha" prefetch className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/60 bg-white px-3.5 py-2 text-sm font-bold shadow-sm active:scale-95 transition-transform">
             <Flame className="h-4 w-4 fill-orange-500 text-orange-500" /> {streak}
           </Link>
-          <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/60 bg-white px-3.5 py-2 text-sm font-bold shadow-sm">
+          <Link href="/creator/pro" prefetch className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/60 bg-white px-3.5 py-2 text-sm font-bold shadow-sm transition-transform active:scale-95">
             <Crown className="h-4 w-4 fill-amber-400 text-amber-500" /> FREE
-          </div>
+          </Link>
         </div>
 
         {/* ganancias */}
@@ -176,35 +177,45 @@ export default function CreatorHome() {
           </div>
         )}
 
-        {/* tareas de hoy */}
+        {/* tareas de hoy — checks chicos y precisos, animados */}
         <h2 className="mt-9 text-[26px] font-extrabold tracking-tight">Tus tareas de hoy</h2>
         <div className="mt-4">
           {missions.map((m, i) => {
             const meta = MISSION_META[m.key] || MISSION_META.apply
             const Icon = meta.icon
             return (
-              <div key={m.key} className="flex items-stretch gap-4">
-                {/* check + conector punteado */}
-                <div className="flex w-11 flex-col items-center">
-                  <div className={`mt-6 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${m.done ? 'bg-emerald-500 text-white' : 'bg-neutral-200/80 text-transparent'}`}>
-                    <Check className="h-5 w-5" strokeWidth={3} />
+              <motion.div key={m.key} className="flex items-stretch gap-3"
+                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05, duration: 0.25, ease: 'easeOut' }}>
+                {/* check + conector */}
+                <div className="flex w-8 flex-col items-center">
+                  <div className="mt-[22px] h-7 w-7 shrink-0">
+                    {m.done ? (
+                      <motion.div
+                        initial={{ scale: 0.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+                        transition={{ type: 'spring', stiffness: 480, damping: 22, delay: 0.15 + i * 0.05 }}
+                        className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500 shadow-sm shadow-emerald-200">
+                        <Check className="h-3.5 w-3.5 text-white" strokeWidth={3.5} />
+                      </motion.div>
+                    ) : (
+                      <div className="h-7 w-7 rounded-full border-2 border-neutral-200 bg-white" />
+                    )}
                   </div>
-                  {i < missions.length - 1 && <div className="my-1 w-px flex-1 border-l-2 border-dashed border-neutral-200" />}
+                  {i < missions.length - 1 && <div className="my-1.5 w-px flex-1 bg-neutral-200" />}
                 </div>
-                {/* card */}
-                <div className="mb-3 flex flex-1 items-center gap-3 rounded-3xl border border-neutral-100 bg-white p-4 shadow-sm">
+                {/* card compacta */}
+                <div className="mb-2.5 flex flex-1 items-center gap-3 rounded-2xl border border-neutral-100 bg-white px-4 py-3.5 shadow-sm">
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${m.done ? 'bg-neutral-100' : meta.tileSoft}`}>
+                    <Icon className={`h-[18px] w-[18px] ${m.done ? 'text-neutral-300' : meta.ink}`} strokeWidth={2.2} />
+                  </div>
                   <div className="min-w-0 flex-1">
-                    <p className={`text-[17px] font-bold leading-snug ${m.done ? 'text-neutral-400 line-through' : ''}`}>{m.label}</p>
-                    <p className="mt-1 flex items-center gap-1.5 text-sm text-neutral-500">
-                      <span className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-300 text-[9px] font-black text-white">✦</span>
-                      {m.xp} xp
-                    </p>
+                    <p className={`text-[15px] font-semibold leading-snug ${m.done ? 'text-neutral-400 line-through decoration-neutral-300' : ''}`}>{m.label}</p>
                   </div>
-                  <div className={`flex h-16 w-20 shrink-0 items-center justify-center rounded-2xl shadow-inner ${m.done ? 'bg-neutral-100' : `bg-gradient-to-br ${meta.tile}`}`}>
-                    <Icon className={`h-7 w-7 drop-shadow-sm ${m.done ? 'text-neutral-300' : meta.ink}`} />
-                  </div>
+                  <span className={`shrink-0 rounded-full px-2.5 py-1 text-[12px] font-bold tabular-nums ${m.done ? 'bg-neutral-100 text-neutral-400' : 'bg-amber-50 text-amber-600'}`}>
+                    +{m.xp} XP
+                  </span>
                 </div>
-              </div>
+              </motion.div>
             )
           })}
         </div>

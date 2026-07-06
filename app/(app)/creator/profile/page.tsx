@@ -83,7 +83,7 @@ export default function CreatorProfile() {
   return (
     <div className="relative min-h-[100dvh] pb-32 text-neutral-900">
       <Sky />
-      <div className="relative mx-auto max-w-md px-5 pt-4">
+      <div className="relative mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl px-5 pt-4">
         {/* top: editar / ajustes */}
         <div className="flex items-center justify-end">
           <div className="flex items-center gap-1 rounded-full bg-white/90 px-2 py-1.5 shadow-sm">
@@ -155,6 +155,7 @@ export default function CreatorProfile() {
         <div className="mt-4 overflow-hidden rounded-3xl border border-neutral-100 bg-white shadow-sm">
           <Row href="/creator/wallet" icon={<WalletIcon className="h-5 w-5 text-emerald-500" />} label="Wallet y retiros" />
           <Row href="/creator/applications" icon={<FileText className="h-5 w-5 text-violet-500" />} label="Mis postulaciones" />
+          <Row href="/creator/referidos" icon={<Send className="h-5 w-5 text-sky-500" />} label="Invitá y ganá (referidos)" />
           <Row href="/creator/analytics" icon={<BarChart3 className="h-5 w-5 text-orange-500" />} label="Analytics" />
           <Row href="/creator/deliveries" icon={<Send className="h-5 w-5 text-teal-500" />} label="Mis entregas" />
           <Row href="/creator/contracts" icon={<FileText className="h-5 w-5 text-emerald-600" />} label="Mis contratos" />

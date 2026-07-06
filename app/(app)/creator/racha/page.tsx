@@ -39,7 +39,7 @@ export default function RachaPage() {
   return (
     <div className="relative min-h-[100dvh] pb-32 text-neutral-900">
       <Sky hue="orange" />
-      <div className="relative mx-auto max-w-md px-5 pt-4">
+      <div className="relative mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl px-5 pt-4">
         <button onClick={() => (window.history.length > 1 ? router.back() : router.push('/creator/dashboard'))}
           className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100/90 shadow-sm transition-transform active:scale-90" aria-label="Cerrar">
           <X className="h-5 w-5" />

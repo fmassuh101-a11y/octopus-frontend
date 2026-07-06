@@ -152,29 +152,29 @@ export default function ProfilePage() {
       <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
         <h3 className="text-lg font-semibold text-neutral-900 mb-4">Informacion Personal</h3>
         <div className="space-y-4">
-          <div className="flex justify-between items-center py-3 border-b border-neutral-100">
+          <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
             <span className="text-neutral-400">Nombre Completo</span>
             <span className="font-medium text-neutral-900">
               {data.full_name || `${data.firstName || ''} ${data.lastName || ''}`.trim() || 'Sin configurar'}
             </span>
           </div>
-          <div className="flex justify-between items-center py-3 border-b border-neutral-100">
+          <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
             <span className="text-neutral-400">Email</span>
             <span className="font-medium text-neutral-900">{user?.email || 'Sin configurar'}</span>
           </div>
-          <div className="flex justify-between items-center py-3 border-b border-neutral-100">
+          <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
             <span className="text-neutral-400">Telefono</span>
             <span className="font-medium text-neutral-900">{data.phoneNumber || 'Sin configurar'}</span>
           </div>
-          <div className="flex justify-between items-center py-3 border-b border-neutral-100">
+          <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
             <span className="text-neutral-400">Ubicacion</span>
             <span className="font-medium text-neutral-900">{data.location || 'Sin configurar'}</span>
           </div>
-          <div className="flex justify-between items-center py-3 border-b border-neutral-100">
+          <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
             <span className="text-neutral-400">Nivel Academico</span>
             <span className="font-medium text-neutral-900">{data.academicLevel || 'Sin configurar'}</span>
           </div>
-          <div className="flex justify-between items-center py-3">
+          <div className="flex flex-col items-start gap-0.5 py-3">
             <span className="text-neutral-400">Estudios</span>
             <span className="font-medium text-neutral-900">{data.studies || 'Sin configurar'}</span>
           </div>
@@ -190,7 +190,7 @@ export default function ProfilePage() {
       <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
         <h3 className="text-lg font-semibold text-neutral-900 mb-4">Redes Sociales</h3>
         <div className="space-y-4">
-          <div className="flex items-center justify-between py-3 border-b border-neutral-100">
+          <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-emerald-500 rounded-lg flex items-center justify-center">
                 <svg className="w-5 h-5 text-neutral-900" fill="currentColor" viewBox="0 0 24 24">
@@ -203,7 +203,7 @@ export default function ProfilePage() {
               {data.instagram ? `@${data.instagram}` : 'Sin configurar'}
             </span>
           </div>
-          <div className="flex items-center justify-between py-3 border-b border-neutral-100">
+          <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-[#F7FAFD] rounded-lg flex items-center justify-center">
                 <svg className="w-5 h-5 text-neutral-900" fill="currentColor" viewBox="0 0 24 24">
@@ -216,7 +216,7 @@ export default function ProfilePage() {
               {data.tiktok ? `@${data.tiktok}` : 'Sin configurar'}
             </span>
           </div>
-          <div className="flex items-center justify-between py-3 border-b border-neutral-100">
+          <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
                 <svg className="w-5 h-5 text-neutral-900" fill="currentColor" viewBox="0 0 24 24">
@@ -229,7 +229,7 @@ export default function ProfilePage() {
               {data.youtube ? `@${data.youtube}` : 'Sin configurar'}
             </span>
           </div>
-          <div className="flex items-center justify-between py-3">
+          <div className="flex flex-col items-start gap-0.5 py-3">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-blue-700 rounded-lg flex items-center justify-center">
                 <svg className="w-5 h-5 text-neutral-900" fill="currentColor" viewBox="0 0 24 24">
@@ -249,15 +249,15 @@ export default function ProfilePage() {
       <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
         <h3 className="text-lg font-semibold text-neutral-900 mb-4">Educacion y Experiencia</h3>
         <div className="space-y-4">
-          <div className="flex justify-between items-center py-3 border-b border-neutral-100">
+          <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
             <span className="text-neutral-400">Nivel Academico</span>
             <span className="font-medium text-neutral-900">{data.academicLevel || 'Sin configurar'}</span>
           </div>
-          <div className="flex justify-between items-center py-3 border-b border-neutral-100">
+          <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
             <span className="text-neutral-400">Estudios</span>
             <span className="font-medium text-neutral-900">{data.studies || 'Sin configurar'}</span>
           </div>
-          <div className="flex justify-between items-center py-3">
+          <div className="flex flex-col items-start gap-0.5 py-3">
             <span className="text-neutral-400">LinkedIn</span>
             <span className="font-medium text-neutral-900 text-right max-w-[200px] truncate">
               {data.linkedInUrl ? (
@@ -292,15 +292,15 @@ export default function ProfilePage() {
         </div>
 
         <div className="space-y-3">
-          <div className="flex justify-between items-center py-3 border-b border-neutral-100">
+          <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
             <span className="text-neutral-400">Pendiente de Pago</span>
             <span className="font-medium text-neutral-900">$0</span>
           </div>
-          <div className="flex justify-between items-center py-3 border-b border-neutral-100">
+          <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
             <span className="text-neutral-400">En Revision</span>
             <span className="font-medium text-neutral-900">$0</span>
           </div>
-          <div className="flex justify-between items-center py-3">
+          <div className="flex flex-col items-start gap-0.5 py-3">
             <span className="text-neutral-400">Proximo Pago</span>
             <span className="font-medium text-neutral-900">No programado</span>
           </div>
@@ -323,21 +323,21 @@ export default function ProfilePage() {
       <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
         <h3 className="text-lg font-semibold text-neutral-900 mb-4">Seguridad de la Cuenta</h3>
         <div className="space-y-4">
-          <div className="flex justify-between items-center py-3 border-b border-neutral-100">
+          <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
             <div>
               <p className="font-medium text-neutral-900">Contrasena</p>
               <p className="text-sm text-neutral-500">Ultima actualizacion: Nunca</p>
             </div>
             <button className="text-emerald-600 hover:text-blue-700 font-medium">Cambiar</button>
           </div>
-          <div className="flex justify-between items-center py-3 border-b border-neutral-100">
+          <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
             <div>
               <p className="font-medium text-neutral-900">Autenticacion de dos factores</p>
               <p className="text-sm text-neutral-500">Anade una capa extra de seguridad</p>
             </div>
             <button className="text-emerald-600 hover:text-blue-700 font-medium">Activar</button>
           </div>
-          <div className="flex justify-between items-center py-3">
+          <div className="flex flex-col items-start gap-0.5 py-3">
             <div>
               <p className="font-medium text-neutral-900">Dispositivos conectados</p>
               <p className="text-sm text-neutral-500">1 dispositivo activo</p>
@@ -350,7 +350,7 @@ export default function ProfilePage() {
       <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
         <h3 className="text-lg font-semibold text-neutral-900 mb-4">Privacidad</h3>
         <div className="space-y-4">
-          <div className="flex justify-between items-center py-3 border-b border-neutral-100">
+          <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
             <div>
               <p className="font-medium text-neutral-900">Perfil Publico</p>
               <p className="text-sm text-neutral-500">Las marcas pueden ver tu perfil</p>
@@ -360,7 +360,7 @@ export default function ProfilePage() {
               <div className="w-11 h-6 bg-neutral-100 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white border border-neutral-100 after:border-neutral-700 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 text-neutral-900 placeholder-neutral-400"></div>
             </label>
           </div>
-          <div className="flex justify-between items-center py-3">
+          <div className="flex flex-col items-start gap-0.5 py-3">
             <div>
               <p className="font-medium text-neutral-900">Mostrar Estadisticas</p>
               <p className="text-sm text-neutral-500">Campanas completadas y rating</p>
@@ -779,7 +779,7 @@ export default function ProfilePage() {
             <div className="h-6 w-40 bg-neutral-100 rounded animate-pulse mb-4" />
             <div className="space-y-4">
               {[1,2,3,4].map(i => (
-                <div key={i} className="flex justify-between items-center py-3 border-b border-neutral-100">
+                <div key={i} className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
                   <div className="h-4 w-24 bg-neutral-100 rounded animate-pulse" />
                   <div className="h-4 w-32 bg-neutral-100 rounded animate-pulse" />
                 </div>
@@ -805,7 +805,7 @@ export default function ProfilePage() {
         <div className="px-4 py-4">
           <div className="flex items-center justify-between">
             <button
-              onClick={() => router.push('/creator/dashboard')}
+              onClick={() => (window.history.length > 1 ? router.back() : router.push('/creator/profile'))}
               className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
             >
               <svg className="w-6 h-6 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

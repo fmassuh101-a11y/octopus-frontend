@@ -213,11 +213,11 @@ export default function CreatorWallet() {
 function Header({ title }: { title: string }) {
   return (
     <div className="bg-white border border-neutral-100 px-4 py-4 flex items-center justify-between shadow-sm sticky top-0 z-10">
-      <Link href="/creator/dashboard" className="p-2 -ml-2 rounded-lg hover:bg-neutral-50">
+      <a onClick={() => window.history.back()} className="p-2 -ml-2 rounded-lg hover:bg-neutral-50 cursor-pointer">
         <svg className="w-6 h-6 text-neutral-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
-      </Link>
+      </a>
       <h1 className="font-bold text-neutral-900 text-lg">{title}</h1>
       <div className="w-10" />
     </div>

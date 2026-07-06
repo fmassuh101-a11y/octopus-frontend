@@ -147,7 +147,7 @@ export default function GigsPage() {
   return (
     <div className="relative min-h-[100dvh] pb-32 text-neutral-900">
       <Sky height={230} />
-      <div className="relative mx-auto max-w-md px-5 pt-12">
+      <div className="relative mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl px-5 pt-12">
         {/* search + filtros */}
         <div className="flex items-center gap-3">
           <div className="relative flex-1">
