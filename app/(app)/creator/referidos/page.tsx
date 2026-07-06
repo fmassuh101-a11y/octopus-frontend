@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { useRouter } from 'next/navigation'
 import Sky from '@/components/oct/Sky'
 import { toast } from '@/components/oct/toast'
@@ -25,12 +26,23 @@ export default function ReferidosPage() {
   const router = useRouter()
   const [link, setLink] = useState('')
   const [card, setCard] = useState(0)
+  const [signups, setSignups] = useState(0)
 
   useEffect(() => {
     try {
       const u = JSON.parse(localStorage.getItem('sb-user') || 'null')
       const code = (u?.id || '').slice(0, 8)
       setLink(`${window.location.origin}/auth/register?ref=${code}`)
+      // conteo REAL: perfiles cuyo bio registra este código como referredBy
+      const token = localStorage.getItem('sb-access-token')
+      if (token && code) {
+        fetch(`${SUPABASE_URL}/rest/v1/profiles?bio=like.*referredBy*${code}*&select=user_id`, {
+          headers: { Authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY },
+        })
+          .then((r) => (r.ok ? r.json() : []))
+          .then((rows) => setSignups(Array.isArray(rows) ? rows.length : 0))
+          .catch(() => {})
+      }
     } catch {}
   }, [])
 
@@ -99,7 +111,7 @@ export default function ReferidosPage() {
         {/* stats */}
         <div className="mt-4 grid grid-cols-3 divide-x divide-neutral-100 rounded-3xl border border-neutral-100 bg-white p-5 text-center shadow-sm">
           <div><Banknote className="mx-auto h-5 w-5 text-emerald-500" /><p className="mt-1 text-xl font-extrabold tabular-nums">$0</p><p className="text-xs text-neutral-500">ganado</p></div>
-          <div><UserPlus className="mx-auto h-5 w-5 text-sky-500" /><p className="mt-1 text-xl font-extrabold tabular-nums">0</p><p className="text-xs text-neutral-500">registrados</p></div>
+          <div><UserPlus className="mx-auto h-5 w-5 text-sky-500" /><p className="mt-1 text-xl font-extrabold tabular-nums">{signups}</p><p className="text-xs text-neutral-500">registrados</p></div>
           <div><TrendingUp className="mx-auto h-5 w-5 text-violet-500" /><p className="mt-1 text-xl font-extrabold tabular-nums">0</p><p className="text-xs text-neutral-500">generando</p></div>
         </div>
 

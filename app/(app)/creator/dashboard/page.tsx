@@ -95,13 +95,13 @@ export default function CreatorHome() {
   const progress = Math.min(100, Math.round((earned / goal) * 100))
 
   // ícono + degradado pastel por misión (estilo ilustraciones de SideShift)
-  const MISSION_META: Record<string, { icon: any; tileSoft: string; ink: string }> = {
-    photo:    { icon: Camera,   tileSoft: 'bg-blue-50',    ink: 'text-blue-500' },
-    social:   { icon: Send,     tileSoft: 'bg-violet-50',  ink: 'text-violet-500' },
-    apply:    { icon: Target,   tileSoft: 'bg-orange-50',  ink: 'text-orange-500' },
-    contract: { icon: FileText, tileSoft: 'bg-rose-50',    ink: 'text-rose-500' },
-    first:    { icon: Check,    tileSoft: 'bg-emerald-50', ink: 'text-emerald-600' },
-    five:     { icon: Trophy,   tileSoft: 'bg-amber-50',   ink: 'text-amber-500' },
+  const MISSION_META: Record<string, { icon: any; tile: string }> = {
+    photo:    { icon: Camera,   tile: 'from-sky-400 to-blue-600' },
+    social:   { icon: Send,     tile: 'from-violet-400 to-purple-600' },
+    apply:    { icon: Target,   tile: 'from-amber-400 to-orange-500' },
+    contract: { icon: FileText, tile: 'from-rose-400 to-pink-600' },
+    first:    { icon: Check,    tile: 'from-emerald-400 to-teal-600' },
+    five:     { icon: Trophy,   tile: 'from-yellow-400 to-amber-500' },
   }
 
   if (loading) {
@@ -203,17 +203,23 @@ export default function CreatorHome() {
                   </div>
                   {i < missions.length - 1 && <div className="my-1.5 w-px flex-1 bg-neutral-200" />}
                 </div>
-                {/* card compacta */}
-                <div className="mb-2.5 flex flex-1 items-center gap-3 rounded-2xl border border-neutral-100 bg-white px-4 py-3.5 shadow-sm">
-                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${m.done ? 'bg-neutral-100' : meta.tileSoft}`}>
-                    <Icon className={`h-[18px] w-[18px] ${m.done ? 'text-neutral-300' : meta.ink}`} strokeWidth={2.2} />
+                {/* card estilo SideShift: título + XP, ilustración grande a la derecha */}
+                <div className="mb-3 flex flex-1 items-center gap-4 rounded-[22px] border border-neutral-100 bg-white p-4 shadow-sm">
+                  <div className="min-w-0 flex-1 py-1">
+                    <p className={`text-[17px] font-bold leading-snug ${m.done ? 'text-neutral-400 line-through decoration-neutral-300' : ''}`}>{m.label}</p>
+                    <p className="mt-1.5 flex items-center gap-1.5 text-[14px] text-neutral-500">
+                      <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full bg-gradient-to-b from-amber-300 to-amber-400 text-[10px] font-black text-white shadow-sm">✦</span>
+                      <span className="font-semibold tabular-nums">{m.xp} xp</span>
+                    </p>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className={`text-[15px] font-semibold leading-snug ${m.done ? 'text-neutral-400 line-through decoration-neutral-300' : ''}`}>{m.label}</p>
+                  <div className={`relative flex h-[76px] w-[104px] shrink-0 items-center justify-center overflow-hidden rounded-2xl ${m.done ? 'bg-neutral-100' : `bg-gradient-to-br ${meta.tile}`}`}>
+                    {!m.done && <>
+                      <div className="absolute -right-4 -top-4 h-12 w-12 rounded-full bg-white/25" />
+                      <div className="absolute -bottom-5 -left-3 h-14 w-14 rounded-full bg-white/15" />
+                      <div className="absolute right-2 bottom-2 h-2 w-2 rounded-full bg-white/50" />
+                    </>}
+                    <Icon className={`relative h-9 w-9 ${m.done ? 'text-neutral-300' : 'text-white drop-shadow-md'}`} strokeWidth={2} />
                   </div>
-                  <span className={`shrink-0 rounded-full px-2.5 py-1 text-[12px] font-bold tabular-nums ${m.done ? 'bg-neutral-100 text-neutral-400' : 'bg-amber-50 text-amber-600'}`}>
-                    +{m.xp} XP
-                  </span>
                 </div>
               </motion.div>
             )

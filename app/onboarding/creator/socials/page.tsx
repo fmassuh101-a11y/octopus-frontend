@@ -129,7 +129,8 @@ export default function CreatorSocialsPage() {
         instagram: instagram.trim() || null,
         tiktok: tiktok.trim() || null,
         youtube: youtube.trim() || null,
-        profilePhoto: profilePhoto || null
+        profilePhoto: profilePhoto || null,
+        referredBy: (typeof window !== 'undefined' && localStorage.getItem('oct-ref')) || null
       }
 
       const profileData = {

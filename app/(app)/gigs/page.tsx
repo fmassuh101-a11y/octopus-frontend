@@ -7,7 +7,7 @@ import { Drawer } from 'vaul'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import Sky from '@/components/oct/Sky'
 import { toast } from '@/components/oct/toast'
-import { Search, SlidersHorizontal, Check, Sparkles, TrendingUp, DollarSign, Video, EyeOff, Share2, Layers as Images, Star, Package, Crown, History as HistoryIcon, Send } from 'lucide-react'
+import { Search, SlidersHorizontal, Trophy, Check, Sparkles, TrendingUp, DollarSign, Video, EyeOff, Share2, Layers as Images, Star, Package, Crown, History as HistoryIcon, Send } from 'lucide-react'
 
 interface Gig {
   id: string
@@ -57,8 +57,17 @@ export default function GigsPage() {
   const [appliedGigs, setAppliedGigs] = useState<Set<string>>(new Set())
   const [isVerified, setIsVerified] = useState(false)
   const [showVerificationModal, setShowVerificationModal] = useState(false)
+  const [showFilters, setShowFilters] = useState(false)
 
-  useEffect(() => { loadAllData() }, [])
+  useEffect(() => {
+    // instantáneo: pintar desde caché de la sesión y revalidar en background
+    try {
+      const cached = JSON.parse(sessionStorage.getItem('oct-gigs') || 'null')
+      if (cached?.gigs?.length) { setGigs(cached.gigs); setLoading(false) }
+      if (cached?.applied) setAppliedGigs(new Set(cached.applied))
+    } catch {}
+    loadAllData()
+  }, [])
 
   const loadAllData = async () => {
     const token = localStorage.getItem('sb-access-token')
@@ -77,11 +86,15 @@ export default function GigsPage() {
         )
       }
       const results = await Promise.all(promises)
-      if (results[0].ok) setGigs(await results[0].json())
+      let gigsData: Gig[] | null = null
+      let appliedData: string[] | null = null
+      if (results[0].ok) { gigsData = await results[0].json(); setGigs(gigsData!) }
       if (results[1]?.ok) {
         const applied = await results[1].json()
-        setAppliedGigs(new Set(applied.map((a: any) => a.gig_id)))
+        appliedData = applied.map((a: any) => a.gig_id)
+        setAppliedGigs(new Set(appliedData!))
       }
+      try { sessionStorage.setItem('oct-gigs', JSON.stringify({ gigs: gigsData || [], applied: appliedData || [] })) } catch {}
       if (results[2]?.ok) {
         const profiles = await results[2].json()
         if (profiles.length && profiles[0].bio) {
@@ -142,7 +155,7 @@ export default function GigsPage() {
   const mine = useMemo(() => gigs.filter(g => appliedGigs.has(g.id)), [gigs, appliedGigs])
   const spotlight = filtered[0]
   const nicheMeta = (key?: string) => NICHES.find(n => n.key === (key || '').toLowerCase())
-  const priceLabel = (g: Gig) => g.budget || '$—'
+  const priceLabel = (g: Gig) => (g.budget || '$—').replace(/\s*CLP/gi, '')
 
   return (
     <div className="relative min-h-[100dvh] pb-32 text-neutral-900">
@@ -158,9 +171,13 @@ export default function GigsPage() {
               className="w-full rounded-full border border-neutral-200 bg-white py-3.5 pl-12 pr-4 text-[16px] shadow-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-emerald-300"
             />
           </div>
-          <Link href="/leaderboard" prefetch aria-label="Ranking"
+          <button onClick={() => setShowFilters(true)} aria-label="Filtros"
             className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-neutral-200 bg-white shadow-sm transition-transform active:scale-90">
             <SlidersHorizontal className="h-5 w-5 text-neutral-600" />
+          </button>
+          <Link href="/leaderboard" prefetch aria-label="Ranking"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-neutral-200 bg-white shadow-sm transition-transform active:scale-90">
+            <Trophy className="h-5 w-5 text-amber-500" />
           </Link>
         </div>
 
@@ -191,7 +208,7 @@ export default function GigsPage() {
                   <div className={`h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br ${GRADS[0]}`}>
                     {spotlight.image_url?.startsWith('http') && (
                       /* eslint-disable-next-line @next/next/no-img-element */
-                      <img src={spotlight.image_url} alt="" className="h-full w-full object-cover" />
+                      <img src={spotlight.image_url} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -249,7 +266,7 @@ export default function GigsPage() {
                     <div className={`relative aspect-square overflow-hidden rounded-3xl bg-gradient-to-br ${GRADS[idx % GRADS.length]} shadow-sm`}>
                       {gig.image_url?.startsWith('http') && (
                         /* eslint-disable-next-line @next/next/no-img-element */
-                        <img src={gig.image_url} alt="" className="h-full w-full object-cover"
+                        <img src={gig.image_url} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover"
                           onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
                       )}
                       <span className="absolute right-2 top-2 max-w-[calc(100%-16px)] truncate rounded-full bg-neutral-600/60 px-3 py-1.5 text-[13px] font-bold text-white backdrop-blur-sm">
@@ -316,6 +333,50 @@ export default function GigsPage() {
           </div>
         </div>
       )}
+
+      {/* Sheet de FILTROS — como el panel de filtros de SideShift */}
+      <Drawer.Root open={showFilters} onOpenChange={setShowFilters}>
+        <Drawer.Portal>
+          <Drawer.Overlay className="fixed inset-0 z-50 bg-black/60" />
+          <Drawer.Content className="fixed inset-x-0 bottom-0 z-50 flex max-h-[85dvh] flex-col rounded-t-[28px] bg-white text-neutral-900 outline-none">
+            <div aria-hidden className="mx-auto mb-1 mt-3 h-1.5 w-10 shrink-0 rounded-full bg-neutral-200" />
+            <div className="overflow-y-auto overscroll-contain px-5 pb-10 pt-2">
+              <h2 className="text-2xl font-extrabold tracking-tight">Filtros</h2>
+              <p className="mt-4 text-sm font-bold uppercase tracking-wide text-neutral-400">Ordenar por</p>
+              <div className="mt-2 space-y-2">
+                {([['new', 'Más nuevas'], ['trend', 'Tendencia'], ['pay', 'Mejor pago']] as const).map(([k, label]) => (
+                  <button key={k} onClick={() => setSort(k)}
+                    className={`flex w-full items-center justify-between rounded-2xl border-2 px-4 py-3.5 font-semibold transition-all active:scale-[0.99] ${sort === k ? 'border-emerald-400 bg-emerald-50/50' : 'border-neutral-100 bg-white'}`}>
+                    {label}
+                    <span className={`flex h-6 w-6 items-center justify-center rounded-full ${sort === k ? 'bg-emerald-500' : 'border-2 border-neutral-200'}`}>
+                      {sort === k && <Check className="h-3.5 w-3.5 text-white" strokeWidth={3.5} />}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <p className="mt-6 text-sm font-bold uppercase tracking-wide text-neutral-400">Tipo de contenido</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {NICHES.map(n => (
+                  <button key={n.key} onClick={() => setNiche(niche === n.key ? null : n.key)}
+                    className={`flex items-center gap-2 rounded-full border px-4 py-2.5 text-[15px] font-semibold transition-all active:scale-95 ${niche === n.key ? 'border-emerald-400 bg-emerald-50 text-emerald-600' : 'border-neutral-200 bg-white text-neutral-700'}`}>
+                    <n.icon className="h-4 w-4" /> {n.label}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-7 flex gap-3">
+                <button onClick={() => { setNiche(null); setSort('new'); setSearchQuery('') }}
+                  className="flex-1 rounded-full border border-neutral-200 bg-white py-3.5 font-bold text-neutral-700 transition-transform active:scale-[0.98]">
+                  Limpiar
+                </button>
+                <button onClick={() => setShowFilters(false)}
+                  className="flex-1 rounded-full bg-gradient-to-b from-[#34D399] to-[#0EA472] py-3.5 font-bold text-white shadow-lg shadow-emerald-200 transition-transform active:scale-[0.98]">
+                  Ver {filtered.length} {filtered.length === 1 ? 'campaña' : 'campañas'}
+                </button>
+              </div>
+            </div>
+          </Drawer.Content>
+        </Drawer.Portal>
+      </Drawer.Root>
 
       {/* Detalle como bottom sheet — estilo tarjeta de campaña de SideShift */}
       <Drawer.Root open={!!selectedGig} onOpenChange={(o) => { if (!o) setSelectedGig(null) }}>

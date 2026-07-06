@@ -338,11 +338,9 @@ export default function CreatorContractsPage() {
     })
   }
 
-  const formatCurrency = (amount: number, currency: string) => {
-    const symbols: Record<string, string> = {
-      USD: '$', MXN: '$', BRL: 'R$', COP: '$', ARS: '$', PEN: 'S/'
-    }
-    return `${symbols[currency] || '$'}${amount.toLocaleString()} ${currency}`
+  const formatCurrency = (amount: number, _currency: string) => {
+    // Única moneda de la plataforma: dólares
+    return `$${Number(amount || 0).toLocaleString('en-US')} USD`
   }
 
   const filteredContracts = contracts.filter(c => {

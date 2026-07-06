@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import OctopusMascot, { OctoMood } from '@/components/OctopusMascot'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
@@ -8,6 +8,14 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { validateEmail } from '@/lib/validateEmail'
 
 export default function RegisterPage() {
+  // Capturar código de referido (?ref=) para atribuirlo al crear el perfil
+  useEffect(() => {
+    try {
+      const ref = new URLSearchParams(window.location.search).get('ref')
+      if (ref) localStorage.setItem('oct-ref', ref)
+    } catch {}
+  }, [])
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [email, setEmail] = useState('')

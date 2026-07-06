@@ -22,9 +22,14 @@ export default function CreatorLocationPage() {
   // Get comprehensive world cities from data file
   const worldCities = getCitiesFormatted()
 
+  // búsqueda sin tildes ni mayúsculas (encuentra "Bogotá" escribiendo "bogota")
+  const norm = (t: string) => t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
   const filteredLocations = worldCities.filter(location =>
-    location.toLowerCase().includes(searchQuery.toLowerCase())
-  ).slice(0, 8) // Mostrar máximo 8 resultados
+    norm(location).includes(norm(searchQuery))
+  ).slice(0, 12)
+  // si su ciudad no está en la lista, puede usar lo que escribió tal cual
+  const canUseTyped = searchQuery.trim().length >= 3 &&
+    !filteredLocations.some(l => norm(l) === norm(searchQuery.trim()))
 
   const handleLocationSelect = (location: string) => {
     setSelectedLocation(location)
@@ -115,7 +120,7 @@ export default function CreatorLocationPage() {
           </div>
 
           {/* Location Suggestions */}
-          {showSuggestions && filteredLocations.length > 0 && (
+          {showSuggestions && (filteredLocations.length > 0 || canUseTyped) && (
             <div className="absolute top-full left-0 right-0 bg-neutral-900 border border-neutral-800 rounded-2xl mt-2 shadow-lg z-10 max-h-60 overflow-y-auto text-white placeholder-neutral-500">
               {filteredLocations.map((location, index) => (
                 <button
@@ -130,6 +135,18 @@ export default function CreatorLocationPage() {
                   <span className="text-neutral-200">{location}</span>
                 </button>
               ))}
+              {/* Cualquier ciudad del mundo: usar lo que escribió tal cual */}
+              {canUseTyped && (
+                <button
+                  onClick={() => handleLocationSelect(searchQuery.trim())}
+                  className="w-full p-4 text-left hover:bg-neutral-950 flex items-center space-x-3 first:rounded-t-2xl last:rounded-b-2xl border-t border-neutral-800"
+                >
+                  <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span className="text-emerald-400 font-semibold">Usar &quot;{searchQuery.trim()}&quot;</span>
+                </button>
+              )}
             </div>
           )}
         </div>
