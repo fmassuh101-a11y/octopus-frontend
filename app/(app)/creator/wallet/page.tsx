@@ -13,9 +13,9 @@ const WhopPayoutsEmbed = dynamic(() => import('./WhopPayoutsEmbed'), {
   ssr: false,
   loading: () => (
     <div className="animate-pulse">
-      <div className="h-20 bg-neutral-800 rounded-xl mb-4" />
-      <div className="h-32 bg-neutral-800 rounded-xl mb-4" />
-      <div className="h-12 bg-neutral-800 rounded-xl" />
+      <div className="h-20 bg-neutral-100 rounded-xl mb-4" />
+      <div className="h-32 bg-neutral-100 rounded-xl mb-4" />
+      <div className="h-12 bg-neutral-100 rounded-xl" />
     </div>
   )
 })
@@ -124,7 +124,7 @@ export default function CreatorWallet() {
 
   if (loading) {
     return (
-      <div className="min-h-[100dvh] bg-[#f8f9fa]">
+      <div className="min-h-[100dvh] bg-[#F7FAFD]">
         <Header title="Payouts" />
         <div className="flex items-center justify-center py-20">
           <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
@@ -135,31 +135,31 @@ export default function CreatorWallet() {
   // Need to create Whop account
   if (needsSetup) {
     return (
-      <div className="min-h-[100dvh] bg-[#f8f9fa]">
+      <div className="min-h-[100dvh] bg-[#F7FAFD]">
         <Header title="Payouts" />
 
         <div className="px-4 pt-6">
           {/* Balance Card - Shows 0 */}
-          <div className="bg-neutral-900 rounded-2xl shadow-sm p-5 mb-4">
+          <div className="bg-white border border-neutral-100 rounded-2xl shadow-sm p-5 mb-4">
             <p className="text-neutral-500 text-sm mb-1">Balance disponible</p>
-            <p className="text-3xl font-bold text-white">$0.00 <span className="text-lg font-normal text-neutral-500">USD</span></p>
+            <p className="text-3xl font-bold text-neutral-900">$0.00 <span className="text-lg font-normal text-neutral-500">USD</span></p>
           </div>
 
           {/* Setup Card */}
-          <div className="bg-neutral-900 rounded-2xl shadow-sm p-6">
+          <div className="bg-white border border-neutral-100 rounded-2xl shadow-sm p-6">
             <div className="text-center">
               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
               </div>
-              <h2 className="text-xl font-bold text-white mb-2">Configura tu wallet</h2>
+              <h2 className="text-xl font-bold text-neutral-900 mb-2">Configura tu wallet</h2>
               <p className="text-neutral-500 text-sm mb-6">Verifica tu identidad para poder recibir pagos de las marcas</p>
 
               <button
                 onClick={startSetup}
                 disabled={actionLoading}
-                className="w-full py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold rounded-xl transition-colors"
+                className="w-full py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-neutral-900 font-semibold rounded-xl transition-colors"
               >
                 {actionLoading ? 'Cargando...' : 'Verificar identidad'}
               </button>
@@ -172,7 +172,7 @@ export default function CreatorWallet() {
   // Need KYC verification OR Verified - Show embedded Whop dashboard
   if ((needsKyc || !needsSetup) && showEmbedded && userId && companyId) {
     return (
-      <div className="min-h-[100dvh] bg-[#f8f9fa] pb-20">
+      <div className="min-h-[100dvh] bg-[#F7FAFD] pb-20">
         <Header title="Verificación" />
 
         <div className="px-4 pt-6">
@@ -200,10 +200,10 @@ export default function CreatorWallet() {
 
   // Fallback - shouldn't reach here normally
   return (
-    <div className="min-h-[100dvh] bg-[#f8f9fa]">
+    <div className="min-h-[100dvh] bg-[#F7FAFD]">
       <Header title="Payouts" />
       <div className="px-4 pt-6">
-        <div className="bg-neutral-900 rounded-2xl shadow-sm p-6 text-center">
+        <div className="bg-white border border-neutral-100 rounded-2xl shadow-sm p-6 text-center">
           <p className="text-neutral-500">Cargando...</p>
         </div>
       </div>    </div>
@@ -212,13 +212,13 @@ export default function CreatorWallet() {
 
 function Header({ title }: { title: string }) {
   return (
-    <div className="bg-neutral-900 px-4 py-4 flex items-center justify-between shadow-sm sticky top-0 z-10">
-      <Link href="/creator/dashboard" className="p-2 -ml-2 rounded-lg hover:bg-neutral-800">
-        <svg className="w-6 h-6 text-neutral-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div className="bg-white border border-neutral-100 px-4 py-4 flex items-center justify-between shadow-sm sticky top-0 z-10">
+      <Link href="/creator/dashboard" className="p-2 -ml-2 rounded-lg hover:bg-neutral-50">
+        <svg className="w-6 h-6 text-neutral-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
       </Link>
-      <h1 className="font-bold text-white text-lg">{title}</h1>
+      <h1 className="font-bold text-neutral-900 text-lg">{title}</h1>
       <div className="w-10" />
     </div>
   )
@@ -249,7 +249,7 @@ function BottomNav({ active }: { active: string }) {
   ]
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-800 z-10">
+    <div className="fixed bottom-0 left-0 right-0 bg-white border border-neutral-100 border-t border-neutral-100 z-10">
       <div className="flex justify-around py-2">
         {items.map((item) => (
           <Link

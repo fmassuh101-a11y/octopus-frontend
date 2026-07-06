@@ -427,19 +427,19 @@ export default function CreatorMessagesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-[100dvh] bg-neutral-950 pb-20">
-        <div className="border-b border-neutral-800 px-4 py-4">
-          <div className="h-7 w-28 bg-neutral-800 rounded animate-pulse" />
+      <div className="min-h-[100dvh] bg-[#F7FAFD] pb-20">
+        <div className="border-b border-neutral-100 px-4 py-4">
+          <div className="h-7 w-28 bg-neutral-100 rounded animate-pulse" />
         </div>
         <div className="divide-y divide-neutral-800">
           {[1,2,3,4,5].map(i => (
             <div key={i} className="px-4 py-3 flex items-center gap-3">
-              <div className="w-12 h-12 bg-neutral-800 rounded-full animate-pulse" />
+              <div className="w-12 h-12 bg-neutral-100 rounded-full animate-pulse" />
               <div className="flex-1">
-                <div className="h-5 w-32 bg-neutral-800 rounded animate-pulse mb-2" />
-                <div className="h-4 w-48 bg-neutral-800 rounded animate-pulse" />
+                <div className="h-5 w-32 bg-neutral-100 rounded animate-pulse mb-2" />
+                <div className="h-4 w-48 bg-neutral-100 rounded animate-pulse" />
               </div>
-              <div className="h-4 w-10 bg-neutral-800 rounded animate-pulse" />
+              <div className="h-4 w-10 bg-neutral-100 rounded animate-pulse" />
             </div>
           ))}
         </div>
@@ -453,27 +453,27 @@ export default function CreatorMessagesPage() {
     const dateGroups = groupMessagesByDate(messages)
 
     return (
-      <div className="min-h-[100dvh] bg-neutral-950 flex flex-col">
+      <div className="min-h-[100dvh] bg-[#F7FAFD] flex flex-col">
         {/* Header */}
-        <div className="border-b border-neutral-800 bg-neutral-950 sticky top-0 z-10">
+        <div className="border-b border-neutral-100 bg-[#F7FAFD] sticky top-0 z-10">
           <div className="px-4 py-3 flex items-center gap-3">
-            <button onClick={() => setSelectedConversation(null)} className="p-2 -ml-2 hover:bg-neutral-800 rounded-lg">
+            <button onClick={() => setSelectedConversation(null)} className="p-2 -ml-2 hover:bg-neutral-100 rounded-lg">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
             <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center">
-              <span className="text-white font-medium">{selectedConversation.company_name.charAt(0).toUpperCase()}</span>
+              <span className="text-neutral-900 font-medium">{selectedConversation.company_name.charAt(0).toUpperCase()}</span>
             </div>
             <div className="flex-1">
-              <h1 className="font-semibold text-white">{selectedConversation.company_name}</h1>
+              <h1 className="font-semibold text-neutral-900">{selectedConversation.company_name}</h1>
               <p className="text-xs text-neutral-400">Empresa</p>
             </div>
           </div>
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto bg-neutral-900 px-4 py-4">
+        <div className="flex-1 overflow-y-auto bg-white border border-neutral-100 px-4 py-4">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mb-4">
@@ -481,7 +481,7 @@ export default function CreatorMessagesPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <h3 className="font-medium text-white mb-1">Esperando a {selectedConversation.company_name}</h3>
+              <h3 className="font-medium text-neutral-900 mb-1">Esperando a {selectedConversation.company_name}</h3>
               <p className="text-neutral-400 text-sm">La empresa te escribira pronto</p>
             </div>
           ) : (
@@ -489,7 +489,7 @@ export default function CreatorMessagesPage() {
               {dateGroups.map((group, groupIndex) => (
                 <div key={groupIndex}>
                   <div className="flex justify-center mb-4">
-                    <span className="px-3 py-1 bg-neutral-950 border border-neutral-800 rounded-full text-xs text-neutral-400 shadow-sm text-white placeholder-neutral-500">
+                    <span className="px-3 py-1 bg-[#F7FAFD] border border-neutral-100 rounded-full text-xs text-neutral-400 shadow-sm text-neutral-900 placeholder-neutral-400">
                       {formatDateSeparator(group.date)}
                     </span>
                   </div>
@@ -514,12 +514,12 @@ export default function CreatorMessagesPage() {
                               <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 px-4 py-3 border-b border-yellow-500/20">
                                 <div className="flex items-center gap-3">
                                   <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center">
-                                    <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <svg className="w-5 h-5 text-neutral-900" fill="currentColor" viewBox="0 0 24 24">
                                       <path d="M8 5v14l11-7z"/>
                                     </svg>
                                   </div>
                                   <div>
-                                    <p className="font-semibold text-white text-sm">Entrega de Contenido</p>
+                                    <p className="font-semibold text-neutral-900 text-sm">Entrega de Contenido</p>
                                     <p className="text-xs text-yellow-400">Video enviado para revisión</p>
                                   </div>
                                 </div>
@@ -531,11 +531,11 @@ export default function CreatorMessagesPage() {
                                   href={extractedVideoUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="block px-4 py-3 hover:bg-neutral-800/50 transition-colors"
+                                  className="block px-4 py-3 hover:bg-neutral-100/50 transition-colors"
                                 >
                                   <div className="flex items-center gap-3">
                                     <div className="w-8 h-8 bg-neutral-700 rounded-lg flex items-center justify-center">
-                                      <svg className="w-4 h-4 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <svg className="w-4 h-4 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                                       </svg>
                                     </div>
@@ -550,7 +550,7 @@ export default function CreatorMessagesPage() {
                               )}
 
                               {/* Footer */}
-                              <div className="px-4 py-2 bg-neutral-900/50 flex items-center justify-between">
+                              <div className="px-4 py-2 bg-white border border-neutral-100/50 flex items-center justify-between">
                                 <span className="text-[11px] text-neutral-500">{formatMessageTime(msg.created_at)}</span>
                                 <span className="text-[10px] text-yellow-400 flex items-center gap-1">
                                   <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
@@ -562,7 +562,7 @@ export default function CreatorMessagesPage() {
                             </div>
                           ) : (
                             <div
-                              className={`max-w-[75%] ${isMe ? 'bg-emerald-500 text-white' : 'bg-neutral-950 border border-neutral-800'} rounded-2xl px-4 py-2 shadow-sm ${isContractMessage && !isMe ? 'cursor-pointer hover:border-emerald-500' : ''} placeholder-neutral-500`}
+                              className={`max-w-[75%] ${isMe ? 'bg-emerald-500 text-neutral-900' : 'bg-[#F7FAFD] border border-neutral-100'} rounded-2xl px-4 py-2 shadow-sm ${isContractMessage && !isMe ? 'cursor-pointer hover:border-emerald-500' : ''} placeholder-neutral-400`}
                               onClick={() => {
                                 if (isContractMessage && !isMe && !isCancelledContract && !isAcceptedContract) {
                                   router.push('/creator/contracts')
@@ -590,7 +590,7 @@ export default function CreatorMessagesPage() {
                                     e.stopPropagation()
                                     router.push('/creator/contracts')
                                   }}
-                                  className="mt-2 w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-lg transition-colors"
+                                  className="mt-2 w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-neutral-900 text-sm font-medium rounded-lg transition-colors"
                                 >
                                   Ver Contrato
                                 </button>
@@ -620,7 +620,7 @@ export default function CreatorMessagesPage() {
         </div>
 
         {/* Input */}
-        <div className="border-t border-neutral-800 bg-neutral-950 px-4 py-3">
+        <div className="border-t border-neutral-100 bg-[#F7FAFD] px-4 py-3">
           {canSendMessage ? (
             <div className="space-y-3">
               {/* Video Delivery Button */}
@@ -643,12 +643,12 @@ export default function CreatorMessagesPage() {
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage())}
                   placeholder="Escribe un mensaje..."
-                  className="flex-1 px-4 py-2.5 bg-neutral-900 border border-neutral-700 rounded-full focus:outline-none focus:border-emerald-500 text-sm text-white placeholder-neutral-500"
+                  className="flex-1 px-4 py-2.5 bg-white border border-neutral-100 border border-neutral-700 rounded-full focus:outline-none focus:border-emerald-500 text-sm text-neutral-900 placeholder-neutral-400"
                 />
                 <button
                   onClick={sendMessage}
                   disabled={!newMessage.trim() || sending}
-                  className="w-10 h-10 bg-emerald-500 text-white rounded-full flex items-center justify-center disabled:bg-neutral-700 disabled:cursor-not-allowed"
+                  className="w-10 h-10 bg-emerald-500 text-neutral-900 rounded-full flex items-center justify-center disabled:bg-neutral-700 disabled:cursor-not-allowed"
                 >
                   {sending ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -673,17 +673,17 @@ export default function CreatorMessagesPage() {
         {/* Video Delivery Modal */}
         {showVideoModal && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl text-white placeholder-neutral-500">
+            <div className="bg-white border border-neutral-100 border border-neutral-100 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl text-neutral-900 placeholder-neutral-400">
               {/* Modal Header */}
-              <div className="px-6 py-5 border-b border-neutral-800 bg-gradient-to-r from-yellow-500/10 to-orange-500/10">
+              <div className="px-6 py-5 border-b border-neutral-100 bg-gradient-to-r from-yellow-500/10 to-orange-500/10">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center">
-                    <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-6 h-6 text-neutral-900" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M8 5v14l11-7z"/>
                     </svg>
                   </div>
                   <div>
-                    <h2 className="text-lg font-bold text-white">Entregar Video</h2>
+                    <h2 className="text-lg font-bold text-neutral-900">Entregar Video</h2>
                     <p className="text-sm text-neutral-400">Envia tu contenido a {selectedConversation?.company_name}</p>
                   </div>
                 </div>
@@ -692,7 +692,7 @@ export default function CreatorMessagesPage() {
               <div className="p-6 space-y-5">
                 {/* Video URL Input */}
                 <div>
-                  <label className="block text-sm font-medium text-neutral-300 mb-2">
+                  <label className="block text-sm font-medium text-neutral-600 mb-2">
                     Link del video *
                   </label>
                   <input
@@ -700,7 +700,7 @@ export default function CreatorMessagesPage() {
                     value={videoUrl}
                     onChange={(e) => setVideoUrl(e.target.value)}
                     placeholder="https://drive.google.com/..."
-                    className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-yellow-500 transition-colors"
+                    className="w-full px-4 py-3 bg-neutral-100 border border-neutral-700 rounded-xl text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-yellow-500 transition-colors"
                   />
                   <p className="text-xs text-neutral-500 mt-2">
                     Google Drive, Dropbox, WeTransfer, etc.
@@ -709,7 +709,7 @@ export default function CreatorMessagesPage() {
 
                 {/* Notes */}
                 <div>
-                  <label className="block text-sm font-medium text-neutral-300 mb-2">
+                  <label className="block text-sm font-medium text-neutral-600 mb-2">
                     Notas (opcional)
                   </label>
                   <textarea
@@ -717,7 +717,7 @@ export default function CreatorMessagesPage() {
                     onChange={(e) => setVideoNotes(e.target.value)}
                     placeholder="Cualquier comentario sobre la entrega..."
                     rows={3}
-                    className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-yellow-500 transition-colors resize-none"
+                    className="w-full px-4 py-3 bg-neutral-100 border border-neutral-700 rounded-xl text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-yellow-500 transition-colors resize-none"
                   />
                 </div>
 
@@ -730,21 +730,21 @@ export default function CreatorMessagesPage() {
               </div>
 
               {/* Modal Footer */}
-              <div className="px-6 py-4 border-t border-neutral-800 flex gap-3">
+              <div className="px-6 py-4 border-t border-neutral-100 flex gap-3">
                 <button
                   onClick={() => {
                     setShowVideoModal(false)
                     setVideoUrl('')
                     setVideoNotes('')
                   }}
-                  className="flex-1 py-3 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl font-medium transition-colors border border-neutral-700"
+                  className="flex-1 py-3 bg-neutral-100 hover:bg-neutral-700 text-neutral-900 rounded-xl font-medium transition-colors border border-neutral-700"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={sendVideoDelivery}
                   disabled={!videoUrl.trim() || sendingVideo}
-                  className="flex-1 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-white rounded-xl font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-yellow-500/20"
+                  className="flex-1 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-neutral-900 rounded-xl font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-yellow-500/20"
                 >
                   {sendingVideo ? (
                     <>
@@ -770,24 +770,24 @@ export default function CreatorMessagesPage() {
 
   // Conversation List
   return (
-    <div className="min-h-[100dvh] bg-neutral-950 pb-20">
-      <div className="border-b border-neutral-800 px-4 py-4 flex items-center gap-3">
-        <Link href="/creator/dashboard" className="p-2 -ml-2 hover:bg-neutral-800 rounded-xl">
+    <div className="min-h-[100dvh] bg-[#F7FAFD] pb-20">
+      <div className="border-b border-neutral-100 px-4 py-4 flex items-center gap-3">
+        <Link href="/creator/dashboard" className="p-2 -ml-2 hover:bg-neutral-100 rounded-xl">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </Link>
-        <h1 className="text-xl font-bold text-white">Mensajes</h1>
+        <h1 className="text-xl font-bold text-neutral-900">Mensajes</h1>
       </div>
 
       {conversations.length === 0 ? (
         <div className="flex flex-col items-center justify-center px-4 py-20">
-          <div className="w-16 h-16 bg-neutral-800 rounded-full flex items-center justify-center mb-4">
+          <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mb-4">
             <svg className="w-8 h-8 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
           </div>
-          <h3 className="text-lg font-medium text-white mb-1">Sin mensajes</h3>
+          <h3 className="text-lg font-medium text-neutral-900 mb-1">Sin mensajes</h3>
           <p className="text-neutral-400 text-sm text-center">Aplica a trabajos para comenzar a chatear</p>
         </div>
       ) : (
@@ -796,16 +796,16 @@ export default function CreatorMessagesPage() {
             <button
               key={conv.company_id}
               onClick={() => selectConversation(conv)}
-              className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-neutral-800 text-left ${conv.unread_count > 0 ? 'bg-neutral-800/50' : ''} text-white placeholder-neutral-500`}
+              className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-neutral-100 text-left ${conv.unread_count > 0 ? 'bg-neutral-100/50' : ''} text-neutral-900 placeholder-neutral-400`}
             >
               <div className="relative">
                 <div className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-medium text-lg">{conv.company_name.charAt(0).toUpperCase()}</span>
+                  <span className="text-neutral-900 font-medium text-lg">{conv.company_name.charAt(0).toUpperCase()}</span>
                 </div>
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <h3 className={`font-medium truncate ${conv.unread_count > 0 ? 'text-white' : 'text-neutral-300'}`}>
+                  <h3 className={`font-medium truncate ${conv.unread_count > 0 ? 'text-neutral-900' : 'text-neutral-600'}`}>
                     {conv.company_name}
                   </h3>
                   <span className={`text-xs ${conv.unread_count > 0 ? 'text-emerald-400 font-medium' : 'text-neutral-500'}`}>
@@ -813,11 +813,11 @@ export default function CreatorMessagesPage() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between mt-0.5">
-                  <p className={`text-sm truncate pr-2 ${conv.unread_count > 0 ? 'text-white font-medium' : 'text-neutral-400'}`}>
+                  <p className={`text-sm truncate pr-2 ${conv.unread_count > 0 ? 'text-neutral-900 font-medium' : 'text-neutral-400'}`}>
                     {conv.last_message || 'Sin mensajes'}
                   </p>
                   {conv.unread_count > 0 && (
-                    <span className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                    <span className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center text-neutral-900 text-xs font-bold">
                       {conv.unread_count}
                     </span>
                   )}
