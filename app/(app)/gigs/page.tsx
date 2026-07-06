@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import { Trophy, Check } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { Drawer } from 'vaul'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import UserAvatar from '@/components/ui/UserAvatar'
 
@@ -428,7 +429,7 @@ export default function GigsPage() {
               <div
                 key={gig.id}
                 onClick={() => setSelectedGig(gig)}
-                className="bg-neutral-900 rounded-2xl overflow-hidden border border-neutral-800 hover:border-emerald-500/50 transition-all cursor-pointer group text-white placeholder-neutral-500"
+                className="bg-neutral-900 rounded-2xl overflow-hidden border border-neutral-800 transition-transform duration-100 active:scale-[0.985] cursor-pointer group text-white placeholder-neutral-500"
               >
                 {/* Card Image */}
                 <div className={`h-52 relative bg-gradient-to-br ${getGradient(index)}`}>
@@ -581,9 +582,13 @@ export default function GigsPage() {
       )}
 
       {/* Gig Detail Modal */}
-      {selectedGig && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-neutral-900 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto border border-neutral-800 text-white placeholder-neutral-500">
+      <Drawer.Root open={!!selectedGig} onOpenChange={(o) => { if (!o) setSelectedGig(null) }}>
+        <Drawer.Portal>
+          <Drawer.Overlay className="fixed inset-0 bg-black/60 z-50" />
+          <Drawer.Content className="fixed inset-x-0 bottom-0 z-50 flex max-h-[92dvh] flex-col rounded-t-3xl border-t border-white/10 bg-neutral-900 text-white outline-none">
+            <div className="mx-auto mt-3 mb-1 h-1.5 w-10 shrink-0 rounded-full bg-neutral-700" aria-hidden />
+            <div className="overflow-y-auto overscroll-contain rounded-t-3xl">
+            {selectedGig && (<>
             {/* Modal Header Image */}
             <div className={`h-48 relative bg-gradient-to-br ${getGradient(gigs.indexOf(selectedGig))}`}>
               {selectedGig.image_url && selectedGig.image_url.startsWith('http') ? (
@@ -693,9 +698,11 @@ export default function GigsPage() {
                 </button>
               )}
             </div>
-          </div>
-        </div>
-      )}
+            </>)}
+            </div>
+          </Drawer.Content>
+        </Drawer.Portal>
+      </Drawer.Root>
     </div>
   )
 }
