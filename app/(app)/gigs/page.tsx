@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { Trophy } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
-import CreatorBottomNav from '@/components/ui/CreatorBottomNav'
 import UserAvatar from '@/components/ui/UserAvatar'
 
 interface Gig {
@@ -531,8 +530,6 @@ export default function GigsPage() {
       </div>
 
       {/* Navegación inferior (compartida) */}
-      <CreatorBottomNav />
-
       {/* Verification Required Modal */}
       {showVerificationModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '../../../lib/contexts/AuthContext'
+import { useAuth } from '@/lib/contexts/AuthContext'
 import { Wallet, TrendingUp, Rocket, Gem, ArrowLeftRight, Target, Check, Clock, RefreshCw } from 'lucide-react'
 
 export default function CreatorEarnings() {

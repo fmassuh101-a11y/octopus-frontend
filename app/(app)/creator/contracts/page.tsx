@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation'
 import LegalContractDocument from '@/components/contracts/LegalContractDocument'
 import CreateDeliveryModal from '@/components/deliveries/CreateDeliveryModal'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
-import CreatorBottomNav from '@/components/ui/CreatorBottomNav'
 import { Music2, Instagram, Youtube, Clapperboard, Smartphone, BarChart3, ClipboardList, Package, MessageCircle, User, type LucideIcon } from 'lucide-react'
 
 interface Contract {
@@ -613,8 +612,6 @@ export default function CreatorContractsPage() {
         </div>
       )}
 
-      {/* Navegación inferior (compartida) */}
-      <CreatorBottomNav />
-    </div>
+      {/* Navegación inferior (compartida) */}    </div>
   )
 }

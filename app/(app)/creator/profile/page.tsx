@@ -4,7 +4,6 @@ import { safeExternalUrl } from '@/lib/safe'
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
-import CreatorBottomNav from '@/components/ui/CreatorBottomNav'
 import { supabase, getStoredSession } from '@/lib/supabase'
 import { User, ShieldCheck, Wallet, BarChart3, Lock, MapPin, type LucideIcon } from 'lucide-react'
 
@@ -879,8 +878,6 @@ export default function ProfilePage() {
       </div>
 
       {/* Navegación inferior (compartida) */}
-      <CreatorBottomNav />
-
       {/* Logout Confirmation Modal */}
       {showLogoutModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">

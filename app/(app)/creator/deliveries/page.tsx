@@ -5,7 +5,6 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
-import CreatorBottomNav from '@/components/ui/CreatorBottomNav'
 import { FileText, Upload, Eye, Check, RotateCcw, CircleDollarSign, Package, Clapperboard, Briefcase, BarChart3, MessageCircle, User, type LucideIcon } from 'lucide-react'
 
 interface Delivery {
@@ -635,8 +634,6 @@ export default function CreatorDeliveriesPage() {
         </div>
       )}
 
-      {/* Navegación inferior (compartida) */}
-      <CreatorBottomNav />
-    </div>
+      {/* Navegación inferior (compartida) */}    </div>
   )
 }

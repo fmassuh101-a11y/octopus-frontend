@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { getGigById, applyToGig, formatTimeAgo, formatDeadline, type DBGig } from '../../../lib/database'
-import { useAuth } from '../../../lib/contexts/AuthContext'
+import { getGigById, applyToGig, formatTimeAgo, formatDeadline, type DBGig } from '@/lib/database'
+import { useAuth } from '@/lib/contexts/AuthContext'
 import { PartyPopper } from 'lucide-react'
 
 
