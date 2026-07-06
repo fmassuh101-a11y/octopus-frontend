@@ -172,17 +172,28 @@ export default function LigasPage() {
   )
 }
 
+const HEX = 'polygon(50% 0%, 96% 26%, 96% 74%, 50% 100%, 4% 74%, 4% 26%)'
+
+// Insignia hexagonal con relieve: base con sombra proyectada, bisel oscuro,
+// gema interior con degradado y brillo superior (gloss) — nada de "plano".
 function Hexagon({ size, from, to, muted, locked }: { size: number; from: string; to: string; muted?: boolean; locked?: boolean }) {
   return (
-    <div className={`relative ${muted ? 'opacity-70' : ''}`} style={{ width: size, height: size * 1.06 }}>
-      <div className={`absolute inset-0 bg-gradient-to-b ${from} ${to} shadow-lg`}
-        style={{ clipPath: 'polygon(50% 0%, 96% 26%, 96% 74%, 50% 100%, 4% 74%, 4% 26%)' }} />
-      <div className="absolute inset-[12%] bg-white/25"
-        style={{ clipPath: 'polygon(50% 0%, 96% 26%, 96% 74%, 50% 100%, 4% 74%, 4% 26%)' }} />
+    <div className={`relative ${muted ? 'opacity-75' : ''}`} style={{ width: size, height: size * 1.06, filter: muted ? undefined : 'drop-shadow(0 10px 18px rgba(0,0,0,0.18))' }}>
+      {/* base / bisel exterior */}
+      <div className={`absolute inset-0 bg-gradient-to-b ${from} ${to}`} style={{ clipPath: HEX }} />
+      {/* sombra interna del bisel (borde inferior oscuro) */}
+      <div className="absolute inset-0 bg-black/20" style={{ clipPath: HEX, transform: 'translateY(2.5%)' }} />
+      <div className={`absolute inset-[3%] bg-gradient-to-b ${from} ${to}`} style={{ clipPath: HEX }} />
+      {/* gema interior */}
+      <div className="absolute inset-[14%] bg-black/15" style={{ clipPath: HEX }} />
+      <div className={`absolute inset-[16%] bg-gradient-to-br ${from} ${to} brightness-110`} style={{ clipPath: HEX }} />
+      {/* gloss: brillo superior */}
+      <div className="absolute inset-[16%] bg-gradient-to-b from-white/55 via-white/10 to-transparent" style={{ clipPath: HEX, height: '52%' }} />
+      {/* destello */}
       <div className="absolute inset-0 flex items-center justify-center">
         {locked
-          ? <span className="flex h-[38%] w-[38%] items-center justify-center rounded-full bg-white/85"><Lock className="h-1/2 w-1/2 text-neutral-500" /></span>
-          : <Sparkles className="h-[30%] w-[30%] text-white/90" />}
+          ? <span className="flex h-[36%] w-[36%] items-center justify-center rounded-full bg-white/85 shadow-inner"><Lock className="h-1/2 w-1/2 text-neutral-500" /></span>
+          : <Sparkles className="h-[26%] w-[26%] text-white drop-shadow" />}
       </div>
     </div>
   )

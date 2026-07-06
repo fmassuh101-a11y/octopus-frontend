@@ -93,8 +93,14 @@ export default function CreatorHome() {
   const goal = Math.max(1000, Math.ceil((earned + 1) / 1000) * 1000)
   const progress = Math.min(100, Math.round((earned / goal) * 100))
 
-  const MISSION_ICONS: Record<string, any> = {
-    photo: Camera, social: Send, apply: Target, contract: FileText, first: Check, five: Trophy,
+  // ícono + degradado pastel por misión (estilo ilustraciones de SideShift)
+  const MISSION_META: Record<string, { icon: any; tile: string; ink: string }> = {
+    photo:    { icon: Camera,   tile: 'from-sky-100 to-blue-200',      ink: 'text-blue-500' },
+    social:   { icon: Send,     tile: 'from-violet-100 to-purple-200', ink: 'text-purple-500' },
+    apply:    { icon: Target,   tile: 'from-amber-100 to-orange-200',  ink: 'text-orange-500' },
+    contract: { icon: FileText, tile: 'from-rose-100 to-pink-200',     ink: 'text-rose-500' },
+    first:    { icon: Check,    tile: 'from-emerald-100 to-teal-200',  ink: 'text-emerald-600' },
+    five:     { icon: Trophy,   tile: 'from-yellow-100 to-amber-200',  ink: 'text-amber-500' },
   }
 
   if (loading) {
@@ -174,7 +180,8 @@ export default function CreatorHome() {
         <h2 className="mt-9 text-[26px] font-extrabold tracking-tight">Tus tareas de hoy</h2>
         <div className="mt-4">
           {missions.map((m, i) => {
-            const Icon = MISSION_ICONS[m.key] || Target
+            const meta = MISSION_META[m.key] || MISSION_META.apply
+            const Icon = meta.icon
             return (
               <div key={m.key} className="flex items-stretch gap-4">
                 {/* check + conector punteado */}
@@ -193,8 +200,8 @@ export default function CreatorHome() {
                       {m.xp} xp
                     </p>
                   </div>
-                  <div className={`flex h-16 w-20 shrink-0 items-center justify-center rounded-2xl ${m.done ? 'bg-neutral-100' : 'bg-emerald-50'}`}>
-                    <Icon className={`h-7 w-7 ${m.done ? 'text-neutral-300' : 'text-emerald-500'}`} />
+                  <div className={`flex h-16 w-20 shrink-0 items-center justify-center rounded-2xl shadow-inner ${m.done ? 'bg-neutral-100' : `bg-gradient-to-br ${meta.tile}`}`}>
+                    <Icon className={`h-7 w-7 drop-shadow-sm ${m.done ? 'text-neutral-300' : meta.ink}`} />
                   </div>
                 </div>
               </div>
