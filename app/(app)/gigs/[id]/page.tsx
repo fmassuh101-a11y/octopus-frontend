@@ -110,7 +110,7 @@ export default function GigDetailPage() {
             onClick={() => router.push('/gigs')}
             className="text-blue-600 hover:text-blue-800 font-medium"
           >
-            ← Back to gigs
+            Volver a trabajos
           </button>
         </div>
       </div>

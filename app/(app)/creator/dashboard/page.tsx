@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import Sky from '@/components/oct/Sky'
 import { computeXP, getLevel, getMissions } from '@/lib/xp'
-import { Shield, Star, Flame, Crown, Trophy, Check, Target, Wallet, FileText, Send, Camera, X } from 'lucide-react'
+import { Shield, Star, Flame, Crown, Trophy, Check, Target, Wallet, FileText, Send, Camera, X, Sparkles } from 'lucide-react'
 
 // Home del creador — copia del Home de SideShift:
 // chips arriba, "Tus ganancias" con monto gigante + meta + barra,
@@ -224,8 +224,10 @@ export default function CreatorHome() {
                   <div className="min-w-0 flex-1 py-1">
                     <p className={`text-[17px] font-bold leading-snug ${m.done ? 'text-neutral-400 line-through decoration-neutral-300' : ''}`}>{m.label}</p>
                     <p className="mt-1.5 flex items-center gap-1.5 text-[14px] text-neutral-500">
-                      <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full bg-gradient-to-b from-amber-300 to-amber-400 text-[10px] font-black text-white shadow-sm">✦</span>
-                      <span className="font-semibold tabular-nums">{m.xp} xp</span>
+                      <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full bg-gradient-to-b from-amber-300 to-amber-400 shadow-sm">
+                        <Sparkles className="h-2.5 w-2.5 text-white" strokeWidth={2.5} />
+                      </span>
+                      <span className="font-semibold tabular-nums">{m.xp} XP</span>
                     </p>
                   </div>
                   <div className={`relative flex h-[76px] w-[104px] shrink-0 items-center justify-center overflow-hidden rounded-2xl ${m.done ? 'bg-neutral-100' : `bg-gradient-to-br ${meta.tile}`}`}>

@@ -45,13 +45,15 @@ export default function RachaPage() {
           <X className="h-5 w-5" />
         </button>
 
-        {/* flama */}
+        {/* flama con carita dibujada (sin emoji) */}
         <div className="mt-6 flex flex-col items-center">
-          <div className="relative flex h-32 w-32 items-center justify-center">
-            <Flame className="h-28 w-28 fill-orange-500 text-orange-500 drop-shadow-lg" />
-            <div className="absolute bottom-5 flex h-12 w-10 items-center justify-center rounded-full bg-white">
-              <span className="mt-1 text-lg">☺</span>
-            </div>
+          <div className="relative flex h-32 w-32 items-center justify-center drop-shadow-lg">
+            <Flame className="h-28 w-28 fill-orange-500 text-orange-500" />
+            <svg className="absolute" width="30" height="22" viewBox="0 0 30 22" style={{ bottom: 34 }} fill="none">
+              <circle cx="9" cy="7" r="2.2" fill="#c2410c" />
+              <circle cx="21" cy="7" r="2.2" fill="#c2410c" />
+              <path d="M8 13 Q15 19 22 13" stroke="#c2410c" strokeWidth="2.4" strokeLinecap="round" fill="none" />
+            </svg>
           </div>
           <p className="mt-4 text-[64px] font-extrabold leading-none text-orange-500 tabular-nums">{streak}</p>
           <p className="mt-1 text-xl font-bold text-orange-500">{streak === 1 ? 'día de racha' : 'días de racha'}</p>

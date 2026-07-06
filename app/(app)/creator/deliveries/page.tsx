@@ -401,7 +401,7 @@ export default function CreatorDeliveriesPage() {
               {selectedDelivery.status === 'revision_needed' && selectedDelivery.feedback && (
                 <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-4">
                   <div className="flex items-start gap-3">
-                    <span className="text-2xl">↻</span>
+                    <RotateCcw className="h-6 w-6 text-orange-400" />
                     <div>
                       <p className="font-semibold text-orange-300 mb-1">Cambios Solicitados</p>
                       <p className="text-sm text-orange-200/80">{selectedDelivery.feedback}</p>

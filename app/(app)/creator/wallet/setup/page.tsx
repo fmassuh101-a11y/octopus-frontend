@@ -239,7 +239,7 @@ export default function WalletSetup() {
                 href="/creator/wallet"
                 className="block text-white/50 hover:text-white text-sm"
               >
-                Ya completé la verificación →
+                Ya completé la verificación
               </Link>
             </div>
           )}
