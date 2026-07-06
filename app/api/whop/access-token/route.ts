@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { whopClient } from "@/lib/whop";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { getAuthenticatedUser } from '@/lib/auth/apiAuth'
+import { shield } from '@/lib/shield'
 
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -11,6 +12,9 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
  * (antes aceptaba cualquier userId del body → robo de tokens ajenos).
  */
 export async function POST(request: NextRequest) {
+  const _blocked = shield(request as unknown as Request, { limit: 20 })
+  if (_blocked) return _blocked
+
   try {
     const user = await getAuthenticatedUser(request)
     if (!user) {

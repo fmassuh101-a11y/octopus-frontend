@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { shield } from '@/lib/shield'
 
-export async function GET() {
+export async function GET(_req: Request) {
+  const _blocked = shield(_req as unknown as Request, { limit: 30 })
+  if (_blocked) return _blocked
+
   try {
     // Fetch all creator profiles
     const response = await fetch(

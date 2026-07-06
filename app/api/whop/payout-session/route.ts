@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { whopClient } from "@/lib/whop";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { shield } from '@/lib/shield'
 
 /**
  * POST /api/whop/payout-session
@@ -10,6 +11,9 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
  * Returns: { companyId, needsSetup } or error
  */
 export async function POST(request: NextRequest) {
+  const _blocked = shield(request as unknown as Request, { limit: 20 })
+  if (_blocked) return _blocked
+
   try {
     console.log("[Whop Payout Session] Starting...");
 

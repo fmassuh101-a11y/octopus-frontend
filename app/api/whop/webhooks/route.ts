@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import crypto from "crypto";
+import { shield } from '@/lib/shield'
 
 /**
  * Webhook handler para eventos de Whop
@@ -14,6 +15,9 @@ import crypto from "crypto";
  */
 
 export async function POST(request: NextRequest) {
+  const _blocked = shield(request as unknown as Request, { limit: 20 })
+  if (_blocked) return _blocked
+
   try {
     // Validación de firma HMAC: sin WHOP_WEBHOOK_SECRET configurado se
     // rechaza todo — antes cualquiera podía forjar "payment.succeeded".

@@ -3,6 +3,7 @@ import { whopClient } from "@/lib/whop";
 import { SUPABASE_URL } from '@/lib/config/supabase'
 import { getAuthenticatedUser } from '@/lib/auth/apiAuth'
 import { rateLimit } from '@/lib/rateLimit'
+import { shield } from '@/lib/shield'
 
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 
@@ -13,6 +14,9 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
  * (antes venía del query string → cualquiera sacaba token de otra empresa).
  */
 export async function GET(request: NextRequest) {
+  const _blocked = shield(request as unknown as Request, { limit: 20 })
+  if (_blocked) return _blocked
+
   const limited = rateLimit(request, { limit: 15, name: 'whop-token' })
   if (limited) return limited
 

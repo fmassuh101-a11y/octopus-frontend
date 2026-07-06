@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createCompanyAccount, createCreatorAccount } from "@/lib/whop";
+import { shield } from '@/lib/shield'
 
 /**
  * API para crear Companies en Whop
@@ -8,6 +9,9 @@ import { createCompanyAccount, createCreatorAccount } from "@/lib/whop";
  */
 
 export async function POST(request: NextRequest) {
+  const _blocked = shield(request as unknown as Request, { limit: 20 })
+  if (_blocked) return _blocked
+
   try {
     const supabase = await createClient();
 

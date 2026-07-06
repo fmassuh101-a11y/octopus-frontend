@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createKYCOnboardingLink, createPayoutsPortalLink } from "@/lib/whop";
+import { shield } from '@/lib/shield'
 
 /**
  * API para generar links de KYC y Portal de Payouts
@@ -8,6 +9,9 @@ import { createKYCOnboardingLink, createPayoutsPortalLink } from "@/lib/whop";
 
 // GET: Obtener link de onboarding o payouts portal
 export async function GET(request: NextRequest) {
+  const _blocked = shield(request as unknown as Request, { limit: 20 })
+  if (_blocked) return _blocked
+
   try {
     const supabase = await createClient();
 

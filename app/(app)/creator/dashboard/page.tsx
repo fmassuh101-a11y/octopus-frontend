@@ -31,6 +31,14 @@ export default function CreatorHome() {
       localStorage.setItem('oct-streak', JSON.stringify({ last: today, count }))
       setStreak(count)
       if (localStorage.getItem('oct-rank-banner') === '0') setShowRankBanner(false)
+      // instantáneo: pintar desde caché de sesión y revalidar detrás
+      const home = JSON.parse(sessionStorage.getItem('oct-home') || 'null')
+      if (home?.profile) {
+        setProfile(home.profile)
+        if (home.wallet) setWallet(home.wallet)
+        if (home.stats) setStats(home.stats)
+        setLoading(false)
+      }
     } catch {}
     checkAuth()
   }, [])
@@ -78,6 +86,14 @@ export default function CreatorHome() {
       window.location.href = '/auth/select-type'
     }
   }
+
+  // guardar snapshot para próxima visita instantánea
+  useEffect(() => {
+    if (!loading && profile) {
+      try { sessionStorage.setItem('oct-home', JSON.stringify({ profile, wallet, stats })) } catch {}
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, profile, wallet, stats])
 
   const xpInput = {
     applications: stats.total,
