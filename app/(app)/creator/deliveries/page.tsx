@@ -230,7 +230,7 @@ export default function CreatorDeliveriesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
+      <div className="min-h-[100dvh] bg-neutral-950 flex items-center justify-center">
         <div className="text-center">
           <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-neutral-400">Cargando entregas...</p>
@@ -240,7 +240,7 @@ export default function CreatorDeliveriesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-white pb-24">
+    <div className="min-h-[100dvh] bg-neutral-950 text-white pb-24">
       {/* Header */}
       <div className="bg-neutral-900 border-b border-neutral-800 sticky top-0 z-10">
         <div className="px-4 py-4 flex items-center justify-between">

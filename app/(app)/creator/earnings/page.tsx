@@ -21,7 +21,7 @@ export default function CreatorEarnings() {
   // Show loading while checking auth
   if (loading) {
     return (
-      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
+      <div className="min-h-[100dvh] bg-neutral-950 flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-neutral-400">Cargando...</p>
@@ -58,7 +58,7 @@ export default function CreatorEarnings() {
   ]
 
   return (
-    <div className="min-h-screen bg-neutral-950">
+    <div className="min-h-[100dvh] bg-neutral-950">
       {/* Header */}
       <div className="bg-neutral-900 sticky top-0 z-10 border-b border-neutral-800">
         <div className="px-4 py-4">

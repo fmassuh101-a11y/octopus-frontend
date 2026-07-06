@@ -745,7 +745,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-neutral-950">
+      <div className="min-h-[100dvh] bg-neutral-950">
         {/* Skeleton Header */}
         <div className="bg-neutral-900 border-b border-neutral-800 sticky top-0 z-10 px-4 py-4">
           <div className="flex items-center justify-between">
@@ -799,7 +799,7 @@ export default function ProfilePage() {
   const profilePhoto = profile?.profilePhoto || bioData.profilePhoto
 
   return (
-    <div className="min-h-screen bg-neutral-950">
+    <div className="min-h-[100dvh] bg-neutral-950">
       {/* Header */}
       <div className="bg-neutral-900 border-b border-neutral-800 sticky top-0 z-10">
         <div className="px-4 py-4">

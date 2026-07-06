@@ -112,7 +112,7 @@ export default function WalletSetup() {
 
   if (step === 'error') {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] text-white">
+      <div className="min-h-[100dvh] bg-[#0a0a0a] text-white">
         <div className="px-5 pt-5">
           <Header />
           <div className="max-w-md mx-auto mt-8">
@@ -143,7 +143,7 @@ export default function WalletSetup() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
+    <div className="min-h-[100dvh] bg-[#0a0a0a] text-white">
       <div className="px-5 pt-5">
         <Header />
 

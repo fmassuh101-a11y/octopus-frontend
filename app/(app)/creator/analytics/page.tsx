@@ -199,7 +199,7 @@ export default function CreatorAnalyticsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
+      <div className="min-h-[100dvh] bg-neutral-950 flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-neutral-400">Cargando analytics...</p>
@@ -209,7 +209,7 @@ export default function CreatorAnalyticsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-950 pb-24">
+    <div className="min-h-[100dvh] bg-neutral-950 pb-24">
       {/* Header */}
       <div className="bg-neutral-900 border-b border-neutral-800 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4">

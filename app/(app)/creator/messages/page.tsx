@@ -427,7 +427,7 @@ export default function CreatorMessagesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-neutral-950 pb-20">
+      <div className="min-h-[100dvh] bg-neutral-950 pb-20">
         <div className="border-b border-neutral-800 px-4 py-4">
           <div className="h-7 w-28 bg-neutral-800 rounded animate-pulse" />
         </div>
@@ -453,7 +453,7 @@ export default function CreatorMessagesPage() {
     const dateGroups = groupMessagesByDate(messages)
 
     return (
-      <div className="min-h-screen bg-neutral-950 flex flex-col">
+      <div className="min-h-[100dvh] bg-neutral-950 flex flex-col">
         {/* Header */}
         <div className="border-b border-neutral-800 bg-neutral-950 sticky top-0 z-10">
           <div className="px-4 py-3 flex items-center gap-3">
@@ -770,7 +770,7 @@ export default function CreatorMessagesPage() {
 
   // Conversation List
   return (
-    <div className="min-h-screen bg-neutral-950 pb-20">
+    <div className="min-h-[100dvh] bg-neutral-950 pb-20">
       <div className="border-b border-neutral-800 px-4 py-4 flex items-center gap-3">
         <Link href="/creator/dashboard" className="p-2 -ml-2 hover:bg-neutral-800 rounded-xl">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

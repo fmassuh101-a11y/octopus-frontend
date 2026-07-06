@@ -161,7 +161,7 @@ export default function CreatorDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black text-white pb-24">
+      <div className="min-h-[100dvh] bg-black text-white pb-24">
         {/* Skeleton Header */}
         <div className="px-4 pt-6 pb-4">
           <div className="flex items-center justify-between mb-6">
@@ -232,7 +232,7 @@ export default function CreatorDashboard() {
   const xp = computeXP(xpInput)
 
   return (
-    <div className="min-h-screen bg-black text-white pb-24">
+    <div className="min-h-[100dvh] bg-black text-white pb-24">
       <GuidedTour storageKey="octopus-tour-creator" steps={[
         { title: 'Bienvenido a Octopus', body: 'Acá vas a ganar dinero con tu contenido. Te muestro en 4 pasos cómo funciona.' },
         { title: 'Explorá trabajos', body: 'En "Trabajos" están las campañas de las marcas (UGC, Clipping, Faceless y más). Filtrá por tipo y aplicá a las que te interesen.' },

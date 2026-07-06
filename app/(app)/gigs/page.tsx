@@ -266,7 +266,7 @@ export default function GigsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-neutral-950">
+      <div className="min-h-[100dvh] bg-neutral-950">
         {/* Skeleton Header */}
         <div className="bg-neutral-900 sticky top-0 z-20 border-b border-neutral-800">
           <div className="px-4 py-3 pl-16">
@@ -303,7 +303,7 @@ export default function GigsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-950">
+    <div className="min-h-[100dvh] bg-neutral-950">
       {/* Success Toast */}
       {showSuccessToast && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] animate-bounce">

@@ -94,7 +94,7 @@ export default function GigDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
+      <div className="min-h-[100dvh] bg-neutral-950 flex items-center justify-center">
         <div className="text-neutral-500">Loading gig...</div>
       </div>
     )
@@ -102,7 +102,7 @@ export default function GigDetailPage() {
 
   if (!gig) {
     return (
-      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
+      <div className="min-h-[100dvh] bg-neutral-950 flex items-center justify-center">
         <div className="text-center">
           <div className="text-6xl mb-4"></div>
           <h1 className="text-xl font-semibold text-white mb-2">Gig not found</h1>
@@ -119,7 +119,7 @@ export default function GigDetailPage() {
 
   if (hasApplied) {
     return (
-      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
+      <div className="min-h-[100dvh] bg-neutral-950 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto px-6">
           <div className="text-6xl mb-6"><PartyPopper className="w-12 h-12" strokeWidth={2} /></div>
           <h1 className="text-2xl font-bold text-white mb-4">Application Submitted!</h1>
@@ -147,7 +147,7 @@ export default function GigDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-950">
+    <div className="min-h-[100dvh] bg-neutral-950">
       {/* Header */}
       <div className="bg-neutral-900 sticky top-0 z-10 border-b border-neutral-800">
         <div className="px-4 py-4">

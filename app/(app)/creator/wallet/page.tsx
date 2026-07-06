@@ -124,7 +124,7 @@ export default function CreatorWallet() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f8f9fa]">
+      <div className="min-h-[100dvh] bg-[#f8f9fa]">
         <Header title="Payouts" />
         <div className="flex items-center justify-center py-20">
           <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
@@ -137,7 +137,7 @@ export default function CreatorWallet() {
   // Need to create Whop account
   if (needsSetup) {
     return (
-      <div className="min-h-screen bg-[#f8f9fa]">
+      <div className="min-h-[100dvh] bg-[#f8f9fa]">
         <Header title="Payouts" />
 
         <div className="px-4 pt-6">
@@ -177,7 +177,7 @@ export default function CreatorWallet() {
   // Need KYC verification OR Verified - Show embedded Whop dashboard
   if ((needsKyc || !needsSetup) && showEmbedded && userId && companyId) {
     return (
-      <div className="min-h-screen bg-[#f8f9fa] pb-20">
+      <div className="min-h-[100dvh] bg-[#f8f9fa] pb-20">
         <Header title="Verificación" />
 
         <div className="px-4 pt-6">
@@ -208,7 +208,7 @@ export default function CreatorWallet() {
 
   // Fallback - shouldn't reach here normally
   return (
-    <div className="min-h-screen bg-[#f8f9fa]">
+    <div className="min-h-[100dvh] bg-[#f8f9fa]">
       <Header title="Payouts" />
       <div className="px-4 pt-6">
         <div className="bg-neutral-900 rounded-2xl shadow-sm p-6 text-center">

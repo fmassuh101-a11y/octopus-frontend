@@ -146,7 +146,7 @@ export default function ApplicationsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-neutral-950">
+      <div className="min-h-[100dvh] bg-neutral-950">
         {/* Skeleton Header */}
         <div className="bg-neutral-900 border-b border-neutral-800 text-white">
           <div className="max-w-4xl mx-auto px-4 py-8">
@@ -193,7 +193,7 @@ export default function ApplicationsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-950">
+    <div className="min-h-[100dvh] bg-neutral-950">
       {/* Header */}
       <div className="bg-neutral-900 border-b border-neutral-800 text-white">
         <div className="max-w-4xl mx-auto px-4 py-8">
