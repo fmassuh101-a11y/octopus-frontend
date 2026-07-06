@@ -33,7 +33,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; 
   in_review: { label: 'En Revision', color: 'text-blue-400', bg: 'bg-blue-500/20', icon: Eye },
   approved: { label: 'Aprobado', color: 'text-green-400', bg: 'bg-green-500/20', icon: Check },
   revision_needed: { label: 'Cambios Pedidos', color: 'text-orange-400', bg: 'bg-orange-500/20', icon: RotateCcw },
-  completed: { label: 'Completado', color: 'text-emerald-400', bg: 'bg-emerald-500/20', icon: CircleDollarSign },
+  completed: { label: 'Completado', color: 'text-cyan-500', bg: 'bg-cyan-500/20', icon: CircleDollarSign },
 }
 
 export default function CreatorDeliveriesPage() {
@@ -422,7 +422,7 @@ export default function CreatorDeliveriesPage() {
                       href={safeExternalUrl(selectedDelivery.video_url)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 text-emerald-400 hover:text-emerald-300"
+                      className="flex items-center gap-3 text-cyan-500 hover:text-cyan-300"
                     >
                       <Clapperboard className="w-6 h-6 shrink-0" strokeWidth={2} />
                       <div className="flex-1">
@@ -497,7 +497,7 @@ export default function CreatorDeliveriesPage() {
                     })
                     setShowUploadModal(true)
                   }}
-                  className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-neutral-900 rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-4 bg-emerald-600 hover:bg-cyan-500 text-neutral-900 rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -517,10 +517,10 @@ export default function CreatorDeliveriesPage() {
 
               {/* Completed message */}
               {selectedDelivery.status === 'completed' && (
-                <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 text-center">
-                  <CircleDollarSign className="w-8 h-8 mx-auto mb-2 text-emerald-400" strokeWidth={2} />
-                  <p className="text-emerald-400 font-semibold">Entrega Completada</p>
-                  <p className="text-sm text-emerald-400/70">Pago recibido en tu wallet</p>
+                <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-xl p-4 text-center">
+                  <CircleDollarSign className="w-8 h-8 mx-auto mb-2 text-cyan-500" strokeWidth={2} />
+                  <p className="text-cyan-500 font-semibold">Entrega Completada</p>
+                  <p className="text-sm text-cyan-500/70">Pago recibido en tu wallet</p>
                 </div>
               )}
             </div>
@@ -598,8 +598,8 @@ export default function CreatorDeliveriesPage() {
               )}
 
               {/* Info box */}
-              <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4">
-                <p className="text-sm text-emerald-300">
+              <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-xl p-4">
+                <p className="text-sm text-cyan-300">
                   Asegurate de que el link sea publico o tenga permisos de visualizacion.
                 </p>
               </div>
@@ -618,7 +618,7 @@ export default function CreatorDeliveriesPage() {
               <button
                 onClick={handleSubmitContent}
                 disabled={submitting || !uploadForm.video_url}
-                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-neutral-900 rounded-xl font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 py-3 bg-emerald-600 hover:bg-cyan-500 text-neutral-900 rounded-xl font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {submitting ? (
                   <>

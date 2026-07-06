@@ -67,7 +67,7 @@ export default function ReferidosPage() {
       <Sky height={220} />
       <div className="relative mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl px-5 pt-4">
         <button onClick={() => (window.history.length > 1 ? router.back() : router.push('/creator/profile'))}
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100/90 shadow-sm transition-transform active:scale-90" aria-label="Cerrar">
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-cyan-100/90 shadow-sm transition-transform active:scale-90" aria-label="Cerrar">
           <X className="h-5 w-5" />
         </button>
 
@@ -93,7 +93,7 @@ export default function ReferidosPage() {
         </div>
         <div className="mt-3 flex justify-center gap-1.5">
           {EARN_CARDS.map((_, i) => (
-            <span key={i} className={`h-1.5 rounded-full transition-all ${i === Math.min(card, EARN_CARDS.length - 1) ? 'w-6 bg-emerald-400' : 'w-1.5 bg-neutral-200'}`} />
+            <span key={i} className={`h-1.5 rounded-full transition-all ${i === Math.min(card, EARN_CARDS.length - 1) ? 'w-6 bg-cyan-400' : 'w-1.5 bg-neutral-200'}`} />
           ))}
         </div>
 
@@ -110,7 +110,7 @@ export default function ReferidosPage() {
 
         {/* stats */}
         <div className="mt-4 grid grid-cols-3 divide-x divide-neutral-100 rounded-3xl border border-neutral-100 bg-white p-5 text-center shadow-sm">
-          <div><Banknote className="mx-auto h-5 w-5 text-emerald-500" /><p className="mt-1 text-xl font-extrabold tabular-nums">$0</p><p className="text-xs text-neutral-500">ganado</p></div>
+          <div><Banknote className="mx-auto h-5 w-5 text-cyan-600" /><p className="mt-1 text-xl font-extrabold tabular-nums">$0</p><p className="text-xs text-neutral-500">ganado</p></div>
           <div><UserPlus className="mx-auto h-5 w-5 text-sky-500" /><p className="mt-1 text-xl font-extrabold tabular-nums">{signups}</p><p className="text-xs text-neutral-500">registrados</p></div>
           <div><TrendingUp className="mx-auto h-5 w-5 text-violet-500" /><p className="mt-1 text-xl font-extrabold tabular-nums">0</p><p className="text-xs text-neutral-500">generando</p></div>
         </div>
@@ -130,7 +130,7 @@ export default function ReferidosPage() {
       {/* CTA sticky */}
       <div className="fixed inset-x-0 bottom-0 z-30 bg-gradient-to-t from-white via-white/95 to-transparent px-5 pb-[calc(env(safe-area-inset-bottom)+86px)] pt-6">
         <button onClick={share}
-          className="mx-auto flex w-full max-w-md items-center justify-center gap-2 rounded-full bg-gradient-to-b from-[#34D399] to-[#0EA472] py-4 text-lg font-bold text-white shadow-lg shadow-emerald-200 transition-transform active:scale-[0.98]">
+          className="mx-auto flex w-full max-w-md items-center justify-center gap-2 rounded-full bg-gradient-to-b from-[#22D3EE] to-[#0891B2] py-4 text-lg font-bold text-white shadow-lg shadow-cyan-200 transition-transform active:scale-[0.98]">
           <Share2 className="h-5 w-5" /> Empezar a invitar
         </button>
       </div>

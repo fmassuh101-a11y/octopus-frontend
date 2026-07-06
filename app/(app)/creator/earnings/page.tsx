@@ -144,7 +144,7 @@ export default function CreatorEarnings() {
 
         {/* Chart Placeholder - Revolutionary Design */}
         <div className="bg-white border border-neutral-100 rounded-3xl p-6 shadow-sm border border-neutral-100 text-neutral-900 placeholder-neutral-500">
-          <h3 className="flex items-center gap-2 text-lg font-bold text-neutral-900 mb-4"><TrendingUp className="w-5 h-5 text-emerald-400" strokeWidth={2} /> Tendencia de Ganancias</h3>
+          <h3 className="flex items-center gap-2 text-lg font-bold text-neutral-900 mb-4"><TrendingUp className="w-5 h-5 text-cyan-500" strokeWidth={2} /> Tendencia de Ganancias</h3>
           <div className="h-48 bg-gradient-to-br from-neutral-800 via-neutral-800 to-neutral-800 rounded-2xl flex items-center justify-center relative overflow-hidden">
             {/* Fake Chart Lines */}
             <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
@@ -177,7 +177,7 @@ export default function CreatorEarnings() {
         {/* Upcoming Payouts */}
         <div className="bg-white border border-neutral-100 rounded-3xl p-6 shadow-sm border border-neutral-100 text-neutral-900 placeholder-neutral-500">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="flex items-center gap-2 text-lg font-bold text-neutral-900"><Rocket className="w-5 h-5 text-emerald-400" strokeWidth={2} /> Pagos Próximos</h3>
+            <h3 className="flex items-center gap-2 text-lg font-bold text-neutral-900"><Rocket className="w-5 h-5 text-cyan-500" strokeWidth={2} /> Pagos Próximos</h3>
             <span className="bg-gradient-to-r from-yellow-400 to-orange-500 text-neutral-900 text-xs font-bold px-3 py-1 rounded-full">
               ${upcomingPayouts.reduce((sum, p) => sum + p.amount, 0).toLocaleString()} Expected
             </span>
@@ -204,13 +204,13 @@ export default function CreatorEarnings() {
 
         {/* Recent Transactions */}
         <div className="bg-white border border-neutral-100 rounded-3xl p-6 shadow-sm border border-neutral-100 text-neutral-900 placeholder-neutral-500">
-          <h3 className="flex items-center gap-2 text-lg font-bold text-neutral-900 mb-4"><ArrowLeftRight className="w-5 h-5 text-emerald-400" strokeWidth={2} /> Transacciones Recientes</h3>
+          <h3 className="flex items-center gap-2 text-lg font-bold text-neutral-900 mb-4"><ArrowLeftRight className="w-5 h-5 text-cyan-500" strokeWidth={2} /> Transacciones Recientes</h3>
           <div className="space-y-3">
             {recentTransactions.map((transaction) => (
               <div key={transaction.id} className="flex items-center justify-between p-4 bg-[#F7FAFD] rounded-xl hover:bg-neutral-100 transition-colors">
                 <div className="flex items-center space-x-3">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    transaction.status === 'paid' ? 'bg-emerald-500/15 text-emerald-400' :
+                    transaction.status === 'paid' ? 'bg-cyan-500/15 text-cyan-500' :
                     transaction.status === 'pending' ? 'bg-amber-500/15 text-amber-400' :
                     'bg-blue-500/15 text-blue-400'
                   }`}>

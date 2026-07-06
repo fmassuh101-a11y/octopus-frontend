@@ -24,15 +24,15 @@ export default function ProPage() {
       <Sky height={230} />
       <div className="relative mx-auto w-full max-w-md px-5 pt-4 md:max-w-lg lg:max-w-xl">
         <button onClick={() => (window.history.length > 1 ? router.back() : router.push('/creator/dashboard'))}
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100/90 shadow-sm transition-transform active:scale-90" aria-label="Cerrar">
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-cyan-100/90 shadow-sm transition-transform active:scale-90" aria-label="Cerrar">
           <X className="h-5 w-5" />
         </button>
 
         {/* ilustración */}
         <div className="mt-6 flex flex-col items-center">
-          <div className="relative flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br from-[#34D399] to-[#0EA472] shadow-lg shadow-emerald-200">
+          <div className="relative flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br from-[#22D3EE] to-[#0891B2] shadow-lg shadow-cyan-200">
             <Send className="h-11 w-11 -rotate-12 text-white" />
-            <span className="absolute -bottom-2 rounded-full border border-emerald-200 bg-white px-3 py-0.5 text-xs font-bold text-emerald-600 shadow-sm">Pro</span>
+            <span className="absolute -bottom-2 rounded-full border border-cyan-200 bg-white px-3 py-0.5 text-xs font-bold text-cyan-700 shadow-sm">Pro</span>
           </div>
         </div>
 
@@ -42,7 +42,7 @@ export default function ProPage() {
         <p className="mx-auto mt-3 max-w-sm text-center text-lg text-neutral-500">
           Postulá más, aparecé primero y quedate con más de lo que ganás con las marcas.
         </p>
-        <div className="mx-auto mt-4 w-fit rounded-full bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-600">
+        <div className="mx-auto mt-4 w-fit rounded-full bg-cyan-50 px-4 py-2 text-sm font-bold text-cyan-700">
           Los mejores creadores Pro ganan hasta $15k/mes
         </div>
 
@@ -50,7 +50,7 @@ export default function ProPage() {
         <div className="mt-7 space-y-1 rounded-3xl border border-neutral-100 bg-white p-5 shadow-sm">
           {BENEFITS.map((b) => (
             <div key={b.t} className="flex items-start gap-3 py-2.5">
-              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500">
+              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-cyan-500">
                 <Check className="h-3.5 w-3.5 text-white" strokeWidth={3.5} />
               </span>
               <div>
@@ -71,9 +71,9 @@ export default function ProPage() {
           </div>
           <div className="mt-3 grid grid-cols-2 gap-3">
             <button onClick={() => setPlan('annual')}
-              className={`relative rounded-2xl border-2 p-4 text-left transition-all active:scale-[0.98] ${plan === 'annual' ? 'border-emerald-400 bg-emerald-50/50' : 'border-neutral-200 bg-white'}`}>
+              className={`relative rounded-2xl border-2 p-4 text-left transition-all active:scale-[0.98] ${plan === 'annual' ? 'border-cyan-400 bg-cyan-50/50' : 'border-neutral-200 bg-white'}`}>
               <span className="absolute -top-2.5 left-3 rounded-full bg-amber-300 px-2 py-0.5 text-[11px] font-black text-amber-900">AHORRÁ 50%</span>
-              <span className={`absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full ${plan === 'annual' ? 'bg-emerald-500' : 'border-2 border-neutral-200'}`}>
+              <span className={`absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full ${plan === 'annual' ? 'bg-cyan-500' : 'border-2 border-neutral-200'}`}>
                 {plan === 'annual' && <Check className="h-3.5 w-3.5 text-white" strokeWidth={3.5} />}
               </span>
               <p className="mt-1 font-bold">Pro Anual</p>
@@ -81,8 +81,8 @@ export default function ProPage() {
               <p className="text-xs text-neutral-500">Solo $8.332 CLP/mes</p>
             </button>
             <button onClick={() => setPlan('monthly')}
-              className={`relative rounded-2xl border-2 p-4 text-left transition-all active:scale-[0.98] ${plan === 'monthly' ? 'border-emerald-400 bg-emerald-50/50' : 'border-neutral-200 bg-white'}`}>
-              <span className={`absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full ${plan === 'monthly' ? 'bg-emerald-500' : 'border-2 border-neutral-200'}`}>
+              className={`relative rounded-2xl border-2 p-4 text-left transition-all active:scale-[0.98] ${plan === 'monthly' ? 'border-cyan-400 bg-cyan-50/50' : 'border-neutral-200 bg-white'}`}>
+              <span className={`absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full ${plan === 'monthly' ? 'bg-cyan-500' : 'border-2 border-neutral-200'}`}>
                 {plan === 'monthly' && <Check className="h-3.5 w-3.5 text-white" strokeWidth={3.5} />}
               </span>
               <p className="mt-1 font-bold">Pro Mensual</p>
@@ -91,7 +91,7 @@ export default function ProPage() {
             </button>
           </div>
           <button onClick={() => toast('Los pagos se activan muy pronto. Te avisamos.')}
-            className="mt-3 w-full rounded-full bg-gradient-to-b from-[#34D399] to-[#0EA472] py-4 text-lg font-bold text-white shadow-lg shadow-emerald-200 transition-transform active:scale-[0.98]">
+            className="mt-3 w-full rounded-full bg-gradient-to-b from-[#22D3EE] to-[#0891B2] py-4 text-lg font-bold text-white shadow-lg shadow-cyan-200 transition-transform active:scale-[0.98]">
             Suscribirme
           </button>
         </div>

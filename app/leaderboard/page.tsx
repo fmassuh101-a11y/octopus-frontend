@@ -60,7 +60,7 @@ export default function LigasPage() {
       <Sky />
       <div className="relative mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl px-5 pt-4">
         <button onClick={() => (window.history.length > 1 ? router.back() : router.push('/creator/dashboard'))}
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100/90 shadow-sm transition-transform active:scale-90" aria-label="Cerrar">
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-cyan-100/90 shadow-sm transition-transform active:scale-90" aria-label="Cerrar">
           <X className="h-5 w-5" />
         </button>
 
@@ -118,7 +118,7 @@ export default function LigasPage() {
               <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-16 animate-pulse rounded-2xl bg-white shadow-sm" />)}</div>
             ) : inLeague.length === 0 ? (
               <div className="rounded-3xl border border-neutral-100 bg-white p-8 text-center shadow-sm">
-                <Sparkles className="mx-auto h-10 w-10 text-emerald-500" />
+                <Sparkles className="mx-auto h-10 w-10 text-cyan-600" />
                 <p className="mt-3 font-bold">Todavía no hay creadores en esta liga</p>
                 <p className="mt-1 text-sm text-neutral-500">Sé el primero en llegar</p>
               </div>
@@ -153,13 +153,13 @@ export default function LigasPage() {
 
                 {/* Vos */}
                 {me && isMyLeague && (
-                  <div className="mt-2 flex items-center gap-4 rounded-3xl border border-emerald-200 bg-emerald-50/70 px-4 py-4">
-                    <span className="text-xl font-bold text-emerald-600 tabular-nums">{myRank}</span>
-                    <span className="rounded-full ring-2 ring-emerald-400"><Avatar r={me} size={52} /></span>
-                    <p className="min-w-0 flex-1 truncate text-lg font-bold text-emerald-600">Vos</p>
+                  <div className="mt-2 flex items-center gap-4 rounded-3xl border border-cyan-200 bg-cyan-50/70 px-4 py-4">
+                    <span className="text-xl font-bold text-cyan-700 tabular-nums">{myRank}</span>
+                    <span className="rounded-full ring-2 ring-cyan-400"><Avatar r={me} size={52} /></span>
+                    <p className="min-w-0 flex-1 truncate text-lg font-bold text-cyan-700">Vos</p>
                     <div className="text-right">
-                      <p className="text-lg font-extrabold text-emerald-600 tabular-nums">{me.xp.toLocaleString('es-CL')} XP</p>
-                      <p className="text-sm text-emerald-600">{me.completed} {me.completed === 1 ? 'trabajo' : 'trabajos'}</p>
+                      <p className="text-lg font-extrabold text-cyan-700 tabular-nums">{me.xp.toLocaleString('es-CL')} XP</p>
+                      <p className="text-sm text-cyan-700">{me.completed} {me.completed === 1 ? 'trabajo' : 'trabajos'}</p>
                     </div>
                   </div>
                 )}

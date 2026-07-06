@@ -462,7 +462,7 @@ export default function CreatorMessagesPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center">
+            <div className="w-10 h-10 bg-cyan-500 rounded-full flex items-center justify-center">
               <span className="text-neutral-900 font-medium">{selectedConversation.company_name.charAt(0).toUpperCase()}</span>
             </div>
             <div className="flex-1">
@@ -562,7 +562,7 @@ export default function CreatorMessagesPage() {
                             </div>
                           ) : (
                             <div
-                              className={`max-w-[75%] ${isMe ? 'bg-emerald-500 text-neutral-900' : 'bg-[#F7FAFD] border border-neutral-100'} rounded-2xl px-4 py-2 shadow-sm ${isContractMessage && !isMe ? 'cursor-pointer hover:border-emerald-500' : ''} placeholder-neutral-400`}
+                              className={`max-w-[75%] ${isMe ? 'bg-cyan-500 text-neutral-900' : 'bg-[#F7FAFD] border border-neutral-100'} rounded-2xl px-4 py-2 shadow-sm ${isContractMessage && !isMe ? 'cursor-pointer hover:border-emerald-500' : ''} placeholder-neutral-400`}
                               onClick={() => {
                                 if (isContractMessage && !isMe && !isCancelledContract && !isAcceptedContract) {
                                   router.push('/creator/contracts')
@@ -590,7 +590,7 @@ export default function CreatorMessagesPage() {
                                     e.stopPropagation()
                                     router.push('/creator/contracts')
                                   }}
-                                  className="mt-2 w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-neutral-900 text-sm font-medium rounded-lg transition-colors"
+                                  className="mt-2 w-full py-2 bg-emerald-600 hover:bg-cyan-500 text-neutral-900 text-sm font-medium rounded-lg transition-colors"
                                 >
                                   Ver Contrato
                                 </button>
@@ -601,7 +601,7 @@ export default function CreatorMessagesPage() {
                                   {formatMessageTime(msg.created_at)}
                                 </span>
                                 {isMe && (
-                                  <span className={`text-[10px] ${msg.read_at ? 'text-emerald-400' : 'text-neutral-400'}`}>
+                                  <span className={`text-[10px] ${msg.read_at ? 'text-cyan-500' : 'text-neutral-400'}`}>
                                     {msg.read_at ? 'Visto' : 'Enviado'}
                                   </span>
                                 )}
@@ -648,7 +648,7 @@ export default function CreatorMessagesPage() {
                 <button
                   onClick={sendMessage}
                   disabled={!newMessage.trim() || sending}
-                  className="w-10 h-10 bg-emerald-500 text-neutral-900 rounded-full flex items-center justify-center disabled:bg-neutral-700 disabled:cursor-not-allowed"
+                  className="w-10 h-10 bg-cyan-500 text-neutral-900 rounded-full flex items-center justify-center disabled:bg-neutral-700 disabled:cursor-not-allowed"
                 >
                   {sending ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -799,7 +799,7 @@ export default function CreatorMessagesPage() {
               className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-neutral-100 text-left ${conv.unread_count > 0 ? 'bg-neutral-100/50' : ''} text-neutral-900 placeholder-neutral-400`}
             >
               <div className="relative">
-                <div className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center">
+                <div className="w-12 h-12 bg-cyan-500 rounded-full flex items-center justify-center">
                   <span className="text-neutral-900 font-medium text-lg">{conv.company_name.charAt(0).toUpperCase()}</span>
                 </div>
               </div>
@@ -808,7 +808,7 @@ export default function CreatorMessagesPage() {
                   <h3 className={`font-medium truncate ${conv.unread_count > 0 ? 'text-neutral-900' : 'text-neutral-600'}`}>
                     {conv.company_name}
                   </h3>
-                  <span className={`text-xs ${conv.unread_count > 0 ? 'text-emerald-400 font-medium' : 'text-neutral-500'}`}>
+                  <span className={`text-xs ${conv.unread_count > 0 ? 'text-cyan-500 font-medium' : 'text-neutral-500'}`}>
                     {conv.last_message_time ? formatTime(conv.last_message_time) : ''}
                   </span>
                 </div>
@@ -817,7 +817,7 @@ export default function CreatorMessagesPage() {
                     {conv.last_message || 'Sin mensajes'}
                   </p>
                   {conv.unread_count > 0 && (
-                    <span className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center text-neutral-900 text-xs font-bold">
+                    <span className="w-5 h-5 bg-cyan-500 rounded-full flex items-center justify-center text-neutral-900 text-xs font-bold">
                       {conv.unread_count}
                     </span>
                   )}

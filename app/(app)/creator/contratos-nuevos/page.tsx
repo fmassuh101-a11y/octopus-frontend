@@ -102,7 +102,7 @@ export default function ContratosNuevosPage() {
                 <div key={c.id} className="w-full shrink-0 snap-center">
                   <div className="mx-auto flex min-h-[420px] w-full max-w-sm flex-col rounded-[28px] bg-white p-6 text-neutral-900 shadow-2xl">
                     <div className="flex items-center gap-3 border-b border-neutral-100 pb-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-lg font-extrabold text-emerald-600">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-cyan-50 text-lg font-extrabold text-cyan-700">
                         {(c.company_name || 'E').charAt(0).toUpperCase()}
                       </div>
                       <div className="min-w-0">
@@ -116,8 +116,8 @@ export default function ContratosNuevosPage() {
                     </p>
                     {Array.isArray(c.deliverables) && c.deliverables.length > 0 && (
                       <div className="mt-5 w-fit rounded-2xl border border-neutral-100 p-4 shadow-sm">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50">
-                          <Package className="h-4 w-4 text-emerald-600" />
+                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-50">
+                          <Package className="h-4 w-4 text-cyan-700" />
                         </div>
                         <p className="mt-2 font-bold">{c.deliverables.length} {c.deliverables.length === 1 ? 'entrega' : 'entregas'}</p>
                         <p className="text-sm text-neutral-400">contenido</p>
@@ -142,7 +142,7 @@ export default function ContratosNuevosPage() {
               <X className="h-5 w-5" /> <span className="text-sm">Rechazar</span>
             </button>
             <button onClick={() => router.push('/creator/contracts')}
-              className="flex flex-col items-center gap-1 rounded-full bg-gradient-to-b from-[#34D399] to-[#0EA472] px-9 py-4 font-bold shadow-lg shadow-emerald-900/40 transition-transform active:scale-95">
+              className="flex flex-col items-center gap-1 rounded-full bg-gradient-to-b from-[#22D3EE] to-[#0891B2] px-9 py-4 font-bold shadow-lg shadow-cyan-900/40 transition-transform active:scale-95">
               <FileText className="h-5 w-5" /> <span>Revisar</span>
             </button>
             <button onClick={() => router.push('/creator/contracts')}

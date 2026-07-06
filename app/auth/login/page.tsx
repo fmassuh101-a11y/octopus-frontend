@@ -257,7 +257,7 @@ export default function LoginPage() {
   if (checkingSession) {
     return (
       <div className="min-h-[100dvh] bg-[#F7FAFD] flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
       </div>
     )
   }
@@ -270,7 +270,7 @@ export default function LoginPage() {
       <div className="relative z-10 w-full max-w-md">
         <div className="relative z-10 w-full bg-white rounded-[28px] pt-8 px-8 pb-7 shadow-[0_24px_60px_-20px_rgba(56,130,200,0.25)] border border-neutral-100 text-neutral-900">
           <div className="text-center mb-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-600 mb-2">Octopus</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-700 mb-2">Octopus</p>
             <h2 className="text-3xl font-extrabold text-neutral-900 mb-1">Bienvenido</h2>
             <p className="text-neutral-500">Inicia sesión en tu cuenta</p>
           </div>
@@ -292,7 +292,7 @@ export default function LoginPage() {
                 onFocus={() => setFocusedField('email')}
                 onBlur={() => setFocusedField(null)}
                 disabled={loading}
-                className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-2xl text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:opacity-50"
+                className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-2xl text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 disabled:opacity-50"
                 placeholder="tu@email.com"
               />
             </div>
@@ -307,7 +307,7 @@ export default function LoginPage() {
                 onFocus={() => setFocusedField('password')}
                 onBlur={() => setFocusedField(null)}
                 disabled={loading}
-                className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-2xl text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:opacity-50"
+                className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-2xl text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 disabled:opacity-50"
                 placeholder="••••••••"
               />
             </div>
@@ -315,7 +315,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-b from-[#34D399] to-[#0EA472] text-white py-3.5 px-4 rounded-full font-bold shadow-lg shadow-emerald-200 active:scale-[0.98] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-gradient-to-b from-[#22D3EE] to-[#0891B2] text-white py-3.5 px-4 rounded-full font-bold shadow-lg shadow-cyan-200 active:scale-[0.98] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
             </button>
@@ -348,7 +348,7 @@ export default function LoginPage() {
           <div className="mt-6 text-center">
             <p className="text-neutral-600 text-sm">
               ¿No tienes una cuenta?{' '}
-              <Link href="/auth/register" className="font-medium text-emerald-600 hover:text-emerald-300">
+              <Link href="/auth/register" className="font-medium text-cyan-700 hover:text-cyan-300">
                 Regístrate
               </Link>
             </p>

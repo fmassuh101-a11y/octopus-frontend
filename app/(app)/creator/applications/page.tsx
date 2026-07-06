@@ -97,7 +97,7 @@ export default function ApplicationsPage() {
         )
       case 'accepted':
         return (
-          <span className="px-3 py-1 bg-emerald-500/15 text-emerald-400 text-sm font-medium rounded-full flex items-center gap-1">
+          <span className="px-3 py-1 bg-cyan-500/15 text-cyan-500 text-sm font-medium rounded-full flex items-center gap-1">
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
             </svg>
@@ -238,7 +238,7 @@ export default function ApplicationsPage() {
               onClick={() => setFilter('all')}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
                 filter === 'all'
-                  ? 'bg-emerald-500 text-neutral-900'
+                  ? 'bg-cyan-500 text-neutral-900'
                   : 'bg-neutral-100 text-neutral-400 hover:bg-neutral-700'
               } placeholder-neutral-500`}
             >
@@ -258,8 +258,8 @@ export default function ApplicationsPage() {
               onClick={() => setFilter('accepted')}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
                 filter === 'accepted'
-                  ? 'bg-emerald-500 text-neutral-900'
-                  : 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
+                  ? 'bg-cyan-500 text-neutral-900'
+                  : 'bg-cyan-500/20 text-cyan-500 hover:bg-cyan-500/30'
               }`}
             >
               Aceptadas ({acceptedCount})
@@ -295,7 +295,7 @@ export default function ApplicationsPage() {
             </p>
             <Link
               href="/gigs"
-              className="inline-block px-6 py-3 bg-emerald-500 text-neutral-900 rounded-full font-semibold hover:bg-emerald-600 transition-colors"
+              className="inline-block px-6 py-3 bg-cyan-500 text-neutral-900 rounded-full font-semibold hover:bg-emerald-600 transition-colors"
             >
               Explorar Trabajos
             </Link>
@@ -359,7 +359,7 @@ export default function ApplicationsPage() {
                     {app.status === 'pending' && (
                       <div className="mt-3">
                         {(app as any).reviewed_at ? (
-                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-400">
+                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-cyan-500">
                             <CheckCheck className="w-3.5 h-3.5" strokeWidth={2.5} />
                             Vista por la empresa
                           </span>

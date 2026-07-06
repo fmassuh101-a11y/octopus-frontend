@@ -181,7 +181,7 @@ export default function ProfilePage() {
         </div>
         <button
           onClick={() => window.location.href = '/onboarding/creator/name'}
-          className="mt-6 w-full py-3 bg-emerald-500 text-neutral-900 rounded-xl font-medium hover:bg-emerald-600 transition-colors"
+          className="mt-6 w-full py-3 bg-cyan-500 text-neutral-900 rounded-xl font-medium hover:bg-emerald-600 transition-colors"
         >
           {data.firstName ? 'Editar Informacion' : 'Completar Perfil'}
         </button>
@@ -261,7 +261,7 @@ export default function ProfilePage() {
             <span className="text-neutral-400">LinkedIn</span>
             <span className="font-medium text-neutral-900 text-right max-w-[200px] truncate">
               {data.linkedInUrl ? (
-                <a href={safeExternalUrl(data.linkedInUrl)} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">
+                <a href={safeExternalUrl(data.linkedInUrl)} target="_blank" rel="noopener noreferrer" className="text-cyan-700 hover:underline">
                   Ver perfil
                 </a>
               ) : 'Sin configurar'}
@@ -285,9 +285,9 @@ export default function ProfilePage() {
             <p className="text-xs text-green-600 mt-1">Desde el inicio</p>
           </div>
           <div className="bg-blue-50 p-4 rounded-xl">
-            <p className="text-emerald-600 text-sm mb-1">Este Mes</p>
+            <p className="text-cyan-700 text-sm mb-1">Este Mes</p>
             <p className="text-2xl font-bold text-blue-700">$0</p>
-            <p className="text-xs text-emerald-600 mt-1">0 campanas</p>
+            <p className="text-xs text-cyan-700 mt-1">0 campanas</p>
           </div>
         </div>
 
@@ -310,7 +310,7 @@ export default function ProfilePage() {
       <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
         <h3 className="text-lg font-semibold text-neutral-900 mb-4">Metodos de Pago</h3>
         <p className="text-neutral-400 mb-4">No tienes metodos de pago configurados</p>
-        <button className="w-full py-3 bg-emerald-500 text-neutral-900 rounded-xl font-medium hover:bg-emerald-600 transition-colors">
+        <button className="w-full py-3 bg-cyan-500 text-neutral-900 rounded-xl font-medium hover:bg-emerald-600 transition-colors">
           Agregar Metodo de Pago
         </button>
       </div>
@@ -328,21 +328,21 @@ export default function ProfilePage() {
               <p className="font-medium text-neutral-900">Contrasena</p>
               <p className="text-sm text-neutral-500">Ultima actualizacion: Nunca</p>
             </div>
-            <button className="text-emerald-600 hover:text-blue-700 font-medium">Cambiar</button>
+            <button className="text-cyan-700 hover:text-blue-700 font-medium">Cambiar</button>
           </div>
           <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
             <div>
               <p className="font-medium text-neutral-900">Autenticacion de dos factores</p>
               <p className="text-sm text-neutral-500">Anade una capa extra de seguridad</p>
             </div>
-            <button className="text-emerald-600 hover:text-blue-700 font-medium">Activar</button>
+            <button className="text-cyan-700 hover:text-blue-700 font-medium">Activar</button>
           </div>
           <div className="flex flex-col items-start gap-0.5 py-3">
             <div>
               <p className="font-medium text-neutral-900">Dispositivos conectados</p>
               <p className="text-sm text-neutral-500">1 dispositivo activo</p>
             </div>
-            <button className="text-emerald-600 hover:text-blue-700 font-medium">Ver todos</button>
+            <button className="text-cyan-700 hover:text-blue-700 font-medium">Ver todos</button>
           </div>
         </div>
       </div>
@@ -357,7 +357,7 @@ export default function ProfilePage() {
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input type="checkbox" defaultChecked className="sr-only peer bg-white border border-neutral-100 text-neutral-900 placeholder-neutral-400" />
-              <div className="w-11 h-6 bg-neutral-100 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white border border-neutral-100 after:border-neutral-700 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 text-neutral-900 placeholder-neutral-400"></div>
+              <div className="w-11 h-6 bg-neutral-100 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white border border-neutral-100 after:border-neutral-700 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500 text-neutral-900 placeholder-neutral-400"></div>
             </label>
           </div>
           <div className="flex flex-col items-start gap-0.5 py-3">
@@ -367,7 +367,7 @@ export default function ProfilePage() {
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input type="checkbox" defaultChecked className="sr-only peer bg-white border border-neutral-100 text-neutral-900 placeholder-neutral-400" />
-              <div className="w-11 h-6 bg-neutral-100 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white border border-neutral-100 after:border-neutral-700 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 text-neutral-900 placeholder-neutral-400"></div>
+              <div className="w-11 h-6 bg-neutral-100 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white border border-neutral-100 after:border-neutral-700 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500 text-neutral-900 placeholder-neutral-400"></div>
             </label>
           </div>
         </div>
@@ -499,7 +499,7 @@ export default function ProfilePage() {
         <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-              <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6 text-cyan-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
               </svg>
             </div>
@@ -860,7 +860,7 @@ export default function ProfilePage() {
                 onClick={() => setActiveSection(section.id)}
                 className={`flex items-center gap-2 py-3 px-1 border-b-2 transition-colors whitespace-nowrap text-sm font-medium ${
                   activeSection === section.id
-                    ? 'border-emerald-500 text-emerald-600'
+                    ? 'border-emerald-500 text-cyan-700'
                     : 'border-transparent text-neutral-500 hover:text-neutral-600'
                 }`}
               >

@@ -150,8 +150,8 @@ export default function WalletSetup() {
         <div className="max-w-md mx-auto">
           {step === 'start' && (
             <div className="text-center">
-              <div className="w-24 h-24 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                <svg className="w-12 h-12 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-24 h-24 bg-cyan-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg className="w-12 h-12 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
               </div>
@@ -165,19 +165,19 @@ export default function WalletSetup() {
                 <h3 className="font-semibold mb-4">Lo que necesitarás:</h3>
                 <ul className="space-y-3 text-sm text-white/60">
                   <li className="flex items-start gap-3">
-                    <div className="w-5 h-5 bg-emerald-500/20 rounded flex items-center justify-center text-emerald-400 mt-0.5">
+                    <div className="w-5 h-5 bg-cyan-500/20 rounded flex items-center justify-center text-cyan-500 mt-0.5">
                       <span className="text-xs font-bold">1</span>
                     </div>
                     <span>Documento de identidad (INE, pasaporte, etc.)</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <div className="w-5 h-5 bg-emerald-500/20 rounded flex items-center justify-center text-emerald-400 mt-0.5">
+                    <div className="w-5 h-5 bg-cyan-500/20 rounded flex items-center justify-center text-cyan-500 mt-0.5">
                       <span className="text-xs font-bold">2</span>
                     </div>
                     <span>Información bancaria o cuenta de PayPal</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <div className="w-5 h-5 bg-emerald-500/20 rounded flex items-center justify-center text-emerald-400 mt-0.5">
+                    <div className="w-5 h-5 bg-cyan-500/20 rounded flex items-center justify-center text-cyan-500 mt-0.5">
                       <span className="text-xs font-bold">3</span>
                     </div>
                     <span>5 minutos de tu tiempo</span>
@@ -188,7 +188,7 @@ export default function WalletSetup() {
               <button
                 onClick={startSetup}
                 disabled={loading}
-                className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+                className="w-full py-4 bg-cyan-500 hover:bg-emerald-600 disabled:bg-gray-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -246,8 +246,8 @@ export default function WalletSetup() {
 
           {step === 'done' && (
             <div className="text-center">
-              <div className="w-24 h-24 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                <svg className="w-12 h-12 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-24 h-24 bg-cyan-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg className="w-12 h-12 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
@@ -259,7 +259,7 @@ export default function WalletSetup() {
 
               <Link
                 href="/creator/wallet"
-                className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-8 py-4 rounded-xl transition-colors"
+                className="inline-flex items-center gap-2 bg-cyan-500 hover:bg-emerald-600 text-white font-semibold px-8 py-4 rounded-xl transition-colors"
               >
                 Ir a mi wallet
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

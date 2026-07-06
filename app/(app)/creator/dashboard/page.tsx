@@ -171,14 +171,14 @@ export default function CreatorHome() {
           </div>
         </div>
         <div className="mt-4 h-3.5 w-full overflow-hidden rounded-full bg-neutral-200/70">
-          <div className="h-full rounded-full bg-gradient-to-r from-[#34D399] to-[#0EA472] transition-[width] duration-700" style={{ width: `${Math.max(progress, 4)}%` }} />
+          <div className="h-full rounded-full bg-gradient-to-r from-[#22D3EE] to-[#0891B2] transition-[width] duration-700" style={{ width: `${Math.max(progress, 4)}%` }} />
         </div>
 
         {/* banner ranking */}
         {showRankBanner && (
           <div className="mt-6 flex items-center gap-3 rounded-3xl border border-neutral-100 bg-white p-4 shadow-sm">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50">
-              <Trophy className="h-6 w-6 text-emerald-600" />
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-cyan-50">
+              <Trophy className="h-6 w-6 text-cyan-700" />
             </div>
             <Link href="/leaderboard" prefetch className="min-w-0 flex-1 active:opacity-70">
               <p className="font-bold">Ranking</p>
@@ -210,7 +210,7 @@ export default function CreatorHome() {
                       <motion.div
                         initial={{ scale: 0.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
                         transition={{ type: 'spring', stiffness: 480, damping: 22, delay: 0.15 + i * 0.05 }}
-                        className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500 shadow-sm shadow-emerald-200">
+                        className="flex h-7 w-7 items-center justify-center rounded-full bg-cyan-500 shadow-sm shadow-cyan-200">
                         <Check className="h-3.5 w-3.5 text-white" strokeWidth={3.5} />
                       </motion.div>
                     ) : (
@@ -247,7 +247,7 @@ export default function CreatorHome() {
         {/* accesos rápidos */}
         <div className="mt-4 grid grid-cols-2 gap-3">
           <Link href="/creator/wallet" prefetch className="flex items-center gap-3 rounded-3xl border border-neutral-100 bg-white p-4 shadow-sm transition-transform active:scale-[0.98]">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50"><Wallet className="h-5 w-5 text-emerald-500" /></div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-cyan-50"><Wallet className="h-5 w-5 text-cyan-600" /></div>
             <div><p className="font-bold leading-tight">Wallet</p><p className="text-xs text-neutral-500">Tu plata</p></div>
           </Link>
           <Link href="/creator/applications" prefetch className="flex items-center gap-3 rounded-3xl border border-neutral-100 bg-white p-4 shadow-sm transition-transform active:scale-[0.98]">

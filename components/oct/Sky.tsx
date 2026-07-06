@@ -1,55 +1,61 @@
 'use client'
 
-// Cielo estilo SideShift: degradado azul con arcos concéntricos y nubes.
-// Se posiciona absolute detrás del contenido del header de cada pantalla.
+// Fondo Océano de Octopus (identidad propia — NO las nubes de SideShift).
+// Degradado de mar con ondas suaves al pie y burbujas subiendo.
+// hue: 'ocean' (default, teal/aqua), 'warm' (racha/fuego), 'sun' (misiones).
 export default function Sky({
   height = 320,
-  hue = 'blue',
+  hue = 'ocean',
 }: {
   height?: number
-  hue?: 'blue' | 'orange' | 'yellow'
+  hue?: 'ocean' | 'warm' | 'sun' | 'blue' | 'orange' | 'yellow'
 }) {
+  const kind = hue === 'orange' ? 'warm' : hue === 'yellow' ? 'sun' : hue === 'blue' ? 'ocean' : hue
+
   const grad =
-    hue === 'orange'
-      ? 'linear-gradient(180deg,#F7A741 0%,#FBC97B 34%,#FDEBCB 70%,rgba(255,255,255,0) 100%)'
-      : hue === 'yellow'
-      ? 'linear-gradient(180deg,#F8DE7E 0%,#FBEDB9 40%,#FEFAEA 75%,rgba(255,255,255,0) 100%)'
-      : 'linear-gradient(180deg,#2FBF8F 0%,#7BD8B8 34%,#DFF6EC 70%,rgba(255,255,255,0) 100%)'
+    kind === 'warm'
+      ? 'linear-gradient(180deg,#FB923C 0%,#FDBA74 40%,#FFEDD5 74%,rgba(255,255,255,0) 100%)'
+      : kind === 'sun'
+      ? 'linear-gradient(180deg,#FCD34D 0%,#FDE68A 42%,#FEF9C3 76%,rgba(255,255,255,0) 100%)'
+      : 'linear-gradient(180deg,#0891B2 0%,#22D3EE 42%,#A5F3FC 74%,rgba(255,255,255,0) 100%)'
+
+  const wave =
+    kind === 'warm' ? '#FFF7ED' : kind === 'sun' ? '#FEFCE8' : '#FFFFFF'
+  const bubble =
+    kind === 'warm' ? 'rgba(255,255,255,0.5)' : kind === 'sun' ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.45)'
+
+  // posiciones de burbujas (x%, tamaño rel, y desde arriba rel)
+  const bubbles = [
+    { x: 14, s: 0.05, y: 0.28 }, { x: 30, s: 0.032, y: 0.5 }, { x: 47, s: 0.06, y: 0.2 },
+    { x: 63, s: 0.038, y: 0.42 }, { x: 78, s: 0.05, y: 0.32 }, { x: 88, s: 0.03, y: 0.55 },
+    { x: 22, s: 0.028, y: 0.66 }, { x: 70, s: 0.026, y: 0.62 },
+  ]
 
   return (
     <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 overflow-hidden" style={{ height }}>
       <div className="absolute inset-0" style={{ background: grad }} />
-      {/* arcos concéntricos */}
-      {[0.42, 0.62, 0.82, 1.02].map((s, i) => (
-        <div
+
+      {/* burbujas subiendo */}
+      {bubbles.map((b, i) => (
+        <span
           key={i}
-          className="absolute left-1/2 rounded-full border border-white/25"
+          className="absolute rounded-full"
           style={{
-            width: height * 2.6 * s,
-            height: height * 2.6 * s,
-            top: -height * 1.3 * s,
-            transform: 'translateX(-50%)',
+            left: `${b.x}%`,
+            top: height * b.y,
+            width: height * b.s,
+            height: height * b.s,
+            background: bubble,
+            boxShadow: `inset 0 0 0 1px rgba(255,255,255,0.4)`,
           }}
         />
       ))}
-      {/* nubes: fila de círculos blancos difuminados en la base */}
-      <div className="absolute inset-x-0" style={{ bottom: -height * 0.16, height: height * 0.62 }}>
-        {[6, 22, 40, 58, 76, 92].map((x, i) => (
-          <div
-            key={i}
-            className="absolute rounded-full bg-white"
-            style={{
-              width: height * (i % 2 === 0 ? 0.72 : 0.56),
-              height: height * (i % 2 === 0 ? 0.72 : 0.56),
-              left: `${x}%`,
-              bottom: 0,
-              transform: 'translateX(-50%)',
-              filter: 'blur(2px)',
-            }}
-          />
-        ))}
-        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-white" />
-      </div>
+
+      {/* ondas suaves al pie (2 capas) — reemplazan las nubes */}
+      <svg className="absolute inset-x-0 bottom-0 w-full" viewBox="0 0 1440 220" preserveAspectRatio="none" style={{ height: height * 0.72 }}>
+        <path d="M0,140 C240,90 480,190 720,150 C960,110 1200,180 1440,130 L1440,220 L0,220 Z" fill={wave} opacity="0.55" />
+        <path d="M0,175 C260,130 520,215 780,175 C1040,140 1240,205 1440,170 L1440,220 L0,220 Z" fill={wave} />
+      </svg>
     </div>
   )
 }

@@ -63,13 +63,13 @@ export default function GigDetailPage() {
 
   const getCategoryColor = (category: string) => {
     const colors = {
-      'UGC': 'bg-emerald-100 text-emerald-800',
+      'UGC': 'bg-cyan-100 text-emerald-800',
       'Clipping': 'bg-cyan-100 text-cyan-800',
-      'Brand Partnership': 'bg-emerald-100 text-emerald-800',
-      'Social Management': 'bg-emerald-100 text-emerald-800',
+      'Brand Partnership': 'bg-cyan-100 text-emerald-800',
+      'Social Management': 'bg-cyan-100 text-emerald-800',
       'Live Streaming': 'bg-orange-100 text-orange-800',
-      'Design': 'bg-emerald-100 text-emerald-800',
-      'Writing': 'bg-emerald-100 text-emerald-800',
+      'Design': 'bg-cyan-100 text-emerald-800',
+      'Writing': 'bg-cyan-100 text-emerald-800',
       'Consulting': 'bg-yellow-100 text-yellow-800',
       'default': 'bg-blue-100 text-blue-800'
     }

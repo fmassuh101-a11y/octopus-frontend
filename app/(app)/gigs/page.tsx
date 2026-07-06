@@ -168,7 +168,7 @@ export default function GigsPage() {
             <input
               type="text" placeholder="Buscar acá..." value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-full border border-neutral-200 bg-white py-3.5 pl-12 pr-4 text-[16px] shadow-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+              className="w-full rounded-full border border-neutral-200 bg-white py-3.5 pl-12 pr-4 text-[16px] shadow-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-cyan-300"
             />
           </div>
           <button onClick={() => setShowFilters(true)} aria-label="Filtros"
@@ -223,7 +223,7 @@ export default function GigsPage() {
             )}
             {/* dots */}
             <div className="mt-3 flex justify-center gap-1.5">
-              {[0, 1, 2, 3].map(i => <span key={i} className={`h-1.5 rounded-full ${i === 0 ? 'w-8 bg-emerald-400' : 'w-6 bg-neutral-200'}`} />)}
+              {[0, 1, 2, 3].map(i => <span key={i} className={`h-1.5 rounded-full ${i === 0 ? 'w-8 bg-cyan-400' : 'w-6 bg-neutral-200'}`} />)}
             </div>
 
             {/* Browse */}
@@ -232,7 +232,7 @@ export default function GigsPage() {
               {([['new', 'Nuevas', Sparkles], ['trend', 'Tendencia', TrendingUp], ['pay', 'Mejor pago', DollarSign]] as const).map(([k, label, Icon]) => (
                 <button key={k} onClick={() => setSort(k)}
                   className={`flex shrink-0 items-center gap-2 rounded-full border px-5 py-3 text-[16px] font-semibold shadow-sm transition-all active:scale-95 ${
-                    sort === k ? 'border-emerald-400 bg-white text-emerald-600' : 'border-neutral-200 bg-white text-neutral-700'}`}>
+                    sort === k ? 'border-cyan-400 bg-white text-cyan-700' : 'border-neutral-200 bg-white text-neutral-700'}`}>
                   <Icon className="h-4 w-4" /> {label}
                 </button>
               ))}
@@ -247,7 +247,7 @@ export default function GigsPage() {
               {NICHES.map(n => (
                 <button key={n.key} onClick={() => setNiche(niche === n.key ? null : n.key)}
                   className={`flex items-center gap-2 rounded-full border px-4 py-2.5 text-[15px] font-semibold shadow-sm transition-all active:scale-95 ${
-                    niche === n.key ? 'border-emerald-400 bg-emerald-50 text-emerald-600' : 'border-neutral-200 bg-white text-neutral-700'}`}>
+                    niche === n.key ? 'border-cyan-400 bg-cyan-50 text-cyan-700' : 'border-neutral-200 bg-white text-neutral-700'}`}>
                   <n.icon className="h-4 w-4" /> {n.label}
                 </button>
               ))}
@@ -273,7 +273,7 @@ export default function GigsPage() {
                         {priceLabel(gig)}
                       </span>
                       {appliedGigs.has(gig.id) && (
-                        <span className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-emerald-500 px-2.5 py-1 text-[12px] font-bold text-white">
+                        <span className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-cyan-500 px-2.5 py-1 text-[12px] font-bold text-white">
                           <Check className="h-3 w-3" strokeWidth={3} /> Postulado
                         </span>
                       )}
@@ -307,7 +307,7 @@ export default function GigsPage() {
                     <p className="truncate font-bold">{g.title}</p>
                     <p className="truncate text-sm text-neutral-500">{g.company_name || 'Empresa'} · {priceLabel(g)}</p>
                   </div>
-                  <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-600">Ver estado</span>
+                  <span className="rounded-full bg-cyan-50 px-3 py-1.5 text-xs font-bold text-cyan-700">Ver estado</span>
                 </Link>
               ))}
             </div>
@@ -315,7 +315,7 @@ export default function GigsPage() {
         )}
 
         {tab === 'history' && (
-          <EmptyState icon={<HistoryIcon className="h-16 w-16 text-emerald-500" />}
+          <EmptyState icon={<HistoryIcon className="h-16 w-16 text-cyan-600" />}
             title="Tu historial de campañas"
             text="Acá vas a ver cada campaña a la que postulaste y completaste — todo en un solo lugar."
             cta="Ver mis postulaciones" onCta={() => router.push('/creator/applications')} />
@@ -329,7 +329,7 @@ export default function GigsPage() {
             <p className="text-lg font-bold">Conectá tus redes primero</p>
             <p className="mt-1 text-neutral-500">Para postular necesitás verificar tu cuenta de TikTok o Instagram.</p>
             <button onClick={() => setShowVerificationModal(false)}
-              className="mt-5 w-full rounded-full bg-gradient-to-b from-[#34D399] to-[#0EA472] py-3.5 font-bold text-white">Entendido</button>
+              className="mt-5 w-full rounded-full bg-gradient-to-b from-[#22D3EE] to-[#0891B2] py-3.5 font-bold text-white">Entendido</button>
           </div>
         </div>
       )}
@@ -346,9 +346,9 @@ export default function GigsPage() {
               <div className="mt-2 space-y-2">
                 {([['new', 'Más nuevas'], ['trend', 'Tendencia'], ['pay', 'Mejor pago']] as const).map(([k, label]) => (
                   <button key={k} onClick={() => setSort(k)}
-                    className={`flex w-full items-center justify-between rounded-2xl border-2 px-4 py-3.5 font-semibold transition-all active:scale-[0.99] ${sort === k ? 'border-emerald-400 bg-emerald-50/50' : 'border-neutral-100 bg-white'}`}>
+                    className={`flex w-full items-center justify-between rounded-2xl border-2 px-4 py-3.5 font-semibold transition-all active:scale-[0.99] ${sort === k ? 'border-cyan-400 bg-cyan-50/50' : 'border-neutral-100 bg-white'}`}>
                     {label}
-                    <span className={`flex h-6 w-6 items-center justify-center rounded-full ${sort === k ? 'bg-emerald-500' : 'border-2 border-neutral-200'}`}>
+                    <span className={`flex h-6 w-6 items-center justify-center rounded-full ${sort === k ? 'bg-cyan-500' : 'border-2 border-neutral-200'}`}>
                       {sort === k && <Check className="h-3.5 w-3.5 text-white" strokeWidth={3.5} />}
                     </span>
                   </button>
@@ -358,7 +358,7 @@ export default function GigsPage() {
               <div className="mt-2 flex flex-wrap gap-2">
                 {NICHES.map(n => (
                   <button key={n.key} onClick={() => setNiche(niche === n.key ? null : n.key)}
-                    className={`flex items-center gap-2 rounded-full border px-4 py-2.5 text-[15px] font-semibold transition-all active:scale-95 ${niche === n.key ? 'border-emerald-400 bg-emerald-50 text-emerald-600' : 'border-neutral-200 bg-white text-neutral-700'}`}>
+                    className={`flex items-center gap-2 rounded-full border px-4 py-2.5 text-[15px] font-semibold transition-all active:scale-95 ${niche === n.key ? 'border-cyan-400 bg-cyan-50 text-cyan-700' : 'border-neutral-200 bg-white text-neutral-700'}`}>
                     <n.icon className="h-4 w-4" /> {n.label}
                   </button>
                 ))}
@@ -369,7 +369,7 @@ export default function GigsPage() {
                   Limpiar
                 </button>
                 <button onClick={() => setShowFilters(false)}
-                  className="flex-1 rounded-full bg-gradient-to-b from-[#34D399] to-[#0EA472] py-3.5 font-bold text-white shadow-lg shadow-emerald-200 transition-transform active:scale-[0.98]">
+                  className="flex-1 rounded-full bg-gradient-to-b from-[#22D3EE] to-[#0891B2] py-3.5 font-bold text-white shadow-lg shadow-cyan-200 transition-transform active:scale-[0.98]">
                   Ver {filtered.length} {filtered.length === 1 ? 'campaña' : 'campañas'}
                 </button>
               </div>
@@ -398,7 +398,7 @@ export default function GigsPage() {
                   </h2>
                   <div className="mt-5 grid grid-cols-2 divide-x divide-neutral-100 rounded-3xl border border-neutral-100 bg-white p-5 shadow-sm">
                     <div className="pr-3">
-                      <DollarSign className="h-6 w-6 text-emerald-500" />
+                      <DollarSign className="h-6 w-6 text-cyan-600" />
                       <p className="mt-2 text-xl font-extrabold tabular-nums">{priceLabel(selectedGig)}</p>
                       <p className="text-sm text-neutral-500">Pago</p>
                     </div>
@@ -428,12 +428,12 @@ export default function GigsPage() {
                   <div className="mt-6">
                     {appliedGigs.has(selectedGig.id) ? (
                       <Link href="/creator/applications" prefetch
-                        className="flex w-full items-center justify-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 py-4 text-lg font-bold text-emerald-600">
+                        className="flex w-full items-center justify-center gap-2 rounded-full border border-cyan-200 bg-cyan-50 py-4 text-lg font-bold text-cyan-700">
                         <Check className="h-5 w-5" strokeWidth={3} /> Ya postulaste — ver estado
                       </Link>
                     ) : (
                       <button onClick={() => handleApply(selectedGig)}
-                        className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-[#34D399] to-[#0EA472] py-4 text-lg font-bold text-white shadow-lg shadow-emerald-200 transition-transform active:scale-[0.98]">
+                        className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-[#22D3EE] to-[#0891B2] py-4 text-lg font-bold text-white shadow-lg shadow-cyan-200 transition-transform active:scale-[0.98]">
                         <Send className="h-5 w-5" /> Postularme
                       </button>
                     )}
@@ -451,11 +451,11 @@ export default function GigsPage() {
 function EmptyState({ icon, title, text, cta, onCta }: { icon?: React.ReactNode; title?: string; text: string; cta: string; onCta: () => void }) {
   return (
     <div className="flex flex-col items-center px-4 py-16 text-center">
-      {icon || <Send className="h-16 w-16 text-emerald-500" />}
+      {icon || <Send className="h-16 w-16 text-cyan-600" />}
       {title && <p className="mt-6 text-xl font-extrabold">{title}</p>}
       <p className="mt-2 max-w-xs text-neutral-500">{text}</p>
       <button onClick={onCta}
-        className="mt-6 w-full max-w-xs rounded-full bg-gradient-to-b from-[#34D399] to-[#0EA472] py-4 text-lg font-bold text-white shadow-lg shadow-emerald-200 transition-transform active:scale-[0.98]">
+        className="mt-6 w-full max-w-xs rounded-full bg-gradient-to-b from-[#22D3EE] to-[#0891B2] py-4 text-lg font-bold text-white shadow-lg shadow-cyan-200 transition-transform active:scale-[0.98]">
         {cta}
       </button>
     </div>

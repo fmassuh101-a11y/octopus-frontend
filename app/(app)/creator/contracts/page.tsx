@@ -46,8 +46,8 @@ const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }
   accepted: { label: 'Aceptado', color: 'text-green-400', bg: 'bg-green-500/20' },
   rejected: { label: 'Rechazado', color: 'text-red-400', bg: 'bg-red-500/20' },
   cancelled: { label: 'Cancelado', color: 'text-red-400', bg: 'bg-red-500/20' },
-  in_progress: { label: 'En Progreso', color: 'text-emerald-400', bg: 'bg-emerald-500/20' },
-  completed: { label: 'Completado', color: 'text-emerald-400', bg: 'bg-emerald-500/20' },
+  in_progress: { label: 'En Progreso', color: 'text-cyan-500', bg: 'bg-cyan-500/20' },
+  completed: { label: 'Completado', color: 'text-cyan-500', bg: 'bg-cyan-500/20' },
 }
 
 const PLATFORM_ICONS: Record<string, LucideIcon> = {
@@ -459,7 +459,7 @@ export default function CreatorContractsPage() {
                 {/* CTA for accepted contracts */}
                 {contract.status === 'accepted' && (
                   <div
-                    className="mt-3 flex items-center gap-2 text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 rounded-xl px-3 py-2"
+                    className="mt-3 flex items-center gap-2 text-cyan-500 bg-cyan-500/10 border border-cyan-500/30 rounded-xl px-3 py-2"
                     onClick={(e) => {
                       e.stopPropagation()
                       setContractForDelivery(contract)
@@ -574,8 +574,8 @@ export default function CreatorContractsPage() {
                 )
               })}
 
-              <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4">
-                <p className="text-sm text-emerald-300">
+              <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-xl p-4">
+                <p className="text-sm text-cyan-300">
                   Al aceptar, confirmas que los handles son tuyos y que cumplirás con los términos del contrato.
                 </p>
               </div>

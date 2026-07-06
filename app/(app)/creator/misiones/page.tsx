@@ -50,7 +50,7 @@ export default function MisionesPage() {
 
   return (
     <div className="relative min-h-[100dvh] pb-32 text-neutral-900">
-      <Sky hue="yellow" />
+      <Sky hue="sun" />
       <div className="relative mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl px-5 pt-10">
         <div className="flex items-center justify-between">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-200/80 shadow-sm">
@@ -86,7 +86,7 @@ export default function MisionesPage() {
               <div key={m.key} className="flex items-stretch gap-4">
                 <div className="flex w-11 flex-col items-center">
                   <div className={`mt-5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full shadow-sm ${
-                    m.done ? 'bg-emerald-500 text-white' : locked ? 'bg-white text-neutral-300' : 'bg-emerald-500 text-white'}`}>
+                    m.done ? 'bg-cyan-500 text-white' : locked ? 'bg-white text-neutral-300' : 'bg-cyan-500 text-white'}`}>
                     {m.done ? <Check className="h-5 w-5" strokeWidth={3} /> : locked ? <Lock className="h-4 w-4" /> : <Play className="h-4 w-4 fill-white" />}
                   </div>
                   {i < missions.length - 1 && <div className="my-1 w-px flex-1 border-l-2 border-dashed border-neutral-200" />}
@@ -96,7 +96,7 @@ export default function MisionesPage() {
                     <p className={`text-lg font-bold leading-snug ${locked ? 'text-neutral-300' : m.done ? 'text-neutral-400' : ''}`}>{m.label}</p>
                     <p className={`mt-0.5 text-sm ${locked ? 'text-neutral-300' : 'text-neutral-500'}`}>{m.desc}</p>
                   </div>
-                  <span className={`shrink-0 rounded-xl px-3 py-1.5 text-sm font-extrabold tabular-nums ${m.done ? 'bg-emerald-50 text-emerald-500' : locked ? 'bg-neutral-100 text-neutral-300' : 'bg-amber-100 text-amber-600'}`}>
+                  <span className={`shrink-0 rounded-xl px-3 py-1.5 text-sm font-extrabold tabular-nums ${m.done ? 'bg-cyan-50 text-cyan-600' : locked ? 'bg-neutral-100 text-neutral-300' : 'bg-amber-100 text-amber-600'}`}>
                     +{m.xp} XP
                   </span>
                 </div>
@@ -106,7 +106,7 @@ export default function MisionesPage() {
         </div>
 
         <Link href="/gigs" prefetch
-          className="mt-4 block w-full rounded-full bg-gradient-to-b from-[#34D399] to-[#0EA472] py-4 text-center text-lg font-bold text-white shadow-lg shadow-emerald-200 transition-transform active:scale-[0.98]">
+          className="mt-4 block w-full rounded-full bg-gradient-to-b from-[#22D3EE] to-[#0891B2] py-4 text-center text-lg font-bold text-white shadow-lg shadow-cyan-200 transition-transform active:scale-[0.98]">
           Explorar campañas
         </Link>
       </div>

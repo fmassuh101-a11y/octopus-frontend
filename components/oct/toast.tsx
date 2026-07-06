@@ -38,7 +38,7 @@ export default function Toaster() {
             className="flex items-center gap-2.5 rounded-full border border-black/[0.06] bg-white px-5 py-3 text-[15px] font-semibold text-neutral-900 shadow-[0_10px_35px_rgba(0,0,0,0.16)]"
           >
             {t.kind === 'ok'
-              ? <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-500" />
+              ? <CheckCircle2 className="h-5 w-5 shrink-0 text-cyan-600" />
               : <AlertCircle className="h-5 w-5 shrink-0 text-red-500" />}
             {t.text}
           </motion.div>
