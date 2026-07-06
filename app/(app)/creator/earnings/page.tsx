@@ -21,7 +21,7 @@ export default function CreatorEarnings() {
   // Show loading while checking auth
   if (loading) {
     return (
-      <div className="min-h-[100dvh] bg-neutral-950 flex items-center justify-center">
+      <div className="min-h-[100dvh] bg-[#F7FAFD] flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-neutral-400">Cargando...</p>
@@ -58,9 +58,9 @@ export default function CreatorEarnings() {
   ]
 
   return (
-    <div className="min-h-[100dvh] bg-neutral-950">
+    <div className="min-h-[100dvh] bg-[#F7FAFD]">
       {/* Header */}
-      <div className="bg-neutral-900 sticky top-0 z-10 border-b border-neutral-800">
+      <div className="bg-white border border-neutral-100 sticky top-0 z-10 border-b border-neutral-100">
         <div className="px-4 py-4">
           <div className="flex items-center justify-between">
             <button
@@ -78,7 +78,7 @@ export default function CreatorEarnings() {
             </div>
 
             <div className="w-10 h-10 bg-gradient-to-r from-green-400 to-emerald-500 rounded-xl flex items-center justify-center">
-              <span className="text-white text-sm font-bold">{profile?.full_name?.charAt(0) || user?.email?.charAt(0) || 'U'}</span>
+              <span className="text-neutral-900 text-sm font-bold">{profile?.full_name?.charAt(0) || user?.email?.charAt(0) || 'U'}</span>
             </div>
           </div>
         </div>
@@ -89,7 +89,7 @@ export default function CreatorEarnings() {
 
         {/* Time Filter */}
         <div className="flex justify-center">
-          <div className="bg-neutral-900 rounded-2xl p-2 shadow-sm border border-neutral-800 text-white placeholder-neutral-500">
+          <div className="bg-white border border-neutral-100 rounded-2xl p-2 shadow-sm border border-neutral-100 text-neutral-900 placeholder-neutral-500">
             <div className="flex space-x-1">
               {[
                 { key: 'week', label: '7 Days' },
@@ -101,8 +101,8 @@ export default function CreatorEarnings() {
                   onClick={() => setTimeFilter(tab.key as any)}
                   className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
                     timeFilter === tab.key
-                      ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-md'
-                      : 'text-neutral-400 hover:text-white hover:bg-neutral-950'
+                      ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-neutral-900 shadow-md'
+                      : 'text-neutral-400 hover:text-neutral-900 hover:bg-[#F7FAFD]'
                   } placeholder-neutral-500`}
                 >
                   {tab.label}
@@ -113,12 +113,12 @@ export default function CreatorEarnings() {
         </div>
 
         {/* Main Earnings Card */}
-        <div className="bg-gradient-to-br from-green-500 via-emerald-500 to-teal-600 rounded-3xl p-8 text-white shadow-xl">
+        <div className="bg-gradient-to-br from-green-500 via-emerald-500 to-teal-600 rounded-3xl p-8 text-neutral-900 shadow-xl">
           <div className="text-center mb-6">
             <div className="text-sm font-medium text-green-100 mb-2">Total Earnings ({timeFilter})</div>
             <div className="text-5xl font-black mb-3">${currentData.total.toLocaleString()}</div>
             <div className="flex items-center justify-center space-x-2">
-              <div className="bg-neutral-900/20 backdrop-blur-sm rounded-full px-3 py-1">
+              <div className="bg-white border border-neutral-100/20 backdrop-blur-sm rounded-full px-3 py-1">
                 <span className="text-sm font-bold">{currentData.growth}</span>
               </div>
               <span className="text-green-100 text-sm">vs previous {timeFilter}</span>
@@ -127,15 +127,15 @@ export default function CreatorEarnings() {
 
           {/* Quick Stats */}
           <div className="grid grid-cols-3 gap-4">
-            <div className="bg-neutral-900/10 backdrop-blur-sm rounded-2xl p-4 text-center">
+            <div className="bg-white border border-neutral-100/10 backdrop-blur-sm rounded-2xl p-4 text-center">
               <div className="text-2xl font-bold">{currentData.transactions}</div>
               <div className="text-xs text-green-100">Transactions</div>
             </div>
-            <div className="bg-neutral-900/10 backdrop-blur-sm rounded-2xl p-4 text-center">
+            <div className="bg-white border border-neutral-100/10 backdrop-blur-sm rounded-2xl p-4 text-center">
               <div className="text-2xl font-bold">${Math.round(currentData.total / currentData.transactions)}</div>
               <div className="text-xs text-green-100">Avg Per Job</div>
             </div>
-            <div className="bg-neutral-900/10 backdrop-blur-sm rounded-2xl p-4 text-center">
+            <div className="bg-white border border-neutral-100/10 backdrop-blur-sm rounded-2xl p-4 text-center">
               <div className="text-2xl font-bold">98%</div>
               <div className="text-xs text-green-100">Success Rate</div>
             </div>
@@ -143,8 +143,8 @@ export default function CreatorEarnings() {
         </div>
 
         {/* Chart Placeholder - Revolutionary Design */}
-        <div className="bg-neutral-900 rounded-3xl p-6 shadow-sm border border-neutral-800 text-white placeholder-neutral-500">
-          <h3 className="flex items-center gap-2 text-lg font-bold text-white mb-4"><TrendingUp className="w-5 h-5 text-emerald-400" strokeWidth={2} /> Tendencia de Ganancias</h3>
+        <div className="bg-white border border-neutral-100 rounded-3xl p-6 shadow-sm border border-neutral-100 text-neutral-900 placeholder-neutral-500">
+          <h3 className="flex items-center gap-2 text-lg font-bold text-neutral-900 mb-4"><TrendingUp className="w-5 h-5 text-emerald-400" strokeWidth={2} /> Tendencia de Ganancias</h3>
           <div className="h-48 bg-gradient-to-br from-neutral-800 via-neutral-800 to-neutral-800 rounded-2xl flex items-center justify-center relative overflow-hidden">
             {/* Fake Chart Lines */}
             <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
@@ -175,10 +175,10 @@ export default function CreatorEarnings() {
         </div>
 
         {/* Upcoming Payouts */}
-        <div className="bg-neutral-900 rounded-3xl p-6 shadow-sm border border-neutral-800 text-white placeholder-neutral-500">
+        <div className="bg-white border border-neutral-100 rounded-3xl p-6 shadow-sm border border-neutral-100 text-neutral-900 placeholder-neutral-500">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="flex items-center gap-2 text-lg font-bold text-white"><Rocket className="w-5 h-5 text-emerald-400" strokeWidth={2} /> Pagos Próximos</h3>
-            <span className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+            <h3 className="flex items-center gap-2 text-lg font-bold text-neutral-900"><Rocket className="w-5 h-5 text-emerald-400" strokeWidth={2} /> Pagos Próximos</h3>
+            <span className="bg-gradient-to-r from-yellow-400 to-orange-500 text-neutral-900 text-xs font-bold px-3 py-1 rounded-full">
               ${upcomingPayouts.reduce((sum, p) => sum + p.amount, 0).toLocaleString()} Expected
             </span>
           </div>
@@ -187,10 +187,10 @@ export default function CreatorEarnings() {
               <div key={index} className="flex items-center justify-between p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border border-yellow-200">
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
-                    <Gem className="w-4 h-4 text-white" strokeWidth={2} />
+                    <Gem className="w-4 h-4 text-neutral-900" strokeWidth={2} />
                   </div>
                   <div>
-                    <div className="font-semibold text-white">{payout.campaign}</div>
+                    <div className="font-semibold text-neutral-900">{payout.campaign}</div>
                     <div className="text-sm text-neutral-400">{payout.date} • {payout.type}</div>
                   </div>
                 </div>
@@ -203,11 +203,11 @@ export default function CreatorEarnings() {
         </div>
 
         {/* Recent Transactions */}
-        <div className="bg-neutral-900 rounded-3xl p-6 shadow-sm border border-neutral-800 text-white placeholder-neutral-500">
-          <h3 className="flex items-center gap-2 text-lg font-bold text-white mb-4"><ArrowLeftRight className="w-5 h-5 text-emerald-400" strokeWidth={2} /> Transacciones Recientes</h3>
+        <div className="bg-white border border-neutral-100 rounded-3xl p-6 shadow-sm border border-neutral-100 text-neutral-900 placeholder-neutral-500">
+          <h3 className="flex items-center gap-2 text-lg font-bold text-neutral-900 mb-4"><ArrowLeftRight className="w-5 h-5 text-emerald-400" strokeWidth={2} /> Transacciones Recientes</h3>
           <div className="space-y-3">
             {recentTransactions.map((transaction) => (
-              <div key={transaction.id} className="flex items-center justify-between p-4 bg-neutral-950 rounded-xl hover:bg-neutral-800 transition-colors">
+              <div key={transaction.id} className="flex items-center justify-between p-4 bg-[#F7FAFD] rounded-xl hover:bg-neutral-100 transition-colors">
                 <div className="flex items-center space-x-3">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
                     transaction.status === 'paid' ? 'bg-emerald-500/15 text-emerald-400' :
@@ -219,7 +219,7 @@ export default function CreatorEarnings() {
                      <RefreshCw className="w-4 h-4" strokeWidth={2} />}
                   </div>
                   <div>
-                    <div className="font-semibold text-white">{transaction.campaign}</div>
+                    <div className="font-semibold text-neutral-900">{transaction.campaign}</div>
                     <div className="text-sm text-neutral-400">
                       {transaction.date} • {transaction.status}
                     </div>
@@ -238,18 +238,18 @@ export default function CreatorEarnings() {
         </div>
 
         {/* Performance Insights */}
-        <div className="bg-gradient-to-br from-emerald-500 via-emerald-500 to-red-500 rounded-3xl p-6 text-white shadow-xl">
+        <div className="bg-gradient-to-br from-emerald-500 via-emerald-500 to-red-500 rounded-3xl p-6 text-neutral-900 shadow-xl">
           <h3 className="flex items-center gap-2 text-lg font-bold mb-4"><Target className="w-5 h-5" strokeWidth={2} /> Métricas de Desempeño</h3>
           <div className="space-y-4">
-            <div className="bg-neutral-900/10 backdrop-blur-sm rounded-2xl p-4">
+            <div className="bg-white border border-neutral-100/10 backdrop-blur-sm rounded-2xl p-4">
               <div className="text-2xl font-bold mb-2">Top Performing Category</div>
               <div className="text-emerald-100">UGC Content • $1,247 avg</div>
             </div>
-            <div className="bg-neutral-900/10 backdrop-blur-sm rounded-2xl p-4">
+            <div className="bg-white border border-neutral-100/10 backdrop-blur-sm rounded-2xl p-4">
               <div className="text-2xl font-bold mb-2">Best Time to Post</div>
               <div className="text-emerald-100">Tuesdays 2-4 PM • +34% engagement</div>
             </div>
-            <div className="bg-neutral-900/10 backdrop-blur-sm rounded-2xl p-4">
+            <div className="bg-white border border-neutral-100/10 backdrop-blur-sm rounded-2xl p-4">
               <div className="text-2xl font-bold mb-2">Growth Potential</div>
               <div className="text-emerald-100">+67% possible with optimization</div>
             </div>

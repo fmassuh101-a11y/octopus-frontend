@@ -355,7 +355,7 @@ export default function CreatorContractsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-[100dvh] bg-neutral-950 flex items-center justify-center">
+      <div className="min-h-[100dvh] bg-[#F7FAFD] flex items-center justify-center">
         <div className="text-center">
           <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-neutral-400">Cargando contratos...</p>
@@ -365,12 +365,12 @@ export default function CreatorContractsPage() {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-neutral-950 text-white pb-24">
+    <div className="min-h-[100dvh] bg-[#F7FAFD] text-neutral-900 pb-24">
       {/* Header */}
-      <div className="bg-neutral-900 border-b border-neutral-800 sticky top-0 z-10">
+      <div className="bg-white border border-neutral-100 border-b border-neutral-100 sticky top-0 z-10">
         <div className="px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/creator/dashboard" className="p-2 -ml-2 hover:bg-neutral-800 rounded-xl">
+            <Link href="/creator/dashboard" className="p-2 -ml-2 hover:bg-neutral-100 rounded-xl">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
@@ -396,8 +396,8 @@ export default function CreatorContractsPage() {
               onClick={() => setFilter(f.id as any)}
               className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
                 filter === f.id
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-neutral-800 text-neutral-400 hover:text-white'
+                  ? 'bg-emerald-600 text-neutral-900'
+                  : 'bg-neutral-100 text-neutral-400 hover:text-neutral-900'
               } placeholder-neutral-500`}
             >
               {f.label}
@@ -410,7 +410,7 @@ export default function CreatorContractsPage() {
       <div className="p-4 space-y-4">
         {filteredContracts.length === 0 ? (
           <div className="text-center py-16">
-            <div className="w-20 h-20 bg-neutral-800 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-20 h-20 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-10 h-10 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
@@ -426,11 +426,11 @@ export default function CreatorContractsPage() {
               <button
                 key={contract.id}
                 onClick={() => setSelectedContract(contract)}
-                className="w-full bg-neutral-900 rounded-2xl p-4 text-left hover:bg-neutral-800/70 transition-colors"
+                className="w-full bg-white border border-neutral-100 rounded-2xl p-4 text-left hover:bg-neutral-100/70 transition-colors"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
-                    <h3 className="font-semibold text-white mb-1">{contract.title}</h3>
+                    <h3 className="font-semibold text-neutral-900 mb-1">{contract.title}</h3>
                     <p className="text-sm text-neutral-400">{contract.company_name}</p>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusInfo.bg} ${statusInfo.color}`}>
@@ -526,9 +526,9 @@ export default function CreatorContractsPage() {
 
       {/* Accept Modal with Handles */}
       {showAcceptModal && selectedContract && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-neutral-900 rounded-2xl w-full max-w-md overflow-hidden">
-            <div className="px-6 py-4 border-b border-neutral-800">
+        <div className="fixed inset-0 bg-[#F7FAFD]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-neutral-100 rounded-2xl w-full max-w-md overflow-hidden">
+            <div className="px-6 py-4 border-b border-neutral-100">
               <h2 className="text-lg font-bold">Confirmar y Enviar Handles</h2>
               <p className="text-sm text-neutral-400">Ingresa tus handles para las plataformas requeridas</p>
             </div>
@@ -546,7 +546,7 @@ export default function CreatorContractsPage() {
 
                 return (
                   <div key={platform}>
-                    <label className="flex items-center gap-2 text-sm font-medium text-neutral-300 mb-2">
+                    <label className="flex items-center gap-2 text-sm font-medium text-neutral-600 mb-2">
                       <PlatformIcon platform={platform} className="w-4 h-4" />
                       {platform.charAt(0).toUpperCase() + platform.slice(1)}
                     </label>
@@ -556,14 +556,14 @@ export default function CreatorContractsPage() {
                         value={handleValue}
                         onChange={(e) => setHandles({ ...handles, [platform]: e.target.value })}
                         placeholder="tu_usuario"
-                        className="flex-1 px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
+                        className="flex-1 px-4 py-3 bg-neutral-100 border border-neutral-700 rounded-xl text-neutral-900 placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
                       />
                       {verifyUrl && cleanHandle && (
                         <a
                           href={verifyUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-neutral-400 hover:text-white hover:border-emerald-500 transition-colors flex items-center gap-2"
+                          className="px-4 py-3 bg-neutral-100 border border-neutral-700 rounded-xl text-neutral-400 hover:text-neutral-900 hover:border-emerald-500 transition-colors flex items-center gap-2"
                           title={`Verificar @${cleanHandle} en ${platform}`}
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -583,20 +583,20 @@ export default function CreatorContractsPage() {
               </div>
             </div>
 
-            <div className="px-6 py-4 border-t border-neutral-800 flex gap-3">
+            <div className="px-6 py-4 border-t border-neutral-100 flex gap-3">
               <button
                 onClick={() => {
                   setShowAcceptModal(false)
                   setHandles({})
                 }}
-                className="flex-1 py-3 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl font-medium transition-colors"
+                className="flex-1 py-3 bg-neutral-100 hover:bg-neutral-700 text-neutral-900 rounded-xl font-medium transition-colors"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleAcceptContract}
                 disabled={accepting}
-                className="flex-1 py-3 bg-green-600 hover:bg-green-500 text-white rounded-xl font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 py-3 bg-green-600 hover:bg-green-500 text-neutral-900 rounded-xl font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {accepting ? (
                   <>

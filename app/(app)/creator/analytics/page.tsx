@@ -199,7 +199,7 @@ export default function CreatorAnalyticsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-[100dvh] bg-neutral-950 flex items-center justify-center">
+      <div className="min-h-[100dvh] bg-[#F7FAFD] flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-neutral-400">Cargando analytics...</p>
@@ -209,19 +209,19 @@ export default function CreatorAnalyticsPage() {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-neutral-950 pb-24">
+    <div className="min-h-[100dvh] bg-[#F7FAFD] pb-24">
       {/* Header */}
-      <div className="bg-neutral-900 border-b border-neutral-800 sticky top-0 z-10">
+      <div className="bg-white border border-neutral-100 border-b border-neutral-100 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Link href="/creator/dashboard" className="p-2 hover:bg-neutral-800 rounded-lg transition">
+              <Link href="/creator/dashboard" className="p-2 hover:bg-neutral-100 rounded-lg transition">
                 <svg className="w-6 h-6 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </Link>
               <div>
-                <h1 className="text-2xl font-bold text-white">Analytics Pro</h1>
+                <h1 className="text-2xl font-bold text-neutral-900">Analytics Pro</h1>
                 <div className="flex items-center gap-2">
                   <p className="text-sm text-neutral-500">Rendimiento de tu contenido</p>
                   {lastUpdated && (
@@ -241,7 +241,7 @@ export default function CreatorAnalyticsPage() {
                 <button
                   onClick={handleRefreshData}
                   disabled={refreshing}
-                  className="flex items-center gap-2 px-4 py-2 bg-neutral-800 text-neutral-200 rounded-xl font-medium hover:bg-neutral-800 transition disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2 bg-neutral-100 text-neutral-700 rounded-xl font-medium hover:bg-neutral-100 transition disabled:opacity-50"
                 >
                   <svg className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -251,7 +251,7 @@ export default function CreatorAnalyticsPage() {
               )}
               <button
                 onClick={handleConnectTikTok}
-                className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-xl font-medium hover:bg-gray-800 transition"
+                className="flex items-center gap-2 px-4 py-2 bg-[#F7FAFD] text-neutral-900 rounded-xl font-medium hover:bg-gray-800 transition"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/>
@@ -266,13 +266,13 @@ export default function CreatorAnalyticsPage() {
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Connected Accounts */}
         {tiktokAccounts.length > 0 && (
-          <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 mb-6 text-white placeholder-neutral-500">
+          <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 mb-6 text-neutral-900 placeholder-neutral-500">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-white">Cuentas Conectadas</h3>
+              <h3 className="font-semibold text-neutral-900">Cuentas Conectadas</h3>
               <select
                 value={selectedAccount}
                 onChange={(e) => setSelectedAccount(e.target.value)}
-                className="px-3 py-2 border border-neutral-800 rounded-lg text-sm focus:outline-none bg-neutral-900 focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-2 border border-neutral-100 rounded-lg text-sm focus:outline-none bg-white border border-neutral-100 focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">Todas las cuentas ({tiktokAccounts.length})</option>
                 {tiktokAccounts.map((account) => (
@@ -287,15 +287,15 @@ export default function CreatorAnalyticsPage() {
                   key={account.id}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition cursor-pointer ${
                     selectedAccount === account.id || selectedAccount === 'all'
-                      ? 'bg-black text-white border-black'
-                      : 'bg-neutral-950 border-neutral-800 hover:border-neutral-700'
+                      ? 'bg-[#F7FAFD] text-neutral-900 border-black'
+                      : 'bg-[#F7FAFD] border-neutral-100 hover:border-neutral-700'
                   } placeholder-neutral-500`}
                   onClick={() => setSelectedAccount(account.id)}
                 >
                   {account.avatarUrl ? (
                     <img src={account.avatarUrl} alt={account.username} className="w-10 h-10 rounded-full object-cover" />
                   ) : (
-                    <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 via-red-500 to-yellow-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                    <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 via-red-500 to-yellow-500 rounded-full flex items-center justify-center text-neutral-900 text-sm font-bold">
                       {account.username?.charAt(0).toUpperCase()}
                     </div>
                   )}
@@ -308,20 +308,20 @@ export default function CreatorAnalyticsPage() {
                         </svg>
                       )}
                       {account.isDemo && (
-                        <span className="text-xs px-1.5 py-0.5 bg-yellow-500 text-white rounded">Demo</span>
+                        <span className="text-xs px-1.5 py-0.5 bg-yellow-500 text-neutral-900 rounded">Demo</span>
                       )}
                       {!account.isDemo && account.hasStatsScope === false && (
-                        <span className="text-xs px-1.5 py-0.5 bg-amber-500 text-white rounded">Limitado</span>
+                        <span className="text-xs px-1.5 py-0.5 bg-amber-500 text-neutral-900 rounded">Limitado</span>
                       )}
                     </div>
-                    <p className={`text-xs ${selectedAccount === account.id || selectedAccount === 'all' ? 'text-white/70' : 'text-neutral-500'}`}>
+                    <p className={`text-xs ${selectedAccount === account.id || selectedAccount === 'all' ? 'text-neutral-900/70' : 'text-neutral-500'}`}>
                       {formatNumber(account.followers)} seguidores
                     </p>
                   </div>
                   <button
                     onClick={(e) => { e.stopPropagation(); handleRemoveAccount(account.id); }}
                     className={`ml-2 p-1 rounded-full hover:bg-white/20 transition ${
-                      selectedAccount === account.id || selectedAccount === 'all' ? 'text-white/70' : 'text-neutral-500'
+                      selectedAccount === account.id || selectedAccount === 'all' ? 'text-neutral-900/70' : 'text-neutral-500'
                     }`}
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -336,23 +336,23 @@ export default function CreatorAnalyticsPage() {
 
         {/* No accounts connected - Hero CTA */}
         {tiktokAccounts.length === 0 && (
-          <div className="bg-gradient-to-br from-black via-gray-900 to-gray-800 rounded-3xl p-10 mb-6 text-white text-center relative overflow-hidden">
+          <div className="bg-gradient-to-br from-black via-gray-900 to-gray-800 rounded-3xl p-10 mb-6 text-neutral-900 text-center relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-emerald-500/20 to-transparent rounded-full blur-3xl"></div>
             <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-cyan-500/20 to-transparent rounded-full blur-3xl"></div>
 
             <div className="relative">
-              <div className="w-24 h-24 bg-white/10 rounded-3xl flex items-center justify-center mx-auto mb-6 backdrop-blur-sm">
+              <div className="w-24 h-24 bg-neutral-100 rounded-3xl flex items-center justify-center mx-auto mb-6 backdrop-blur-sm">
                 <svg className="w-12 h-12" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/>
                 </svg>
               </div>
               <h3 className="text-2xl font-bold mb-3">Conecta tu TikTok</h3>
-              <p className="text-white/70 mb-8 max-w-md mx-auto">
+              <p className="text-neutral-900/70 mb-8 max-w-md mx-auto">
                 Accede a analytics profesionales: engagement rate, top performers, mejores horas para publicar, y mucho mas.
               </p>
               <button
                 onClick={handleConnectTikTok}
-                className="px-8 py-4 bg-neutral-900 text-white rounded-2xl font-semibold hover:bg-neutral-800 transition inline-flex items-center gap-2"
+                className="px-8 py-4 bg-white border border-neutral-100 text-neutral-900 rounded-2xl font-semibold hover:bg-neutral-100 transition inline-flex items-center gap-2"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/>
@@ -368,7 +368,7 @@ export default function CreatorAnalyticsPage() {
           <>
             {/* Main Stats Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <div className="bg-neutral-900 rounded-2xl p-5 border border-neutral-800 text-white placeholder-neutral-500">
+              <div className="bg-white border border-neutral-100 rounded-2xl p-5 border border-neutral-100 text-neutral-900 placeholder-neutral-500">
                 <div className="flex items-center justify-between mb-3">
                   <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
                     <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
@@ -377,11 +377,11 @@ export default function CreatorAnalyticsPage() {
                   </div>
                   {selectedAccount === 'all' && <span className="text-xs text-blue-600 font-medium bg-blue-50 px-2 py-1 rounded-full">TOTAL</span>}
                 </div>
-                <p className="text-3xl font-bold text-white">{formatNumber(stats.followers)}</p>
+                <p className="text-3xl font-bold text-neutral-900">{formatNumber(stats.followers)}</p>
                 <p className="text-sm text-neutral-500 mt-1">Seguidores</p>
               </div>
 
-              <div className="bg-neutral-900 rounded-2xl p-5 border border-neutral-800 text-white placeholder-neutral-500">
+              <div className="bg-white border border-neutral-100 rounded-2xl p-5 border border-neutral-100 text-neutral-900 placeholder-neutral-500">
                 <div className="flex items-center justify-between mb-3">
                   <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
                     <svg className="w-5 h-5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
@@ -389,11 +389,11 @@ export default function CreatorAnalyticsPage() {
                     </svg>
                   </div>
                 </div>
-                <p className="text-3xl font-bold text-white">{formatNumber(stats.likes)}</p>
+                <p className="text-3xl font-bold text-neutral-900">{formatNumber(stats.likes)}</p>
                 <p className="text-sm text-neutral-500 mt-1">Likes Totales</p>
               </div>
 
-              <div className="bg-neutral-900 rounded-2xl p-5 border border-neutral-800 text-white placeholder-neutral-500">
+              <div className="bg-white border border-neutral-100 rounded-2xl p-5 border border-neutral-100 text-neutral-900 placeholder-neutral-500">
                 <div className="flex items-center justify-between mb-3">
                   <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
                     <svg className="w-5 h-5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
@@ -401,11 +401,11 @@ export default function CreatorAnalyticsPage() {
                     </svg>
                   </div>
                 </div>
-                <p className="text-3xl font-bold text-white">{formatNumber(stats.videoCount)}</p>
+                <p className="text-3xl font-bold text-neutral-900">{formatNumber(stats.videoCount)}</p>
                 <p className="text-sm text-neutral-500 mt-1">Videos</p>
               </div>
 
-              <div className="bg-neutral-900 rounded-2xl p-5 border border-neutral-800 text-white placeholder-neutral-500">
+              <div className="bg-white border border-neutral-100 rounded-2xl p-5 border border-neutral-100 text-neutral-900 placeholder-neutral-500">
                 <div className="flex items-center justify-between mb-3">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${getEngagementColor(stats.engagementRate).replace('text-', 'bg-').replace('-600', '-100')}`}>
                     <svg className={`w-5 h-5 ${getEngagementColor(stats.engagementRate).split(' ')[0]}`} fill="currentColor" viewBox="0 0 20 20">
@@ -416,7 +416,7 @@ export default function CreatorAnalyticsPage() {
                     {getEngagementLabel(stats.engagementRate)}
                   </span>
                 </div>
-                <p className="text-3xl font-bold text-white">{stats.engagementRate}%</p>
+                <p className="text-3xl font-bold text-neutral-900">{stats.engagementRate}%</p>
                 <p className="text-sm text-neutral-500 mt-1">Engagement Rate</p>
               </div>
             </div>
@@ -433,9 +433,9 @@ export default function CreatorAnalyticsPage() {
 
             {/* Time Period Filter */}
             {allVideos.length > 0 && (
-              <div className="bg-neutral-900 rounded-2xl p-4 border border-neutral-800 mb-6 text-white placeholder-neutral-500">
+              <div className="bg-white border border-neutral-100 rounded-2xl p-4 border border-neutral-100 mb-6 text-neutral-900 placeholder-neutral-500">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-white">Filtrar por Periodo</h3>
+                  <h3 className="font-semibold text-neutral-900">Filtrar por Periodo</h3>
                   <TimePeriodFilter
                     selected={selectedPeriod}
                     onChange={setSelectedPeriod}
@@ -481,8 +481,8 @@ export default function CreatorAnalyticsPage() {
             {/* Performance Metrics */}
             <div className="grid md:grid-cols-2 gap-6 mb-6">
               {/* Average Performance */}
-              <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 text-white placeholder-neutral-500">
-                <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+              <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-500">
+                <h3 className="font-semibold text-neutral-900 mb-4 flex items-center gap-2">
                   <svg className="w-5 h-5 text-neutral-500" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" />
                     <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" />
@@ -490,7 +490,7 @@ export default function CreatorAnalyticsPage() {
                   Rendimiento Promedio por Video
                 </h3>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-neutral-950 rounded-xl">
+                  <div className="flex items-center justify-between p-3 bg-[#F7FAFD] rounded-xl">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
                         <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
@@ -500,9 +500,9 @@ export default function CreatorAnalyticsPage() {
                       </div>
                       <span className="text-neutral-400">Views</span>
                     </div>
-                    <span className="font-bold text-white">{formatNumber(stats.avgViews)}</span>
+                    <span className="font-bold text-neutral-900">{formatNumber(stats.avgViews)}</span>
                   </div>
-                  <div className="flex items-center justify-between p-3 bg-neutral-950 rounded-xl">
+                  <div className="flex items-center justify-between p-3 bg-[#F7FAFD] rounded-xl">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
                         <svg className="w-4 h-4 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
@@ -511,9 +511,9 @@ export default function CreatorAnalyticsPage() {
                       </div>
                       <span className="text-neutral-400">Likes</span>
                     </div>
-                    <span className="font-bold text-white">{formatNumber(stats.avgLikes)}</span>
+                    <span className="font-bold text-neutral-900">{formatNumber(stats.avgLikes)}</span>
                   </div>
-                  <div className="flex items-center justify-between p-3 bg-neutral-950 rounded-xl">
+                  <div className="flex items-center justify-between p-3 bg-[#F7FAFD] rounded-xl">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
                         <svg className="w-4 h-4 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
@@ -522,14 +522,14 @@ export default function CreatorAnalyticsPage() {
                       </div>
                       <span className="text-neutral-400">Comentarios</span>
                     </div>
-                    <span className="font-bold text-white">{formatNumber(stats.avgComments)}</span>
+                    <span className="font-bold text-neutral-900">{formatNumber(stats.avgComments)}</span>
                   </div>
                 </div>
               </div>
 
               {/* Account Summary */}
-              <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 text-white placeholder-neutral-500">
-                <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+              <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-500">
+                <h3 className="font-semibold text-neutral-900 mb-4 flex items-center gap-2">
                   <svg className="w-5 h-5 text-neutral-500" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
                     <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
@@ -537,33 +537,33 @@ export default function CreatorAnalyticsPage() {
                   Resumen de Cuenta
                 </h3>
                 <div className="space-y-3">
-                  <div className="flex justify-between py-2 border-b border-neutral-800">
+                  <div className="flex justify-between py-2 border-b border-neutral-100">
                     <span className="text-neutral-400">Cuentas conectadas</span>
-                    <span className="font-bold text-white">{tiktokAccounts.length}</span>
+                    <span className="font-bold text-neutral-900">{tiktokAccounts.length}</span>
                   </div>
-                  <div className="flex justify-between py-2 border-b border-neutral-800">
+                  <div className="flex justify-between py-2 border-b border-neutral-100">
                     <span className="text-neutral-400">Seguidores totales</span>
-                    <span className="font-bold text-white">{formatNumber(stats.followers)}</span>
+                    <span className="font-bold text-neutral-900">{formatNumber(stats.followers)}</span>
                   </div>
-                  <div className="flex justify-between py-2 border-b border-neutral-800">
+                  <div className="flex justify-between py-2 border-b border-neutral-100">
                     <span className="text-neutral-400">Siguiendo</span>
-                    <span className="font-bold text-white">{formatNumber(stats.following)}</span>
+                    <span className="font-bold text-neutral-900">{formatNumber(stats.following)}</span>
                   </div>
                   <div className="flex justify-between py-2">
                     <span className="text-neutral-400">Videos totales</span>
-                    <span className="font-bold text-white">{formatNumber(stats.videoCount)}</span>
+                    <span className="font-bold text-neutral-900">{formatNumber(stats.videoCount)}</span>
                   </div>
                 </div>
 
                 {/* Engagement Bar Visual */}
-                <div className="mt-6 pt-4 border-t border-neutral-800">
+                <div className="mt-6 pt-4 border-t border-neutral-100">
                   <div className="flex justify-between mb-2">
                     <span className="text-sm text-neutral-400">Engagement Rate</span>
                     <span className={`text-sm font-bold ${getEngagementColor(stats.engagementRate).split(' ')[0]}`}>
                       {stats.engagementRate}%
                     </span>
                   </div>
-                  <div className="w-full bg-neutral-800 rounded-full h-3">
+                  <div className="w-full bg-neutral-100 rounded-full h-3">
                     <div
                       className={`h-3 rounded-full transition-all duration-500 ${
                         stats.engagementRate >= 6 ? 'bg-green-500' :
@@ -581,9 +581,9 @@ export default function CreatorAnalyticsPage() {
 
             {/* All Videos Grid */}
             {filteredVideos.length > 0 && (
-              <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 mb-6 text-white placeholder-neutral-500">
+              <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 mb-6 text-neutral-900 placeholder-neutral-500">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-white flex items-center gap-2">
+                  <h3 className="font-semibold text-neutral-900 flex items-center gap-2">
                     <svg className="w-5 h-5 text-neutral-500" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
                     </svg>
@@ -596,7 +596,7 @@ export default function CreatorAnalyticsPage() {
                     <button
                       key={video.id || index}
                       onClick={() => setSelectedVideo(video)}
-                      className="group relative rounded-xl overflow-hidden bg-neutral-800 aspect-[9/16] hover:ring-2 hover:ring-blue-500 transition-all"
+                      className="group relative rounded-xl overflow-hidden bg-neutral-100 aspect-[9/16] hover:ring-2 hover:ring-blue-500 transition-all"
                     >
                       {video.thumbnail ? (
                         <img src={video.thumbnail} alt={video.title} className="w-full h-full object-cover" />
@@ -609,7 +609,7 @@ export default function CreatorAnalyticsPage() {
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                         <div className="absolute bottom-0 left-0 right-0 p-3">
-                          <div className="flex items-center justify-between text-white text-xs">
+                          <div className="flex items-center justify-between text-neutral-900 text-xs">
                             <span className="flex items-center gap-1">
                               <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
@@ -625,13 +625,13 @@ export default function CreatorAnalyticsPage() {
                             </span>
                           </div>
                           <div className="mt-2 text-center">
-                            <span className="text-white text-xs font-medium">Ver analisis</span>
+                            <span className="text-neutral-900 text-xs font-medium">Ver analisis</span>
                           </div>
                         </div>
                       </div>
                       {/* Click indicator */}
-                      <div className="absolute top-2 right-2 w-6 h-6 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="absolute top-2 right-2 w-6 h-6 bg-[#F7FAFD]/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <svg className="w-3 h-3 text-neutral-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                         </svg>

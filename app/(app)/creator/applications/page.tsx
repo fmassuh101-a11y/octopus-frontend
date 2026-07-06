@@ -146,20 +146,20 @@ export default function ApplicationsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-[100dvh] bg-neutral-950">
+      <div className="min-h-[100dvh] bg-[#F7FAFD]">
         {/* Skeleton Header */}
-        <div className="bg-neutral-900 border-b border-neutral-800 text-white">
+        <div className="bg-white border border-neutral-100 border-b border-neutral-100 text-neutral-900">
           <div className="max-w-4xl mx-auto px-4 py-8">
             <div className="flex items-center gap-4 mb-4">
-              <div className="w-10 h-10 bg-neutral-800 rounded-lg animate-pulse" />
+              <div className="w-10 h-10 bg-neutral-100 rounded-lg animate-pulse" />
               <div>
-                <div className="h-7 w-40 bg-neutral-800 rounded animate-pulse mb-2" />
-                <div className="h-4 w-56 bg-neutral-800 rounded animate-pulse" />
+                <div className="h-7 w-40 bg-neutral-100 rounded animate-pulse mb-2" />
+                <div className="h-4 w-56 bg-neutral-100 rounded animate-pulse" />
               </div>
             </div>
             <div className="grid grid-cols-3 gap-4 mt-6">
               {[1,2,3].map(i => (
-                <div key={i} className="bg-neutral-800 rounded-xl p-4 animate-pulse">
+                <div key={i} className="bg-neutral-100 rounded-xl p-4 animate-pulse">
                   <div className="h-8 w-12 bg-neutral-700 rounded mx-auto mb-2" />
                   <div className="h-4 w-16 bg-neutral-700 rounded mx-auto" />
                 </div>
@@ -168,22 +168,22 @@ export default function ApplicationsPage() {
           </div>
         </div>
         {/* Skeleton Filter Tabs */}
-        <div className="bg-neutral-900 border-b border-neutral-800 sticky top-0 z-10">
+        <div className="bg-white border border-neutral-100 border-b border-neutral-100 sticky top-0 z-10">
           <div className="max-w-4xl mx-auto px-4 py-3 flex gap-2">
             {[1,2,3,4].map(i => (
-              <div key={i} className="h-10 w-28 bg-neutral-800 rounded-full animate-pulse" />
+              <div key={i} className="h-10 w-28 bg-neutral-100 rounded-full animate-pulse" />
             ))}
           </div>
         </div>
         {/* Skeleton Applications */}
         <div className="max-w-4xl mx-auto px-4 py-6 space-y-4">
           {[1,2,3,4].map(i => (
-            <div key={i} className="bg-neutral-900 rounded-2xl overflow-hidden border border-neutral-800 flex text-white placeholder-neutral-500">
-              <div className="w-32 md:w-40 bg-neutral-800 animate-pulse" />
+            <div key={i} className="bg-white border border-neutral-100 rounded-2xl overflow-hidden border border-neutral-100 flex text-neutral-900 placeholder-neutral-500">
+              <div className="w-32 md:w-40 bg-neutral-100 animate-pulse" />
               <div className="flex-1 p-4">
-                <div className="h-5 w-3/4 bg-neutral-800 rounded animate-pulse mb-2" />
-                <div className="h-4 w-1/2 bg-neutral-800 rounded animate-pulse mb-4" />
-                <div className="h-4 w-24 bg-neutral-800 rounded animate-pulse" />
+                <div className="h-5 w-3/4 bg-neutral-100 rounded animate-pulse mb-2" />
+                <div className="h-4 w-1/2 bg-neutral-100 rounded animate-pulse mb-4" />
+                <div className="h-4 w-24 bg-neutral-100 rounded animate-pulse" />
               </div>
             </div>
           ))}
@@ -193,9 +193,9 @@ export default function ApplicationsPage() {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-neutral-950">
+    <div className="min-h-[100dvh] bg-[#F7FAFD]">
       {/* Header */}
-      <div className="bg-neutral-900 border-b border-neutral-800 text-white">
+      <div className="bg-white border border-neutral-100 border-b border-neutral-100 text-neutral-900">
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="flex items-center gap-4 mb-4">
             <Link
@@ -214,15 +214,15 @@ export default function ApplicationsPage() {
 
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4 mt-6">
-            <div className="bg-neutral-800 border border-neutral-700 rounded-xl p-4 text-center text-white placeholder-neutral-500">
+            <div className="bg-neutral-100 border border-neutral-700 rounded-xl p-4 text-center text-neutral-900 placeholder-neutral-500">
               <div className="text-3xl font-bold">{pendingCount}</div>
               <div className="text-sm text-neutral-400">Pendientes</div>
             </div>
-            <div className="bg-neutral-800 border border-neutral-700 rounded-xl p-4 text-center text-white placeholder-neutral-500">
+            <div className="bg-neutral-100 border border-neutral-700 rounded-xl p-4 text-center text-neutral-900 placeholder-neutral-500">
               <div className="text-3xl font-bold">{acceptedCount}</div>
               <div className="text-sm text-neutral-400">Aceptadas</div>
             </div>
-            <div className="bg-neutral-800 border border-neutral-700 rounded-xl p-4 text-center text-white placeholder-neutral-500">
+            <div className="bg-neutral-100 border border-neutral-700 rounded-xl p-4 text-center text-neutral-900 placeholder-neutral-500">
               <div className="text-3xl font-bold">{rejectedCount}</div>
               <div className="text-sm text-neutral-400">Rechazadas</div>
             </div>
@@ -231,15 +231,15 @@ export default function ApplicationsPage() {
       </div>
 
       {/* Filter Tabs */}
-      <div className="bg-neutral-900 border-b border-neutral-800 sticky top-0 z-10">
+      <div className="bg-white border border-neutral-100 border-b border-neutral-100 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4">
           <div className="flex gap-2 py-3 overflow-x-auto">
             <button
               onClick={() => setFilter('all')}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
                 filter === 'all'
-                  ? 'bg-emerald-500 text-white'
-                  : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700'
+                  ? 'bg-emerald-500 text-neutral-900'
+                  : 'bg-neutral-100 text-neutral-400 hover:bg-neutral-700'
               } placeholder-neutral-500`}
             >
               Todas ({applications.length})
@@ -258,7 +258,7 @@ export default function ApplicationsPage() {
               onClick={() => setFilter('accepted')}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
                 filter === 'accepted'
-                  ? 'bg-emerald-500 text-white'
+                  ? 'bg-emerald-500 text-neutral-900'
                   : 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
               }`}
             >
@@ -282,10 +282,10 @@ export default function ApplicationsPage() {
       <div className="max-w-4xl mx-auto px-4 py-6 pb-28">
         {filteredApplications.length === 0 ? (
           <div className="text-center py-16">
-            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-neutral-800 flex items-center justify-center">
+            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-neutral-100 flex items-center justify-center">
               <ClipboardList className="w-9 h-9 text-neutral-500" strokeWidth={1.75} />
             </div>
-            <h3 className="text-xl font-semibold text-white mb-3">
+            <h3 className="text-xl font-semibold text-neutral-900 mb-3">
               {filter === 'all' ? 'No tienes aplicaciones' : `No hay aplicaciones ${filter === 'pending' ? 'pendientes' : filter === 'accepted' ? 'aceptadas' : 'rechazadas'}`}
             </h3>
             <p className="text-neutral-400 mb-6 max-w-sm mx-auto">
@@ -295,7 +295,7 @@ export default function ApplicationsPage() {
             </p>
             <Link
               href="/gigs"
-              className="inline-block px-6 py-3 bg-emerald-500 text-white rounded-full font-semibold hover:bg-emerald-600 transition-colors"
+              className="inline-block px-6 py-3 bg-emerald-500 text-neutral-900 rounded-full font-semibold hover:bg-emerald-600 transition-colors"
             >
               Explorar Trabajos
             </Link>
@@ -305,7 +305,7 @@ export default function ApplicationsPage() {
             {filteredApplications.map((app, index) => (
               <div
                 key={app.id}
-                className="bg-neutral-900 rounded-2xl overflow-hidden border border-neutral-800 hover:border-neutral-700 transition-all text-white placeholder-neutral-500"
+                className="bg-white border border-neutral-100 rounded-2xl overflow-hidden border border-neutral-100 hover:border-neutral-700 transition-all text-neutral-900 placeholder-neutral-500"
               >
                 <div className="flex">
                   {/* Image/Gradient Side */}
@@ -313,7 +313,7 @@ export default function ApplicationsPage() {
                     {app.gig?.image_url ? (
                       <img src={app.gig.image_url} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      <div className="text-white/90">
+                      <div className="text-neutral-900/90">
                         {app.gig?.category?.includes('TikTok') ? <Music2 className="w-9 h-9" strokeWidth={1.75} /> :
                          app.gig?.category?.includes('Instagram') ? <Instagram className="w-9 h-9" strokeWidth={1.75} /> :
                          app.gig?.category?.includes('YouTube') ? <Youtube className="w-9 h-9" strokeWidth={1.75} /> :
@@ -326,7 +326,7 @@ export default function ApplicationsPage() {
                   <div className="flex-1 p-4">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1">
-                        <h3 className="font-bold text-white mb-1">
+                        <h3 className="font-bold text-neutral-900 mb-1">
                           {app.gig?.title || 'Trabajo'}
                         </h3>
                         <p className="text-sm text-neutral-400">
@@ -338,14 +338,14 @@ export default function ApplicationsPage() {
 
                     <div className="flex items-center justify-between mt-4">
                       <div className="flex items-center gap-4">
-                        <span className="font-bold text-white">{app.gig?.budget}</span>
+                        <span className="font-bold text-neutral-900">{app.gig?.budget}</span>
                         <span className="text-sm text-neutral-500">{getTimeAgo(app.created_at)}</span>
                       </div>
 
                       {app.status === 'accepted' && (
                         <Link
                           href={`/creator/messages?company=${app.company_id}`}
-                          className="px-4 py-2 bg-neutral-800 text-neutral-300 text-sm font-medium rounded-lg hover:bg-neutral-700 transition-colors flex items-center gap-2"
+                          className="px-4 py-2 bg-neutral-100 text-neutral-600 text-sm font-medium rounded-lg hover:bg-neutral-700 transition-colors flex items-center gap-2"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -374,9 +374,9 @@ export default function ApplicationsPage() {
 
                     {/* Message Preview */}
                     {app.message && (
-                      <div className="mt-3 pt-3 border-t border-neutral-800">
+                      <div className="mt-3 pt-3 border-t border-neutral-100">
                         <p className="text-sm text-neutral-400 line-clamp-2">
-                          <span className="font-medium text-neutral-300">Tu mensaje:</span> {app.message}
+                          <span className="font-medium text-neutral-600">Tu mensaje:</span> {app.message}
                         </p>
                       </div>
                     )}
