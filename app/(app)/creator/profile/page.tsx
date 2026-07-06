@@ -70,8 +70,8 @@ export default function CreatorProfile() {
 
   const avatar = profile?.profile_photo_url || profile?.avatar_url || null
   const name = profile?.full_name || 'Creador'
-  const balance = wallet?.balance || 0
-  const earned = wallet?.total_earned || 0
+  const balance = Math.max(0, Number(wallet?.balance) || 0)
+  const earned = Math.max(0, Number(wallet?.total_earned) || 0)
 
   const logout = () => {
     localStorage.removeItem('sb-access-token')

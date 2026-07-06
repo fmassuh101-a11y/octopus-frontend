@@ -60,7 +60,7 @@ export default function CreatorWallet() {
         setShowEmbedded(true)
       } else {
         setCompanyId(data.companyId)
-        setBalance(data.balance || 0)
+        setBalance(Math.max(0, Number(data.balance) || 0))
         setTotalBalance(data.totalBalance || 0)
         setShowEmbedded(true)
       }

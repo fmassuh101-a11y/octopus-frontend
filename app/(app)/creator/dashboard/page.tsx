@@ -106,7 +106,7 @@ export default function CreatorHome() {
   const { level } = getLevel(xp)
   const missions = getMissions(xpInput)
 
-  const earned = wallet?.total_earned || 0
+  const earned = Math.max(0, Number(wallet?.total_earned) || 0)
   const goal = Math.max(1000, Math.ceil((earned + 1) / 1000) * 1000)
   const progress = Math.min(100, Math.round((earned / goal) * 100))
 
