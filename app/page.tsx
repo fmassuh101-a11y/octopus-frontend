@@ -1,12 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase, getStoredSession, restoreSession } from '@/lib/supabase'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { Clapperboard, Users, Scissors, Smartphone } from 'lucide-react'
 
-export default function HomePage() {
+function HomeInner() {
   const searchParams = useSearchParams()
   const [mounted, setMounted] = useState(false)
   const [hasSession, setHasSession] = useState(false)
@@ -518,5 +518,16 @@ export default function HomePage() {
         </div>
       </footer>
     </div>
+  )
+}
+
+
+// useSearchParams necesita Suspense en Next 14 — sin esto, el prerender de "/"
+// se cae al error shell y el sitio no abre en el celular.
+export default function HomePage() {
+  return (
+    <Suspense fallback={null}>
+      <HomeInner />
+    </Suspense>
   )
 }
