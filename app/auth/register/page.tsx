@@ -155,7 +155,7 @@ export default function RegisterPage() {
       <div className="relative z-10 w-full max-w-md">
         <div className="relative z-10 w-full bg-white rounded-[28px] pt-8 px-8 pb-7 shadow-[0_24px_60px_-20px_rgba(56,130,200,0.25)] border border-neutral-100 text-neutral-900">
           <div className="text-center mb-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-500 mb-2">Octopus</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-600 mb-2">Octopus</p>
             <h2 className="text-3xl font-extrabold text-neutral-900 mb-1">Crear cuenta</h2>
             <p className="text-neutral-500">Empieza a ganar con tu contenido</p>
           </div>
@@ -177,7 +177,7 @@ export default function RegisterPage() {
                 onFocus={() => setFocusedField("email")}
                 onBlur={() => setFocusedField(null)}
                 disabled={loading}
-                className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-2xl text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-sky-400 disabled:opacity-50"
+                className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-2xl text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:opacity-50"
                 placeholder="tu@email.com"
               />
             </div>
@@ -192,7 +192,7 @@ export default function RegisterPage() {
                 onFocus={() => setFocusedField("password")}
                 onBlur={() => setFocusedField(null)}
                 disabled={loading}
-                className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-2xl text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-sky-400 disabled:opacity-50"
+                className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-2xl text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:opacity-50"
                 placeholder="••••••••"
               />
             </div>
@@ -207,7 +207,7 @@ export default function RegisterPage() {
                 onFocus={() => setFocusedField("confirm")}
                 onBlur={() => setFocusedField(null)}
                 disabled={loading}
-                className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-2xl text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-sky-400 disabled:opacity-50"
+                className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-2xl text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:opacity-50"
                 placeholder="••••••••"
               />
             </div>
@@ -215,7 +215,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-b from-[#66B9F9] to-[#4BA0EF] text-white py-3.5 px-4 rounded-full font-bold shadow-lg shadow-sky-200 active:scale-[0.98] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-gradient-to-b from-[#34D399] to-[#0EA472] text-white py-3.5 px-4 rounded-full font-bold shadow-lg shadow-emerald-200 active:scale-[0.98] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Creando cuenta...' : 'Crear Cuenta'}
             </button>
@@ -248,7 +248,7 @@ export default function RegisterPage() {
           <div className="mt-8 text-center">
             <p className="text-neutral-600 text-sm">
               ¿Ya tienes una cuenta?{' '}
-              <Link href="/auth/login" className="font-medium text-sky-500 hover:text-emerald-300">
+              <Link href="/auth/login" className="font-medium text-emerald-600 hover:text-emerald-300">
                 Inicia sesión
               </Link>
             </p>

@@ -40,7 +40,7 @@ const NICHES = [
 ]
 
 const GRADS = [
-  'from-sky-400 to-blue-500', 'from-violet-400 to-purple-500', 'from-emerald-400 to-teal-500',
+  'from-emerald-400 to-teal-500', 'from-violet-400 to-purple-500', 'from-emerald-400 to-teal-500',
   'from-orange-400 to-rose-500', 'from-fuchsia-400 to-pink-500', 'from-amber-400 to-orange-500',
 ]
 
@@ -155,7 +155,7 @@ export default function GigsPage() {
             <input
               type="text" placeholder="Buscar acá..." value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-full border border-neutral-200 bg-white py-3.5 pl-12 pr-4 text-[16px] shadow-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-sky-300"
+              className="w-full rounded-full border border-neutral-200 bg-white py-3.5 pl-12 pr-4 text-[16px] shadow-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-emerald-300"
             />
           </div>
           <Link href="/leaderboard" prefetch aria-label="Ranking"
@@ -215,7 +215,7 @@ export default function GigsPage() {
               {([['new', 'Nuevas', Sparkles], ['trend', 'Tendencia', TrendingUp], ['pay', 'Mejor pago', DollarSign]] as const).map(([k, label, Icon]) => (
                 <button key={k} onClick={() => setSort(k)}
                   className={`flex shrink-0 items-center gap-2 rounded-full border px-5 py-3 text-[16px] font-semibold shadow-sm transition-all active:scale-95 ${
-                    sort === k ? 'border-sky-400 bg-white text-sky-500' : 'border-neutral-200 bg-white text-neutral-700'}`}>
+                    sort === k ? 'border-emerald-400 bg-white text-emerald-600' : 'border-neutral-200 bg-white text-neutral-700'}`}>
                   <Icon className="h-4 w-4" /> {label}
                 </button>
               ))}
@@ -230,7 +230,7 @@ export default function GigsPage() {
               {NICHES.map(n => (
                 <button key={n.key} onClick={() => setNiche(niche === n.key ? null : n.key)}
                   className={`flex items-center gap-2 rounded-full border px-4 py-2.5 text-[15px] font-semibold shadow-sm transition-all active:scale-95 ${
-                    niche === n.key ? 'border-sky-400 bg-sky-50 text-sky-600' : 'border-neutral-200 bg-white text-neutral-700'}`}>
+                    niche === n.key ? 'border-emerald-400 bg-emerald-50 text-emerald-600' : 'border-neutral-200 bg-white text-neutral-700'}`}>
                   <n.icon className="h-4 w-4" /> {n.label}
                 </button>
               ))}
@@ -290,7 +290,7 @@ export default function GigsPage() {
                     <p className="truncate font-bold">{g.title}</p>
                     <p className="truncate text-sm text-neutral-500">{g.company_name || 'Empresa'} · {priceLabel(g)}</p>
                   </div>
-                  <span className="rounded-full bg-sky-50 px-3 py-1.5 text-xs font-bold text-sky-600">Ver estado</span>
+                  <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-600">Ver estado</span>
                 </Link>
               ))}
             </div>
@@ -298,7 +298,7 @@ export default function GigsPage() {
         )}
 
         {tab === 'history' && (
-          <EmptyState icon={<HistoryIcon className="h-16 w-16 text-sky-400" />}
+          <EmptyState icon={<HistoryIcon className="h-16 w-16 text-emerald-500" />}
             title="Tu historial de campañas"
             text="Acá vas a ver cada campaña a la que postulaste y completaste — todo en un solo lugar."
             cta="Ver mis postulaciones" onCta={() => router.push('/creator/applications')} />
@@ -312,7 +312,7 @@ export default function GigsPage() {
             <p className="text-lg font-bold">Conectá tus redes primero</p>
             <p className="mt-1 text-neutral-500">Para postular necesitás verificar tu cuenta de TikTok o Instagram.</p>
             <button onClick={() => setShowVerificationModal(false)}
-              className="mt-5 w-full rounded-full bg-gradient-to-b from-[#66B9F9] to-[#4BA0EF] py-3.5 font-bold text-white">Entendido</button>
+              className="mt-5 w-full rounded-full bg-gradient-to-b from-[#34D399] to-[#0EA472] py-3.5 font-bold text-white">Entendido</button>
           </div>
         </div>
       )}
@@ -372,7 +372,7 @@ export default function GigsPage() {
                       </Link>
                     ) : (
                       <button onClick={() => handleApply(selectedGig)}
-                        className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-[#66B9F9] to-[#4BA0EF] py-4 text-lg font-bold text-white shadow-lg shadow-sky-200 transition-transform active:scale-[0.98]">
+                        className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-[#34D399] to-[#0EA472] py-4 text-lg font-bold text-white shadow-lg shadow-emerald-200 transition-transform active:scale-[0.98]">
                         <Send className="h-5 w-5" /> Postularme
                       </button>
                     )}
@@ -390,11 +390,11 @@ export default function GigsPage() {
 function EmptyState({ icon, title, text, cta, onCta }: { icon?: React.ReactNode; title?: string; text: string; cta: string; onCta: () => void }) {
   return (
     <div className="flex flex-col items-center px-4 py-16 text-center">
-      {icon || <Send className="h-16 w-16 text-sky-400" />}
+      {icon || <Send className="h-16 w-16 text-emerald-500" />}
       {title && <p className="mt-6 text-xl font-extrabold">{title}</p>}
       <p className="mt-2 max-w-xs text-neutral-500">{text}</p>
       <button onClick={onCta}
-        className="mt-6 w-full max-w-xs rounded-full bg-gradient-to-b from-[#66B9F9] to-[#4BA0EF] py-4 text-lg font-bold text-white shadow-lg shadow-sky-200 transition-transform active:scale-[0.98]">
+        className="mt-6 w-full max-w-xs rounded-full bg-gradient-to-b from-[#34D399] to-[#0EA472] py-4 text-lg font-bold text-white shadow-lg shadow-emerald-200 transition-transform active:scale-[0.98]">
         {cta}
       </button>
     </div>

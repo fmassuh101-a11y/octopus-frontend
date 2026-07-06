@@ -14,7 +14,7 @@ export default function Sky({
       ? 'linear-gradient(180deg,#F7A741 0%,#FBC97B 34%,#FDEBCB 70%,rgba(255,255,255,0) 100%)'
       : hue === 'yellow'
       ? 'linear-gradient(180deg,#F8DE7E 0%,#FBEDB9 40%,#FEFAEA 75%,rgba(255,255,255,0) 100%)'
-      : 'linear-gradient(180deg,#63A9F0 0%,#8FC4F6 34%,#D6EBFC 70%,rgba(255,255,255,0) 100%)'
+      : 'linear-gradient(180deg,#2FBF8F 0%,#7BD8B8 34%,#DFF6EC 70%,rgba(255,255,255,0) 100%)'
 
   return (
     <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 overflow-hidden" style={{ height }}>

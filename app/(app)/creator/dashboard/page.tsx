@@ -148,14 +148,14 @@ export default function CreatorHome() {
           </div>
         </div>
         <div className="mt-4 h-3.5 w-full overflow-hidden rounded-full bg-neutral-200/70">
-          <div className="h-full rounded-full bg-gradient-to-r from-[#66B9F9] to-[#4BA0EF] transition-[width] duration-700" style={{ width: `${Math.max(progress, 4)}%` }} />
+          <div className="h-full rounded-full bg-gradient-to-r from-[#34D399] to-[#0EA472] transition-[width] duration-700" style={{ width: `${Math.max(progress, 4)}%` }} />
         </div>
 
         {/* banner ranking */}
         {showRankBanner && (
           <div className="mt-6 flex items-center gap-3 rounded-3xl border border-neutral-100 bg-white p-4 shadow-sm">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sky-50">
-              <Trophy className="h-6 w-6 text-sky-500" />
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50">
+              <Trophy className="h-6 w-6 text-emerald-600" />
             </div>
             <Link href="/leaderboard" prefetch className="min-w-0 flex-1 active:opacity-70">
               <p className="font-bold">Ranking</p>
@@ -193,8 +193,8 @@ export default function CreatorHome() {
                       {m.xp} xp
                     </p>
                   </div>
-                  <div className={`flex h-16 w-20 shrink-0 items-center justify-center rounded-2xl ${m.done ? 'bg-neutral-100' : 'bg-sky-50'}`}>
-                    <Icon className={`h-7 w-7 ${m.done ? 'text-neutral-300' : 'text-sky-400'}`} />
+                  <div className={`flex h-16 w-20 shrink-0 items-center justify-center rounded-2xl ${m.done ? 'bg-neutral-100' : 'bg-emerald-50'}`}>
+                    <Icon className={`h-7 w-7 ${m.done ? 'text-neutral-300' : 'text-emerald-500'}`} />
                   </div>
                 </div>
               </div>

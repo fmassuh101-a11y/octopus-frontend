@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import Sky from '@/components/oct/Sky'
 import { computeXP, getLevel, getMissions } from '@/lib/xp'
-import { Pencil, Settings, Flame, Eye, Star, Banknote, Shield, ChevronRight, Wallet as WalletIcon, FileText, Award, LogOut } from 'lucide-react'
+import { Pencil, Settings, Flame, Eye, Star, Banknote, Shield, ChevronRight, Wallet as WalletIcon, FileText, Award, LogOut, BarChart3, Send } from 'lucide-react'
 
 // Perfil del creador — copia del perfil de SideShift (tab Overview):
 // cielo, avatar centrado con mini-badge de liga, balance gigante + botón Wallet,
@@ -90,7 +90,7 @@ export default function CreatorProfile() {
             <Link href="/creator/profile/edit" prefetch className="p-2 transition-transform active:scale-90" aria-label="Editar perfil">
               <Pencil className="h-5 w-5" />
             </Link>
-            <Link href="/creator/profile/edit" prefetch className="p-2 transition-transform active:scale-90" aria-label="Ajustes">
+            <Link href="/creator/settings" prefetch className="p-2 transition-transform active:scale-90" aria-label="Ajustes">
               <Settings className="h-5 w-5" />
             </Link>
           </div>
@@ -103,7 +103,7 @@ export default function CreatorProfile() {
               /* eslint-disable-next-line @next/next/no-img-element */
               <img src={avatar} alt={name} className="h-32 w-32 rounded-full border-4 border-white object-cover shadow" />
             ) : (
-              <div className="flex h-32 w-32 items-center justify-center rounded-full border-4 border-white bg-sky-100 text-4xl font-extrabold text-sky-500 shadow">
+              <div className="flex h-32 w-32 items-center justify-center rounded-full border-4 border-white bg-emerald-100 text-4xl font-extrabold text-emerald-600 shadow">
                 {name.charAt(0).toUpperCase()}
               </div>
             )}
@@ -125,7 +125,7 @@ export default function CreatorProfile() {
             <span className="text-[28px] font-bold text-neutral-400">.{String(Math.round((balance % 1) * 100)).padStart(2, '0')}</span>
           </p>
           <Link href="/creator/wallet" prefetch
-            className="mt-5 block w-full rounded-full bg-gradient-to-b from-[#66B9F9] to-[#4BA0EF] py-4 text-center text-lg font-bold text-white shadow-lg shadow-sky-200 transition-transform active:scale-[0.98]">
+            className="mt-5 block w-full rounded-full bg-gradient-to-b from-[#34D399] to-[#0EA472] py-4 text-center text-lg font-bold text-white shadow-lg shadow-emerald-200 transition-transform active:scale-[0.98]">
             Wallet
           </Link>
         </div>
@@ -134,7 +134,7 @@ export default function CreatorProfile() {
         <h2 className="mt-9 text-[24px] font-extrabold tracking-tight">Resumen</h2>
         <div className="mt-3 grid grid-cols-2 rounded-3xl border border-neutral-100 bg-white shadow-sm">
           <StatCell icon={<Flame className="h-6 w-6 fill-orange-500 text-orange-500" />} value={`${streak}`} label={streak === 1 ? 'día' : 'días'} divider="rb" />
-          <StatCell icon={<Eye className="h-6 w-6 text-sky-500" />} value={xp.toLocaleString('es-CL')} label="XP" divider="b" />
+          <StatCell icon={<Eye className="h-6 w-6 text-emerald-600" />} value={xp.toLocaleString('es-CL')} label="XP" divider="b" />
           <StatCell icon={<Star className="h-6 w-6 fill-amber-400 text-amber-400" />} value="5.0" label="rating" divider="r" />
           <StatCell icon={<Banknote className="h-6 w-6 text-emerald-500" />} value={`$${Math.floor(earned).toLocaleString('es-CL')}`} label="ganado" />
         </div>
@@ -155,7 +155,9 @@ export default function CreatorProfile() {
         <div className="mt-4 overflow-hidden rounded-3xl border border-neutral-100 bg-white shadow-sm">
           <Row href="/creator/wallet" icon={<WalletIcon className="h-5 w-5 text-emerald-500" />} label="Wallet y retiros" />
           <Row href="/creator/applications" icon={<FileText className="h-5 w-5 text-violet-500" />} label="Mis postulaciones" />
-          <Row href="/creator/contracts" icon={<FileText className="h-5 w-5 text-sky-500" />} label="Mis contratos" />
+          <Row href="/creator/analytics" icon={<BarChart3 className="h-5 w-5 text-orange-500" />} label="Analytics" />
+          <Row href="/creator/deliveries" icon={<Send className="h-5 w-5 text-teal-500" />} label="Mis entregas" />
+          <Row href="/creator/contracts" icon={<FileText className="h-5 w-5 text-emerald-600" />} label="Mis contratos" />
           <Row href="/creator/profile/edit" icon={<Pencil className="h-5 w-5 text-neutral-500" />} label="Editar perfil" last />
         </div>
 

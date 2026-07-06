@@ -106,7 +106,7 @@ export default function MisionesPage() {
         </div>
 
         <Link href="/gigs" prefetch
-          className="mt-4 block w-full rounded-full bg-gradient-to-b from-[#66B9F9] to-[#4BA0EF] py-4 text-center text-lg font-bold text-white shadow-lg shadow-sky-200 transition-transform active:scale-[0.98]">
+          className="mt-4 block w-full rounded-full bg-gradient-to-b from-[#34D399] to-[#0EA472] py-4 text-center text-lg font-bold text-white shadow-lg shadow-emerald-200 transition-transform active:scale-[0.98]">
           Explorar campañas
         </Link>
       </div>

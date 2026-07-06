@@ -149,96 +149,96 @@ export default function ProfilePage() {
 
     return (
     <div className="space-y-6">
-      <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 text-white placeholder-neutral-500">
-        <h3 className="text-lg font-semibold text-white mb-4">Informacion Personal</h3>
+      <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
+        <h3 className="text-lg font-semibold text-neutral-900 mb-4">Informacion Personal</h3>
         <div className="space-y-4">
-          <div className="flex justify-between items-center py-3 border-b border-neutral-800">
+          <div className="flex justify-between items-center py-3 border-b border-neutral-100">
             <span className="text-neutral-400">Nombre Completo</span>
-            <span className="font-medium text-white">
+            <span className="font-medium text-neutral-900">
               {data.full_name || `${data.firstName || ''} ${data.lastName || ''}`.trim() || 'Sin configurar'}
             </span>
           </div>
-          <div className="flex justify-between items-center py-3 border-b border-neutral-800">
+          <div className="flex justify-between items-center py-3 border-b border-neutral-100">
             <span className="text-neutral-400">Email</span>
-            <span className="font-medium text-white">{user?.email || 'Sin configurar'}</span>
+            <span className="font-medium text-neutral-900">{user?.email || 'Sin configurar'}</span>
           </div>
-          <div className="flex justify-between items-center py-3 border-b border-neutral-800">
+          <div className="flex justify-between items-center py-3 border-b border-neutral-100">
             <span className="text-neutral-400">Telefono</span>
-            <span className="font-medium text-white">{data.phoneNumber || 'Sin configurar'}</span>
+            <span className="font-medium text-neutral-900">{data.phoneNumber || 'Sin configurar'}</span>
           </div>
-          <div className="flex justify-between items-center py-3 border-b border-neutral-800">
+          <div className="flex justify-between items-center py-3 border-b border-neutral-100">
             <span className="text-neutral-400">Ubicacion</span>
-            <span className="font-medium text-white">{data.location || 'Sin configurar'}</span>
+            <span className="font-medium text-neutral-900">{data.location || 'Sin configurar'}</span>
           </div>
-          <div className="flex justify-between items-center py-3 border-b border-neutral-800">
+          <div className="flex justify-between items-center py-3 border-b border-neutral-100">
             <span className="text-neutral-400">Nivel Academico</span>
-            <span className="font-medium text-white">{data.academicLevel || 'Sin configurar'}</span>
+            <span className="font-medium text-neutral-900">{data.academicLevel || 'Sin configurar'}</span>
           </div>
           <div className="flex justify-between items-center py-3">
             <span className="text-neutral-400">Estudios</span>
-            <span className="font-medium text-white">{data.studies || 'Sin configurar'}</span>
+            <span className="font-medium text-neutral-900">{data.studies || 'Sin configurar'}</span>
           </div>
         </div>
         <button
           onClick={() => window.location.href = '/onboarding/creator/name'}
-          className="mt-6 w-full py-3 bg-emerald-500 text-white rounded-xl font-medium hover:bg-emerald-600 transition-colors"
+          className="mt-6 w-full py-3 bg-emerald-500 text-neutral-900 rounded-xl font-medium hover:bg-emerald-600 transition-colors"
         >
           {data.firstName ? 'Editar Informacion' : 'Completar Perfil'}
         </button>
       </div>
 
-      <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 text-white placeholder-neutral-500">
-        <h3 className="text-lg font-semibold text-white mb-4">Redes Sociales</h3>
+      <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
+        <h3 className="text-lg font-semibold text-neutral-900 mb-4">Redes Sociales</h3>
         <div className="space-y-4">
-          <div className="flex items-center justify-between py-3 border-b border-neutral-800">
+          <div className="flex items-center justify-between py-3 border-b border-neutral-100">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-emerald-500 rounded-lg flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-neutral-900" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
                 </svg>
               </div>
               <span className="text-neutral-400">Instagram</span>
             </div>
-            <span className="font-medium text-white">
+            <span className="font-medium text-neutral-900">
               {data.instagram ? `@${data.instagram}` : 'Sin configurar'}
             </span>
           </div>
-          <div className="flex items-center justify-between py-3 border-b border-neutral-800">
+          <div className="flex items-center justify-between py-3 border-b border-neutral-100">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <div className="w-8 h-8 bg-[#F7FAFD] rounded-lg flex items-center justify-center">
+                <svg className="w-5 h-5 text-neutral-900" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M19.321 5.562a5.124 5.124 0 0 1-.443-.258 6.228 6.228 0 0 1-1.137-.966c-.849-.849-1.432-1.884-1.432-3.052V.621h-3.714v14.325c0 1.568-1.277 2.845-2.845 2.845s-2.845-1.277-2.845-2.845 1.277-2.845 2.845-2.845c.195 0 .39.02.579.058V8.539c-.193-.013-.386-.02-.579-.02-3.462 0-6.265 2.803-6.265 6.265s2.803 6.265 6.265 6.265 6.265-2.803 6.265-6.265V8.317a9.14 9.14 0 0 0 5.125 1.553V6.538a5.549 5.549 0 0 1-2.119-.976z"/>
                 </svg>
               </div>
               <span className="text-neutral-400">TikTok</span>
             </div>
-            <span className="font-medium text-white">
+            <span className="font-medium text-neutral-900">
               {data.tiktok ? `@${data.tiktok}` : 'Sin configurar'}
             </span>
           </div>
-          <div className="flex items-center justify-between py-3 border-b border-neutral-800">
+          <div className="flex items-center justify-between py-3 border-b border-neutral-100">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-neutral-900" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
                 </svg>
               </div>
               <span className="text-neutral-400">YouTube</span>
             </div>
-            <span className="font-medium text-white">
+            <span className="font-medium text-neutral-900">
               {data.youtube ? `@${data.youtube}` : 'Sin configurar'}
             </span>
           </div>
           <div className="flex items-center justify-between py-3">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-blue-700 rounded-lg flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-neutral-900" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
                 </svg>
               </div>
               <span className="text-neutral-400">LinkedIn</span>
             </div>
-            <span className="font-medium text-white">
+            <span className="font-medium text-neutral-900">
               {data.linkedInUrl || data.linkedin || 'Sin configurar'}
             </span>
           </div>
@@ -246,22 +246,22 @@ export default function ProfilePage() {
       </div>
 
       {/* Experience & Education */}
-      <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 text-white placeholder-neutral-500">
-        <h3 className="text-lg font-semibold text-white mb-4">Educacion y Experiencia</h3>
+      <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
+        <h3 className="text-lg font-semibold text-neutral-900 mb-4">Educacion y Experiencia</h3>
         <div className="space-y-4">
-          <div className="flex justify-between items-center py-3 border-b border-neutral-800">
+          <div className="flex justify-between items-center py-3 border-b border-neutral-100">
             <span className="text-neutral-400">Nivel Academico</span>
-            <span className="font-medium text-white">{data.academicLevel || 'Sin configurar'}</span>
+            <span className="font-medium text-neutral-900">{data.academicLevel || 'Sin configurar'}</span>
           </div>
-          <div className="flex justify-between items-center py-3 border-b border-neutral-800">
+          <div className="flex justify-between items-center py-3 border-b border-neutral-100">
             <span className="text-neutral-400">Estudios</span>
-            <span className="font-medium text-white">{data.studies || 'Sin configurar'}</span>
+            <span className="font-medium text-neutral-900">{data.studies || 'Sin configurar'}</span>
           </div>
           <div className="flex justify-between items-center py-3">
             <span className="text-neutral-400">LinkedIn</span>
-            <span className="font-medium text-white text-right max-w-[200px] truncate">
+            <span className="font-medium text-neutral-900 text-right max-w-[200px] truncate">
               {data.linkedInUrl ? (
-                <a href={safeExternalUrl(data.linkedInUrl)} target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">
+                <a href={safeExternalUrl(data.linkedInUrl)} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">
                   Ver perfil
                 </a>
               ) : 'Sin configurar'}
@@ -275,8 +275,8 @@ export default function ProfilePage() {
   // Earnings Section
   const EarningsSection = () => (
     <div className="space-y-6">
-      <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 text-white placeholder-neutral-500">
-        <h3 className="text-lg font-semibold text-white mb-6">Resumen de Ganancias</h3>
+      <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
+        <h3 className="text-lg font-semibold text-neutral-900 mb-6">Resumen de Ganancias</h3>
 
         <div className="grid grid-cols-2 gap-4 mb-6">
           <div className="bg-green-50 p-4 rounded-xl">
@@ -285,32 +285,32 @@ export default function ProfilePage() {
             <p className="text-xs text-green-600 mt-1">Desde el inicio</p>
           </div>
           <div className="bg-blue-50 p-4 rounded-xl">
-            <p className="text-emerald-400 text-sm mb-1">Este Mes</p>
+            <p className="text-emerald-600 text-sm mb-1">Este Mes</p>
             <p className="text-2xl font-bold text-blue-700">$0</p>
-            <p className="text-xs text-emerald-400 mt-1">0 campanas</p>
+            <p className="text-xs text-emerald-600 mt-1">0 campanas</p>
           </div>
         </div>
 
         <div className="space-y-3">
-          <div className="flex justify-between items-center py-3 border-b border-neutral-800">
+          <div className="flex justify-between items-center py-3 border-b border-neutral-100">
             <span className="text-neutral-400">Pendiente de Pago</span>
-            <span className="font-medium text-white">$0</span>
+            <span className="font-medium text-neutral-900">$0</span>
           </div>
-          <div className="flex justify-between items-center py-3 border-b border-neutral-800">
+          <div className="flex justify-between items-center py-3 border-b border-neutral-100">
             <span className="text-neutral-400">En Revision</span>
-            <span className="font-medium text-white">$0</span>
+            <span className="font-medium text-neutral-900">$0</span>
           </div>
           <div className="flex justify-between items-center py-3">
             <span className="text-neutral-400">Proximo Pago</span>
-            <span className="font-medium text-white">No programado</span>
+            <span className="font-medium text-neutral-900">No programado</span>
           </div>
         </div>
       </div>
 
-      <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 text-white placeholder-neutral-500">
-        <h3 className="text-lg font-semibold text-white mb-4">Metodos de Pago</h3>
+      <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
+        <h3 className="text-lg font-semibold text-neutral-900 mb-4">Metodos de Pago</h3>
         <p className="text-neutral-400 mb-4">No tienes metodos de pago configurados</p>
-        <button className="w-full py-3 bg-emerald-500 text-white rounded-xl font-medium hover:bg-emerald-600 transition-colors">
+        <button className="w-full py-3 bg-emerald-500 text-neutral-900 rounded-xl font-medium hover:bg-emerald-600 transition-colors">
           Agregar Metodo de Pago
         </button>
       </div>
@@ -320,54 +320,54 @@ export default function ProfilePage() {
   // Privacy & Security Section
   const SecuritySection = () => (
     <div className="space-y-6">
-      <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 text-white placeholder-neutral-500">
-        <h3 className="text-lg font-semibold text-white mb-4">Seguridad de la Cuenta</h3>
+      <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
+        <h3 className="text-lg font-semibold text-neutral-900 mb-4">Seguridad de la Cuenta</h3>
         <div className="space-y-4">
-          <div className="flex justify-between items-center py-3 border-b border-neutral-800">
+          <div className="flex justify-between items-center py-3 border-b border-neutral-100">
             <div>
-              <p className="font-medium text-white">Contrasena</p>
+              <p className="font-medium text-neutral-900">Contrasena</p>
               <p className="text-sm text-neutral-500">Ultima actualizacion: Nunca</p>
             </div>
-            <button className="text-emerald-400 hover:text-blue-700 font-medium">Cambiar</button>
+            <button className="text-emerald-600 hover:text-blue-700 font-medium">Cambiar</button>
           </div>
-          <div className="flex justify-between items-center py-3 border-b border-neutral-800">
+          <div className="flex justify-between items-center py-3 border-b border-neutral-100">
             <div>
-              <p className="font-medium text-white">Autenticacion de dos factores</p>
+              <p className="font-medium text-neutral-900">Autenticacion de dos factores</p>
               <p className="text-sm text-neutral-500">Anade una capa extra de seguridad</p>
             </div>
-            <button className="text-emerald-400 hover:text-blue-700 font-medium">Activar</button>
+            <button className="text-emerald-600 hover:text-blue-700 font-medium">Activar</button>
           </div>
           <div className="flex justify-between items-center py-3">
             <div>
-              <p className="font-medium text-white">Dispositivos conectados</p>
+              <p className="font-medium text-neutral-900">Dispositivos conectados</p>
               <p className="text-sm text-neutral-500">1 dispositivo activo</p>
             </div>
-            <button className="text-emerald-400 hover:text-blue-700 font-medium">Ver todos</button>
+            <button className="text-emerald-600 hover:text-blue-700 font-medium">Ver todos</button>
           </div>
         </div>
       </div>
 
-      <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 text-white placeholder-neutral-500">
-        <h3 className="text-lg font-semibold text-white mb-4">Privacidad</h3>
+      <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
+        <h3 className="text-lg font-semibold text-neutral-900 mb-4">Privacidad</h3>
         <div className="space-y-4">
-          <div className="flex justify-between items-center py-3 border-b border-neutral-800">
+          <div className="flex justify-between items-center py-3 border-b border-neutral-100">
             <div>
-              <p className="font-medium text-white">Perfil Publico</p>
+              <p className="font-medium text-neutral-900">Perfil Publico</p>
               <p className="text-sm text-neutral-500">Las marcas pueden ver tu perfil</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" defaultChecked className="sr-only peer bg-neutral-900 text-white placeholder-neutral-500" />
-              <div className="w-11 h-6 bg-neutral-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-neutral-900 after:border-neutral-700 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 text-white placeholder-neutral-500"></div>
+              <input type="checkbox" defaultChecked className="sr-only peer bg-white border border-neutral-100 text-neutral-900 placeholder-neutral-400" />
+              <div className="w-11 h-6 bg-neutral-100 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white border border-neutral-100 after:border-neutral-700 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 text-neutral-900 placeholder-neutral-400"></div>
             </label>
           </div>
           <div className="flex justify-between items-center py-3">
             <div>
-              <p className="font-medium text-white">Mostrar Estadisticas</p>
+              <p className="font-medium text-neutral-900">Mostrar Estadisticas</p>
               <p className="text-sm text-neutral-500">Campanas completadas y rating</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" defaultChecked className="sr-only peer bg-neutral-900 text-white placeholder-neutral-500" />
-              <div className="w-11 h-6 bg-neutral-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-neutral-900 after:border-neutral-700 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 text-white placeholder-neutral-500"></div>
+              <input type="checkbox" defaultChecked className="sr-only peer bg-white border border-neutral-100 text-neutral-900 placeholder-neutral-400" />
+              <div className="w-11 h-6 bg-neutral-100 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white border border-neutral-100 after:border-neutral-700 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 text-neutral-900 placeholder-neutral-400"></div>
             </label>
           </div>
         </div>
@@ -376,7 +376,7 @@ export default function ProfilePage() {
       <div className="bg-red-50 rounded-2xl p-6 border border-red-100">
         <h3 className="text-lg font-semibold text-red-900 mb-2">Zona de Peligro</h3>
         <p className="text-sm text-red-700 mb-4">Una vez que elimines tu cuenta, no hay vuelta atras. Por favor, estes seguro.</p>
-        <button className="px-6 py-2 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors">
+        <button className="px-6 py-2 bg-red-600 text-neutral-900 rounded-xl font-medium hover:bg-red-700 transition-colors">
           Eliminar Cuenta
         </button>
       </div>
@@ -496,15 +496,15 @@ export default function ProfilePage() {
     return (
       <div className="space-y-6">
         {/* Verification Status Card */}
-        <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 text-white placeholder-neutral-500">
+        <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-              <svg className="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
               </svg>
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-white">Verificacion de Cuentas</h3>
+              <h3 className="text-lg font-semibold text-neutral-900">Verificacion de Cuentas</h3>
               <p className="text-sm text-neutral-500">Conecta tus redes para aplicar a trabajos</p>
             </div>
           </div>
@@ -545,20 +545,20 @@ export default function ProfilePage() {
 
           {/* TikTok */}
           <div className={`p-4 rounded-xl border-2 transition-colors ${
-            isTiktokVerified ? 'border-green-500 bg-green-50' : 'border-neutral-800 bg-neutral-950'
-          } text-white placeholder-neutral-500`}>
+            isTiktokVerified ? 'border-green-500 bg-green-50' : 'border-neutral-100 bg-[#F7FAFD]'
+          } text-neutral-900 placeholder-neutral-400`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center">
-                  <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <div className="w-12 h-12 bg-[#F7FAFD] rounded-xl flex items-center justify-center">
+                  <svg className="w-7 h-7 text-neutral-900" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M19.321 5.562a5.124 5.124 0 0 1-.443-.258 6.228 6.228 0 0 1-1.137-.966c-.849-.849-1.432-1.884-1.432-3.052V.621h-3.714v14.325c0 1.568-1.277 2.845-2.845 2.845s-2.845-1.277-2.845-2.845 1.277-2.845 2.845-2.845c.195 0 .39.02.579.058V8.539c-.193-.013-.386-.02-.579-.02-3.462 0-6.265 2.803-6.265 6.265s2.803 6.265 6.265 6.265 6.265-2.803 6.265-6.265V8.317a9.14 9.14 0 0 0 5.125 1.553V6.538a5.549 5.549 0 0 1-2.119-.976z"/>
                   </svg>
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <p className="font-semibold text-white">TikTok</p>
+                    <p className="font-semibold text-neutral-900">TikTok</p>
                     {isTiktokVerified && (
-                      <span className="inline-flex items-center gap-1 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">
+                      <span className="inline-flex items-center gap-1 bg-green-500 text-neutral-900 text-xs px-2 py-0.5 rounded-full">
                         <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
@@ -578,7 +578,7 @@ export default function ProfilePage() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleConnectTikTok}
-                    className="px-4 py-2 text-sm font-medium text-neutral-400 bg-neutral-900 border border-neutral-700 rounded-lg hover:bg-neutral-950 transition-colors text-white placeholder-neutral-500"
+                    className="px-4 py-2 text-sm font-medium text-neutral-400 bg-white border border-neutral-100 border border-neutral-700 rounded-lg hover:bg-[#F7FAFD] transition-colors text-neutral-900 placeholder-neutral-400"
                   >
                     Reconectar
                   </button>
@@ -595,7 +595,7 @@ export default function ProfilePage() {
               ) : (
                 <button
                   onClick={handleConnectTikTok}
-                  className="px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-800 transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-neutral-900 bg-[#F7FAFD] rounded-lg hover:bg-gray-800 transition-colors"
                 >
                   Verificar
                 </button>
@@ -606,15 +606,15 @@ export default function ProfilePage() {
             {isTiktokVerified && tiktokAccount && (
               <div className="mt-4 pt-4 border-t border-green-200 grid grid-cols-3 gap-4">
                 <div className="text-center">
-                  <p className="text-lg font-bold text-white">{tiktokAccount.followers?.toLocaleString() || 0}</p>
+                  <p className="text-lg font-bold text-neutral-900">{tiktokAccount.followers?.toLocaleString() || 0}</p>
                   <p className="text-xs text-neutral-500">Seguidores</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-lg font-bold text-white">{tiktokAccount.likes?.toLocaleString() || 0}</p>
+                  <p className="text-lg font-bold text-neutral-900">{tiktokAccount.likes?.toLocaleString() || 0}</p>
                   <p className="text-xs text-neutral-500">Likes</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-lg font-bold text-white">{tiktokAccount.videoCount || 0}</p>
+                  <p className="text-lg font-bold text-neutral-900">{tiktokAccount.videoCount || 0}</p>
                   <p className="text-xs text-neutral-500">Videos</p>
                 </div>
               </div>
@@ -622,40 +622,40 @@ export default function ProfilePage() {
           </div>
 
           {/* Instagram - Coming Soon */}
-          <div className="mt-4 p-4 rounded-xl border-2 border-neutral-800 bg-neutral-950 opacity-60 text-white placeholder-neutral-500">
+          <div className="mt-4 p-4 rounded-xl border-2 border-neutral-100 bg-[#F7FAFD] opacity-60 text-neutral-900 placeholder-neutral-400">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-emerald-500 rounded-xl flex items-center justify-center">
-                  <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-7 h-7 text-neutral-900" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
                   </svg>
                 </div>
                 <div>
-                  <p className="font-semibold text-white">Instagram</p>
+                  <p className="font-semibold text-neutral-900">Instagram</p>
                   <p className="text-sm text-neutral-500">Proximamente</p>
                 </div>
               </div>
-              <span className="px-3 py-1 text-xs font-medium text-neutral-500 bg-neutral-800 rounded-full">
+              <span className="px-3 py-1 text-xs font-medium text-neutral-500 bg-neutral-100 rounded-full">
                 Pronto
               </span>
             </div>
           </div>
 
           {/* YouTube - Coming Soon */}
-          <div className="mt-4 p-4 rounded-xl border-2 border-neutral-800 bg-neutral-950 opacity-60 text-white placeholder-neutral-500">
+          <div className="mt-4 p-4 rounded-xl border-2 border-neutral-100 bg-[#F7FAFD] opacity-60 text-neutral-900 placeholder-neutral-400">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-red-600 rounded-xl flex items-center justify-center">
-                  <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-7 h-7 text-neutral-900" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
                   </svg>
                 </div>
                 <div>
-                  <p className="font-semibold text-white">YouTube</p>
+                  <p className="font-semibold text-neutral-900">YouTube</p>
                   <p className="text-sm text-neutral-500">Proximamente</p>
                 </div>
               </div>
-              <span className="px-3 py-1 text-xs font-medium text-neutral-500 bg-neutral-800 rounded-full">
+              <span className="px-3 py-1 text-xs font-medium text-neutral-500 bg-neutral-100 rounded-full">
                 Pronto
               </span>
             </div>
@@ -663,9 +663,9 @@ export default function ProfilePage() {
         </div>
 
         {/* Why Verify Card */}
-        <div className="bg-gradient-to-br from-blue-600 to-emerald-600 rounded-2xl p-6 text-white">
+        <div className="bg-gradient-to-br from-blue-600 to-emerald-600 rounded-2xl p-6 text-neutral-900">
           <h3 className="text-lg font-semibold mb-3">¿Por que verificar?</h3>
-          <ul className="space-y-2 text-sm text-white/90">
+          <ul className="space-y-2 text-sm text-neutral-900/90">
             <li className="flex items-start gap-2">
               <svg className="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -693,37 +693,37 @@ export default function ProfilePage() {
   // Statistics Section
   const StatsSection = () => (
     <div className="space-y-6">
-      <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 text-white placeholder-neutral-500">
-        <h3 className="text-lg font-semibold text-white mb-6">Estadisticas de Rendimiento</h3>
+      <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
+        <h3 className="text-lg font-semibold text-neutral-900 mb-6">Estadisticas de Rendimiento</h3>
 
         <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="text-center p-4 bg-neutral-950 rounded-xl">
-            <p className="text-3xl font-bold text-white">0</p>
+          <div className="text-center p-4 bg-[#F7FAFD] rounded-xl">
+            <p className="text-3xl font-bold text-neutral-900">0</p>
             <p className="text-sm text-neutral-400">Campanas Completadas</p>
           </div>
-          <div className="text-center p-4 bg-neutral-950 rounded-xl">
-            <p className="text-3xl font-bold text-white">0%</p>
+          <div className="text-center p-4 bg-[#F7FAFD] rounded-xl">
+            <p className="text-3xl font-bold text-neutral-900">0%</p>
             <p className="text-sm text-neutral-400">Tasa de Exito</p>
           </div>
-          <div className="text-center p-4 bg-neutral-950 rounded-xl">
-            <p className="text-3xl font-bold text-white">0</p>
+          <div className="text-center p-4 bg-[#F7FAFD] rounded-xl">
+            <p className="text-3xl font-bold text-neutral-900">0</p>
             <p className="text-sm text-neutral-400">Aplicaciones</p>
           </div>
-          <div className="text-center p-4 bg-neutral-950 rounded-xl">
-            <p className="text-3xl font-bold text-white">0.0</p>
+          <div className="text-center p-4 bg-[#F7FAFD] rounded-xl">
+            <p className="text-3xl font-bold text-neutral-900">0.0</p>
             <p className="text-sm text-neutral-400">Rating Promedio</p>
           </div>
         </div>
 
-        <div className="border-t border-neutral-800 pt-4">
+        <div className="border-t border-neutral-100 pt-4">
           <p className="text-sm text-neutral-500 text-center">
             Las estadisticas se actualizan en tiempo real
           </p>
         </div>
       </div>
 
-      <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 text-white placeholder-neutral-500">
-        <h3 className="text-lg font-semibold text-white mb-4">Actividad Reciente</h3>
+      <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
+        <h3 className="text-lg font-semibold text-neutral-900 mb-4">Actividad Reciente</h3>
         <div className="text-center py-8 text-neutral-500">
           <svg className="w-16 h-16 mx-auto mb-4 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -745,43 +745,43 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-[100dvh] bg-neutral-950">
+      <div className="min-h-[100dvh] bg-[#F7FAFD]">
         {/* Skeleton Header */}
-        <div className="bg-neutral-900 border-b border-neutral-800 sticky top-0 z-10 px-4 py-4">
+        <div className="bg-white border border-neutral-100 border-b border-neutral-100 sticky top-0 z-10 px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="w-10 h-10 bg-neutral-800 rounded-lg animate-pulse" />
-            <div className="h-6 w-24 bg-neutral-800 rounded animate-pulse" />
-            <div className="w-10 h-10 bg-neutral-800 rounded-lg animate-pulse" />
+            <div className="w-10 h-10 bg-neutral-100 rounded-lg animate-pulse" />
+            <div className="h-6 w-24 bg-neutral-100 rounded animate-pulse" />
+            <div className="w-10 h-10 bg-neutral-100 rounded-lg animate-pulse" />
           </div>
         </div>
         {/* Skeleton Profile Header */}
-        <div className="bg-neutral-900 px-4 py-6 border-b border-neutral-800">
+        <div className="bg-white border border-neutral-100 px-4 py-6 border-b border-neutral-100">
           <div className="flex items-center space-x-4">
-            <div className="w-20 h-20 bg-neutral-800 rounded-full animate-pulse" />
+            <div className="w-20 h-20 bg-neutral-100 rounded-full animate-pulse" />
             <div className="flex-1">
-              <div className="h-6 w-40 bg-neutral-800 rounded animate-pulse mb-2" />
-              <div className="h-4 w-32 bg-neutral-800 rounded animate-pulse mb-2" />
-              <div className="h-4 w-24 bg-neutral-800 rounded animate-pulse" />
+              <div className="h-6 w-40 bg-neutral-100 rounded animate-pulse mb-2" />
+              <div className="h-4 w-32 bg-neutral-100 rounded animate-pulse mb-2" />
+              <div className="h-4 w-24 bg-neutral-100 rounded animate-pulse" />
             </div>
           </div>
         </div>
         {/* Skeleton Tabs */}
-        <div className="bg-neutral-900 border-b border-neutral-800 px-4">
+        <div className="bg-white border border-neutral-100 border-b border-neutral-100 px-4">
           <div className="flex space-x-6 py-3">
             {[1,2,3,4,5].map(i => (
-              <div key={i} className="h-8 w-24 bg-neutral-800 rounded animate-pulse" />
+              <div key={i} className="h-8 w-24 bg-neutral-100 rounded animate-pulse" />
             ))}
           </div>
         </div>
         {/* Skeleton Content */}
         <div className="px-4 py-6 space-y-6">
-          <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 text-white placeholder-neutral-500">
-            <div className="h-6 w-40 bg-neutral-800 rounded animate-pulse mb-4" />
+          <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
+            <div className="h-6 w-40 bg-neutral-100 rounded animate-pulse mb-4" />
             <div className="space-y-4">
               {[1,2,3,4].map(i => (
-                <div key={i} className="flex justify-between items-center py-3 border-b border-neutral-800">
-                  <div className="h-4 w-24 bg-neutral-800 rounded animate-pulse" />
-                  <div className="h-4 w-32 bg-neutral-800 rounded animate-pulse" />
+                <div key={i} className="flex justify-between items-center py-3 border-b border-neutral-100">
+                  <div className="h-4 w-24 bg-neutral-100 rounded animate-pulse" />
+                  <div className="h-4 w-32 bg-neutral-100 rounded animate-pulse" />
                 </div>
               ))}
             </div>
@@ -799,20 +799,20 @@ export default function ProfilePage() {
   const profilePhoto = profile?.profilePhoto || bioData.profilePhoto
 
   return (
-    <div className="min-h-[100dvh] bg-neutral-950">
+    <div className="min-h-[100dvh] bg-[#F7FAFD]">
       {/* Header */}
-      <div className="bg-neutral-900 border-b border-neutral-800 sticky top-0 z-10">
+      <div className="bg-white border border-neutral-100 border-b border-neutral-100 sticky top-0 z-10">
         <div className="px-4 py-4">
           <div className="flex items-center justify-between">
             <button
               onClick={() => router.push('/creator/dashboard')}
-              className="p-2 hover:bg-neutral-800 rounded-lg transition-colors"
+              className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
             >
               <svg className="w-6 h-6 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <h1 className="text-xl font-bold text-white">Mi Perfil</h1>
+            <h1 className="text-xl font-bold text-neutral-900">Mi Perfil</h1>
             <button
               onClick={() => setShowLogoutModal(true)}
               className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -826,19 +826,19 @@ export default function ProfilePage() {
       </div>
 
       {/* Profile Header */}
-      <div className="bg-neutral-900 px-4 py-6 border-b border-neutral-800">
+      <div className="bg-white border border-neutral-100 px-4 py-6 border-b border-neutral-100">
         <div className="flex items-center space-x-4">
           <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-emerald-600 rounded-full flex items-center justify-center overflow-hidden">
             {profilePhoto ? (
               <img src={profilePhoto} alt="Profile" className="w-full h-full rounded-full object-cover" />
             ) : (
-              <span className="text-white text-2xl font-bold">
+              <span className="text-neutral-900 text-2xl font-bold">
                 {displayName.charAt(0).toUpperCase()}
               </span>
             )}
           </div>
           <div className="flex-1">
-            <h2 className="text-xl font-bold text-white">{displayName}</h2>
+            <h2 className="text-xl font-bold text-neutral-900">{displayName}</h2>
             <p className="text-neutral-400">{user?.email || 'Sin email'}</p>
             {(profile?.location || bioData.location) && (
               <p className="flex items-center gap-1.5 text-sm text-neutral-500 mt-1">
@@ -851,7 +851,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="bg-neutral-900 border-b border-neutral-800 sticky top-[65px] z-10">
+      <div className="bg-white border border-neutral-100 border-b border-neutral-100 sticky top-[65px] z-10">
         <div className="px-4">
           <div className="flex space-x-6 overflow-x-auto">
             {sections.map((section) => (
@@ -860,8 +860,8 @@ export default function ProfilePage() {
                 onClick={() => setActiveSection(section.id)}
                 className={`flex items-center gap-2 py-3 px-1 border-b-2 transition-colors whitespace-nowrap text-sm font-medium ${
                   activeSection === section.id
-                    ? 'border-emerald-500 text-emerald-400'
-                    : 'border-transparent text-neutral-500 hover:text-neutral-300'
+                    ? 'border-emerald-500 text-emerald-600'
+                    : 'border-transparent text-neutral-500 hover:text-neutral-600'
                 }`}
               >
                 <section.icon className="w-4 h-4" strokeWidth={2} />
@@ -880,27 +880,27 @@ export default function ProfilePage() {
       {/* Navegación inferior (compartida) */}
       {/* Logout Confirmation Modal */}
       {showLogoutModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-neutral-900 rounded-2xl p-6 max-w-sm w-full shadow-xl">
+        <div className="fixed inset-0 bg-[#F7FAFD]/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-neutral-100 rounded-2xl p-6 max-w-sm w-full shadow-xl">
             <div className="text-center mb-6">
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">Cerrar sesion</h3>
+              <h3 className="text-xl font-bold text-neutral-900 mb-2">Cerrar sesion</h3>
               <p className="text-neutral-400">¿Estas seguro de que quieres cerrar tu sesion?</p>
             </div>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowLogoutModal(false)}
-                className="flex-1 py-3 px-4 bg-neutral-800 text-neutral-200 rounded-xl font-semibold hover:bg-neutral-800 transition-colors"
+                className="flex-1 py-3 px-4 bg-neutral-100 text-neutral-700 rounded-xl font-semibold hover:bg-neutral-100 transition-colors"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleLogout}
-                className="flex-1 py-3 px-4 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition-colors"
+                className="flex-1 py-3 px-4 bg-red-600 text-neutral-900 rounded-xl font-semibold hover:bg-red-700 transition-colors"
               >
                 Cerrar sesion
               </button>
