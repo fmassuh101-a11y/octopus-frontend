@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
-import { Trophy, Check } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Drawer } from 'vaul'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
-import UserAvatar from '@/components/ui/UserAvatar'
+import Sky from '@/components/oct/Sky'
+import { Search, SlidersHorizontal, Check, Sparkles, TrendingUp, DollarSign, Video, EyeOff, Share2, Layers as Images, Star, Package, Crown, History as HistoryIcon, Send } from 'lucide-react'
 
 interface Gig {
   id: string
@@ -24,685 +24,377 @@ interface Gig {
   applicants_count?: number
 }
 
-// TEMPORAL: mientras no esté lista la conexión de redes (TikTok/IG),
-// permitimos aplicar sin verificar cuenta. Poner en true para re-activar
-// el requisito de verificación antes de aplicar.
 const REQUIRE_VERIFICATION = false
 
-const CATEGORIES = [
-  { key: 'todas', label: 'Todas' },
-  { key: 'ugc', label: 'UGC' },
-  { key: 'clipping', label: 'Clipping' },
-  { key: 'faceless', label: 'Faceless' },
-  { key: 'social', label: 'Social Media' },
-  { key: 'slideshow', label: 'Slideshows' },
-  { key: 'review', label: 'Reseñas' },
-  { key: 'unboxing', label: 'Unboxing' },
-  { key: 'ambassador', label: 'Embajador' },
+// Tipos de contenido (niches) con ícono — estilo "Find by niche" de SideShift
+const NICHES = [
+  { key: 'ugc', label: 'UGC', icon: Video },
+  { key: 'clipping', label: 'Clipping', icon: TrendingUp },
+  { key: 'faceless', label: 'Faceless', icon: EyeOff },
+  { key: 'social', label: 'Social Media', icon: Share2 },
+  { key: 'slideshow', label: 'Slideshows', icon: Images },
+  { key: 'review', label: 'Reseñas', icon: Star },
+  { key: 'unboxing', label: 'Unboxing', icon: Package },
+  { key: 'ambassador', label: 'Embajador', icon: Crown },
 ]
 
-// Tipo de contenido → etiqueta + color (para el badge en las tarjetas)
-const TYPE_META: Record<string, { label: string; cls: string }> = {
-  ugc: { label: 'UGC', cls: 'bg-emerald-500/20 text-emerald-300' },
-  clipping: { label: 'Clipping', cls: 'bg-violet-500/20 text-violet-300' },
-  faceless: { label: 'Faceless', cls: 'bg-sky-500/20 text-sky-300' },
-  social: { label: 'Social Media', cls: 'bg-pink-500/20 text-pink-300' },
-  slideshow: { label: 'Slideshows', cls: 'bg-amber-500/20 text-amber-300' },
-  review: { label: 'Reseña', cls: 'bg-teal-500/20 text-teal-300' },
-  unboxing: { label: 'Unboxing', cls: 'bg-orange-500/20 text-orange-300' },
-  ambassador: { label: 'Embajador', cls: 'bg-fuchsia-500/20 text-fuchsia-300' },
-}
-function typeMeta(cat?: string) {
-  const k = (cat || '').toLowerCase()
-  return TYPE_META[k] || { label: cat || 'UGC', cls: 'bg-neutral-700/50 text-neutral-300' }
-}
+const GRADS = [
+  'from-sky-400 to-blue-500', 'from-violet-400 to-purple-500', 'from-emerald-400 to-teal-500',
+  'from-orange-400 to-rose-500', 'from-fuchsia-400 to-pink-500', 'from-amber-400 to-orange-500',
+]
 
 export default function GigsPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [gigs, setGigs] = useState<Gig[]>([])
-  const [filter, setFilter] = useState('para_ti')
-  const [category, setCategory] = useState('todas')
+  const [tab, setTab] = useState<'gigs' | 'mine' | 'history'>('gigs')
+  const [sort, setSort] = useState<'new' | 'trend' | 'pay'>('new')
+  const [niche, setNiche] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedGig, setSelectedGig] = useState<Gig | null>(null)
   const [user, setUser] = useState<any>(null)
-  const [isApplying, setIsApplying] = useState(false)
-  const [applicationMessage, setApplicationMessage] = useState('')
   const [appliedGigs, setAppliedGigs] = useState<Set<string>>(new Set())
-  const [showSuccessToast, setShowSuccessToast] = useState(false)
-  const [countdown, setCountdown] = useState(5)
   const [isVerified, setIsVerified] = useState(false)
   const [showVerificationModal, setShowVerificationModal] = useState(false)
 
-  useEffect(() => {
-    loadAllData()
-  }, [])
+  useEffect(() => { loadAllData() }, [])
 
-  // Countdown effect for success toast
-  useEffect(() => {
-    if (showSuccessToast && countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
-      return () => clearTimeout(timer)
-    } else if (countdown === 0) {
-      setShowSuccessToast(false)
-      setCountdown(5)
-    }
-  }, [showSuccessToast, countdown])
-
-  // OPTIMIZED: Load all data in parallel
   const loadAllData = async () => {
     const token = localStorage.getItem('sb-access-token')
     const userStr = localStorage.getItem('sb-user')
-
-    // Set user immediately from localStorage (no API call needed)
-    if (userStr) {
-      setUser(JSON.parse(userStr))
-    }
-
-    const headers = {
-      'Authorization': token ? `Bearer ${token}` : '',
-      'apikey': SUPABASE_ANON_KEY
-    }
-
+    if (userStr) setUser(JSON.parse(userStr))
+    const headers = { Authorization: token ? `Bearer ${token}` : '', apikey: SUPABASE_ANON_KEY }
     try {
-      // PARALLEL: Load gigs, applied gigs, and verification status at once
       const userData = userStr ? JSON.parse(userStr) : null
-
       const promises: Promise<any>[] = [
-        // Always load gigs
-        fetch(`${SUPABASE_URL}/rest/v1/gigs?select=*&status=eq.active&order=created_at.desc`, { headers })
+        fetch(`${SUPABASE_URL}/rest/v1/gigs?select=*&status=eq.active&order=created_at.desc`, { headers }),
       ]
-
-      // Only load user-specific data if logged in
       if (token && userData) {
         promises.push(
           fetch(`${SUPABASE_URL}/rest/v1/applications?select=gig_id&creator_id=eq.${userData.id}`, { headers }),
           fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=bio`, { headers })
         )
       }
-
       const results = await Promise.all(promises)
-
-      // Process gigs
-      if (results[0].ok) {
-        const gigsData = await results[0].json()
-        setGigs(gigsData)
-      }
-
-      // Process applied gigs (if logged in)
+      if (results[0].ok) setGigs(await results[0].json())
       if (results[1]?.ok) {
-        const appliedData = await results[1].json()
-        setAppliedGigs(new Set(appliedData.map((a: any) => a.gig_id)))
+        const applied = await results[1].json()
+        setAppliedGigs(new Set(applied.map((a: any) => a.gig_id)))
       }
-
-      // Process verification status (if logged in)
       if (results[2]?.ok) {
         const profiles = await results[2].json()
-        if (profiles.length > 0 && profiles[0].bio) {
+        if (profiles.length && profiles[0].bio) {
           try {
-            const bioData = JSON.parse(profiles[0].bio)
-            const hasTikTok = bioData.tiktokConnected && bioData.tiktokAccounts?.length > 0
-            setIsVerified(hasTikTok)
-          } catch (e) {
-            setIsVerified(false)
-          }
+            const bio = JSON.parse(profiles[0].bio)
+            setIsVerified(!!(bio.tiktokConnected && bio.tiktokAccounts?.length))
+          } catch { setIsVerified(false) }
         }
       }
-    } catch (err) {
-      console.error('Error loading data:', err)
-    } finally {
-      setLoading(false)
-    }
+    } catch (e) { console.error(e) } finally { setLoading(false) }
   }
 
-  // One-tap apply optimista: marca "Postulado" al instante y reconcilia en
-  // background; si falla, hace rollback. Sin formulario ni toast de espera.
+  // One-tap apply optimista (rollback si falla)
   const handleApply = async (gig: Gig) => {
-    if (!user) {
-      router.push('/auth/login')
-      return
-    }
+    if (!user) { router.push('/auth/login'); return }
     if (REQUIRE_VERIFICATION && !isVerified) {
       setSelectedGig(null)
       setTimeout(() => setShowVerificationModal(true), 100)
       return
     }
     if (appliedGigs.has(gig.id)) return
-
-    // Optimista: se ve postulado YA
     setAppliedGigs(prev => new Set([...Array.from(prev), gig.id]))
     setSelectedGig(null)
-
     try {
       const token = localStorage.getItem('sb-access-token')
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/applications`, {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/applications`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'apikey': SUPABASE_ANON_KEY,
-          'Prefer': 'return=representation'
-        },
-        body: JSON.stringify({
-          gig_id: gig.id,
-          creator_id: user.id,
-          company_id: gig.company_id,
-          message: 'Me interesa esta oportunidad',
-          status: 'pending'
-        })
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY, Prefer: 'return=representation' },
+        body: JSON.stringify({ gig_id: gig.id, creator_id: user.id, company_id: gig.company_id, message: 'Me interesa esta oportunidad', status: 'pending' }),
       })
-
-      if (!response.ok) {
-        const error = await response.text()
-        if (error.includes('duplicate')) return // ya estaba postulado: lo dejamos así
-        // rollback
+      if (!res.ok) {
+        const err = await res.text()
+        if (err.includes('duplicate')) return
         setAppliedGigs(prev => { const n = new Set(prev); n.delete(gig.id); return n })
         alert('No se pudo postular. Intentá de nuevo.')
       }
-    } catch (err) {
-      console.error('Error applying to gig:', err)
+    } catch {
       setAppliedGigs(prev => { const n = new Set(prev); n.delete(gig.id); return n })
       alert('No se pudo postular. Revisá tu conexión.')
     }
   }
 
-  // OPTIMIZED: Memoize filtered and sorted gigs
-  const sortedGigs = useMemo(() => {
-    const filtered = gigs.filter(gig => {
-      // filtro por categoría (chip)
-      if (category !== 'todas') {
-        const cat = (gig.category || '').toLowerCase()
-        const title = (gig.title || '').toLowerCase()
-        if (!cat.includes(category) && !title.includes(category)) return false
+  const filtered = useMemo(() => {
+    let list = gigs.filter(g => {
+      if (niche && (g.category || '').toLowerCase() !== niche) return false
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase()
+        return g.title?.toLowerCase().includes(q) || g.description?.toLowerCase().includes(q) || g.company_name?.toLowerCase().includes(q)
       }
-      // filtro por búsqueda
-      if (!searchQuery) return true
-      const query = searchQuery.toLowerCase()
-      return gig.title?.toLowerCase().includes(query) ||
-        gig.company_name?.toLowerCase().includes(query) ||
-        gig.category?.toLowerCase().includes(query)
+      return true
     })
+    if (sort === 'pay') list = [...list].sort((a, b) => parseInt(b.budget?.replace(/\D/g, '') || '0') - parseInt(a.budget?.replace(/\D/g, '') || '0'))
+    if (sort === 'trend') list = [...list].sort((a, b) => (b.applicants_count || 0) - (a.applicants_count || 0))
+    return list
+  }, [gigs, niche, searchQuery, sort])
 
-    return [...filtered].sort((a, b) => {
-      if (filter === 'mejor_pago') {
-        const priceA = parseInt(a.budget?.replace(/\D/g, '') || '0')
-        const priceB = parseInt(b.budget?.replace(/\D/g, '') || '0')
-        return priceB - priceA
-      }
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    })
-  }, [gigs, searchQuery, filter, category])
-
-  const getGradient = (index: number) => {
-    const gradients = [
-      'from-emerald-600 via-emerald-600 to-blue-600',
-      'from-rose-500 via-emerald-500 to-emerald-500',
-      'from-emerald-500 via-teal-500 to-cyan-500',
-      'from-orange-500 via-red-500 to-emerald-500',
-      'from-blue-600 via-emerald-600 to-emerald-600',
-      'from-amber-500 via-orange-500 to-red-500',
-    ]
-    return gradients[index % gradients.length]
-  }
-
-  const formatBudget = (budget: string) => {
-    if (!budget) return '$0'
-    return budget
-  }
-
-  const getTimeAgo = (date: string) => {
-    const now = new Date()
-    const created = new Date(date)
-    const diffMs = now.getTime() - created.getTime()
-    const diffMins = Math.floor(diffMs / 60000)
-    const diffHours = Math.floor(diffMins / 60)
-    const diffDays = Math.floor(diffHours / 24)
-
-    if (diffMins < 60) return `hace ${diffMins}m`
-    if (diffHours < 24) return `hace ${diffHours}h`
-    if (diffDays < 7) return `hace ${diffDays}d`
-    return `hace ${Math.floor(diffDays / 7)}sem`
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-[100dvh] bg-neutral-950">
-        {/* Skeleton Header */}
-        <div className="bg-neutral-900 sticky top-0 z-20 border-b border-neutral-800">
-          <div className="px-4 py-3 pl-16">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="flex-1 h-12 bg-neutral-800 rounded-full animate-pulse" />
-              <div className="w-11 h-11 bg-neutral-800 rounded-full animate-pulse" />
-            </div>
-            <div className="flex gap-2">
-              {[1,2,3].map(i => (
-                <div key={i} className="h-10 w-24 bg-neutral-800 rounded-full animate-pulse" />
-              ))}
-            </div>
-          </div>
-        </div>
-        {/* Skeleton Cards */}
-        <div className="px-4 py-4 pb-28">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[1,2,3,4,5,6].map(i => (
-              <div key={i} className="bg-neutral-900 rounded-2xl overflow-hidden border border-neutral-800 text-white placeholder-neutral-500">
-                <div className="h-52 bg-neutral-800 animate-pulse" />
-                <div className="p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="h-6 w-20 bg-neutral-800 rounded animate-pulse" />
-                    <div className="h-4 w-16 bg-neutral-800 rounded animate-pulse" />
-                  </div>
-                  <div className="h-12 bg-neutral-800 rounded-xl animate-pulse" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    )
-  }
+  const mine = useMemo(() => gigs.filter(g => appliedGigs.has(g.id)), [gigs, appliedGigs])
+  const spotlight = filtered[0]
+  const nicheMeta = (key?: string) => NICHES.find(n => n.key === (key || '').toLowerCase())
+  const priceLabel = (g: Gig) => g.budget || '$—'
 
   return (
-    <div className="min-h-[100dvh] bg-neutral-950">
-      {/* Success Toast */}
-      {showSuccessToast && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] animate-bounce">
-          <div className="bg-emerald-500 text-white px-8 py-4 rounded-xl shadow-2xl flex items-center gap-4 border border-emerald-400">
-            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-              <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <div>
-              <p className="font-bold text-lg">Aplicacion Enviada</p>
-              <p className="text-white/80 text-sm">Este mensaje desaparecera en {countdown}s</p>
-            </div>
-            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center font-bold text-xl">
-              {countdown}
-            </div>
+    <div className="relative min-h-[100dvh] pb-32 text-neutral-900">
+      <Sky height={230} />
+      <div className="relative mx-auto max-w-md px-5 pt-12">
+        {/* search + filtros */}
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-neutral-400" />
+            <input
+              type="text" placeholder="Buscar acá..." value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-full border border-neutral-200 bg-white py-3.5 pl-12 pr-4 text-[16px] shadow-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-sky-300"
+            />
           </div>
+          <Link href="/leaderboard" prefetch aria-label="Ranking"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-neutral-200 bg-white shadow-sm transition-transform active:scale-90">
+            <SlidersHorizontal className="h-5 w-5 text-neutral-600" />
+          </Link>
         </div>
-      )}
 
-      {/* Header */}
-      <div className="bg-neutral-900 sticky top-0 z-20 border-b border-neutral-800">
-        <div className="px-4 py-3 pl-16">
-          {/* Search Bar */}
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex-1 relative">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2">
-                <svg className="w-5 h-5 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              <input
-                type="text"
-                placeholder="Explorar Trabajos"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-neutral-800 rounded-full text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 border border-neutral-700"
-              />
+        {/* tabs */}
+        <div className="mt-5 flex items-center gap-7 border-b border-neutral-200/70">
+          {([['gigs', 'Trabajos'], ['mine', 'Mis campañas'], ['history', 'Historial']] as const).map(([k, label]) => (
+            <button key={k} onClick={() => setTab(k)}
+              className={`relative pb-3 text-[17px] transition-colors ${tab === k ? 'font-bold text-neutral-900' : 'font-medium text-neutral-400'}`}>
+              {label}
+              {tab === k && <span className="absolute inset-x-0 -bottom-px h-[3px] rounded-full bg-neutral-900" />}
+            </button>
+          ))}
+        </div>
+
+        {tab === 'gigs' && (
+          <>
+            {/* Spotlight */}
+            <div className="mt-6 flex items-center justify-between">
+              <h2 className="text-[24px] font-extrabold tracking-tight">Destacado</h2>
+              <span className="text-xl text-neutral-400">›</span>
             </div>
-            <Link href="/leaderboard" title="Ranking de creadores"
-              className="shrink-0 h-11 px-4 rounded-full bg-neutral-800 border border-neutral-700 hover:border-emerald-500 text-neutral-200 hover:text-emerald-400 flex items-center gap-2 font-semibold text-sm transition-colors">
-              <Trophy className="w-4 h-4" /> Ranking
-            </Link>
-            <UserAvatar email={user?.email} size={44} />
-          </div>
-
-          {/* Filter Tabs */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => setFilter('para_ti')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                filter === 'para_ti'
-                  ? 'bg-emerald-500 text-white'
-                  : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white'
-              } placeholder-neutral-500`}
-            >
-              Para Ti
-            </button>
-            <button
-              onClick={() => setFilter('mejor_pago')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                filter === 'mejor_pago'
-                  ? 'bg-emerald-500 text-white'
-                  : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white'
-              } placeholder-neutral-500`}
-            >
-              Mejor Pago
-            </button>
-            <button
-              onClick={() => setFilter('tendencia')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                filter === 'tendencia'
-                  ? 'bg-emerald-500 text-white'
-                  : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white'
-              }`}
-            >
-              Tendencia
-            </button>
-          </div>
-
-          {/* Category chips (estilo SideShift) */}
-          <div className="flex gap-2 mt-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
-            {CATEGORIES.map((c) => (
-              <button
-                key={c.key}
-                onClick={() => setCategory(c.key)}
-                className={`whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                  category === c.key
-                    ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400'
-                    : 'bg-transparent border-neutral-800 text-neutral-400 hover:border-neutral-600 hover:text-white'
-                }`}
-              >
-                {c.label}
+            {loading ? (
+              <div className="mt-3 h-40 animate-pulse rounded-3xl bg-white shadow-sm" />
+            ) : spotlight ? (
+              <button onClick={() => setSelectedGig(spotlight)}
+                className="mt-3 w-full rounded-3xl border border-neutral-100 bg-white p-4 text-left shadow-sm transition-transform active:scale-[0.985]">
+                <div className="flex items-center gap-4">
+                  <div className={`h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br ${GRADS[0]}`}>
+                    {spotlight.image_url?.startsWith('http') && (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img src={spotlight.image_url} alt="" className="h-full w-full object-cover" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xl font-extrabold">{spotlight.company_name || spotlight.title}</p>
+                    <p className="text-neutral-500">{nicheMeta(spotlight.category)?.label || 'Creador de contenido'}</p>
+                    <p className="mt-3 text-xl font-extrabold tabular-nums">{priceLabel(spotlight)}</p>
+                  </div>
+                </div>
               </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Gigs Grid */}
-      <div className="px-4 py-4 pb-28">
-        {sortedGigs.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="w-20 h-20 mx-auto mb-6 bg-neutral-800 rounded-full flex items-center justify-center">
-              <svg className="w-10 h-10 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
+            ) : (
+              <div className="mt-3 rounded-3xl border border-neutral-100 bg-white p-6 text-center text-neutral-500 shadow-sm">Todavía no hay campañas</div>
+            )}
+            {/* dots */}
+            <div className="mt-3 flex justify-center gap-1.5">
+              {[0, 1, 2, 3].map(i => <span key={i} className={`h-1.5 rounded-full ${i === 0 ? 'w-8 bg-sky-400' : 'w-6 bg-neutral-200'}`} />)}
             </div>
-            <h3 className="text-xl font-semibold text-white mb-3">No hay trabajos disponibles</h3>
-            <p className="text-neutral-400 mb-6 max-w-sm mx-auto">
-              Las empresas publicaran oportunidades muy pronto. Completa tu perfil para estar listo.
-            </p>
-            <Link
-              href="/creator/profile"
-              className="inline-block px-6 py-3 bg-emerald-500 text-white rounded-full font-semibold hover:bg-emerald-600 transition-colors"
-            >
-              Completar Mi Perfil
-            </Link>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {sortedGigs.map((gig, index) => (
-              <div
-                key={gig.id}
-                onClick={() => setSelectedGig(gig)}
-                className="bg-neutral-900 rounded-2xl overflow-hidden border border-neutral-800 transition-transform duration-100 active:scale-[0.985] cursor-pointer group text-white placeholder-neutral-500"
-              >
-                {/* Card Image */}
-                <div className={`h-52 relative bg-gradient-to-br ${getGradient(index)}`}>
-                  {gig.image_url && gig.image_url.startsWith('http') ? (
-                    <img
-                      src={gig.image_url}
-                      alt={gig.title}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        // Hide broken image
-                        (e.target as HTMLImageElement).style.display = 'none'
-                      }}
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <svg className="w-16 h-16 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                  )}
 
-                  {/* Company Logo */}
-                  <div className="absolute top-4 left-4 flex items-center gap-2">
-                    <div className="w-10 h-10 bg-neutral-900 rounded-full flex items-center justify-center shadow-lg">
-                      {gig.company_logo ? (
-                        <img src={gig.company_logo} alt="" className="w-8 h-8 rounded-full object-cover" />
-                      ) : (
-                        <span className="text-white font-bold text-sm">
-                          {(gig.company_name || gig.title)?.charAt(0).toUpperCase()}
+            {/* Browse */}
+            <h2 className="mt-7 text-[24px] font-extrabold tracking-tight">Explorar</h2>
+            <div className="mt-3 flex gap-2 overflow-x-auto no-scrollbar">
+              {([['new', 'Nuevas', Sparkles], ['trend', 'Tendencia', TrendingUp], ['pay', 'Mejor pago', DollarSign]] as const).map(([k, label, Icon]) => (
+                <button key={k} onClick={() => setSort(k)}
+                  className={`flex shrink-0 items-center gap-2 rounded-full border px-5 py-3 text-[16px] font-semibold shadow-sm transition-all active:scale-95 ${
+                    sort === k ? 'border-sky-400 bg-white text-sky-500' : 'border-neutral-200 bg-white text-neutral-700'}`}>
+                  <Icon className="h-4 w-4" /> {label}
+                </button>
+              ))}
+            </div>
+
+            {/* niches */}
+            <div className="mt-7 flex items-center justify-between">
+              <h2 className="text-[24px] font-extrabold tracking-tight">Buscar por tipo</h2>
+              <span className="text-xl text-neutral-400">›</span>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {NICHES.map(n => (
+                <button key={n.key} onClick={() => setNiche(niche === n.key ? null : n.key)}
+                  className={`flex items-center gap-2 rounded-full border px-4 py-2.5 text-[15px] font-semibold shadow-sm transition-all active:scale-95 ${
+                    niche === n.key ? 'border-sky-400 bg-sky-50 text-sky-600' : 'border-neutral-200 bg-white text-neutral-700'}`}>
+                  <n.icon className="h-4 w-4" /> {n.label}
+                </button>
+              ))}
+            </div>
+
+            {/* grid de campañas */}
+            <div className="mt-7 flex items-center justify-between">
+              <h2 className="text-[24px] font-extrabold tracking-tight">{filtered.length} {filtered.length === 1 ? 'campaña' : 'campañas'}</h2>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-4">
+              {loading
+                ? [1, 2, 3, 4].map(i => <div key={i} className="h-56 animate-pulse rounded-3xl bg-white shadow-sm" />)
+                : filtered.map((gig, idx) => (
+                  <button key={gig.id} onClick={() => setSelectedGig(gig)}
+                    className="text-left transition-transform active:scale-[0.97]">
+                    <div className={`relative aspect-square overflow-hidden rounded-3xl bg-gradient-to-br ${GRADS[idx % GRADS.length]} shadow-sm`}>
+                      {gig.image_url?.startsWith('http') && (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img src={gig.image_url} alt="" className="h-full w-full object-cover"
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                      )}
+                      <span className="absolute right-2 top-2 max-w-[calc(100%-16px)] truncate rounded-full bg-neutral-600/60 px-3 py-1.5 text-[13px] font-bold text-white backdrop-blur-sm">
+                        {priceLabel(gig)}
+                      </span>
+                      {appliedGigs.has(gig.id) && (
+                        <span className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-emerald-500 px-2.5 py-1 text-[12px] font-bold text-white">
+                          <Check className="h-3 w-3" strokeWidth={3} /> Postulado
                         </span>
                       )}
                     </div>
-                    <span className="text-white font-semibold text-sm drop-shadow-lg">
-                      {gig.company_name || 'Empresa'}
-                    </span>
-                  </div>
-
-                  {/* Title Overlay */}
-                  <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
-                    <h3 className="text-white font-bold text-lg leading-tight">{gig.title}</h3>
-                  </div>
-
-                  {/* Applied Badge */}
-                  {appliedGigs.has(gig.id) && (
-                    <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold">
-                      Aplicado
-                    </div>
-                  )}
-                </div>
-
-                {/* Card Content */}
-                <div className="p-4">
-                  <div className="mb-2">
-                    <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${typeMeta(gig.category).cls}`}>
-                      {typeMeta(gig.category).label}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xl font-bold text-emerald-400">{formatBudget(gig.budget)}</span>
-                    <span className="text-sm text-neutral-500">{getTimeAgo(gig.created_at)}</span>
-                  </div>
-
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      if (appliedGigs.has(gig.id)) {
-                        router.push('/creator/applications')
-                      } else {
-                        handleApply(gig)   // un tap: postula al instante
-                      }
-                    }}
-                    className={`w-full py-3 rounded-xl font-bold text-sm transition-transform active:scale-[0.98] flex items-center justify-center gap-1.5 ${
-                      appliedGigs.has(gig.id)
-                        ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                        : 'bg-emerald-500 text-white hover:bg-emerald-600'
-                    }`}
-                  >
-                    {appliedGigs.has(gig.id) ? (<><Check className="w-4 h-4" /> Postulado</>) : 'Aplicar'}
+                    <p className="mt-2 truncate text-[15px] text-neutral-500">{gig.company_name || 'Empresa'}</p>
+                    <p className="truncate text-[17px] font-bold leading-tight">{gig.title}</p>
                   </button>
-                </div>
-              </div>
-            ))}
-          </div>
+                ))}
+            </div>
+            {!loading && filtered.length === 0 && (
+              <EmptyState text="No hay campañas con ese filtro" cta="Ver todas" onCta={() => { setNiche(null); setSearchQuery('') }} />
+            )}
+          </>
+        )}
+
+        {tab === 'mine' && (
+          mine.length === 0 ? (
+            <EmptyState text="Unite a campañas para ver tu progreso acá" cta="Explorar trabajos" onCta={() => setTab('gigs')} />
+          ) : (
+            <div className="mt-6 space-y-3">
+              {mine.map(g => (
+                <Link key={g.id} href="/creator/applications" prefetch
+                  className="flex items-center gap-4 rounded-3xl border border-neutral-100 bg-white p-4 shadow-sm transition-transform active:scale-[0.985]">
+                  <div className={`flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br ${GRADS[1]}`}>
+                    {g.image_url?.startsWith('http') && (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img src={g.image_url} alt="" className="h-full w-full object-cover" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-bold">{g.title}</p>
+                    <p className="truncate text-sm text-neutral-500">{g.company_name || 'Empresa'} · {priceLabel(g)}</p>
+                  </div>
+                  <span className="rounded-full bg-sky-50 px-3 py-1.5 text-xs font-bold text-sky-600">Ver estado</span>
+                </Link>
+              ))}
+            </div>
+          )
+        )}
+
+        {tab === 'history' && (
+          <EmptyState icon={<HistoryIcon className="h-16 w-16 text-sky-400" />}
+            title="Tu historial de campañas"
+            text="Acá vas a ver cada campaña a la que postulaste y completaste — todo en un solo lugar."
+            cta="Ver mis postulaciones" onCta={() => router.push('/creator/applications')} />
         )}
       </div>
 
-      {/* Navegación inferior (compartida) */}
-      {/* Verification Required Modal */}
+      {/* Modal verificación */}
       {showVerificationModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-neutral-900 rounded-2xl max-w-md w-full p-6 border border-neutral-800 text-white placeholder-neutral-500">
-            {/* Icon */}
-            <div className="w-20 h-20 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg className="w-10 h-10 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-            </div>
-
-            {/* Content */}
-            <div className="text-center mb-6">
-              <h3 className="text-xl font-bold text-white mb-2">Verificacion Requerida</h3>
-              <p className="text-neutral-400">
-                Para aplicar a trabajos, necesitas verificar al menos una de tus redes sociales.
-                Esto ayuda a las empresas a confiar en ti y ver tus estadisticas reales.
-              </p>
-            </div>
-
-            {/* Benefits */}
-            <div className="bg-neutral-800 rounded-xl p-4 mb-6 border border-neutral-700 text-white placeholder-neutral-500">
-              <p className="text-sm font-medium text-neutral-300 mb-2">Al verificar obtendras:</p>
-              <ul className="space-y-2 text-sm text-neutral-400">
-                <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                  Acceso a aplicar a todos los trabajos
-                </li>
-                <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                  Perfil destacado para empresas
-                </li>
-                <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                  Mayor probabilidad de ser seleccionado
-                </li>
-              </ul>
-            </div>
-
-            {/* Buttons */}
-            <div className="space-y-3">
-              <Link
-                href="/creator/profile?section=verification"
-                className="block w-full py-4 bg-emerald-500 text-white rounded-xl font-bold text-center hover:bg-emerald-600 transition-all"
-              >
-                Verificar Mi Cuenta
-              </Link>
-              <button
-                onClick={() => setShowVerificationModal(false)}
-                className="w-full py-3 bg-neutral-800 text-neutral-300 rounded-xl font-medium hover:bg-neutral-700 transition-colors border border-neutral-700"
-              >
-                Cancelar
-              </button>
-            </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-3xl bg-white p-6 text-center shadow-2xl">
+            <p className="text-lg font-bold">Conectá tus redes primero</p>
+            <p className="mt-1 text-neutral-500">Para postular necesitás verificar tu cuenta de TikTok o Instagram.</p>
+            <button onClick={() => setShowVerificationModal(false)}
+              className="mt-5 w-full rounded-full bg-gradient-to-b from-[#66B9F9] to-[#4BA0EF] py-3.5 font-bold text-white">Entendido</button>
           </div>
         </div>
       )}
 
-      {/* Gig Detail Modal */}
+      {/* Detalle como bottom sheet — estilo tarjeta de campaña de SideShift */}
       <Drawer.Root open={!!selectedGig} onOpenChange={(o) => { if (!o) setSelectedGig(null) }}>
         <Drawer.Portal>
-          <Drawer.Overlay className="fixed inset-0 bg-black/60 z-50" />
-          <Drawer.Content className="fixed inset-x-0 bottom-0 z-50 flex max-h-[92dvh] flex-col rounded-t-3xl border-t border-white/10 bg-neutral-900 text-white outline-none">
-            <div className="mx-auto mt-3 mb-1 h-1.5 w-10 shrink-0 rounded-full bg-neutral-700" aria-hidden />
-            <div className="overflow-y-auto overscroll-contain rounded-t-3xl">
-            {selectedGig && (<>
-            {/* Modal Header Image */}
-            <div className={`h-48 relative bg-gradient-to-br ${getGradient(gigs.indexOf(selectedGig))}`}>
-              {selectedGig.image_url && selectedGig.image_url.startsWith('http') ? (
-                <img
-                  src={selectedGig.image_url}
-                  alt={selectedGig.title}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none'
-                  }}
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <svg className="w-16 h-16 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                </div>
-              )}
-
-              {/* Close Button */}
-              <button
-                onClick={() => setSelectedGig(null)}
-                className="absolute top-4 right-4 w-10 h-10 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center transition-colors"
-              >
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Modal Content */}
-            <div className="p-6">
-              {/* Company Info */}
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-neutral-800 rounded-full flex items-center justify-center border border-neutral-700 text-white placeholder-neutral-500">
-                  {selectedGig.company_logo ? (
-                    <img src={selectedGig.company_logo} alt="" className="w-10 h-10 rounded-full object-cover" />
-                  ) : (
-                    <span className="text-white font-bold text-lg">
-                      {(selectedGig.company_name || selectedGig.title)?.charAt(0).toUpperCase()}
-                    </span>
+          <Drawer.Overlay className="fixed inset-0 z-50 bg-black/60" />
+          <Drawer.Content className="fixed inset-x-0 bottom-0 z-50 flex max-h-[92dvh] flex-col rounded-t-[28px] bg-white text-neutral-900 outline-none">
+            <div aria-hidden className="mx-auto mb-1 mt-3 h-1.5 w-10 shrink-0 rounded-full bg-neutral-200" />
+            <div className="overflow-y-auto overscroll-contain px-5 pb-10 pt-2">
+              {selectedGig && (
+                <>
+                  <div className={`relative mx-auto aspect-square w-full max-w-sm overflow-hidden rounded-3xl bg-gradient-to-br ${GRADS[0]} shadow`}>
+                    {selectedGig.image_url?.startsWith('http') && (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img src={selectedGig.image_url} alt="" className="h-full w-full object-cover" />
+                    )}
+                  </div>
+                  <h2 className="mt-5 text-center text-[28px] font-extrabold leading-tight tracking-tight">
+                    {selectedGig.title} <span className="text-neutral-400">para</span> {selectedGig.company_name || 'la marca'}
+                  </h2>
+                  <div className="mt-5 grid grid-cols-2 divide-x divide-neutral-100 rounded-3xl border border-neutral-100 bg-white p-5 shadow-sm">
+                    <div className="pr-3">
+                      <DollarSign className="h-6 w-6 text-emerald-500" />
+                      <p className="mt-2 text-xl font-extrabold tabular-nums">{priceLabel(selectedGig)}</p>
+                      <p className="text-sm text-neutral-500">Pago</p>
+                    </div>
+                    <div className="pl-4">
+                      <Video className="h-6 w-6 text-orange-400" />
+                      <p className="mt-2 text-xl font-extrabold">{nicheMeta(selectedGig.category)?.label || 'UGC'}</p>
+                      <p className="text-sm text-neutral-500">Tipo de creador</p>
+                    </div>
+                  </div>
+                  {selectedGig.description && (
+                    <div className="mt-4 rounded-3xl border border-neutral-100 bg-white p-5 shadow-sm">
+                      <p className="font-bold">Sobre esta campaña</p>
+                      <p className="mt-1 whitespace-pre-line text-neutral-600">{selectedGig.description}</p>
+                    </div>
                   )}
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-bold text-white">{selectedGig.company_name || 'Empresa'}</h3>
-                  <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-semibold ${typeMeta(selectedGig.category).cls}`}>
-                    {typeMeta(selectedGig.category).label}
-                  </span>
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-emerald-400">{formatBudget(selectedGig.budget)}</div>
-                </div>
-              </div>
-
-              {/* Title */}
-              <h2 className="text-xl font-bold text-white mb-4">{selectedGig.title}</h2>
-
-              {/* Description */}
-              <div className="mb-6">
-                <h4 className="font-semibold text-neutral-300 mb-2">Lo que haras:</h4>
-                <div className="bg-neutral-800 rounded-xl p-4 border border-neutral-700 text-white placeholder-neutral-500">
-                  <p className="text-neutral-300 leading-relaxed whitespace-pre-wrap">{selectedGig.description}</p>
-                </div>
-              </div>
-
-              {/* Requirements */}
-              {selectedGig.requirements && (
-                <div className="mb-6">
-                  <h4 className="font-semibold text-neutral-300 mb-2">Requisitos:</h4>
-                  <div className="bg-neutral-800 rounded-xl p-4 border border-neutral-700 text-white placeholder-neutral-500">
-                    <p className="text-neutral-300 leading-relaxed whitespace-pre-wrap">{selectedGig.requirements}</p>
+                  {selectedGig.requirements && (
+                    <div className="mt-4 rounded-3xl border border-neutral-100 bg-white p-5 shadow-sm">
+                      <p className="font-bold">Requisitos</p>
+                      <p className="mt-1 whitespace-pre-line text-neutral-600">{selectedGig.requirements}</p>
+                    </div>
+                  )}
+                  {(selectedGig.applicants_count || 0) > 0 && (
+                    <p className="mt-4 text-center text-sm text-neutral-500">
+                      {selectedGig.applicants_count} {selectedGig.applicants_count === 1 ? 'persona postuló' : 'personas postularon'}
+                    </p>
+                  )}
+                  <div className="mt-6">
+                    {appliedGigs.has(selectedGig.id) ? (
+                      <Link href="/creator/applications" prefetch
+                        className="flex w-full items-center justify-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 py-4 text-lg font-bold text-emerald-600">
+                        <Check className="h-5 w-5" strokeWidth={3} /> Ya postulaste — ver estado
+                      </Link>
+                    ) : (
+                      <button onClick={() => handleApply(selectedGig)}
+                        className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-[#66B9F9] to-[#4BA0EF] py-4 text-lg font-bold text-white shadow-lg shadow-sky-200 transition-transform active:scale-[0.98]">
+                        <Send className="h-5 w-5" /> Postularme
+                      </button>
+                    )}
                   </div>
-                </div>
+                </>
               )}
-
-              {/* Real Applicants Count - NO FAKE DATA */}
-              {(selectedGig.applicants_count || 0) > 0 && (
-                <div className="text-center py-3 mb-4 bg-amber-500/20 rounded-xl border border-amber-500/30">
-                  <span className="text-amber-400 font-medium">
-                    {selectedGig.applicants_count} {selectedGig.applicants_count === 1 ? 'persona ha aplicado' : 'personas han aplicado'}
-                  </span>
-                </div>
-              )}
-
-              {/* Apply Section */}
-              {appliedGigs.has(selectedGig.id) ? (
-                <div className="text-center">
-                  <div className="bg-emerald-500/20 text-emerald-400 py-4 px-6 rounded-xl mb-4 flex items-center justify-center gap-2 border border-emerald-500/30">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span className="font-bold">Ya aplicaste a este trabajo</span>
-                  </div>
-                  <Link
-                    href="/creator/applications"
-                    className="block w-full py-4 bg-neutral-800 text-neutral-300 rounded-xl font-bold text-center hover:bg-neutral-700 transition-colors border border-neutral-700"
-                  >
-                    Ver Mis Aplicaciones
-                  </Link>
-                </div>
-              ) : (
-                <button
-                  onClick={() => handleApply(selectedGig)}
-                  className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] text-white rounded-xl font-bold text-lg transition-transform flex items-center justify-center gap-2"
-                >
-                  Postularme
-                </button>
-              )}
-            </div>
-            </>)}
             </div>
           </Drawer.Content>
         </Drawer.Portal>
       </Drawer.Root>
+    </div>
+  )
+}
+
+function EmptyState({ icon, title, text, cta, onCta }: { icon?: React.ReactNode; title?: string; text: string; cta: string; onCta: () => void }) {
+  return (
+    <div className="flex flex-col items-center px-4 py-16 text-center">
+      {icon || <Send className="h-16 w-16 text-sky-400" />}
+      {title && <p className="mt-6 text-xl font-extrabold">{title}</p>}
+      <p className="mt-2 max-w-xs text-neutral-500">{text}</p>
+      <button onClick={onCta}
+        className="mt-6 w-full max-w-xs rounded-full bg-gradient-to-b from-[#66B9F9] to-[#4BA0EF] py-4 text-lg font-bold text-white shadow-lg shadow-sky-200 transition-transform active:scale-[0.98]">
+        {cta}
+      </button>
     </div>
   )
 }
