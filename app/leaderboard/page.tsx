@@ -1,127 +1,188 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import { getLevel } from '@/lib/xp'
-import { ArrowLeft } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Sky from '@/components/oct/Sky'
+import { LEVELS, getLevel } from '@/lib/xp'
+import { X, Lock, ChevronDown, TrendingUp, Send, BarChart3, Eye, Zap, Heart as HandHeart, Crown, MessageSquare, Users, Search, Target, Trophy, Medal, Landmark, Sparkles } from 'lucide-react'
 
 interface Row {
   user_id: string; name: string; avatar: string | null
-  tiktok: string | null; instagram: string | null; verified: boolean
+  tiktok: string | null; verified: boolean
   location: string | null; completed: number; xp: number; level: string
 }
 
-// colores del podio (1° oro, 2° plata, 3° bronce) — badge numerado, sin emojis
-const PODIUM = [
-  { ring: 'ring-yellow-400', bg: 'bg-yellow-400', text: 'text-yellow-950' },
-  { ring: 'ring-neutral-300', bg: 'bg-neutral-300', text: 'text-neutral-900' },
-  { ring: 'ring-amber-600', bg: 'bg-amber-600', text: 'text-amber-50' },
-]
+// Íconos para las cards de perks (rotan por posición)
+const PERK_ICONS = [TrendingUp, Send, BarChart3, Eye, Zap, HandHeart, Crown, MessageSquare, Users, Search, Target, Trophy, Medal, Landmark]
 
-export default function LeaderboardPage() {
+// Pantalla de Ligas — copia de la pantalla de leagues de SideShift:
+// cielo, insignia hexagonal con carousel, nombre de liga, barra de XP,
+// ranking con "Vos" resaltado y perks para las ligas bloqueadas.
+export default function LigasPage() {
+  const router = useRouter()
   const [rows, setRows] = useState<Row[]>([])
   const [loading, setLoading] = useState(true)
+  const [meId, setMeId] = useState<string | null>(null)
+  const [idx, setIdx] = useState(0)
+  const [expanded, setExpanded] = useState(false)
 
   useEffect(() => {
+    try { const u = JSON.parse(localStorage.getItem('sb-user') || 'null'); if (u?.id) setMeId(u.id) } catch {}
     fetch('/api/leaderboard')
       .then((r) => (r.ok ? r.json() : { creators: [] }))
-      .then((d) => setRows(d.creators || []))
+      .then((d) => {
+        const creators: Row[] = d.creators || []
+        setRows(creators)
+        // arrancar en la liga del usuario
+        try {
+          const u = JSON.parse(localStorage.getItem('sb-user') || 'null')
+          const me = creators.find((c) => c.user_id === u?.id)
+          if (me) setIdx(getLevel(me.xp).index)
+        } catch {}
+      })
       .catch(() => setRows([]))
       .finally(() => setLoading(false))
   }, [])
 
-  const top3 = rows.slice(0, 3)
-  const rest = rows.slice(3)
+  const league = LEVELS[idx]
+  const me = useMemo(() => rows.find((r) => r.user_id === meId) || null, [rows, meId])
+  const myLevel = me ? getLevel(me.xp) : null
+  const isMyLeague = myLevel?.index === idx
+  const locked = (myLevel?.index ?? 0) < idx
+
+  // creadores de la liga seleccionada
+  const inLeague = useMemo(() => rows.filter((r) => getLevel(r.xp).index === idx), [rows, idx])
+  const top = expanded ? inLeague : inLeague.slice(0, 4)
+  const myRank = me ? rows.findIndex((r) => r.user_id === me.user_id) + 1 : null
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-white pb-24">
-      {/* Botón volver */}
-      <div className="max-w-3xl mx-auto px-4 pt-4">
-        <button onClick={() => (window.history.length > 1 ? window.history.back() : (window.location.href = '/gigs'))}
-          className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-white transition-colors">
-          <ArrowLeft className="w-4 h-4" /> Volver
+    <div className="relative min-h-[100dvh] bg-white pb-32 text-neutral-900">
+      <Sky />
+      <div className="relative mx-auto max-w-md px-5 pt-4">
+        <button onClick={() => (window.history.length > 1 ? router.back() : router.push('/creator/dashboard'))}
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-sky-100/90 shadow-sm transition-transform active:scale-90" aria-label="Cerrar">
+          <X className="h-5 w-5" />
         </button>
-      </div>
 
-      {/* Header */}
-      <div className="relative overflow-hidden border-b border-neutral-800">
-        <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-[520px] h-[320px] rounded-full bg-emerald-500/15 blur-[120px]" />
-        <div className="relative max-w-3xl mx-auto px-5 py-10 text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-400 mb-2">Octopus</p>
-          <h1 className="text-3xl md:text-4xl font-black tracking-tight">Ranking de creadores</h1>
-          <p className="text-neutral-400 mt-2 max-w-md mx-auto">
-            Los creadores que más contenido entregan y cobran en Octopus. Ganá XP completando trabajos y misiones para subir de liga.
-          </p>
+        {/* carousel de insignias */}
+        <div className="mt-4 flex items-center justify-center gap-5">
+          <button onClick={() => setIdx(Math.max(0, idx - 1))} disabled={idx === 0}
+            className="transition-transform active:scale-90 disabled:opacity-0" aria-label="Liga anterior">
+            <Hexagon size={64} from={LEVELS[Math.max(0, idx - 1)].from} to={LEVELS[Math.max(0, idx - 1)].to} muted />
+          </button>
+          <Hexagon size={150} from={league.from} to={league.to} locked={locked} />
+          <button onClick={() => setIdx(Math.min(LEVELS.length - 1, idx + 1))} disabled={idx === LEVELS.length - 1}
+            className="transition-transform active:scale-90 disabled:opacity-0" aria-label="Liga siguiente">
+            <Hexagon size={64} from={LEVELS[Math.min(LEVELS.length - 1, idx + 1)].from} to={LEVELS[Math.min(LEVELS.length - 1, idx + 1)].to} muted locked={(myLevel?.index ?? 0) < idx + 1} />
+          </button>
         </div>
-      </div>
 
-      <div className="max-w-3xl mx-auto px-4">
-        {loading ? (
-          <div className="py-20 text-center text-neutral-500">Cargando ranking…</div>
-        ) : rows.length === 0 ? (
-          <div className="py-20 text-center">
-            <p className="text-neutral-400">Todavía no hay creadores en el ranking.</p>
-            <Link href="/gigs" className="inline-block mt-4 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold">
-              Ver trabajos y empezar
-            </Link>
+        <h1 className="mt-5 text-center text-[34px] font-extrabold tracking-tight">Liga {league.name}</h1>
+
+        {/* barra de XP (solo en tu liga) */}
+        {isMyLeague && myLevel && (
+          <div className="mt-4">
+            <div className="h-3.5 w-full overflow-hidden rounded-full bg-neutral-200/70">
+              <div className={`h-full rounded-full bg-gradient-to-r ${league.from} ${league.to}`} style={{ width: `${Math.max(myLevel.progress, 3)}%` }} />
+            </div>
+            <div className="mt-2 flex items-center justify-between text-[15px]">
+              <span className="font-bold tabular-nums">{myLevel.xp.toLocaleString('es-CL')} / {(myLevel.next?.minXP ?? myLevel.xp).toLocaleString('es-CL')} XP</span>
+              {myLevel.next && (
+                <button onClick={() => setIdx(idx + 1)} className="font-semibold text-neutral-600 active:opacity-60">
+                  Desbloqueá {LEVELS[idx + 1].perks.length} perks con {myLevel.next.name} ›
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* contenido: ranking (tu liga o desbloqueada) o perks (bloqueada) */}
+        {locked ? (
+          <div className="mt-6 space-y-3">
+            {league.perks.map((p, i) => {
+              const Icon = PERK_ICONS[(idx + i) % PERK_ICONS.length]
+              return (
+                <div key={i} className="flex items-center gap-4 rounded-3xl border border-neutral-100 bg-white p-5 shadow-sm">
+                  <Icon className={`h-7 w-7 shrink-0 ${league.text}`} />
+                  <p className="text-lg font-bold leading-snug">{p}</p>
+                </div>
+              )
+            })}
+            <p className="pt-2 text-center text-sm text-neutral-500">
+              Llegá a {league.minXP.toLocaleString('es-CL')} XP para desbloquear la Liga {league.name}
+            </p>
           </div>
         ) : (
-          <>
-            {/* Podio top 3 */}
-            <div className="grid grid-cols-3 gap-3 pt-8 items-end">
-              {[1, 0, 2].map((idx) => {
-                const r = top3[idx]
-                if (!r) return <div key={idx} />
-                const lvl = getLevel(r.xp).level
-                const tall = idx === 0
-                return (
-                  <div key={r.user_id} className={`flex flex-col items-center ${tall ? '-mt-4' : ''}`}>
-                    <div className={`mb-1 w-7 h-7 rounded-full ${PODIUM[idx].bg} ${PODIUM[idx].text} flex items-center justify-center text-sm font-black`}>
-                      {idx + 1}
+          <div className="mt-6">
+            {loading ? (
+              <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-16 animate-pulse rounded-2xl bg-white shadow-sm" />)}</div>
+            ) : inLeague.length === 0 ? (
+              <div className="rounded-3xl border border-neutral-100 bg-white p-8 text-center shadow-sm">
+                <Sparkles className="mx-auto h-10 w-10 text-sky-400" />
+                <p className="mt-3 font-bold">Todavía no hay creadores en esta liga</p>
+                <p className="mt-1 text-sm text-neutral-500">Sé el primero en llegar</p>
+              </div>
+            ) : (
+              <>
+                {top.map((r) => {
+                  const globalRank = rows.findIndex((x) => x.user_id === r.user_id) + 1
+                  const isMe = r.user_id === meId
+                  if (isMe) return null
+                  return (
+                    <div key={r.user_id} className="flex items-center gap-4 py-3">
+                      <span className="w-10 text-right text-xl font-semibold text-neutral-500 tabular-nums">{globalRank}</span>
+                      <Avatar r={r} size={52} />
+                      <p className="min-w-0 flex-1 truncate text-lg font-semibold">{r.name}</p>
+                      <div className="text-right">
+                        <p className="text-lg font-extrabold tabular-nums">{r.xp.toLocaleString('es-CL')} XP</p>
+                        <p className="text-sm text-neutral-500">{r.completed} {r.completed === 1 ? 'trabajo' : 'trabajos'}</p>
+                      </div>
                     </div>
-                    <div className={`rounded-full ring-2 ${PODIUM[idx].ring}`}>
-                      <Avatar r={r} size={tall ? 76 : 60} />
-                    </div>
-                    <p className="mt-2 font-semibold text-sm text-center line-clamp-1 max-w-[100px]">{r.name}</p>
-                    <span className={`mt-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${lvl.chipBg} ${lvl.text}`}>{lvl.name}</span>
-                    <div className={`mt-2 w-full rounded-t-xl bg-gradient-to-b from-neutral-800 to-neutral-900 border border-neutral-800 flex items-center justify-center ${tall ? 'h-24' : 'h-16'}`}>
-                      <span className="text-base font-black text-emerald-400 tabular-nums">{r.xp.toLocaleString("es")}</span><span className="text-[10px] text-neutral-500 block -mt-1">XP</span>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
+                  )
+                })}
 
-            {/* Resto de la lista */}
-            <div className="mt-6 space-y-2">
-              {rest.map((r, i) => {
-                const lvl = getLevel(r.xp).level
-                return (
-                  <div key={r.user_id} className="flex items-center gap-3 bg-neutral-900 border border-neutral-800 rounded-2xl px-4 py-3">
-                    <span className="w-6 text-center font-bold text-neutral-500 tabular-nums">{i + 4}</span>
-                    <Avatar r={r} size={44} />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold truncate flex items-center gap-1">
-                        {r.name}
-                        {r.verified && <span className="text-emerald-400 text-xs">✓</span>}
-                      </p>
-                      {(r.tiktok || r.location) && (
-                        <p className="text-xs text-neutral-500 truncate">
-                          {r.tiktok ? `@${r.tiktok.replace('@', '')}` : ''}{r.tiktok && r.location ? ' · ' : ''}{r.location || ''}
-                        </p>
-                      )}
-                    </div>
-                    <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${lvl.chipBg} ${lvl.text}`}>{lvl.name}</span>
-                    <div className="text-right w-16">
-                      <span className="font-black text-emerald-400 tabular-nums">{r.xp.toLocaleString("es")}</span>
-                      <p className="text-[10px] text-neutral-500 -mt-0.5">XP</p>
+                {inLeague.length > 4 && (
+                  <button onClick={() => setExpanded(!expanded)}
+                    className="mx-auto my-2 flex items-center gap-2 text-neutral-500 active:opacity-60">
+                    <span className="h-px w-16 bg-neutral-200" />
+                    {inLeague.length - 4} creadores más
+                    <ChevronDown className={`h-4 w-4 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+                    <span className="h-px w-16 bg-neutral-200" />
+                  </button>
+                )}
+
+                {/* Vos */}
+                {me && isMyLeague && (
+                  <div className="mt-2 flex items-center gap-4 rounded-3xl border border-sky-200 bg-sky-50/70 px-4 py-4">
+                    <span className="text-xl font-bold text-sky-500 tabular-nums">{myRank}</span>
+                    <span className="rounded-full ring-2 ring-sky-400"><Avatar r={me} size={52} /></span>
+                    <p className="min-w-0 flex-1 truncate text-lg font-bold text-sky-600">Vos</p>
+                    <div className="text-right">
+                      <p className="text-lg font-extrabold text-sky-600 tabular-nums">{me.xp.toLocaleString('es-CL')} XP</p>
+                      <p className="text-sm text-sky-500">{me.completed} {me.completed === 1 ? 'trabajo' : 'trabajos'}</p>
                     </div>
                   </div>
-                )
-              })}
-            </div>
-          </>
+                )}
+              </>
+            )}
+          </div>
         )}
+      </div>
+    </div>
+  )
+}
+
+function Hexagon({ size, from, to, muted, locked }: { size: number; from: string; to: string; muted?: boolean; locked?: boolean }) {
+  return (
+    <div className={`relative ${muted ? 'opacity-70' : ''}`} style={{ width: size, height: size * 1.06 }}>
+      <div className={`absolute inset-0 bg-gradient-to-b ${from} ${to} shadow-lg`}
+        style={{ clipPath: 'polygon(50% 0%, 96% 26%, 96% 74%, 50% 100%, 4% 74%, 4% 26%)' }} />
+      <div className="absolute inset-[12%] bg-white/25"
+        style={{ clipPath: 'polygon(50% 0%, 96% 26%, 96% 74%, 50% 100%, 4% 74%, 4% 26%)' }} />
+      <div className="absolute inset-0 flex items-center justify-center">
+        {locked
+          ? <span className="flex h-[38%] w-[38%] items-center justify-center rounded-full bg-white/85"><Lock className="h-1/2 w-1/2 text-neutral-500" /></span>
+          : <Sparkles className="h-[30%] w-[30%] text-white/90" />}
       </div>
     </div>
   )
@@ -131,10 +192,10 @@ function Avatar({ r, size }: { r: Row; size: number }) {
   return r.avatar ? (
     // eslint-disable-next-line @next/next/no-img-element
     <img src={r.avatar} alt={r.name} width={size} height={size}
-      className="rounded-full object-cover ring-2 ring-neutral-700" style={{ width: size, height: size }} />
+      className="rounded-full object-cover" style={{ width: size, height: size }} />
   ) : (
-    <div className="rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-bold ring-2 ring-neutral-700"
-      style={{ width: size, height: size, fontSize: size * 0.4 }}>
+    <div className="flex items-center justify-center rounded-full bg-neutral-200 font-bold text-neutral-500"
+      style={{ width: size, height: size, fontSize: size * 0.38 }}>
       {r.name.charAt(0).toUpperCase()}
     </div>
   )
