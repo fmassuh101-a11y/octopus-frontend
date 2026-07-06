@@ -206,7 +206,7 @@ export default function GigsPage() {
             )}
             {/* dots */}
             <div className="mt-3 flex justify-center gap-1.5">
-              {[0, 1, 2, 3].map(i => <span key={i} className={`h-1.5 rounded-full ${i === 0 ? 'w-8 bg-sky-400' : 'w-6 bg-neutral-200'}`} />)}
+              {[0, 1, 2, 3].map(i => <span key={i} className={`h-1.5 rounded-full ${i === 0 ? 'w-8 bg-emerald-400' : 'w-6 bg-neutral-200'}`} />)}
             </div>
 
             {/* Browse */}
