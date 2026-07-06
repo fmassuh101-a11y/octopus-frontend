@@ -688,40 +688,6 @@ export default function CreatorAnalyticsPage() {
         />
       )}
 
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-800 z-20">
-        <div className="flex justify-around py-3">
-          <Link href="/gigs" className="flex flex-col items-center space-y-1 text-neutral-500 hover:text-neutral-400 transition">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zM3 16a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-            </svg>
-            <span className="text-xs font-medium">Trabajos</span>
-          </Link>
-
-          <Link href="/creator/dashboard" className="flex flex-col items-center space-y-1 text-neutral-500 hover:text-neutral-400 transition">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
-            </svg>
-            <span className="text-xs font-medium">Panel</span>
-          </Link>
-
-          <div className="flex flex-col items-center space-y-1 text-blue-600">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" />
-              <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" />
-            </svg>
-            <span className="text-xs font-medium">Analytics</span>
-          </div>
-
-          <Link href="/creator/profile" className="flex flex-col items-center space-y-1 text-neutral-500 hover:text-neutral-400 transition">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-            </svg>
-            <span className="text-xs font-medium">Perfil</span>
-          </Link>
-        </div>
-        <div className="h-1 bg-gray-900 mx-auto w-32 rounded-full mb-2"></div>
-      </div>
     </div>
   )
 }
