@@ -1,12 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import CreatorBottomNav from '@/components/ui/CreatorBottomNav'
+import BottomBar from '@/components/oct/BottomBar'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 
-// Shell persistente del creador: el bottom nav se monta UNA sola vez y no se
-// desmonta al navegar entre /gigs y /creator/*. Solo cambia <main>.
-// Esto elimina el flash blanco y el reseteo de scroll (sensación nativa).
+// Shell persistente del creador (estilo SideShift): la barra flotante se monta
+// UNA vez y no se desmonta al navegar. Solo cambia <main>.
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const [unread, setUnread] = useState(0)
 
@@ -22,9 +21,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }, [])
 
   return (
-    <div className="min-h-[100dvh] bg-neutral-950">
+    <div className="min-h-[100dvh] bg-[#F7FAFD]">
       <main>{children}</main>
-      <CreatorBottomNav unread={unread} />
+      <BottomBar unread={unread} />
     </div>
   )
 }
