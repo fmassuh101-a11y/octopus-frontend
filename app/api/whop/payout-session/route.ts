@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { whopClient } from "@/lib/whop";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
-import { shield } from '@/lib/shield'
+import { shieldAsync } from '@/lib/shield'
 
 /**
  * POST /api/whop/payout-session
@@ -11,7 +11,7 @@ import { shield } from '@/lib/shield'
  * Returns: { companyId, needsSetup } or error
  */
 export async function POST(request: NextRequest) {
-  const _blocked = shield(request as unknown as Request, { limit: 20 })
+  const _blocked = await shieldAsync(request as unknown as Request, { limit: 20 })
   if (_blocked) return _blocked
 
   try {

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { getAuthenticatedUser } from '@/lib/auth/apiAuth'
 import { rateLimit } from '@/lib/rateLimit'
-import { shield } from '@/lib/shield'
+import { shieldAsync } from '@/lib/shield'
 
 import { isAdminEmail } from '@/lib/isAdmin'
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
@@ -14,7 +14,7 @@ const VALID_PLANS = ['starter', 'pro', 'scale', 'enterprise']
  * Body: { targetUserId, plan?, discountPercent?, gift? }
  */
 export async function POST(request: NextRequest) {
-  const _blocked = shield(request as unknown as Request, { limit: 15 })
+  const _blocked = await shieldAsync(request as unknown as Request, { limit: 15 })
   if (_blocked) return _blocked
 
   const limited = rateLimit(request, { limit: 30, name: 'admin-set-plan' })

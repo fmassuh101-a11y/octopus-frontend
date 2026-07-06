@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { whopClient, OCTOPUS_COMPANY_ID } from "@/lib/whop";
-import { shield } from '@/lib/shield'
+import { shieldAsync } from '@/lib/shield'
 
 /**
  * Ver balance de Octopus
  * GET /api/whop/balance
  */
 export async function GET(_req: Request) {
-  const _blocked = shield(_req as unknown as Request, { limit: 20 })
+  const _blocked = await shieldAsync(_req as unknown as Request, { limit: 20 })
   if (_blocked) return _blocked
 
   try {

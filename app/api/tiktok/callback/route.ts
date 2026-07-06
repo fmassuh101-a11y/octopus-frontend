@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { shield } from '@/lib/shield'
+import { shieldAsync } from '@/lib/shield'
 
 // TikTok API endpoints
 const TIKTOK_TOKEN_URL = 'https://open.tiktokapis.com/v2/oauth/token/'
@@ -68,7 +68,7 @@ interface TikTokVideo {
 }
 
 export async function POST(request: NextRequest) {
-  const _blocked = shield(request as unknown as Request, { limit: 15 })
+  const _blocked = await shieldAsync(request as unknown as Request, { limit: 15 })
   if (_blocked) return _blocked
 
   try {

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { whopClient } from "@/lib/whop";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { getAuthenticatedUser } from '@/lib/auth/apiAuth'
-import { shield } from '@/lib/shield'
+import { shieldAsync } from '@/lib/shield'
 
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -12,7 +12,7 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
  * (antes filtraba el balance de cualquier userId del query string).
  */
 export async function GET(request: NextRequest) {
-  const _blocked = shield(request as unknown as Request, { limit: 20 })
+  const _blocked = await shieldAsync(request as unknown as Request, { limit: 20 })
   if (_blocked) return _blocked
 
   try {

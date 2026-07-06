@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { SUPABASE_URL } from '@/lib/config/supabase'
 import { getAuthenticatedUser } from '@/lib/auth/apiAuth'
 import { isAdminEmail } from '@/lib/isAdmin'
-import { shield } from '@/lib/shield'
+import { shieldAsync } from '@/lib/shield'
 
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 
@@ -14,7 +14,7 @@ async function requireAdmin(request: NextRequest) {
 
 // GET: lista de disputas + nombres de los involucrados
 export async function GET(request: NextRequest) {
-  const _blocked = shield(request as unknown as Request, { limit: 15 })
+  const _blocked = await shieldAsync(request as unknown as Request, { limit: 15 })
   if (_blocked) return _blocked
 
   const user = await requireAdmin(request)
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
 
 // POST: resolver/descartar una disputa
 export async function POST(request: NextRequest) {
-  const _blocked = shield(request as unknown as Request, { limit: 15 })
+  const _blocked = await shieldAsync(request as unknown as Request, { limit: 15 })
   if (_blocked) return _blocked
 
   const user = await requireAdmin(request)

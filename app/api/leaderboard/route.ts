@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { SUPABASE_URL } from '@/lib/config/supabase'
 import { computeXP, getLevel } from '@/lib/xp'
-import { shield } from '@/lib/shield'
+import { shieldAsync } from '@/lib/shield'
 
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 
@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
 // GET /api/leaderboard — ranking público de creadores por XP.
 // Service key server-side, SOLO campos públicos (nunca email/phone).
 export async function GET(_req: Request) {
-  const _blocked = shield(_req as unknown as Request, { limit: 30 })
+  const _blocked = await shieldAsync(_req as unknown as Request, { limit: 30 })
   if (_blocked) return _blocked
 
   if (!SERVICE_KEY) return NextResponse.json({ creators: [] })

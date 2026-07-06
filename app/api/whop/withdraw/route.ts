@@ -3,7 +3,7 @@ import { whopClient } from "@/lib/whop";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { getAuthenticatedUser } from '@/lib/auth/apiAuth'
 import { rateLimit } from '@/lib/rateLimit'
-import { shield } from '@/lib/shield'
+import { shieldAsync } from '@/lib/shield'
 
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -15,7 +15,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://octopus-frontend-tau
  * El userId se deriva SIEMPRE de la sesión autenticada.
  */
 export async function POST(request: NextRequest) {
-  const _blocked = shield(request as unknown as Request, { limit: 20 })
+  const _blocked = await shieldAsync(request as unknown as Request, { limit: 20 })
   if (_blocked) return _blocked
 
   const limited = rateLimit(request, { limit: 10, name: 'whop-withdraw' })

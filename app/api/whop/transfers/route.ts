@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { transferToCreator, calculatePaymentBreakdown } from "@/lib/whop";
-import { shield } from '@/lib/shield'
+import { shieldAsync } from '@/lib/shield'
 
 /**
  * API para transferir pagos a creadores
@@ -9,7 +9,7 @@ import { shield } from '@/lib/shield'
  */
 
 export async function POST(request: NextRequest) {
-  const _blocked = shield(request as unknown as Request, { limit: 20 })
+  const _blocked = await shieldAsync(request as unknown as Request, { limit: 20 })
   if (_blocked) return _blocked
 
   try {
@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
 
 // GET: Ver desglose de un pago antes de realizarlo
 export async function GET(request: NextRequest) {
-  const _blocked = shield(request as unknown as Request, { limit: 20 })
+  const _blocked = await shieldAsync(request as unknown as Request, { limit: 20 })
   if (_blocked) return _blocked
 
   const { searchParams } = new URL(request.url);
