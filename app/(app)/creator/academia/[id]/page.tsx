@@ -30,7 +30,8 @@ export default function LessonPage() {
   }, [id])
 
   const hasVideo = !!lesson?.video_url
-  const canComplete = alreadyDone || (hasVideo ? pct >= 80 : true)
+  // OBLIGATORIO ver el 80% de un video real. Sin video no se puede completar.
+  const canComplete = alreadyDone || (hasVideo && pct >= 80)
 
   const onTime = () => {
     const v = videoRef.current
@@ -93,6 +94,7 @@ export default function LessonPage() {
             : 'bg-neutral-200 text-neutral-400'}`}>
           {alreadyDone ? <><Check className="h-5 w-5" /> Ya completada</>
             : canComplete ? <><Check className="h-5 w-5" /> Completar lección</>
+            : !hasVideo ? <><Lock className="h-5 w-5" /> Video en preparación</>
             : <><Lock className="h-5 w-5" /> Mirá el 80% para continuar</>}
         </button>
       </div>

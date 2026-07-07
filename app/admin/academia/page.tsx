@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { SEED_LESSONS, type Lesson } from '@/lib/academy'
-import { Plus, Trash2, Save, GraduationCap, Video, ArrowUp, ArrowDown } from 'lucide-react'
+import { Plus, Trash2, Save, GraduationCap, Upload, ArrowUp, ArrowDown, Loader2, X } from 'lucide-react'
 
 const ADMIN_EMAIL = 'fmassuh133@gmail.com'
 
@@ -12,6 +12,7 @@ export default function AdminAcademia() {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
   const [lessons, setLessons] = useState<Lesson[]>([])
   const [saving, setSaving] = useState<string | null>(null)
+  const [uploading, setUploading] = useState<string | null>(null)
 
   const headers = () => {
     const token = localStorage.getItem('sb-access-token')
@@ -49,6 +50,26 @@ export default function AdminAcademia() {
     } catch {}
     setSaving(null)
     load()
+  }
+
+  // subir el archivo de video a Supabase Storage (bucket 'academy') y guardar la URL
+  const upload = async (l: Lesson, file: File) => {
+    setUploading(l.id)
+    try {
+      const token = localStorage.getItem('sb-access-token')
+      const ext = (file.name.split('.').pop() || 'mp4').toLowerCase()
+      const path = `${l.id}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+      const res = await fetch(`${SUPABASE_URL}/storage/v1/object/academy/${path}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY, 'Content-Type': file.type || 'video/mp4', 'x-upsert': 'true' },
+        body: file,
+      })
+      if (!res.ok) { alert('No se pudo subir el video. ¿Corriste el SQL del bucket?'); setUploading(null); return }
+      const url = `${SUPABASE_URL}/storage/v1/object/public/academy/${path}`
+      setField(l.id, 'video_url', url)
+      await save({ ...l, video_url: url })
+    } catch { alert('Error subiendo el video') }
+    setUploading(null)
   }
 
   const remove = async (id: string) => {
@@ -105,10 +126,26 @@ export default function AdminAcademia() {
                 className="mt-2 w-full rounded-xl border border-neutral-700 bg-neutral-950 px-3 py-2.5 font-bold text-white placeholder-neutral-600 focus:outline-none focus:ring-2 focus:ring-cyan-500" />
               <input value={l.subtitle} onChange={(e) => setField(l.id, 'subtitle', e.target.value)} placeholder="Qué aprende (cortito)"
                 className="mt-2 w-full rounded-xl border border-neutral-700 bg-neutral-950 px-3 py-2.5 text-neutral-200 placeholder-neutral-600 focus:outline-none focus:ring-2 focus:ring-cyan-500" />
-              <div className="mt-2 flex items-center gap-2 rounded-xl border border-neutral-700 bg-neutral-950 px-3">
-                <Video className="h-4 w-4 shrink-0 text-neutral-500" />
-                <input value={l.video_url || ''} onChange={(e) => setField(l.id, 'video_url', e.target.value)} placeholder="URL del video (.mp4 o link)"
-                  className="w-full bg-transparent py-2.5 text-sm text-neutral-200 placeholder-neutral-600 focus:outline-none" />
+              {/* video: subir archivo (se ve dentro de la app) */}
+              <div className="mt-2 rounded-xl border border-neutral-700 bg-neutral-950 p-3">
+                {l.video_url ? (
+                  <div className="space-y-2">
+                    <video src={l.video_url} controls playsInline className="aspect-video w-full rounded-lg bg-black" />
+                    <button onClick={() => { setField(l.id, 'video_url', null); save({ ...l, video_url: null }) }}
+                      className="flex items-center gap-1.5 text-xs font-semibold text-red-400 hover:text-red-300">
+                      <X className="h-3.5 w-3.5" /> Quitar video
+                    </button>
+                  </div>
+                ) : (
+                  <label className={`flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed py-6 text-sm font-semibold ${
+                    uploading === l.id ? 'border-cyan-500 text-cyan-400' : 'border-neutral-700 text-neutral-300 hover:border-cyan-600 hover:text-cyan-400'}`}>
+                    {uploading === l.id
+                      ? <><Loader2 className="h-4 w-4 animate-spin" /> Subiendo video…</>
+                      : <><Upload className="h-4 w-4" /> Subir video (mp4)</>}
+                    <input type="file" accept="video/*" className="hidden" disabled={uploading === l.id}
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(l, f) }} />
+                  </label>
+                )}
               </div>
               <button onClick={() => save(l)} disabled={saving === l.id}
                 className="mt-3 flex items-center gap-2 rounded-full bg-gradient-to-b from-[#22D3EE] to-[#0891B2] px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50">
