@@ -144,8 +144,8 @@ export default function CreatorProfile() {
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-50">
             <Award className="h-6 w-6 text-amber-500" />
           </div>
-          <Link href="/creator/misiones" prefetch className="min-w-0 flex-1 active:opacity-70">
-            <p className="font-bold">Misiones y logros</p>
+          <Link href="/creator/academia" prefetch className="min-w-0 flex-1 active:opacity-70">
+            <p className="font-bold">Academia Octopus</p>
             <p className="text-sm text-neutral-500">{doneMissions} de {missions.length} completadas</p>
           </Link>
           <ChevronRight className="h-5 w-5 text-neutral-400" />

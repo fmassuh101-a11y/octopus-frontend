@@ -194,7 +194,8 @@ export default function CreatorHome() {
         )}
 
         {/* tareas de hoy — checks chicos y precisos, animados */}
-        <h2 className="mt-9 text-[26px] font-extrabold tracking-tight">Tus tareas de hoy</h2>
+        <h2 className="mt-9 text-[26px] font-extrabold tracking-tight">Primeros pasos</h2>
+        <p className="mt-0.5 text-sm text-neutral-500">Completalos una vez para arrancar con todo</p>
         <div className="mt-4">
           {missions.map((m, i) => {
             const meta = MISSION_META[m.key] || MISSION_META.apply

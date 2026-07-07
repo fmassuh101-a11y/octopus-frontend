@@ -51,6 +51,20 @@ export default function Sky({
         />
       ))}
 
+      {/* pececitos sutiles (solo océano) */}
+      {kind === 'ocean' && [
+        { x: 20, y: 0.34, s: 1, o: 0.22, flip: false },
+        { x: 72, y: 0.26, s: 0.8, o: 0.18, flip: true },
+        { x: 55, y: 0.46, s: 0.62, o: 0.16, flip: false },
+      ].map((f, i) => (
+        <svg key={i} viewBox="0 0 40 22" className="absolute" aria-hidden
+          style={{ left: `${f.x}%`, top: height * f.y, width: 40 * f.s, opacity: f.o, transform: f.flip ? 'scaleX(-1)' : undefined }}>
+          <path d="M2 11 C10 2, 26 2, 32 11 C26 20, 10 20, 2 11 Z" fill="#fff" />
+          <path d="M32 11 L40 4 L38 11 L40 18 Z" fill="#fff" />
+          <circle cx="10" cy="9" r="1.4" fill={kind === 'ocean' ? '#0891B2' : '#fff'} />
+        </svg>
+      ))}
+
       {/* ondas suaves al pie (2 capas) — reemplazan las nubes */}
       <svg className="absolute inset-x-0 bottom-0 w-full" viewBox="0 0 1440 220" preserveAspectRatio="none" style={{ height: height * 0.72 }}>
         <path d="M0,140 C240,90 480,190 720,150 C960,110 1200,180 1440,130 L1440,220 L0,220 Z" fill={wave} opacity="0.55" />
