@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
-import { Ban, BarChart3, Briefcase, Building2, Calendar, CheckCircle2, CircleDollarSign, Folder, Inbox, MessageCircle, Palette, Search, Users, Wallet } from 'lucide-react'
+import { Ban, BarChart3, Briefcase, Building2, Calendar, CheckCircle2, CircleDollarSign, Folder, GraduationCap, Inbox, MessageCircle, Palette, Search, Users, Wallet } from 'lucide-react'
 
 import { isAdminEmail } from '@/lib/isAdmin'
 const ADMIN_EMAIL = 'fmassuh133@gmail.com'
@@ -832,6 +832,7 @@ export default function AdminDashboard() {
               { id: 'support', label: 'Soporte', icon: MessageCircle, href: '/admin/support' },
               { id: 'companies', label: 'Empresas', icon: Briefcase, href: '/admin/companies' },
               { id: 'contact', label: 'Solicitudes', icon: Inbox, href: '/admin/contact' },
+              { id: 'academia', label: 'Academia', icon: GraduationCap, href: '/admin/academia' },
               { id: 'disputes', label: 'Disputas', icon: Ban, href: '/admin/disputes' },
             ].map((tab) => (
               tab.href ? (

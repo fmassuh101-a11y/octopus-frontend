@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { SEED_LESSONS, type Lesson } from '@/lib/academy'
-import { Plus, Trash2, Save, GraduationCap, Upload, ArrowUp, ArrowDown, Loader2, X } from 'lucide-react'
+import { Plus, Trash2, Save, GraduationCap, Upload, ArrowUp, ArrowDown, Loader2, X, ArrowLeft } from 'lucide-react'
 
 const ADMIN_EMAIL = 'fmassuh133@gmail.com'
 
@@ -103,6 +103,9 @@ export default function AdminAcademia() {
   return (
     <div className="min-h-[100dvh] bg-neutral-950 pb-16 text-white">
       <div className="mx-auto max-w-2xl px-5 pt-8">
+        <a href="/admin" className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-neutral-400 hover:text-white">
+          <ArrowLeft className="h-4 w-4" /> Volver al Admin
+        </a>
         <div className="flex items-center gap-3">
           <GraduationCap className="h-7 w-7 text-cyan-400" />
           <div>
