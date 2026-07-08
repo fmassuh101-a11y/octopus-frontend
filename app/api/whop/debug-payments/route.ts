@@ -28,6 +28,40 @@ export async function GET(request: NextRequest) {
     out.receiptError = e?.message || String(e);
   }
 
+  // ?sub=1 → intenta crear un checkout RECURRENTE y devuelve el error crudo de Whop
+  if (request.nextUrl.searchParams.get("sub") === "1") {
+    try {
+      const cfg: any = await whopClient.checkoutConfigurations.create({
+        plan: {
+          company_id: OCTOPUS_COMPANY_ID,
+          plan_type: "renewal",
+          billing_period: 30,
+          currency: "usd",
+          initial_price: 9.99,
+          renewal_price: 9.99,
+        },
+        metadata: { type: "debug_sub_test" },
+      } as any);
+      out.subTest = { ok: true, planId: cfg?.plan?.id || cfg?.plan_id || null, keys: Object.keys(cfg || {}) };
+    } catch (e: any) {
+      out.subTest = { ok: false, error: e?.message || String(e), status: e?.status || null, body: e?.error || e?.body || null };
+    }
+  }
+
+  // ?wallets=<uuid> → estado del wallet y últimas transacciones de ese usuario (raw de la DB)
+  const wUser = request.nextUrl.searchParams.get("wallets");
+  if (wUser) {
+    const SK = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+    const { SUPABASE_URL } = await import("@/lib/config/supabase");
+    const H = { Authorization: `Bearer ${SK}`, apikey: SK };
+    const wRes = await fetch(`${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${wUser}&select=*`, { headers: H });
+    out.wallet = { status: wRes.status, rows: await wRes.json().catch(() => null) };
+    for (const t of ["transactions", "payments"]) {
+      const tRes = await fetch(`${SUPABASE_URL}/rest/v1/${t}?or=(user_id.eq.${wUser},creator_id.eq.${wUser},to_user_id.eq.${wUser})&order=created_at.desc&limit=5&select=*`, { headers: H });
+      (out as any)[t] = { status: tRes.status, rows: await tRes.text().then((x) => x.slice(0, 900)) };
+    }
+  }
+
   // ?credit=1 → reintenta acreditar el último pago 'paid' de fondeo y devuelve el error CRUDO de la DB
   if (request.nextUrl.searchParams.get("credit") === "1") {
     const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
