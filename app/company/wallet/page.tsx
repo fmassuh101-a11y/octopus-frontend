@@ -203,12 +203,11 @@ export default function CompanyWallet() {
             </p>
           </div>
 
-          {/* Info Box */}
-          <div className="bg-neutral-900/10 backdrop-blur-sm rounded-2xl p-4">
-            <p className="text-sm text-center text-sky-100">
-              Para agregar fondos a tu cuenta, contacta al administrador o realiza una transferencia a nuestra cuenta.
-            </p>
-          </div>
+          {/* Agregar fondos */}
+          <a href="/company/fondear"
+            className="block w-full rounded-2xl bg-white py-3.5 text-center font-bold text-sky-700 shadow-lg transition-transform active:scale-[0.98]">
+            Agregar fondos
+          </a>
         </div>
 
         {/* How It Works */}
@@ -221,7 +220,7 @@ export default function CompanyWallet() {
               </div>
               <div>
                 <p className="font-medium">Agrega fondos</p>
-                <p className="text-sm text-neutral-500">El admin agrega balance a tu cuenta</p>
+                <p className="text-sm text-neutral-500">Deposita con tu tarjeta y el balance queda en tu cuenta</p>
               </div>
             </div>
             <div className="flex gap-4">
@@ -287,20 +286,20 @@ export default function CompanyWallet() {
               </div>
             </div>
 
-            {/* Contact Admin */}
-            <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 rounded-2xl p-6">
+            {/* Agregar fondos */}
+            <a href="/company/fondear" className="block rounded-2xl border border-sky-500/30 bg-gradient-to-r from-sky-500/10 to-blue-500/10 p-6 transition-transform active:scale-[0.99]">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-xl bg-sky-500/20 flex items-center justify-center">
                   <MessageCircle className="w-6 h-6" strokeWidth={2} />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-amber-200">¿Necesitas agregar fondos?</h3>
-                  <p className="text-sm text-amber-300/70">
-                    Contacta al soporte para agregar balance a tu cuenta
+                  <h3 className="font-semibold text-sky-200">¿Necesitas agregar fondos?</h3>
+                  <p className="text-sm text-sky-300/70">
+                    Deposita con tu tarjeta en un minuto
                   </p>
                 </div>
               </div>
-            </div>
+            </a>
           </div>
         )}
 
@@ -347,23 +346,6 @@ export default function CompanyWallet() {
           </div>
         )}
 
-        {/* Fee Info */}
-        <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 text-white placeholder-neutral-500">
-          <h3 className="font-semibold mb-3">Información de Fees</h3>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-neutral-400">Fee de plataforma</span>
-              <span className="text-white font-medium">4.5% por pago</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-neutral-400">El creador recibe</span>
-              <span className="text-emerald-400 font-medium">95.5% del monto</span>
-            </div>
-          </div>
-          <p className="text-xs text-neutral-500 mt-4">
-            Ejemplo: Si pagas $100, el creador recibe $95.50 y $4.50 van a la plataforma.
-          </p>
-        </div>
       </div>
 
       {/* Bottom Navigation */}

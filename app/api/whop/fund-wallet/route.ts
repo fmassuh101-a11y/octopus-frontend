@@ -50,9 +50,12 @@ export async function POST(request: NextRequest) {
       if (r.ok) plan = (await r.json())?.[0]?.company_plan || null;
     } catch {}
 
-    const feePct = brandFeePercent(plan);
-    const fee = Math.round(base * feePct * 100) / 100;
-    const total = Math.round((base + fee) * 100) / 100;
+    // DEPÓSITO LIMPIO: la empresa paga exactamente lo que escribe y eso se le
+    // acredita. El fee de plataforma NO se cobra acá (se aplica según su plan
+    // al usar la plata — nunca se muestra en la UI de depósito).
+    const feePct = 0; void brandFeePercent(plan);
+    const fee = 0;
+    const total = base;
     const fundingId = `fund_${user.id.slice(0, 8)}_${Date.now()}`;
 
     const cfg: any = await whopClient.checkoutConfigurations.create({

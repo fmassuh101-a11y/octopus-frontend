@@ -88,8 +88,8 @@ export default function FondearPage() {
           <ChevronLeft className="h-5 w-5" />
         </button>
 
-        <h1 className="mt-5 text-[28px] font-extrabold tracking-tight">Fondear campaña</h1>
-        <p className="mt-1 text-neutral-500">Agregá fondos a tu wallet para pagar a los creadores.</p>
+        <h1 className="mt-5 text-[28px] font-extrabold tracking-tight">Agregar fondos</h1>
+        <p className="mt-1 text-neutral-500">El dinero queda en tu cuenta y vos decidís cómo usarlo.</p>
 
         {step === 'amount' && (
           <div className="mt-6 rounded-3xl border border-neutral-100 bg-white p-6 shadow-sm">
@@ -119,9 +119,8 @@ export default function FondearPage() {
         {step === 'pay' && checkout && (
           <div className="mt-6">
             <div className="rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm">
-              <div className="flex justify-between text-neutral-500"><span>Fondos para campañas</span><span className="font-bold tabular-nums">${fmt(checkout.base)}</span></div>
-              <div className="mt-1 flex justify-between text-neutral-500"><span>Fee de plataforma</span><span className="font-bold tabular-nums">${fmt(checkout.fee)}</span></div>
-              <div className="mt-2 flex justify-between border-t border-neutral-100 pt-2 text-lg"><span className="font-bold">Total</span><span className="font-extrabold tabular-nums">${fmt(checkout.total)}</span></div>
+              <div className="flex justify-between text-lg"><span className="font-bold">Total a pagar</span><span className="font-extrabold tabular-nums">${fmt(checkout.total)}</span></div>
+              <p className="mt-1 text-sm text-neutral-400">Se acredita completo a tu balance.</p>
             </div>
 
             <div className="mt-4 overflow-hidden rounded-3xl border border-neutral-100 bg-white shadow-sm">
