@@ -37,6 +37,15 @@ export async function GET(request: NextRequest) {
       const items: any[] = payments?.data || [];
       const p = items.find((x) => x?.status === "paid" && x?.metadata?.type === "octopus_fund_wallet");
       if (!p) { out.credit = "no hay pagos de fondeo"; return NextResponse.json(out); }
+      // asegurar wallet con user_type (la tabla lo exige)
+      const H = { Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, apikey: SUPABASE_SERVICE_KEY };
+      const ptRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${p.metadata.octopus_user_id}&select=user_type`, { headers: H });
+      const userType = ((ptRes.ok ? await ptRes.json() : [])[0]?.user_type) || "company";
+      await fetch(`${SUPABASE_URL}/rest/v1/wallets?on_conflict=user_id`, {
+        method: "POST",
+        headers: { ...H, "Content-Type": "application/json", Prefer: "resolution=ignore-duplicates,return=minimal" },
+        body: JSON.stringify({ user_id: p.metadata.octopus_user_id, user_type: userType, balance: 0 }),
+      });
       const rpcRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/oct_apply_topup`, {
         method: "POST",
         headers: {

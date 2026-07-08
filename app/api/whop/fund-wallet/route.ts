@@ -175,7 +175,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "El monto del pago no coincide" }, { status: 400 });
     }
 
-    // 3) acreditar idempotente con el ID REAL del pago
+    // 3) asegurar que el wallet exista (la tabla exige user_type; la RPC no lo setea)
+    try {
+      const ptRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=user_type`, { headers: H });
+      const userType = ((ptRes.ok ? await ptRes.json() : [])[0]?.user_type) || "company";
+      await fetch(`${SUPABASE_URL}/rest/v1/wallets?on_conflict=user_id`, {
+        method: "POST",
+        headers: { ...H, "Content-Type": "application/json", Prefer: "resolution=ignore-duplicates,return=minimal" },
+        body: JSON.stringify({ user_id: user.id, user_type: userType, balance: 0 }),
+      });
+    } catch (e) {
+      console.error("[FundWallet] ensure wallet:", e);
+    }
+
+    // 4) acreditar idempotente con el ID REAL del pago
     const rpcRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/oct_apply_topup`, {
       method: "POST",
       headers: { ...H, "Content-Type": "application/json" },
