@@ -1,5 +1,12 @@
 # GOAL: Integrar pagos Whop en Octopus (modelo escrow) + modelo de plata
 
+## ESTADO (jul 8, tarde): LOS 3 PASOS CONSTRUIDOS Y DESPLEGADOS
+- Paso 1 ✓ /creator/wallet — "Cobrá tu plata" → Activar pagos → connected account + KYC; estados pendiente/verificado.
+- Paso 2 ✓ /creator/wallet — saldo del ledger + hoja de retiro (fee 3.7%/0% Pro, mín $20) → /api/whop/request-withdraw (descuento ATÓMICO por RPC + transfer a la cuenta Whop del creador; si falla queda pending para el admin en Procesar Retiros).
+- Paso 3 ✓ /company/fondear — monto → checkout embebido Whop (con fee tiered 8/5/2%) → verificación del pago contra la API (+ acreditación IDEMPOTENTE por RPC). El release al aprobar YA existía (/api/deliveries/approve + RPC process_payment: wallet empresa → wallet creador).
+- REQUISITO ÚNICO de Felipe antes de probar: correr PAGOS_SETUP_2026-07-08.sql en Supabase (RPCs + tabla wallet_topups + columnas fee).
+- Prueba de punta a punta con $1: empresa fondea $1 en /company/fondear → aprueba una entrega → el creador ve el saldo → (para retirar real: saldo ≥ $20).
+
 Estado base (jul 8): API key CONECTADA y verificada (/api/whop/ping → ok, company "ocotpus", biz_RP3n8m53mpKsdU, PRODUCCIÓN — no hay sandbox). Payouts de la plataforma APROBADOS. Se prueba con montos chicos ($1) y las partes sin plata, gratis.
 
 Modelo (Transfer/escrow): la marca paga → la plata se RETIENE en la plataforma → al aprobar el trabajo, la plata queda como saldo del creador (en nuestro ledger) → el creador RETIRA desde su wallet embebido en la app, y ahí se descuenta el fee. KYC de cada creador lo maneja Whop.
