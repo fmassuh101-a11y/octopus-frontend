@@ -22,7 +22,7 @@ export default function FondearPage() {
   const [amountStr, setAmountStr] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const [checkout, setCheckout] = useState<{ planId: string; sessionId?: string; fundingId: string; base: number; fee: number; total: number } | null>(null)
+  const [checkout, setCheckout] = useState<{ planId: string; sessionId?: string; fundingId: string; base: number; fee: number; total: number; environment?: string } | null>(null)
   const [verifying, setVerifying] = useState(false)
   const [credited, setCredited] = useState(0)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -128,6 +128,7 @@ export default function FondearPage() {
               <WhopCheckoutEmbed
                 planId={checkout.planId}
                 {...(checkout.sessionId ? { sessionId: checkout.sessionId } : {})}
+                {...(checkout.environment === 'sandbox' ? { environment: 'sandbox' } : {})}
                 theme="light"
                 onComplete={() => verify(checkout.fundingId)}
               />

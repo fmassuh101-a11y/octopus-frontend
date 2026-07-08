@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { whopClient, OCTOPUS_COMPANY_ID } from "@/lib/whop";
+import { whopClient, OCTOPUS_COMPANY_ID, WHOP_ENVIRONMENT } from "@/lib/whop";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/config/supabase";
 import { getAuthenticatedUser } from "@/lib/auth/apiAuth";
 import { rateLimit } from "@/lib/rateLimit";
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No se pudo crear el checkout" }, { status: 502 });
     }
 
-    return NextResponse.json({ ok: true, planId, sessionId: cfg?.id || null, fundingId, base, fee, feePct, total });
+    return NextResponse.json({ ok: true, planId, sessionId: cfg?.id || null, fundingId, base, fee, feePct, total, environment: WHOP_ENVIRONMENT });
   } catch (e: any) {
     console.error("[FundWallet] error:", e?.message || e);
     return NextResponse.json({ error: "No se pudo crear el checkout" }, { status: 500 });
