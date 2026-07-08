@@ -49,15 +49,14 @@ export async function POST(request: NextRequest) {
   // 3. Liberar el pago (escrow → creador) si hay monto
   let payment: any = null
   if (amount > 0) {
-    const payRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/process_payment`, {
+    // monto COMPLETO al creador (la comision de Octopus es solo al retirar)
+    const payRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/oct_pay_creator`, {
       method: 'POST',
       headers: H,
       body: JSON.stringify({
-        p_company_id: delivery.company_id,
-        p_creator_id: delivery.creator_id,
+        p_company: delivery.company_id,
+        p_creator: delivery.creator_id,
         p_amount: amount,
-        p_reference_id: delivery.id,
-        p_reference_type: 'delivery',
         p_description: `Pago por contenido aprobado: ${delivery.title || 'entrega'}`,
       }),
     })

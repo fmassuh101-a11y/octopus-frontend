@@ -60,49 +60,31 @@ export async function POST(request: NextRequest) {
   if (payer.user_type !== 'company') return NextResponse.json({ error: 'Solo las empresas pueden pagar' }, { status: 403 })
   if (!creator || creator.user_type !== 'creator') return NextResponse.json({ error: 'Creador no encontrado' }, { status: 404 })
 
-  // CRÍTICO: asegurar que el wallet del creador EXISTA antes de pagar.
-  // (process_payment hace UPDATE — si no hay fila, la plata se debita de la
-  // empresa y no llega a nadie. Bug visto en pruebas del 8 jul.)
-  await fetch(`${SUPABASE_URL}/rest/v1/wallets?on_conflict=user_id`, {
-    method: 'POST',
-    headers: { ...H, Prefer: 'resolution=ignore-duplicates,return=minimal' },
-    body: JSON.stringify({ user_id: creatorId, user_type: 'creator', balance: 0 }),
-  }).catch(() => {})
-
-  // saldo del creador ANTES (para verificar que el pago llegó de verdad)
-  const beforeRes = await fetch(`${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${creatorId}&select=balance`, { headers: H })
-  const beforeBal = Number(((beforeRes.ok ? await beforeRes.json() : [])[0])?.balance) || 0
-
-  // mover la plata (atómico, con chequeo de fondos)
-  const payRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/process_payment`, {
+  // mover la plata (atómico, monto COMPLETO al creador — la comisión de Octopus
+  // se cobra únicamente al RETIRAR, nunca en el pago). Registra los movimientos
+  // para la notificación "te pagaron".
+  const payRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/oct_pay_creator`, {
     method: 'POST',
     headers: H,
     body: JSON.stringify({
-      p_company_id: user.id,
-      p_creator_id: creatorId,
+      p_company: user.id,
+      p_creator: creatorId,
       p_amount: amount,
-      p_reference_id: null,
-      p_reference_type: 'direct_payment',
       p_description: description,
     }),
   })
   const payment = payRes.ok ? await payRes.json() : null
   if (!payment?.success) {
-    return NextResponse.json({
-      error: 'Fondos insuficientes en tu wallet. Agregá fondos y volvé a intentar.',
-      needsFunds: true,
-      amount,
-    }, { status: 402 })
+    if (payment?.error === 'insufficient') {
+      return NextResponse.json({
+        error: 'Fondos insuficientes en tu wallet. Agregá fondos y volvé a intentar.',
+        needsFunds: true,
+        amount,
+      }, { status: 402 })
+    }
+    console.error('[PayCreator] rpc:', payRes.status, JSON.stringify(payment)?.slice(0, 300))
+    return NextResponse.json({ error: 'No se pudo procesar el pago (¿corriste PAGO_DIRECTO_FIX.sql?)' }, { status: 500 })
   }
 
-  // VERIFICAR que el saldo del creador subió de verdad (paranoia sana con plata)
-  const afterRes = await fetch(`${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${creatorId}&select=balance`, { headers: H })
-  const afterBal = Number(((afterRes.ok ? await afterRes.json() : [])[0])?.balance) || 0
-  // (tolera el fee interno de process_payment si lo hay — pero exige que llegue al menos el 90%)
-  if (afterBal < beforeBal + amount * 0.9 - 0.01) {
-    console.error(`[PayCreator] el saldo NO subió: antes=${beforeBal} después=${afterBal} monto=${amount}`)
-    return NextResponse.json({ error: 'El pago no se aplicó correctamente. Avisá al soporte.', }, { status: 500 })
-  }
-
-  return NextResponse.json({ ok: true, amount, creator: creator.full_name, newBalance: afterBal })
+  return NextResponse.json({ ok: true, amount, creator: creator.full_name })
 }

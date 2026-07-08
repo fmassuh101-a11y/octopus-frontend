@@ -14,7 +14,16 @@ import { ChevronLeft, Wallet, ShieldCheck, Clock3, CreditCard, ArrowDownToLine, 
 const MIN_WITHDRAW = 20
 const FEE_PERCENT = 0.037
 
-interface Movement { id?: string; amount: number; fee_amount?: number; net_amount?: number; status: string; created_at: string }
+interface Movement {
+  id?: string
+  amount: number
+  fee_amount?: number
+  net_amount?: number
+  status?: string
+  created_at: string
+  kind?: 'retiro' | 'pago_recibido' | 'pago_enviado'
+  description?: string
+}
 
 export default function CreatorWallet() {
   const router = useRouter()
@@ -38,11 +47,12 @@ export default function CreatorWallet() {
       const token = localStorage.getItem('sb-access-token')
       const sb = { Authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY }
 
-      // saldo del ledger + perfil + movimientos + estado Whop, en paralelo
-      const [wRes, pRes, mRes, whopRes] = await Promise.all([
+      // saldo del ledger + perfil + retiros + pagos recibidos + estado Whop, en paralelo
+      const [wRes, pRes, mRes, pmRes, whopRes] = await Promise.all([
         fetch(`${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${user.id}&select=balance`, { headers: sb }),
         fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=is_pro`, { headers: sb }),
         fetch(`${SUPABASE_URL}/rest/v1/withdrawal_requests?user_id=eq.${user.id}&select=id,amount,fee_amount,net_amount,status,created_at&order=created_at.desc&limit=12`, { headers: sb }),
+        fetch(`${SUPABASE_URL}/rest/v1/wallet_movements?user_id=eq.${user.id}&select=id,amount,kind,description,seen,created_at&order=created_at.desc&limit=12`, { headers: sb }),
         fetch(`/api/whop/creator-balance`, { headers: authHeaders() }),
       ])
       const wallets = wRes.ok ? await wRes.json() : []
@@ -50,7 +60,24 @@ export default function CreatorWallet() {
       const profs = pRes.ok ? await pRes.json() : []
       setIsPro(!!profs?.[0]?.is_pro)
       const mv = mRes.ok ? await mRes.json() : []
-      setMoves(Array.isArray(mv) ? mv : [])
+      const withdrawals: Movement[] = (Array.isArray(mv) ? mv : []).map((m: any) => ({ ...m, kind: 'retiro' as const }))
+      const pays: any[] = pmRes.ok ? await pmRes.json() : []
+      const received: Movement[] = (Array.isArray(pays) ? pays : []).filter((p) => p.kind === 'pago_recibido')
+
+      // NOTIFICACIÓN "te pagaron": pagos nuevos que el creador aún no vio
+      const unseen = received.filter((p: any) => p.seen === false)
+      if (unseen.length) {
+        const total = unseen.reduce((s: number, p: any) => s + (Number(p.amount) || 0), 0)
+        toast(`Te pagaron $${total.toLocaleString('en-US', { minimumFractionDigits: 2 })}`)
+        fetch(`${SUPABASE_URL}/rest/v1/wallet_movements?id=in.(${unseen.map((p: any) => p.id).join(',')})`, {
+          method: 'PATCH',
+          headers: { ...sb, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ seen: true }),
+        }).catch(() => {})
+      }
+
+      const all = [...withdrawals, ...received].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      setMoves(all.slice(0, 15))
       if (whopRes.ok) {
         const whop = await whopRes.json()
         setPayState(whop.needsSetup ? 'none' : whop.kycComplete ? 'ok' : 'kyc')
@@ -79,8 +106,13 @@ export default function CreatorWallet() {
         body: JSON.stringify({ email: user.email, fullName: profile.full_name, existingCompanyId: profile.whop_company_id }),
       })
       const data = await res.json()
-      if (data.kycUrl) { window.location.href = data.kycUrl; return }
-      if (data.companyId) { setPayState('kyc'); toast('Cuenta creada. Continuá con la verificación.') }
+      if (data.kycUrl) {
+        // la verificación de identidad es de Whop (obligatorio legal) — se abre en
+        // OTRA pestaña para que Octopus quede abierto; al volver, "Ya verifiqué".
+        window.open(data.kycUrl, '_blank', 'noopener')
+        setPayState('kyc')
+        toast('Se abrió la verificación en otra pestaña. Al terminar, volvé acá.')
+      } else if (data.companyId) { setPayState('kyc'); toast('Cuenta creada. Continuá con la verificación.') }
       else toast(data.error || 'No se pudo activar. Probá de nuevo.', 'error')
     } catch { toast('No se pudo activar. Probá de nuevo.', 'error') }
     setBusy(false)
@@ -182,6 +214,10 @@ export default function CreatorWallet() {
               {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <ChevronRight className="h-5 w-5" />}
               Continuar verificación
             </button>
+            <button onClick={() => { setLoading(true); load() }}
+              className="mt-2 w-full py-2 text-sm font-bold text-amber-700 active:opacity-70">
+              Ya me verifiqué — actualizar
+            </button>
           </div>
         )}
 
@@ -209,25 +245,36 @@ export default function CreatorWallet() {
               <p className="text-sm text-neutral-400">Cuando retires plata, aparece acá.</p>
             </div>
           ) : (
-            moves.map((m, i) => (
-              <div key={m.id || i} className={`flex items-center justify-between px-5 py-4 ${i > 0 ? 'border-t border-neutral-100' : ''}`}>
-                <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-cyan-50">
-                    <ArrowDownToLine className="h-5 w-5 text-cyan-600" />
-                  </span>
-                  <div>
-                    <p className="font-bold">Retiro</p>
-                    <p className="text-sm text-neutral-400">{new Date(m.created_at).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })}</p>
+            moves.map((m, i) => {
+              const isPay = m.kind === 'pago_recibido'
+              return (
+                <div key={m.id || i} className={`flex items-center justify-between px-5 py-4 ${i > 0 ? 'border-t border-neutral-100' : ''}`}>
+                  <div className="flex items-center gap-3">
+                    <span className={`flex h-10 w-10 items-center justify-center rounded-full ${isPay ? 'bg-emerald-50' : 'bg-cyan-50'}`}>
+                      {isPay
+                        ? <Check className="h-5 w-5 text-emerald-600" strokeWidth={3} />
+                        : <ArrowDownToLine className="h-5 w-5 text-cyan-600" />}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="font-bold">{isPay ? 'Te pagaron' : 'Retiro'}</p>
+                      <p className="truncate text-sm text-neutral-400">
+                        {isPay && m.description ? m.description : new Date(m.created_at).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className={`font-extrabold tabular-nums ${isPay ? 'text-emerald-600' : ''}`}>
+                      {isPay ? '+' : '-'}${fmt(Math.abs(Number(m.amount) || 0))}
+                    </p>
+                    {!isPay && (
+                      <p className={`text-xs font-bold ${m.status === 'completed' ? 'text-emerald-600' : m.status === 'rejected' ? 'text-red-500' : 'text-amber-600'}`}>
+                        {m.status === 'completed' ? 'Enviado' : m.status === 'rejected' ? 'Rechazado' : 'Procesando'}
+                      </p>
+                    )}
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-extrabold tabular-nums">-${fmt(Number(m.amount) || 0)}</p>
-                  <p className={`text-xs font-bold ${m.status === 'completed' ? 'text-emerald-600' : m.status === 'rejected' ? 'text-red-500' : 'text-amber-600'}`}>
-                    {m.status === 'completed' ? 'Enviado' : m.status === 'rejected' ? 'Rechazado' : 'Procesando'}
-                  </p>
-                </div>
-              </div>
-            ))
+              )
+            })
           )}
         </div>
       </div>

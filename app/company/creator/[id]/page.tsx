@@ -900,9 +900,7 @@ export default function CreatorProfilePage() {
                   <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                 </span>
                 <h3 className="mt-4 text-xl font-bold text-white">Pago enviado</h3>
-                <p className="mt-1 text-neutral-400">
-                  {getCreatorName()} recibió ${payAmount.toFixed(2)}{payNewBalance !== null ? ` — su saldo ahora es $${payNewBalance.toFixed(2)}` : ''}.
-                </p>
+                <p className="mt-1 text-neutral-400">{getCreatorName()} recibió ${payAmount.toFixed(2)} completos.</p>
                 <button onClick={resetPay} className="mt-5 w-full rounded-xl bg-neutral-800 py-3 font-bold text-white">Listo</button>
               </div>
             )}
