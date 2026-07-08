@@ -28,7 +28,18 @@ console.log(`[Whop] Ambiente: ${WHOP_ENVIRONMENT}`);
 export const OCTOPUS_COMPANY_ID = process.env.WHOP_OCTOPUS_COMPANY_ID || "";
 
 // Porcentaje de comisión de Octopus (4.7%)
-export const OCTOPUS_FEE_PERCENT = 0.03; // 3% cut de Octopus en payouts Whop
+// Corte de Octopus: 3% para creadores NO-Pro, 0% para Pro (incentiva la suscripción).
+// Se aplica UNA sola vez, al LIBERAR el pago al creador — NO en el depósito de la
+// marca ni en el retiro del creador.
+export const OCTOPUS_FEE_PERCENT = 0.03;
+export function octopusFeePercent(isPro: boolean): number {
+  return isPro ? 0 : OCTOPUS_FEE_PERCENT;
+}
+// Dado el monto de la campaña y si el creador es Pro, cuánto recibe y cuánto es el corte.
+export function splitPayout(amount: number, isPro: boolean): { creator: number; fee: number } {
+  const fee = Math.round(amount * octopusFeePercent(isPro) * 100) / 100;
+  return { creator: Math.round((amount - fee) * 100) / 100, fee };
+}
 
 // Moneda por defecto
 const DEFAULT_CURRENCY: Currency = "usd";
