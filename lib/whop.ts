@@ -4,12 +4,22 @@ import type { Currency } from "@whop/sdk/resources/shared";
 // Cliente de Whop para la plataforma Octopus
 // Documentación: https://docs.whop.com/developer/api/getting-started
 
-if (!process.env.WHOP_API_KEY) {
+// Credenciales de PRUEBA (sandbox.whop.com). Convención de Felipe en Vercel:
+// WHOP_API_KEY_Test / WHOP_OCTOPUS_COMPANY_ID_test — si existen, la app entra en
+// modo SANDBOX automáticamente (plata falsa, tarjetas 4242). Para volver a
+// producción: borrar las variables _Test en Vercel y redeploy. Las de producción
+// (WHOP_API_KEY / WHOP_OCTOPUS_COMPANY_ID) quedan intactas.
+const TEST_KEY =
+  process.env.WHOP_API_KEY_Test || process.env.WHOP_API_KEY_TEST || process.env.WHOP_API_KEY_test || "";
+const TEST_COMPANY_ID =
+  process.env.WHOP_OCTOPUS_COMPANY_ID_test || process.env.WHOP_OCTOPUS_COMPANY_ID_TEST || process.env.WHOP_OCTOPUS_COMPANY_ID_Test || "";
+
+if (!process.env.WHOP_API_KEY && !TEST_KEY) {
   console.warn("WHOP_API_KEY no está configurada");
 }
 
-// Ambiente: "sandbox" o "production"
-export const WHOP_ENVIRONMENT = process.env.WHOP_ENVIRONMENT || "production";
+// Ambiente: sandbox si hay credenciales de test (o si WHOP_ENVIRONMENT=sandbox)
+export const WHOP_ENVIRONMENT = TEST_KEY ? "sandbox" : process.env.WHOP_ENVIRONMENT || "production";
 const isSandbox = WHOP_ENVIRONMENT === "sandbox";
 
 // URL base según ambiente (sandbox = mirror completo para probar sin plata real)
@@ -18,14 +28,15 @@ const BASE_URL = isSandbox
   : "https://api.whop.com/api/v1";
 
 export const whopClient = new Whop({
-  apiKey: process.env.WHOP_API_KEY || "",
+  apiKey: (isSandbox && TEST_KEY ? TEST_KEY : process.env.WHOP_API_KEY) || "",
   baseURL: BASE_URL,
 });
 
 console.log(`[Whop] Ambiente: ${WHOP_ENVIRONMENT}`);
 
-// ID de la compañía de Octopus en Whop (se configura después de crear cuenta)
-export const OCTOPUS_COMPANY_ID = process.env.WHOP_OCTOPUS_COMPANY_ID || "";
+// ID de la compañía de Octopus en Whop (sandbox usa la compañía de test)
+export const OCTOPUS_COMPANY_ID =
+  (isSandbox && TEST_COMPANY_ID ? TEST_COMPANY_ID : process.env.WHOP_OCTOPUS_COMPANY_ID) || "";
 
 // Porcentaje de comisión de Octopus (4.7%)
 // Corte de Octopus: 3.7% para creadores NO-Pro, 0% para Pro (incentiva la suscripción).
