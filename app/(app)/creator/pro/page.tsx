@@ -1,13 +1,20 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import Sky from '@/components/oct/Sky'
 import { toast } from '@/components/oct/toast'
-import { X, Check, Send } from 'lucide-react'
+import { authHeaders } from '@/lib/auth/clientToken'
+import { X, Check, Send, Loader2 } from 'lucide-react'
 
-// Paywall Pro — copia del "Pro creators earn 400% more" de SideShift.
-// Sin cobro real por ahora: el botón avisa que los pagos se conectan pronto.
+const WhopCheckoutEmbed = dynamic(
+  () => import('@whop/checkout/react').then((m: any) => m.WhopCheckoutEmbed),
+  { ssr: false, loading: () => <div className="h-[420px] animate-pulse rounded-2xl bg-neutral-100" /> }
+) as any
+
+// Paywall Pro — suscripción RECURRENTE real vía Whop (mensual/anual).
+// Al confirmarse el pago, el perfil queda is_pro y el fee de retiro pasa a 0%.
 const BENEFITS = [
   { t: 'Postulaciones ilimitadas', d: 'Postulá a todas las campañas que quieras, sin tope diario.' },
   { t: 'Prioridad ante las marcas', d: 'Tu perfil aparece primero en las búsquedas de las empresas.' },
@@ -18,6 +25,39 @@ const BENEFITS = [
 export default function ProPage() {
   const router = useRouter()
   const [plan, setPlan] = useState<'annual' | 'monthly'>('annual')
+  const [busy, setBusy] = useState(false)
+  const [checkout, setCheckout] = useState<{ planId: string; sessionId?: string; subId: string; environment?: string } | null>(null)
+  const doneRef = useRef(false)
+
+  const subscribe = async () => {
+    setBusy(true)
+    try {
+      const res = await fetch('/api/whop/subscribe', {
+        method: 'POST',
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ tier: plan === 'annual' ? 'pro_annual' : 'pro_monthly' }),
+      })
+      const data = await res.json()
+      if (data.ok && data.planId) setCheckout(data)
+      else toast(data.error || 'No se pudo iniciar la suscripción', 'error')
+    } catch { toast('No se pudo iniciar la suscripción', 'error') }
+    setBusy(false)
+  }
+
+  const verify = async (receiptId?: string) => {
+    if (!checkout || doneRef.current) return
+    try {
+      const params = new URLSearchParams({ subId: checkout.subId })
+      if (receiptId) params.set('receiptId', receiptId)
+      const res = await fetch(`/api/whop/subscribe?${params.toString()}`, { headers: authHeaders() })
+      const data = await res.json()
+      if (data.paid) {
+        doneRef.current = true
+        toast('¡Ya sos Pro! Bienvenido al club.')
+        router.push('/creator/dashboard')
+      } else if (data.error) toast(data.error, 'error')
+    } catch {}
+  }
 
   return (
     <div className="relative min-h-[100dvh] bg-white pb-56 text-neutral-900">
@@ -77,8 +117,8 @@ export default function ProPage() {
                 {plan === 'annual' && <Check className="h-3.5 w-3.5 text-white" strokeWidth={3.5} />}
               </span>
               <p className="mt-1 font-bold">Pro Anual</p>
-              <p className="text-lg font-extrabold tabular-nums">$99.990</p>
-              <p className="text-xs text-neutral-500">Solo $8.332 CLP/mes</p>
+              <p className="text-lg font-extrabold tabular-nums">$99/año</p>
+              <p className="text-xs text-neutral-500">Sale $8.25 al mes</p>
             </button>
             <button onClick={() => setPlan('monthly')}
               className={`relative rounded-2xl border-2 p-4 text-left transition-all active:scale-[0.98] ${plan === 'monthly' ? 'border-cyan-400 bg-cyan-50/50' : 'border-neutral-200 bg-white'}`}>
@@ -86,16 +126,42 @@ export default function ProPage() {
                 {plan === 'monthly' && <Check className="h-3.5 w-3.5 text-white" strokeWidth={3.5} />}
               </span>
               <p className="mt-1 font-bold">Pro Mensual</p>
-              <p className="text-lg font-extrabold tabular-nums">$9.990</p>
+              <p className="text-lg font-extrabold tabular-nums">$9.99/mes</p>
               <p className="text-xs text-neutral-500">Flexible, sin ataduras</p>
             </button>
           </div>
-          <button onClick={() => toast('Los pagos se activan muy pronto. Te avisamos.')}
-            className="mt-3 w-full rounded-full bg-gradient-to-b from-[#22D3EE] to-[#0891B2] py-4 text-lg font-bold text-white shadow-lg shadow-cyan-200 transition-transform active:scale-[0.98]">
+          <button onClick={subscribe} disabled={busy}
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-[#22D3EE] to-[#0891B2] py-4 text-lg font-bold text-white shadow-lg shadow-cyan-200 transition-transform active:scale-[0.98] disabled:opacity-60">
+            {busy && <Loader2 className="h-5 w-5 animate-spin" />}
             Suscribirme
           </button>
         </div>
       </div>
+
+      {/* checkout embebido de la suscripción */}
+      {checkout && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center" onClick={() => setCheckout(null)}>
+          <div className="max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white p-4 sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-2 flex items-center justify-between px-1">
+              <p className="text-lg font-extrabold">Suscribirte a Pro</p>
+              <button onClick={() => setCheckout(null)} className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-100" aria-label="Cerrar">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <WhopCheckoutEmbed
+              planId={checkout.planId}
+              {...(checkout.sessionId ? { sessionId: checkout.sessionId } : {})}
+              {...(checkout.environment === 'sandbox' ? { environment: 'sandbox' } : {})}
+              theme="light"
+              skipRedirect
+              onComplete={(_pid: string, receiptId?: string) => verify(receiptId)}
+            />
+            <button onClick={() => verify()} className="mt-3 w-full rounded-full border-2 border-cyan-500 py-3 font-bold text-cyan-700">
+              Ya pagué — verificar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

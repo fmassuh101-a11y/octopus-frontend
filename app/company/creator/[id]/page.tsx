@@ -65,6 +65,16 @@ export default function CreatorProfilePage() {
   const [portfolio, setPortfolio] = useState<any[]>([])
   const [avgRating, setAvgRating] = useState<{ avg: number; count: number } | null>(null)
 
+  // Pagar a creador (directo): fijo o por views (CPM)
+  const [payOpen, setPayOpen] = useState(false)
+  const [payMode, setPayMode] = useState<'fijo' | 'cpm'>('fijo')
+  const [payAmountStr, setPayAmountStr] = useState('')
+  const [payViewsStr, setPayViewsStr] = useState('')
+  const [payCpmStr, setPayCpmStr] = useState('1')
+  const [payStep, setPayStep] = useState<'form' | 'confirm' | 'done'>('form')
+  const [payBusy, setPayBusy] = useState(false)
+  const [payError, setPayError] = useState('')
+
   const getToken = () => localStorage.getItem('sb-access-token')
 
   useEffect(() => {
@@ -202,6 +212,49 @@ export default function CreatorProfilePage() {
     router.push(`/company/messages?creator=${creatorId}`)
   }
 
+  // monto del pago (fijo o calculado por views: views/1000 * CPM)
+  const payViews = Math.max(0, Math.round(parseFloat(payViewsStr) || 0))
+  const payCpm = Math.max(0, parseFloat(payCpmStr) || 0)
+  const payAmount = payMode === 'cpm'
+    ? Math.round((payViews / 1000) * payCpm * 100) / 100
+    : Math.round((parseFloat(payAmountStr) || 0) * 100) / 100
+
+  const confirmPay = async () => {
+    setPayBusy(true)
+    setPayError('')
+    try {
+      const token = getToken()
+      const res = await fetch('/api/payments/pay-creator', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(
+          payMode === 'cpm'
+            ? { creatorId, views: payViews, cpm: payCpm }
+            : { creatorId, amount: payAmount }
+        ),
+      })
+      const data = await res.json()
+      if (data.ok) {
+        setPayStep('done')
+      } else {
+        setPayError(data.error || 'No se pudo procesar el pago')
+        setPayStep('form')
+      }
+    } catch {
+      setPayError('No se pudo procesar el pago')
+      setPayStep('form')
+    }
+    setPayBusy(false)
+  }
+
+  const resetPay = () => {
+    setPayOpen(false)
+    setPayStep('form')
+    setPayAmountStr('')
+    setPayViewsStr('')
+    setPayError('')
+  }
+
   const handleAccept = async (applicationId: string) => {
     const token = getToken()
     if (!token) return
@@ -283,10 +336,16 @@ export default function CreatorProfilePage() {
 
   const getAvatar = () => {
     if (creator?.avatar_url) return creator.avatar_url
+    if ((creator as any)?.profile_photo_url) return (creator as any).profile_photo_url
+    if (creator?.bio?.profilePhoto) return creator.bio.profilePhoto
     if (tiktokAccount?.avatarUrl) return tiktokAccount.avatarUrl
     if (creator?.bio?.avatarUrl) return creator.bio.avatarUrl
     return null
   }
+
+  // redes: columnas del perfil o bio JSON (onboarding las guarda en ambos)
+  const getSocial = (k: 'instagram' | 'tiktok' | 'youtube') =>
+    ((creator as any)?.[k] || creator?.bio?.[k] || '').toString().replace(/^@/, '').trim()
 
   if (loading) {
     return (
@@ -383,12 +442,21 @@ export default function CreatorProfilePage() {
                 </button>
                 <button
                   onClick={handleSendMessage}
-                  className="flex-1 py-2 px-4 bg-emerald-600 hover:bg-emerald-700 rounded-lg font-medium transition flex items-center justify-center gap-2"
+                  className="flex-1 py-2 px-4 bg-neutral-800 hover:bg-neutral-700 rounded-lg font-medium transition flex items-center justify-center gap-2"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                   </svg>
                   Mensaje
+                </button>
+                <button
+                  onClick={() => setPayOpen(true)}
+                  className="flex-1 py-2 px-4 bg-emerald-600 hover:bg-emerald-700 rounded-lg font-bold transition flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Pagar
                 </button>
               </div>
             </div>
@@ -435,7 +503,7 @@ export default function CreatorProfilePage() {
       {/* Social Profiles */}
       <div className="px-4 py-4">
         <h2 className="text-lg font-semibold mb-3">Redes Sociales</h2>
-        {!tiktokAccount && !creator.bio?.instagram && !creator.bio?.linkedin && (
+        {!tiktokAccount && !getSocial('instagram') && !getSocial('tiktok') && !getSocial('youtube') && !creator.bio?.linkedin && (
           <div className="bg-neutral-900 border border-dashed border-neutral-800 rounded-2xl p-6 text-center text-neutral-500 text-sm">
             Este creador aún no conectó sus redes sociales.
           </div>
@@ -493,10 +561,44 @@ export default function CreatorProfilePage() {
             </a>
           )}
 
+          {/* TikTok (usuario simple del onboarding, si no conectó OAuth) */}
+          {!tiktokAccount && getSocial('tiktok') && (
+            <a href={`https://tiktok.com/@${getSocial('tiktok')}`} target="_blank" rel="noopener noreferrer"
+              className="block bg-neutral-900 rounded-2xl p-4 border border-neutral-800 hover:border-neutral-700 transition text-white">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center">
+                  <svg className="w-7 h-7" viewBox="0 0 24 24" fill="white"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/></svg>
+                </div>
+                <div className="flex-1">
+                  <span className="font-semibold">TikTok</span>
+                  <p className="text-neutral-400 text-sm">@{getSocial('tiktok')}</p>
+                </div>
+                <svg className="w-5 h-5 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+              </div>
+            </a>
+          )}
+
+          {/* YouTube */}
+          {getSocial('youtube') && (
+            <a href={`https://youtube.com/@${getSocial('youtube')}`} target="_blank" rel="noopener noreferrer"
+              className="block bg-neutral-900 rounded-2xl p-4 border border-neutral-800 hover:border-neutral-700 transition text-white">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-red-600 rounded-xl flex items-center justify-center">
+                  <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M23.5 6.19a3.02 3.02 0 00-2.12-2.14C19.5 3.55 12 3.55 12 3.55s-7.5 0-9.38.5A3.02 3.02 0 00.5 6.19C0 8.07 0 12 0 12s0 3.93.5 5.81a3.02 3.02 0 002.12 2.14c1.88.5 9.38.5 9.38.5s7.5 0 9.38-.5a3.02 3.02 0 002.12-2.14C24 15.93 24 12 24 12s0-3.93-.5-5.81zM9.55 15.57V8.43L15.82 12l-6.27 3.57z"/></svg>
+                </div>
+                <div className="flex-1">
+                  <span className="font-semibold">YouTube</span>
+                  <p className="text-neutral-400 text-sm">@{getSocial('youtube')}</p>
+                </div>
+                <svg className="w-5 h-5 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+              </div>
+            </a>
+          )}
+
           {/* Instagram */}
-          {creator.bio?.instagram && (
+          {getSocial('instagram') && (
             <a
-              href={`https://instagram.com/${(creator.bio.instagram || '').replace(/^@/, '')}`}
+              href={`https://instagram.com/${getSocial('instagram')}`}
               target="_blank"
               rel="noopener noreferrer"
               className="block bg-neutral-900 rounded-2xl p-4 border border-neutral-800 hover:border-neutral-700 transition text-white placeholder-neutral-500"
@@ -509,7 +611,7 @@ export default function CreatorProfilePage() {
                 </div>
                 <div className="flex-1">
                   <span className="font-semibold">Instagram</span>
-                  <p className="text-neutral-400 text-sm">@{creator.bio.instagram}</p>
+                  <p className="text-neutral-400 text-sm">@{getSocial('instagram')}</p>
                 </div>
                 <svg className="w-5 h-5 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -543,7 +645,7 @@ export default function CreatorProfilePage() {
             </a>
           )}
 
-          {!tiktokAccount && !creator.bio?.instagram && !creator.bio?.linkedin && (
+          {!tiktokAccount && !getSocial('instagram') && !getSocial('tiktok') && !getSocial('youtube') && !creator.bio?.linkedin && (
             <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 text-center text-white placeholder-neutral-500">
               <p className="text-neutral-500">No hay redes sociales conectadas</p>
             </div>
@@ -708,6 +810,101 @@ export default function CreatorProfilePage() {
           </button>
         </div>
       </div>
+
+      {/* Modal: Pagar a creador (fijo o por views/CPM) */}
+      {payOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center" onClick={resetPay}>
+          <div className="w-full max-w-md rounded-t-3xl bg-neutral-900 border border-neutral-800 p-6 sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
+            {payStep === 'form' && (
+              <>
+                <h3 className="text-xl font-bold text-white">Pagar a {getCreatorName()}</h3>
+                <p className="mt-1 text-sm text-neutral-400">El pago sale de tu balance y llega al instante.</p>
+
+                {/* modo */}
+                <div className="mt-4 grid grid-cols-2 gap-2 rounded-xl bg-neutral-800 p-1">
+                  <button onClick={() => setPayMode('fijo')}
+                    className={`rounded-lg py-2 text-sm font-bold transition ${payMode === 'fijo' ? 'bg-emerald-600 text-white' : 'text-neutral-400'}`}>
+                    Monto fijo
+                  </button>
+                  <button onClick={() => setPayMode('cpm')}
+                    className={`rounded-lg py-2 text-sm font-bold transition ${payMode === 'cpm' ? 'bg-emerald-600 text-white' : 'text-neutral-400'}`}>
+                    Por views (CPM)
+                  </button>
+                </div>
+
+                {payMode === 'fijo' ? (
+                  <div className="mt-4 flex items-center gap-2 rounded-xl border border-neutral-700 bg-neutral-950 px-4 py-3">
+                    <span className="text-xl font-extrabold text-neutral-500">$</span>
+                    <input inputMode="decimal" value={payAmountStr}
+                      onChange={(e) => setPayAmountStr(e.target.value.replace(/[^0-9.]/g, ''))}
+                      placeholder="0.00" className="w-full bg-transparent text-xl font-extrabold text-white placeholder-neutral-600 focus:outline-none" />
+                  </div>
+                ) : (
+                  <div className="mt-4 space-y-3">
+                    <div>
+                      <p className="mb-1 text-xs font-bold uppercase tracking-wide text-neutral-500">Views del video</p>
+                      <input inputMode="numeric" value={payViewsStr}
+                        onChange={(e) => setPayViewsStr(e.target.value.replace(/[^0-9]/g, ''))}
+                        placeholder="10000" className="w-full rounded-xl border border-neutral-700 bg-neutral-950 px-4 py-3 text-lg font-bold text-white placeholder-neutral-600 focus:outline-none focus:border-emerald-500" />
+                    </div>
+                    <div>
+                      <p className="mb-1 text-xs font-bold uppercase tracking-wide text-neutral-500">CPM (USD por 1.000 views)</p>
+                      <div className="flex items-center gap-2 rounded-xl border border-neutral-700 bg-neutral-950 px-4 py-3">
+                        <span className="font-extrabold text-neutral-500">$</span>
+                        <input inputMode="decimal" value={payCpmStr}
+                          onChange={(e) => setPayCpmStr(e.target.value.replace(/[^0-9.]/g, ''))}
+                          className="w-full bg-transparent text-lg font-bold text-white focus:outline-none" />
+                      </div>
+                    </div>
+                    <div className="rounded-xl bg-neutral-800/70 px-4 py-3 text-sm text-neutral-300">
+                      {payViews.toLocaleString('en-US')} views × ${payCpm || 0} CPM = <span className="font-extrabold text-emerald-400">${payAmount.toFixed(2)}</span>
+                    </div>
+                  </div>
+                )}
+
+                {payError && <p className="mt-3 text-sm font-semibold text-red-400">{payError}</p>}
+
+                <button onClick={() => payAmount >= 0.5 && setPayStep('confirm')} disabled={payAmount < 0.5}
+                  className="mt-5 w-full rounded-xl bg-emerald-600 py-3.5 font-bold text-white transition hover:bg-emerald-700 disabled:opacity-40">
+                  Continuar — ${payAmount.toFixed(2)}
+                </button>
+                <button onClick={resetPay} className="mt-2 w-full py-2 text-sm font-semibold text-neutral-400">Cancelar</button>
+              </>
+            )}
+
+            {payStep === 'confirm' && (
+              <>
+                <h3 className="text-xl font-bold text-white">¿Confirmás el pago?</h3>
+                <div className="mt-4 rounded-2xl bg-neutral-800/70 p-5 text-center">
+                  <p className="text-neutral-400">Le vas a pagar a</p>
+                  <p className="text-lg font-bold text-white">{getCreatorName()}</p>
+                  <p className="mt-2 text-4xl font-extrabold text-emerald-400">${payAmount.toFixed(2)}</p>
+                  {payMode === 'cpm' && (
+                    <p className="mt-1 text-sm text-neutral-500">{payViews.toLocaleString('en-US')} views × ${payCpm} CPM</p>
+                  )}
+                </div>
+                <p className="mt-3 text-center text-xs text-neutral-500">Esta acción no se puede deshacer.</p>
+                <button onClick={confirmPay} disabled={payBusy}
+                  className="mt-4 w-full rounded-xl bg-emerald-600 py-3.5 font-bold text-white transition hover:bg-emerald-700 disabled:opacity-60">
+                  {payBusy ? 'Pagando…' : `Sí, pagar $${payAmount.toFixed(2)}`}
+                </button>
+                <button onClick={() => setPayStep('form')} disabled={payBusy} className="mt-2 w-full py-2 text-sm font-semibold text-neutral-400">Volver</button>
+              </>
+            )}
+
+            {payStep === 'done' && (
+              <div className="flex flex-col items-center py-4 text-center">
+                <span className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500">
+                  <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                </span>
+                <h3 className="mt-4 text-xl font-bold text-white">Pago enviado</h3>
+                <p className="mt-1 text-neutral-400">{getCreatorName()} ya tiene ${payAmount.toFixed(2)} en su saldo.</p>
+                <button onClick={resetPay} className="mt-5 w-full rounded-xl bg-neutral-800 py-3 font-bold text-white">Listo</button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

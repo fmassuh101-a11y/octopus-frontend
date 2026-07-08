@@ -124,3 +124,6 @@ grant execute on function public.oct_apply_topup(uuid, text, numeric, numeric, n
 -- FIX (jul 8, visto en producción): wallets.user_type es NOT NULL sin default,
 -- lo que rompía el upsert de acreditación. Default para que el ON CONFLICT funcione.
 alter table public.wallets alter column user_type set default 'creator';
+
+-- Suscripciones: plan de la empresa (growth/pro) — el creador usa is_pro
+alter table public.profiles add column if not exists company_plan text;

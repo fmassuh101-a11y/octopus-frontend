@@ -89,6 +89,32 @@ export default function GigsPage() {
       let gigsData: Gig[] | null = null
       let appliedData: string[] | null = null
       if (results[0].ok) { gigsData = await results[0].json(); setGigs(gigsData!) }
+
+      // enriquecer con el perfil de la empresa (nombre + logo/foto) para que las cards se vean vivas
+      if (gigsData && gigsData.length) {
+        try {
+          const ids = Array.from(new Set(gigsData.map((g: any) => g.company_id).filter(Boolean)))
+          if (ids.length) {
+            const pr = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=in.(${ids.join(',')})&select=user_id,company_name,full_name,profile_photo_url,avatar_url,bio`, { headers })
+            if (pr.ok) {
+              const profs = await pr.json()
+              const map = new Map(profs.map((p: any) => {
+                let bioLogo = null
+                try { const b = typeof p.bio === 'string' ? JSON.parse(p.bio) : p.bio; bioLogo = b?.logo || b?.profilePhoto || null } catch {}
+                return [p.user_id, {
+                  name: p.company_name || p.full_name || null,
+                  logo: p.profile_photo_url || p.avatar_url || bioLogo || null,
+                }]
+              }))
+              gigsData = gigsData!.map((g: any) => {
+                const info: any = map.get(g.company_id)
+                return { ...g, company_name: g.company_name || info?.name, company_logo: g.company_logo || info?.logo }
+              })
+              setGigs(gigsData!)
+            }
+          }
+        } catch {}
+      }
       if (results[1]?.ok) {
         const applied = await results[1].json()
         appliedData = applied.map((a: any) => a.gig_id)
@@ -264,10 +290,19 @@ export default function GigsPage() {
                   <button key={gig.id} onClick={() => setSelectedGig(gig)}
                     className="text-left transition-transform active:scale-[0.97]">
                     <div className={`relative aspect-square overflow-hidden rounded-3xl bg-gradient-to-br ${GRADS[idx % GRADS.length]} shadow-sm`}>
-                      {gig.image_url?.startsWith('http') && (
+                      {gig.image_url?.startsWith('http') ? (
                         /* eslint-disable-next-line @next/next/no-img-element */
                         <img src={gig.image_url} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover"
                           onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                      ) : (gig as any).company_logo ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img src={(gig as any).company_logo} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover"
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                      ) : (
+                        /* sin foto: inicial gigante de la empresa, elegante sobre el degradado */
+                        <span className="absolute inset-0 flex items-center justify-center text-[72px] font-extrabold text-white/70">
+                          {(gig.company_name || gig.title || 'O').charAt(0).toUpperCase()}
+                        </span>
                       )}
                       <span className="absolute right-2 top-2 max-w-[calc(100%-16px)] truncate rounded-full bg-neutral-600/60 px-3 py-1.5 text-[13px] font-bold text-white backdrop-blur-sm">
                         {priceLabel(gig)}
@@ -277,9 +312,20 @@ export default function GigsPage() {
                           <Check className="h-3 w-3" strokeWidth={3} /> Postulado
                         </span>
                       )}
+                      {/* chip de la empresa sobre la card */}
+                      <span className="absolute bottom-2 left-2 flex max-w-[calc(100%-16px)] items-center gap-1.5 rounded-full bg-white/90 py-1 pl-1 pr-3 shadow-sm backdrop-blur-sm">
+                        {(gig as any).company_logo ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img src={(gig as any).company_logo} alt="" className="h-5 w-5 rounded-full object-cover" />
+                        ) : (
+                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-cyan-500 text-[10px] font-extrabold text-white">
+                            {(gig.company_name || 'E').charAt(0).toUpperCase()}
+                          </span>
+                        )}
+                        <span className="truncate text-[12px] font-bold text-neutral-800">{gig.company_name || 'Empresa'}</span>
+                      </span>
                     </div>
-                    <p className="mt-2 truncate text-[15px] text-neutral-500">{gig.company_name || 'Empresa'}</p>
-                    <p className="truncate text-[17px] font-bold leading-tight">{gig.title}</p>
+                    <p className="mt-2 truncate text-[17px] font-bold leading-tight">{gig.title}</p>
                   </button>
                 ))}
             </div>
