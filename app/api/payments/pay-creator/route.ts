@@ -60,6 +60,19 @@ export async function POST(request: NextRequest) {
   if (payer.user_type !== 'company') return NextResponse.json({ error: 'Solo las empresas pueden pagar' }, { status: 403 })
   if (!creator || creator.user_type !== 'creator') return NextResponse.json({ error: 'Creador no encontrado' }, { status: 404 })
 
+  // CRÍTICO: asegurar que el wallet del creador EXISTA antes de pagar.
+  // (process_payment hace UPDATE — si no hay fila, la plata se debita de la
+  // empresa y no llega a nadie. Bug visto en pruebas del 8 jul.)
+  await fetch(`${SUPABASE_URL}/rest/v1/wallets?on_conflict=user_id`, {
+    method: 'POST',
+    headers: { ...H, Prefer: 'resolution=ignore-duplicates,return=minimal' },
+    body: JSON.stringify({ user_id: creatorId, user_type: 'creator', balance: 0 }),
+  }).catch(() => {})
+
+  // saldo del creador ANTES (para verificar que el pago llegó de verdad)
+  const beforeRes = await fetch(`${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${creatorId}&select=balance`, { headers: H })
+  const beforeBal = Number(((beforeRes.ok ? await beforeRes.json() : [])[0])?.balance) || 0
+
   // mover la plata (atómico, con chequeo de fondos)
   const payRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/process_payment`, {
     method: 'POST',
@@ -82,5 +95,14 @@ export async function POST(request: NextRequest) {
     }, { status: 402 })
   }
 
-  return NextResponse.json({ ok: true, amount, creator: creator.full_name })
+  // VERIFICAR que el saldo del creador subió de verdad (paranoia sana con plata)
+  const afterRes = await fetch(`${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${creatorId}&select=balance`, { headers: H })
+  const afterBal = Number(((afterRes.ok ? await afterRes.json() : [])[0])?.balance) || 0
+  // (tolera el fee interno de process_payment si lo hay — pero exige que llegue al menos el 90%)
+  if (afterBal < beforeBal + amount * 0.9 - 0.01) {
+    console.error(`[PayCreator] el saldo NO subió: antes=${beforeBal} después=${afterBal} monto=${amount}`)
+    return NextResponse.json({ error: 'El pago no se aplicó correctamente. Avisá al soporte.', }, { status: 500 })
+  }
+
+  return NextResponse.json({ ok: true, amount, creator: creator.full_name, newBalance: afterBal })
 }

@@ -74,6 +74,7 @@ export default function CreatorProfilePage() {
   const [payStep, setPayStep] = useState<'form' | 'confirm' | 'done'>('form')
   const [payBusy, setPayBusy] = useState(false)
   const [payError, setPayError] = useState('')
+  const [payNewBalance, setPayNewBalance] = useState<number | null>(null)
 
   const getToken = () => localStorage.getItem('sb-access-token')
 
@@ -235,6 +236,7 @@ export default function CreatorProfilePage() {
       })
       const data = await res.json()
       if (data.ok) {
+        setPayNewBalance(typeof data.newBalance === 'number' ? data.newBalance : null)
         setPayStep('done')
       } else {
         setPayError(data.error || 'No se pudo procesar el pago')
@@ -898,7 +900,9 @@ export default function CreatorProfilePage() {
                   <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                 </span>
                 <h3 className="mt-4 text-xl font-bold text-white">Pago enviado</h3>
-                <p className="mt-1 text-neutral-400">{getCreatorName()} ya tiene ${payAmount.toFixed(2)} en su saldo.</p>
+                <p className="mt-1 text-neutral-400">
+                  {getCreatorName()} recibió ${payAmount.toFixed(2)}{payNewBalance !== null ? ` — su saldo ahora es $${payNewBalance.toFixed(2)}` : ''}.
+                </p>
                 <button onClick={resetPay} className="mt-5 w-full rounded-xl bg-neutral-800 py-3 font-bold text-white">Listo</button>
               </div>
             )}

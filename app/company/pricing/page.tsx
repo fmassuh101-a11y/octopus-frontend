@@ -2,9 +2,16 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Check, Sparkles, Gift } from 'lucide-react'
+import dynamic from 'next/dynamic'
+import { Check, Sparkles, Gift, X, Loader2 } from 'lucide-react'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { authHeaders } from '@/lib/auth/clientToken'
 import { getPlan } from '@/lib/plans'
+
+const WhopCheckoutEmbed = dynamic(
+  () => import('@whop/checkout/react').then((m: any) => m.WhopCheckoutEmbed),
+  { ssr: false, loading: () => <div className="h-[420px] animate-pulse rounded-2xl bg-neutral-800" /> }
+) as any
 
 // Periodos de facturación — más largo, más descuento (que "tenga sentido").
 // Por defecto mostramos ANUAL (con descuento) para anclar el precio bajo.
@@ -43,6 +50,40 @@ export default function CompanyPricing() {
   const [myProfile, setMyProfile] = useState<any>(null)
   const [customOffer, setCustomOffer] = useState<any>(null)
   const [acceptingOffer, setAcceptingOffer] = useState(false)
+
+  // checkout de suscripción (Whop)
+  const [subBusy, setSubBusy] = useState<string | null>(null)
+  const [subCheckout, setSubCheckout] = useState<{ planId: string; sessionId?: string; subId: string; label?: string; price?: number; environment?: string } | null>(null)
+
+  const startSubscription = async (planKey: string) => {
+    setSubBusy(planKey)
+    try {
+      const res = await fetch('/api/whop/subscribe', {
+        method: 'POST',
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ tier: `company_${planKey}`, period: periodKey }),
+      })
+      const data = await res.json()
+      if (data.ok && data.planId) setSubCheckout(data)
+      else alert(data.error || 'No se pudo iniciar la suscripción')
+    } catch { alert('No se pudo iniciar la suscripción') }
+    setSubBusy(null)
+  }
+
+  const verifySub = async (receiptId?: string) => {
+    if (!subCheckout) return
+    try {
+      const params = new URLSearchParams({ subId: subCheckout.subId })
+      if (receiptId) params.set('receiptId', receiptId)
+      const res = await fetch(`/api/whop/subscribe?${params.toString()}`, { headers: authHeaders() })
+      const data = await res.json()
+      if (data.paid) {
+        setSubCheckout(null)
+        alert('¡Plan activado! Bienvenido.')
+        window.location.reload()
+      } else if (data.error) alert(data.error)
+    } catch {}
+  }
 
   useEffect(() => {
     const token = localStorage.getItem('sb-access-token')
@@ -234,13 +275,15 @@ export default function CompanyPricing() {
                   </Link>
                 ) : (
                   <button
-                    className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-colors ${
+                    onClick={() => plan.monthly ? startSubscription(plan.key) : null}
+                    disabled={subBusy === plan.key}
+                    className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-colors disabled:opacity-60 ${
                       currentPlanKey !== 'starter'
                         ? 'border border-neutral-700 hover:bg-neutral-800 text-neutral-300'
                         : plan.highlight ? 'bg-emerald-500 hover:bg-emerald-600 text-white' : 'bg-neutral-800 hover:bg-neutral-700 text-white'
                     }`}
                   >
-                    {currentPlanKey !== 'starter' ? 'Cambiar a este plan' : plan.cta}
+                    {subBusy === plan.key ? 'Cargando…' : currentPlanKey !== 'starter' ? 'Cambiar a este plan' : plan.cta}
                   </button>
                 )}
 
@@ -261,6 +304,34 @@ export default function CompanyPricing() {
           La comisión por pago baja según tu plan: Starter 7% · Pro 4.7% · Scale 2.3% · Enterprise hasta 0%.
         </p>
       </div>
+
+      {/* checkout embebido de la suscripción */}
+      {subCheckout && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 sm:items-center" onClick={() => setSubCheckout(null)}>
+          <div className="max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white p-4 sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-2 flex items-center justify-between px-1">
+              <div>
+                <p className="text-lg font-extrabold text-neutral-900">{subCheckout.label || 'Suscribirte'}</p>
+                {subCheckout.price ? <p className="text-sm text-neutral-500">${subCheckout.price} por período</p> : null}
+              </div>
+              <button onClick={() => setSubCheckout(null)} className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-100 text-neutral-700" aria-label="Cerrar">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <WhopCheckoutEmbed
+              planId={subCheckout.planId}
+              {...(subCheckout.sessionId ? { sessionId: subCheckout.sessionId } : {})}
+              {...(subCheckout.environment === 'sandbox' ? { environment: 'sandbox' } : {})}
+              theme="light"
+              skipRedirect
+              onComplete={(_pid: string, receiptId?: string) => verifySub(receiptId)}
+            />
+            <button onClick={() => verifySub()} className="mt-3 w-full rounded-full border-2 border-emerald-500 py-3 font-bold text-emerald-600">
+              Ya pagué — verificar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -7,14 +7,19 @@ import { shieldAsync } from "@/lib/shield";
 
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// Suscripciones RECURRENTES (Whop cobra solo cada período):
-// creador Pro (mensual/anual) + planes de empresa. Al confirmarse el pago,
-// se activa el flag en el perfil (is_pro / company_plan).
-const TIERS: Record<string, { price: number; period: number; label: string; apply: Record<string, any> }> = {
-  pro_monthly: { price: 9.99, period: 30, label: "Octopus Pro (mensual)", apply: { is_pro: true } },
-  pro_annual: { price: 99, period: 365, label: "Octopus Pro (anual)", apply: { is_pro: true } },
-  company_growth: { price: 49, period: 30, label: "Plan Crecimiento (empresa)", apply: { company_plan: "growth" } },
-  company_pro: { price: 199, period: 30, label: "Plan Pro (empresa)", apply: { company_plan: "pro" } },
+// Suscripciones RECURRENTES (Whop cobra solo cada período).
+// Creador Pro: precios fijos. Empresa: precio calculado EN EL SERVER según
+// plan (pro/scale) + período (anual -30% / semestral -15% / mensual) + descuento
+// personal del perfil — nunca se confía en un precio del cliente.
+const CREATOR_TIERS: Record<string, { price: number; period: number; label: string }> = {
+  pro_monthly: { price: 9.99, period: 30, label: "Octopus Pro (mensual)" },
+  pro_annual: { price: 99, period: 365, label: "Octopus Pro (anual)" },
+};
+const COMPANY_MONTHLY: Record<string, number> = { pro: 99, scale: 499 };
+const PERIODS: Record<string, { months: number; off: number; label: string }> = {
+  mensual: { months: 1, off: 0, label: "mensual" },
+  semestral: { months: 6, off: 0.15, label: "semestral" },
+  anual: { months: 12, off: 0.30, label: "anual" },
 };
 
 export async function POST(request: NextRequest) {
@@ -29,8 +34,33 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json().catch(() => ({}));
     const tierKey = String(body?.tier || "");
-    const tier = TIERS[tierKey];
-    if (!tier) return NextResponse.json({ error: "Plan inválido" }, { status: 400 });
+
+    let tier: { price: number; period: number; label: string } | null = null;
+    if (CREATOR_TIERS[tierKey]) {
+      tier = CREATOR_TIERS[tierKey];
+    } else if (tierKey.startsWith("company_")) {
+      const planKey = tierKey.replace("company_", ""); // pro | scale
+      const monthly = COMPANY_MONTHLY[planKey];
+      const per = PERIODS[String(body?.period || "mensual")];
+      if (monthly && per) {
+        // descuento personal regalado por el admin (profiles.discount_percent)
+        let personal = 0;
+        try {
+          const apiKey = SUPABASE_SERVICE_KEY || "";
+          const r = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=discount_percent`, {
+            headers: { Authorization: `Bearer ${apiKey}`, apikey: apiKey },
+          });
+          if (r.ok) personal = Number(((await r.json())[0])?.discount_percent) || 0;
+        } catch {}
+        const monthlyEff = Math.round(monthly * (1 - per.off) * (1 - Math.min(90, Math.max(0, personal)) / 100));
+        tier = {
+          price: monthlyEff * per.months,
+          period: per.months * 30,
+          label: `Plan ${planKey === "pro" ? "Pro" : "Scale"} empresa (${per.label})`,
+        };
+      }
+    }
+    if (!tier || tier.price <= 0) return NextResponse.json({ error: "Plan inválido" }, { status: 400 });
 
     const subId = `sub_${user.id.slice(0, 8)}_${Date.now()}`;
     const cfg: any = await whopClient.checkoutConfigurations.create({
@@ -41,6 +71,12 @@ export async function POST(request: NextRequest) {
         currency: "usd",
         initial_price: tier.price,
         renewal_price: tier.price,
+        title: tier.label,
+        // Whop exige un producto para planes recurrentes — uno fijo por tier
+        product: {
+          external_identifier: `octopus_${tierKey}`,
+          title: tier.label,
+        },
       },
       metadata: {
         type: "octopus_subscription",
@@ -98,8 +134,12 @@ export async function GET(request: NextRequest) {
     if (payment.metadata?.octopus_user_id !== user.id) {
       return NextResponse.json({ error: "Esta suscripción no es tuya" }, { status: 403 });
     }
-    const tier = TIERS[String(payment.metadata?.tier || "")];
-    if (!tier) return NextResponse.json({ error: "Plan desconocido" }, { status: 400 });
+    const paidTier = String(payment.metadata?.tier || "");
+    let apply: Record<string, any> | null = null;
+    if (CREATOR_TIERS[paidTier]) apply = { is_pro: true };
+    else if (paidTier === "company_pro") apply = { plan: "pro", plan_source: "whop" };
+    else if (paidTier === "company_scale") apply = { plan: "scale", plan_source: "whop" };
+    if (!apply) return NextResponse.json({ error: "Plan desconocido" }, { status: 400 });
 
     // activar el plan en el perfil
     const up = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}`, {
@@ -109,7 +149,7 @@ export async function GET(request: NextRequest) {
         Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
         apikey: SUPABASE_SERVICE_KEY,
       },
-      body: JSON.stringify(tier.apply),
+      body: JSON.stringify(apply),
     });
     if (!up.ok) {
       const t = await up.text();
@@ -118,7 +158,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Pago recibido pero no se pudo activar el plan (avisá al admin)" }, { status: 500 });
     }
 
-    return NextResponse.json({ ok: true, paid: true, tier: payment.metadata.tier, label: tier.label });
+    return NextResponse.json({ ok: true, paid: true, tier: paidTier });
   } catch (e: any) {
     console.error("[Subscribe] verify:", e?.message || e);
     return NextResponse.json({ error: "Error verificando la suscripción" }, { status: 500 });
