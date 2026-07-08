@@ -28,10 +28,11 @@ console.log(`[Whop] Ambiente: ${WHOP_ENVIRONMENT}`);
 export const OCTOPUS_COMPANY_ID = process.env.WHOP_OCTOPUS_COMPANY_ID || "";
 
 // Porcentaje de comisión de Octopus (4.7%)
-// Corte de Octopus: 3% para creadores NO-Pro, 0% para Pro (incentiva la suscripción).
-// Se aplica UNA sola vez, al LIBERAR el pago al creador — NO en el depósito de la
-// marca ni en el retiro del creador.
-export const OCTOPUS_FEE_PERCENT = 0.03;
+// Corte de Octopus: 3.7% para creadores NO-Pro, 0% para Pro (incentiva la suscripción).
+// Se aplica UNA sola vez, AL RETIRAR — el creador ve su saldo completo hasta el cashout.
+// Sin cargo fijo nuestro (Whop ya tiene el suyo); mínimo de retiro para proteger montos chicos.
+export const OCTOPUS_FEE_PERCENT = 0.037;
+export const MIN_WITHDRAW_USD = 20;
 export function octopusFeePercent(isPro: boolean): number {
   return isPro ? 0 : OCTOPUS_FEE_PERCENT;
 }
