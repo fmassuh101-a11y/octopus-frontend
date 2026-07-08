@@ -109,21 +109,22 @@ export async function GET(request: NextRequest) {
       { headers: H }
     );
     const preRows = preRes.ok ? await preRes.json() : [];
-    const pre = preRows[0];
-    if (!pre) return NextResponse.json({ error: "Depósito no encontrado" }, { status: 404 });
-    const base = Math.round(Number(pre.base_amount) * 100) / 100;
-    const expectedTotal = Math.round(Number(pre.total_paid) * 100) / 100;
+    const pre = preRows[0] || null;
+    // si no hay pre-ficha (checkout creado con una versión anterior), más abajo usamos
+    // la metadata del pago — que también la escribió NUESTRO servidor al crear el checkout.
+    let base = pre ? Math.round(Number(pre.base_amount) * 100) / 100 : 0;
+    let expectedTotal = pre ? Math.round(Number(pre.total_paid) * 100) / 100 : 0;
 
-    // 2) confirmar el pago contra Whop
-    const amountMatches = (p: any) => {
-      const cands = [p?.total, p?.final_amount, p?.subtotal, p?.amount, p?.usd_amount]
-        .map((v: any) => Number(v))
-        .filter((v: number) => Number.isFinite(v) && v > 0);
-      // acepta dólares o centavos
-      return cands.some((v: number) => Math.abs(v - expectedTotal) < 0.011 || Math.abs(v / 100 - expectedTotal) < 0.011);
-    };
+    // 2) confirmar el pago contra Whop (forma real verificada: status "paid", total en dólares,
+    //    metadata propagada del checkout con funding_id/base_amount/octopus_user_id)
     const isPaid = (p: any) => ["succeeded", "paid", "completed", "successful"].includes(String(p?.status || "").toLowerCase());
     const metaOf = (p: any) => p?.metadata || p?.checkout_configuration?.metadata || p?.plan?.metadata || {};
+    const amountMatches = (p: any, expected: number) => {
+      const cands = [p?.total, p?.usd_total, p?.subtotal, p?.final_amount, p?.amount]
+        .map((v: any) => Number(v))
+        .filter((v: number) => Number.isFinite(v) && v > 0);
+      return cands.some((v: number) => Math.abs(v - expected) < 0.011 || Math.abs(v / 100 - expected) < 0.011);
+    };
 
     let payment: any = null;
 
@@ -131,19 +132,19 @@ export async function GET(request: NextRequest) {
     if (receiptId) {
       try {
         const p: any = await (whopClient as any).payments.retrieve(receiptId);
-        if (p && isPaid(p) && amountMatches(p)) payment = p;
+        if (p && isPaid(p)) payment = p;
       } catch (e) {
         console.error("[FundWallet] payments.retrieve:", e);
       }
     }
 
-    // 2b) respaldo: buscar en la lista por metadata o plan
+    // 2b) respaldo: buscar en la lista por metadata (funding_id) o plan
     if (!payment) {
       try {
         const payments: any = await whopClient.payments.list({ company_id: OCTOPUS_COMPANY_ID } as any);
         const items: any[] = payments?.data || payments?.items || (Array.isArray(payments) ? payments : []);
         payment = items.find((p) => {
-          if (!isPaid(p) || !amountMatches(p)) return false;
+          if (!isPaid(p)) return false;
           const m = metaOf(p);
           if (m?.funding_id === fundingId) return true;
           if (planId && (p?.plan_id === planId || p?.plan?.id === planId)) return true;
@@ -155,6 +156,24 @@ export async function GET(request: NextRequest) {
     }
 
     if (!payment) return NextResponse.json({ ok: true, paid: false });
+
+    // seguridad de identidad y monto:
+    const pMeta = metaOf(payment);
+    if (pMeta?.octopus_user_id && pMeta.octopus_user_id !== user.id) {
+      return NextResponse.json({ error: "Este pago no es tuyo" }, { status: 403 });
+    }
+    if (!pre) {
+      // sin pre-ficha: montos desde la metadata que escribió NUESTRO servidor al crear el checkout
+      const mBase = Math.round(Number(pMeta?.base_amount) * 100) / 100;
+      if (!Number.isFinite(mBase) || mBase <= 0 || pMeta?.octopus_user_id !== user.id) {
+        return NextResponse.json({ error: "Depósito no verificable" }, { status: 400 });
+      }
+      base = mBase;
+      expectedTotal = mBase;
+    }
+    if (!amountMatches(payment, expectedTotal)) {
+      return NextResponse.json({ error: "El monto del pago no coincide" }, { status: 400 });
+    }
 
     // 3) acreditar idempotente con el ID REAL del pago
     const rpcRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/oct_apply_topup`, {

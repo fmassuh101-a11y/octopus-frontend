@@ -67,6 +67,7 @@ export default function FondearPage() {
         router.push(`/company/fondear/exito?monto=${encodeURIComponent(String(data.amount || c.base))}`)
         return true
       }
+      if (data.error) setError(data.error) // mostrar el motivo real del servidor
     } catch {}
     return false
   }
@@ -74,8 +75,9 @@ export default function FondearPage() {
   const manualVerify = async () => {
     if (!checkout) return
     setVerifying(true)
+    setError('')
     const ok = await verify(checkout)
-    if (!ok) setError('Todavía no vemos el pago. Si ya pagaste, esperá unos segundos y probá de nuevo.')
+    if (!ok) setError((prev) => prev || 'Todavía no vemos el pago. Si ya pagaste, esperá unos segundos y probá de nuevo.')
     setVerifying(false)
   }
 
