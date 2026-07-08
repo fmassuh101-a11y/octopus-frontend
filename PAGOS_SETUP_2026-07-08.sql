@@ -120,3 +120,7 @@ $$;
 revoke all on function public.oct_apply_topup(uuid, text, numeric, numeric, numeric) from public;
 revoke all on function public.oct_apply_topup(uuid, text, numeric, numeric, numeric) from authenticated;
 grant execute on function public.oct_apply_topup(uuid, text, numeric, numeric, numeric) to service_role;
+
+-- FIX (jul 8, visto en producción): wallets.user_type es NOT NULL sin default,
+-- lo que rompía el upsert de acreditación. Default para que el ON CONFLICT funcione.
+alter table public.wallets alter column user_type set default 'creator';
