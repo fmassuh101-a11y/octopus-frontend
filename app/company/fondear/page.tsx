@@ -6,26 +6,27 @@ import dynamic from 'next/dynamic'
 import { authHeaders } from '@/lib/auth/clientToken'
 import { ChevronLeft, CreditCard, Check, Loader2, ShieldCheck } from 'lucide-react'
 
-// Fondear wallet de la empresa — Paso 3 del flujo de pagos.
-// La empresa paga (monto + fee de plataforma) con el checkout embebido de Whop;
-// verificamos el pago contra la API y el saldo se acredita al wallet.
+// Agregar fondos — la empresa deposita a SU cuenta y decide cómo usarlo.
+// Checkout embebido de Whop; al completar, verificamos el pago por su receipt id
+// y redirigimos a la página de felicitaciones.
 const WhopCheckoutEmbed = dynamic(
   () => import('@whop/checkout/react').then((m: any) => m.WhopCheckoutEmbed),
   { ssr: false, loading: () => <div className="h-[420px] animate-pulse rounded-2xl bg-neutral-100" /> }
 ) as any
 
-type Step = 'amount' | 'pay' | 'done'
+interface CheckoutData { planId: string; sessionId?: string; fundingId: string; base: number; total: number; environment?: string }
 
 export default function FondearPage() {
   const router = useRouter()
-  const [step, setStep] = useState<Step>('amount')
+  const [step, setStep] = useState<'amount' | 'pay'>('amount')
   const [amountStr, setAmountStr] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const [checkout, setCheckout] = useState<{ planId: string; sessionId?: string; fundingId: string; base: number; fee: number; total: number; environment?: string } | null>(null)
+  const [checkout, setCheckout] = useState<CheckoutData | null>(null)
   const [verifying, setVerifying] = useState(false)
-  const [credited, setCredited] = useState(0)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const doneRef = useRef(false)
+  const receiptRef = useRef<string>('')
 
   useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current) }, [])
 
@@ -44,37 +45,36 @@ export default function FondearPage() {
       if (data.ok && data.planId) {
         setCheckout(data)
         setStep('pay')
-        startPolling(data.fundingId)
+        // el objeto va DIRECTO al polling (nada de estado viejo)
+        if (pollRef.current) clearInterval(pollRef.current)
+        pollRef.current = setInterval(() => verify(data), 5000)
       } else setError(data.error || 'No se pudo crear el pago')
     } catch { setError('No se pudo crear el pago') }
     setBusy(false)
   }
 
-  // verificar el pago contra la API de Whop (sin depender de webhooks)
-  const verify = async (fundingId: string): Promise<boolean> => {
+  // verificar contra la API de Whop (receipt id si lo tenemos + respaldo por lista)
+  const verify = async (c: CheckoutData): Promise<boolean> => {
+    if (doneRef.current) return true
     try {
-      const extra = checkout ? `&sessionId=${encodeURIComponent(checkout.sessionId || '')}&planId=${encodeURIComponent(checkout.planId || '')}` : ''
-      const res = await fetch(`/api/whop/fund-wallet?fundingId=${encodeURIComponent(fundingId)}${extra}`, { headers: authHeaders() })
+      const params = new URLSearchParams({ fundingId: c.fundingId, planId: c.planId || '' })
+      if (receiptRef.current) params.set('receiptId', receiptRef.current)
+      const res = await fetch(`/api/whop/fund-wallet?${params.toString()}`, { headers: authHeaders() })
       const data = await res.json()
       if (data.paid) {
-        setCredited(data.amount || 0)
-        setStep('done')
+        doneRef.current = true
         if (pollRef.current) clearInterval(pollRef.current)
+        router.push(`/company/fondear/exito?monto=${encodeURIComponent(String(data.amount || c.base))}`)
         return true
       }
     } catch {}
     return false
   }
 
-  const startPolling = (fundingId: string) => {
-    if (pollRef.current) clearInterval(pollRef.current)
-    pollRef.current = setInterval(() => verify(fundingId), 5000)
-  }
-
   const manualVerify = async () => {
     if (!checkout) return
     setVerifying(true)
-    const ok = await verify(checkout.fundingId)
+    const ok = await verify(checkout)
     if (!ok) setError('Todavía no vemos el pago. Si ya pagaste, esperá unos segundos y probá de nuevo.')
     setVerifying(false)
   }
@@ -84,7 +84,7 @@ export default function FondearPage() {
   return (
     <div className="min-h-[100dvh] bg-[#F7FAFD] pb-20 text-neutral-900">
       <div className="mx-auto w-full max-w-md px-5 pt-6 md:max-w-lg">
-        <button onClick={() => (window.history.length > 1 ? router.back() : router.push('/company/dashboard'))}
+        <button onClick={() => (window.history.length > 1 ? router.back() : router.push('/company/wallet'))}
           className="flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-sm transition-transform active:scale-90" aria-label="Volver">
           <ChevronLeft className="h-5 w-5" />
         </button>
@@ -130,7 +130,11 @@ export default function FondearPage() {
                 {...(checkout.sessionId ? { sessionId: checkout.sessionId } : {})}
                 {...(checkout.environment === 'sandbox' ? { environment: 'sandbox' } : {})}
                 theme="light"
-                onComplete={() => verify(checkout.fundingId)}
+                skipRedirect
+                onComplete={(_planId: string, receiptId?: string) => {
+                  if (receiptId) receiptRef.current = receiptId
+                  verify(checkout)
+                }}
               />
             </div>
 
@@ -139,20 +143,6 @@ export default function FondearPage() {
               className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border-2 border-cyan-500 py-3 font-bold text-cyan-700 transition-transform active:scale-[0.98] disabled:opacity-60">
               {verifying ? <Loader2 className="h-5 w-5 animate-spin" /> : <Check className="h-5 w-5" />}
               Ya pagué — verificar
-            </button>
-          </div>
-        )}
-
-        {step === 'done' && (
-          <div className="mt-10 flex flex-col items-center rounded-3xl border border-emerald-200 bg-emerald-50/80 p-8 text-center shadow-sm">
-            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500 shadow-lg shadow-emerald-200">
-              <Check className="h-8 w-8 text-white" strokeWidth={3} />
-            </span>
-            <p className="mt-4 text-2xl font-extrabold text-emerald-900">Pago confirmado</p>
-            <p className="mt-1 text-emerald-800/80">Se acreditaron <span className="font-bold tabular-nums">${fmt(credited)}</span> a tu wallet.</p>
-            <button onClick={() => router.push('/company/dashboard')}
-              className="mt-6 rounded-full bg-emerald-600 px-8 py-3 font-bold text-white transition-transform active:scale-[0.98]">
-              Volver al panel
             </button>
           </div>
         )}

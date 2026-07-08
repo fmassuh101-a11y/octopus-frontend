@@ -7,22 +7,21 @@ import { shieldAsync } from "@/lib/shield";
 
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// Fee de plataforma a la MARCA según su plan (tiered):
-// sin plan 8% · Crecimiento 5% · Pro empresa 2%
-function brandFeePercent(plan?: string | null): number {
-  if (plan === "pro") return 0.02;
-  if (plan === "growth" || plan === "crecimiento") return 0.05;
-  return 0.08;
-}
-
 /**
- * POST /api/whop/fund-wallet  Body: { amount }
- * La empresa fondea su wallet: creamos un checkout de Whop por (monto + fee de plataforma).
- * Devuelve planId/sessionId para el checkout embebido + un fundingId para verificar.
+ * Depósito de la empresa (Agregar fondos).
  *
- * GET /api/whop/fund-wallet?fundingId=...
- * Verifica contra la API de Whop si el pago ya está y ACREDITA el wallet
- * (idempotente vía RPC oct_apply_topup — un pago acredita una sola vez).
+ * POST { amount } →
+ *   1. Crea el checkout en Whop por EXACTAMENTE ese monto (depósito limpio, sin fees en la UI).
+ *   2. Guarda una PRE-FICHA en wallet_topups (whop_payment_id = fundingId) con el monto,
+ *      escrita por el SERVIDOR — la verificación nunca confía en montos del cliente ni de metadata.
+ *
+ * GET ?fundingId=&receiptId=&planId= →
+ *   1. Lee la pre-ficha (monto autoritativo, debe ser del usuario).
+ *   2. Confirma contra Whop que el pago existe y está pagado:
+ *      a. por receiptId (payments.retrieve) — lo entrega el onComplete del checkout embebido
+ *      b. o buscando en payments.list por metadata/plan.
+ *      Además exige que el MONTO del pago coincida con la pre-ficha (nadie acredita $1000 pagando $1).
+ *   3. Acredita idempotente (RPC oct_apply_topup con el payment id real — un pago acredita UNA vez).
  */
 export async function POST(request: NextRequest) {
   const _blocked = await shieldAsync(request as unknown as Request, { limit: 10 });
@@ -33,6 +32,7 @@ export async function POST(request: NextRequest) {
   try {
     const user = await getAuthenticatedUser(request);
     if (!user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    if (!SUPABASE_SERVICE_KEY) return NextResponse.json({ error: "Config del servidor incompleta" }, { status: 500 });
 
     const body = await request.json().catch(() => ({}));
     const base = Math.round(Number(body?.amount) * 100) / 100;
@@ -40,22 +40,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Monto inválido (mínimo $1)" }, { status: 400 });
     }
 
-    // plan de la empresa para el fee tiered (si la columna no existe, cae al 8%)
-    let plan: string | null = null;
-    try {
-      const apiKey = SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY;
-      const r = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=company_plan`, {
-        headers: { Authorization: `Bearer ${apiKey}`, apikey: apiKey },
-      });
-      if (r.ok) plan = (await r.json())?.[0]?.company_plan || null;
-    } catch {}
-
-    // DEPÓSITO LIMPIO: la empresa paga exactamente lo que escribe y eso se le
-    // acredita. El fee de plataforma NO se cobra acá (se aplica según su plan
-    // al usar la plata — nunca se muestra en la UI de depósito).
-    const feePct = 0; void brandFeePercent(plan);
-    const fee = 0;
-    const total = base;
     const fundingId = `fund_${user.id.slice(0, 8)}_${Date.now()}`;
 
     const cfg: any = await whopClient.checkoutConfigurations.create({
@@ -63,14 +47,13 @@ export async function POST(request: NextRequest) {
         company_id: OCTOPUS_COMPANY_ID,
         plan_type: "one_time",
         currency: "usd",
-        initial_price: total,
+        initial_price: base,
       },
       metadata: {
         type: "octopus_fund_wallet",
         funding_id: fundingId,
         octopus_user_id: user.id,
         base_amount: base,
-        fee_amount: fee,
       },
     } as any);
 
@@ -80,7 +63,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No se pudo crear el checkout" }, { status: 502 });
     }
 
-    return NextResponse.json({ ok: true, planId, sessionId: cfg?.id || null, fundingId, base, fee, feePct, total, environment: WHOP_ENVIRONMENT });
+    // PRE-FICHA server-side con el monto autoritativo (id = fundingId; nunca se acredita esta fila)
+    const pre = await fetch(`${SUPABASE_URL}/rest/v1/wallet_topups`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        apikey: SUPABASE_SERVICE_KEY,
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify({ user_id: user.id, whop_payment_id: fundingId, base_amount: base, fee_amount: 0, total_paid: base }),
+    });
+    if (!pre.ok) {
+      const t = await pre.text();
+      console.error("[FundWallet] no se pudo guardar la pre-ficha:", pre.status, t);
+      return NextResponse.json({ error: "No se pudo iniciar el depósito (¿corriste PAGOS_SETUP_2026-07-08.sql?)" }, { status: 500 });
+    }
+
+    return NextResponse.json({ ok: true, planId, sessionId: cfg?.id || null, fundingId, base, fee: 0, total: base, environment: WHOP_ENVIRONMENT });
   } catch (e: any) {
     console.error("[FundWallet] error:", e?.message || e);
     return NextResponse.json({ error: "No se pudo crear el checkout" }, { status: 500 });
@@ -96,87 +96,82 @@ export async function GET(request: NextRequest) {
     if (!user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     if (!SUPABASE_SERVICE_KEY) return NextResponse.json({ error: "Config del servidor incompleta" }, { status: 500 });
 
-    const fundingId = request.nextUrl.searchParams.get("fundingId") || "";
-    const sessionId = request.nextUrl.searchParams.get("sessionId") || "";
-    const planId = request.nextUrl.searchParams.get("planId") || "";
-    const debug = request.nextUrl.searchParams.get("debug") === "1";
+    const q = request.nextUrl.searchParams;
+    const fundingId = q.get("fundingId") || "";
+    const receiptId = q.get("receiptId") || "";
+    const planId = q.get("planId") || "";
     if (!fundingId) return NextResponse.json({ error: "Falta fundingId" }, { status: 400 });
 
-    // buscar el pago en Whop (fuente de verdad: la API, no el cliente).
-    // La metadata puede venir en distintos lugares según el objeto → probamos varios.
-    let match: any = null;
-    let items: any[] = [];
-    try {
-      const payments: any = await whopClient.payments.list({ company_id: OCTOPUS_COMPANY_ID } as any);
-      items = payments?.data || payments?.items || (Array.isArray(payments) ? payments : []);
-      const metaOf = (p: any) =>
-        p?.metadata || p?.checkout_configuration?.metadata || p?.plan?.metadata || p?.checkout_session?.metadata || {};
-      match = items.find((p) => {
-        const m = metaOf(p);
-        if (m?.funding_id === fundingId) return true;
-        if (sessionId && (p?.checkout_configuration_id === sessionId || p?.checkout_configuration?.id === sessionId || p?.checkout_session_id === sessionId)) return true;
-        if (planId && (p?.plan_id === planId || p?.plan?.id === planId)) return true;
-        return false;
-      });
-      if (match) (match as any).__meta = metaOf(match);
-    } catch (e) {
-      console.error("[FundWallet] payments.list:", e);
-    }
+    // 1) pre-ficha del servidor: monto autoritativo, debe pertenecer a este usuario
+    const H = { Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, apikey: SUPABASE_SERVICE_KEY };
+    const preRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/wallet_topups?whop_payment_id=eq.${encodeURIComponent(fundingId)}&user_id=eq.${user.id}&select=base_amount,total_paid`,
+      { headers: H }
+    );
+    const preRows = preRes.ok ? await preRes.json() : [];
+    const pre = preRows[0];
+    if (!pre) return NextResponse.json({ error: "Depósito no encontrado" }, { status: 404 });
+    const base = Math.round(Number(pre.base_amount) * 100) / 100;
+    const expectedTotal = Math.round(Number(pre.total_paid) * 100) / 100;
 
-    if (!match) {
-      // modo debug (solo el admin): ver cómo lucen los pagos para ajustar el matching
-      if (debug && user.email === "fmassuh133@gmail.com") {
-        return NextResponse.json({
-          ok: true,
-          paid: false,
-          debugCount: items.length,
-          debugSample: items.slice(0, 3).map((p: any) => ({
-            id: p?.id,
-            status: p?.status,
-            keys: Object.keys(p || {}),
-            metadata: p?.metadata || null,
-            plan_id: p?.plan_id || p?.plan?.id || null,
-            checkout_configuration_id: p?.checkout_configuration_id || p?.checkout_configuration?.id || null,
-            total: p?.total ?? p?.subtotal ?? p?.amount ?? null,
-            currency: p?.currency || null,
-          })),
-        });
+    // 2) confirmar el pago contra Whop
+    const amountMatches = (p: any) => {
+      const cands = [p?.total, p?.final_amount, p?.subtotal, p?.amount, p?.usd_amount]
+        .map((v: any) => Number(v))
+        .filter((v: number) => Number.isFinite(v) && v > 0);
+      // acepta dólares o centavos
+      return cands.some((v: number) => Math.abs(v - expectedTotal) < 0.011 || Math.abs(v / 100 - expectedTotal) < 0.011);
+    };
+    const isPaid = (p: any) => ["succeeded", "paid", "completed", "successful"].includes(String(p?.status || "").toLowerCase());
+    const metaOf = (p: any) => p?.metadata || p?.checkout_configuration?.metadata || p?.plan?.metadata || {};
+
+    let payment: any = null;
+
+    // 2a) camino directo: el receipt id que entrega el checkout embebido al completar
+    if (receiptId) {
+      try {
+        const p: any = await (whopClient as any).payments.retrieve(receiptId);
+        if (p && isPaid(p) && amountMatches(p)) payment = p;
+      } catch (e) {
+        console.error("[FundWallet] payments.retrieve:", e);
       }
-      return NextResponse.json({ ok: true, paid: false });
     }
 
-    const status = String(match.status || "").toLowerCase();
-    const paid = ["succeeded", "paid", "completed", "successful"].includes(status);
-    if (!paid) return NextResponse.json({ ok: true, paid: false, status });
-
-    // montos desde la METADATA que escribió el servidor al crear el checkout (no del cliente)
-    const meta = (match as any).__meta || match.metadata || {};
-    const base = Math.round(Number(meta.base_amount) * 100) / 100;
-    const fee = Math.round(Number(meta.fee_amount || 0) * 100) / 100;
-    if (!Number.isFinite(base) || base <= 0) {
-      // seguridad: si no está la metadata con el monto que escribimos nosotros, NO acreditamos a ciegas
-      return NextResponse.json({ error: "Pago encontrado pero sin monto verificable", paymentId: match.id }, { status: 500 });
+    // 2b) respaldo: buscar en la lista por metadata o plan
+    if (!payment) {
+      try {
+        const payments: any = await whopClient.payments.list({ company_id: OCTOPUS_COMPANY_ID } as any);
+        const items: any[] = payments?.data || payments?.items || (Array.isArray(payments) ? payments : []);
+        payment = items.find((p) => {
+          if (!isPaid(p) || !amountMatches(p)) return false;
+          const m = metaOf(p);
+          if (m?.funding_id === fundingId) return true;
+          if (planId && (p?.plan_id === planId || p?.plan?.id === planId)) return true;
+          return false;
+        }) || null;
+      } catch (e) {
+        console.error("[FundWallet] payments.list:", e);
+      }
     }
 
-    // acreditar idempotente (el RPC ignora pagos ya aplicados)
+    if (!payment) return NextResponse.json({ ok: true, paid: false });
+
+    // 3) acreditar idempotente con el ID REAL del pago
     const rpcRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/oct_apply_topup`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
-        apikey: SUPABASE_SERVICE_KEY,
-      },
+      headers: { ...H, "Content-Type": "application/json" },
       body: JSON.stringify({
         p_user: user.id,
-        p_whop_payment_id: String(match.id),
+        p_whop_payment_id: String(payment.id),
         p_base: base,
-        p_fee: fee,
-        p_total: Math.round((base + fee) * 100) / 100,
+        p_fee: 0,
+        p_total: expectedTotal,
       }),
     });
     const rpc = await rpcRes.json().catch(() => null);
     if (!rpcRes.ok || !rpc?.ok) {
-      return NextResponse.json({ error: "No se pudo acreditar (¿corriste PAGOS_SETUP_2026-07-08.sql?)" }, { status: 500 });
+      console.error("[FundWallet] rpc:", rpcRes.status, JSON.stringify(rpc));
+      return NextResponse.json({ error: "No se pudo acreditar el depósito" }, { status: 500 });
     }
 
     return NextResponse.json({ ok: true, paid: true, credited: !rpc.already, amount: base });
