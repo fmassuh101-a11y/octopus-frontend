@@ -4,12 +4,23 @@ Estado base (jul 8): API key CONECTADA y verificada (/api/whop/ping → ok, comp
 
 Modelo (Transfer/escrow): la marca paga → la plata cae y se RETIENE en la plataforma → al aprobar el trabajo, transferimos al creador (menos el corte de Octopus) → el creador retira desde su wallet embebido en la app. KYC de cada creador lo maneja Whop.
 
-## MODELO DE COMISIÓN (definido jul 8)
-- El corte de Octopus se aplica UNA sola vez: al LIBERAR el pago al creador. NO en el depósito de la marca, NO en el retiro del creador.
-- Marca paga $100 → creador recibe $97 → Octopus se queda $3.
-- **No-Pro → 3% de comisión. Pro (suscripción) → 0% (se quedan con todo).** Incentiva Pro: pagás vía suscripción o vía comisión.
-- Implementado en `lib/whop.ts`: `octopusFeePercent(isPro)` y `splitPayout(amount, isPro)`. Lee un flag `is_pro` del perfil (default false); cuando Pro esté activo, aplica solo.
-- Nota: Whop cobra sus propios fees de procesamiento, aparte del corte de Octopus.
+## MODELO DE PLATA (revisado jul 8) — 3 fuentes de ingreso
+Concepto: los fees de Whop son PEAJE (procesar tarjeta ~2.9%+$0.30 al entrar, ~$2.50 al retirar) — costo de mover plata, lo cubre quien mueve la plata (marca al entrar, creador al salir), NO es margen de Octopus.
+
+**Fuente #1 — Fee a la MARCA (ganancia principal), tiered por suscripción:**
+- Sin plan: 10% sobre el gasto de campaña
+- Plan Crecimiento (~$49/mes): 6%
+- Plan Pro empresa (~$199/mes): 3%
+- (más suscripción → menos %). El creador recibe su monto COMPLETO.
+
+**Fuente #2 — Fee al CREADOR al RETIRAR (no al liberar):**
+- La plata del creador queda en el balance de la PLATAFORMA (se ve en la app vía ledger interno). Al RETIRAR se descuenta el fee, mostrado como UN solo "fee de retiro" (bundle Whop + nuestro %).
+- No-Pro: 3%. Pro (~$9.99/mes): 0%.
+- El creador ve su saldo COMPLETO; el fee solo aparece al cashout (mejor UX).
+
+**Fuente #3 — Suscripciones fijas** (creador Pro + empresa) = ingreso recurrente aunque bajen los %.
+
+Implementado en `lib/whop.ts`: `octopusFeePercent(isPro)` y `splitPayout(amount, isPro)` (aplicar al RETIRAR). Falta agregar el fee de marca (tiered) en el pay-in. Números a confirmar con Felipe.
 
 ---
 
