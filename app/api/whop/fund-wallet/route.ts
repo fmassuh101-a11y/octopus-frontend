@@ -97,31 +97,65 @@ export async function GET(request: NextRequest) {
     if (!SUPABASE_SERVICE_KEY) return NextResponse.json({ error: "Config del servidor incompleta" }, { status: 500 });
 
     const fundingId = request.nextUrl.searchParams.get("fundingId") || "";
+    const sessionId = request.nextUrl.searchParams.get("sessionId") || "";
+    const planId = request.nextUrl.searchParams.get("planId") || "";
+    const debug = request.nextUrl.searchParams.get("debug") === "1";
     if (!fundingId) return NextResponse.json({ error: "Falta fundingId" }, { status: 400 });
 
-    // buscar el pago en Whop (fuente de verdad: la API, no el cliente)
+    // buscar el pago en Whop (fuente de verdad: la API, no el cliente).
+    // La metadata puede venir en distintos lugares según el objeto → probamos varios.
     let match: any = null;
+    let items: any[] = [];
     try {
       const payments: any = await whopClient.payments.list({ company_id: OCTOPUS_COMPANY_ID } as any);
-      const items: any[] = payments?.data || payments?.items || [];
-      match = items.find(
-        (p) => p?.metadata?.funding_id === fundingId && p?.metadata?.octopus_user_id === user.id
-      );
+      items = payments?.data || payments?.items || (Array.isArray(payments) ? payments : []);
+      const metaOf = (p: any) =>
+        p?.metadata || p?.checkout_configuration?.metadata || p?.plan?.metadata || p?.checkout_session?.metadata || {};
+      match = items.find((p) => {
+        const m = metaOf(p);
+        if (m?.funding_id === fundingId) return true;
+        if (sessionId && (p?.checkout_configuration_id === sessionId || p?.checkout_configuration?.id === sessionId || p?.checkout_session_id === sessionId)) return true;
+        if (planId && (p?.plan_id === planId || p?.plan?.id === planId)) return true;
+        return false;
+      });
+      if (match) (match as any).__meta = metaOf(match);
     } catch (e) {
       console.error("[FundWallet] payments.list:", e);
     }
 
-    if (!match) return NextResponse.json({ ok: true, paid: false });
+    if (!match) {
+      // modo debug (solo el admin): ver cómo lucen los pagos para ajustar el matching
+      if (debug && user.email === "fmassuh133@gmail.com") {
+        return NextResponse.json({
+          ok: true,
+          paid: false,
+          debugCount: items.length,
+          debugSample: items.slice(0, 3).map((p: any) => ({
+            id: p?.id,
+            status: p?.status,
+            keys: Object.keys(p || {}),
+            metadata: p?.metadata || null,
+            plan_id: p?.plan_id || p?.plan?.id || null,
+            checkout_configuration_id: p?.checkout_configuration_id || p?.checkout_configuration?.id || null,
+            total: p?.total ?? p?.subtotal ?? p?.amount ?? null,
+            currency: p?.currency || null,
+          })),
+        });
+      }
+      return NextResponse.json({ ok: true, paid: false });
+    }
 
     const status = String(match.status || "").toLowerCase();
     const paid = ["succeeded", "paid", "completed", "successful"].includes(status);
     if (!paid) return NextResponse.json({ ok: true, paid: false, status });
 
     // montos desde la METADATA que escribió el servidor al crear el checkout (no del cliente)
-    const base = Math.round(Number(match.metadata?.base_amount) * 100) / 100;
-    const fee = Math.round(Number(match.metadata?.fee_amount || 0) * 100) / 100;
+    const meta = (match as any).__meta || match.metadata || {};
+    const base = Math.round(Number(meta.base_amount) * 100) / 100;
+    const fee = Math.round(Number(meta.fee_amount || 0) * 100) / 100;
     if (!Number.isFinite(base) || base <= 0) {
-      return NextResponse.json({ error: "Pago sin monto válido" }, { status: 500 });
+      // seguridad: si no está la metadata con el monto que escribimos nosotros, NO acreditamos a ciegas
+      return NextResponse.json({ error: "Pago encontrado pero sin monto verificable", paymentId: match.id }, { status: 500 });
     }
 
     // acreditar idempotente (el RPC ignora pagos ya aplicados)

@@ -53,7 +53,8 @@ export default function FondearPage() {
   // verificar el pago contra la API de Whop (sin depender de webhooks)
   const verify = async (fundingId: string): Promise<boolean> => {
     try {
-      const res = await fetch(`/api/whop/fund-wallet?fundingId=${encodeURIComponent(fundingId)}`, { headers: authHeaders() })
+      const extra = checkout ? `&sessionId=${encodeURIComponent(checkout.sessionId || '')}&planId=${encodeURIComponent(checkout.planId || '')}` : ''
+      const res = await fetch(`/api/whop/fund-wallet?fundingId=${encodeURIComponent(fundingId)}${extra}`, { headers: authHeaders() })
       const data = await res.json()
       if (data.paid) {
         setCredited(data.amount || 0)
