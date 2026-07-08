@@ -27,5 +27,35 @@ export async function GET(request: NextRequest) {
   } catch (e: any) {
     out.receiptError = e?.message || String(e);
   }
+
+  // ?credit=1 → reintenta acreditar el último pago 'paid' de fondeo y devuelve el error CRUDO de la DB
+  if (request.nextUrl.searchParams.get("credit") === "1") {
+    const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+    const { SUPABASE_URL } = await import("@/lib/config/supabase");
+    try {
+      const payments: any = await whopClient.payments.list({ company_id: OCTOPUS_COMPANY_ID } as any);
+      const items: any[] = payments?.data || [];
+      const p = items.find((x) => x?.status === "paid" && x?.metadata?.type === "octopus_fund_wallet");
+      if (!p) { out.credit = "no hay pagos de fondeo"; return NextResponse.json(out); }
+      const rpcRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/oct_apply_topup`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+          apikey: SUPABASE_SERVICE_KEY,
+        },
+        body: JSON.stringify({
+          p_user: p.metadata.octopus_user_id,
+          p_whop_payment_id: String(p.id),
+          p_base: Number(p.metadata.base_amount),
+          p_fee: 0,
+          p_total: Number(p.total),
+        }),
+      });
+      out.credit = { paymentId: p.id, user: p.metadata.octopus_user_id, base: p.metadata.base_amount, rpcStatus: rpcRes.status, rpcBody: await rpcRes.text() };
+    } catch (e: any) {
+      out.creditError = e?.message || String(e);
+    }
+  }
   return NextResponse.json(out);
 }
