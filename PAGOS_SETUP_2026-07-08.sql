@@ -63,3 +63,60 @@ $$;
 -- solo usuarios logueados pueden llamarla
 revoke all on function public.oct_request_withdrawal(numeric, numeric) from public;
 grant execute on function public.oct_request_withdrawal(numeric, numeric) to authenticated;
+
+-- ============================================================
+-- 4) FONDEO de la empresa (pay-in con Whop) — registro idempotente
+-- ============================================================
+create table if not exists public.wallet_topups (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null,
+  whop_payment_id text unique not null,   -- idempotencia: un pago de Whop acredita UNA sola vez
+  base_amount numeric not null,           -- lo que entra al wallet de la empresa
+  fee_amount numeric not null default 0,  -- fee de plataforma de Octopus (se queda en Whop balance)
+  total_paid numeric not null,
+  created_at timestamptz default now()
+);
+alter table public.wallet_topups enable row level security;
+drop policy if exists wt_read_own on public.wallet_topups;
+create policy wt_read_own on public.wallet_topups for select using (auth.uid() = user_id);
+-- (sin policy de insert: solo el service role del servidor inserta)
+
+-- necesario para el upsert del wallet (un wallet por usuario)
+create unique index if not exists wallets_user_id_key on public.wallets(user_id);
+
+-- 5) RPC: aplicar un top-up de forma atómica e idempotente.
+--    Solo el service role (el servidor) puede ejecutarla.
+create or replace function public.oct_apply_topup(
+  p_user uuid, p_whop_payment_id text, p_base numeric, p_fee numeric, p_total numeric
+) returns json
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_inserted boolean := false;
+begin
+  if p_base is null or p_base <= 0 or p_base > 100000 then
+    return json_build_object('ok', false, 'error', 'bad_amount');
+  end if;
+
+  -- idempotencia: si el pago ya se aplicó, no acreditar de nuevo
+  insert into public.wallet_topups (user_id, whop_payment_id, base_amount, fee_amount, total_paid)
+  values (p_user, p_whop_payment_id, p_base, coalesce(p_fee, 0), coalesce(p_total, p_base))
+  on conflict (whop_payment_id) do nothing;
+  get diagnostics v_inserted = row_count;
+  if not v_inserted then
+    return json_build_object('ok', true, 'already', true);
+  end if;
+
+  -- acreditar el wallet (crearlo si no existe) — un solo statement, atómico
+  insert into public.wallets (user_id, balance)
+  values (p_user, p_base)
+  on conflict (user_id) do update set balance = wallets.balance + excluded.balance;
+
+  return json_build_object('ok', true, 'credited', p_base);
+end;
+$$;
+revoke all on function public.oct_apply_topup(uuid, text, numeric, numeric, numeric) from public;
+revoke all on function public.oct_apply_topup(uuid, text, numeric, numeric, numeric) from authenticated;
+grant execute on function public.oct_apply_topup(uuid, text, numeric, numeric, numeric) to service_role;
