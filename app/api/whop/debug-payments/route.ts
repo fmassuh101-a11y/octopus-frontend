@@ -41,11 +41,12 @@ export async function GET(request: NextRequest) {
       const H = { Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, apikey: SUPABASE_SERVICE_KEY };
       const ptRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${p.metadata.octopus_user_id}&select=user_type`, { headers: H });
       const userType = ((ptRes.ok ? await ptRes.json() : [])[0]?.user_type) || "company";
-      await fetch(`${SUPABASE_URL}/rest/v1/wallets?on_conflict=user_id`, {
+      const ensRes = await fetch(`${SUPABASE_URL}/rest/v1/wallets?on_conflict=user_id`, {
         method: "POST",
         headers: { ...H, "Content-Type": "application/json", Prefer: "resolution=ignore-duplicates,return=minimal" },
         body: JSON.stringify({ user_id: p.metadata.octopus_user_id, user_type: userType, balance: 0 }),
       });
+      out.ensureWallet = { status: ensRes.status, body: (await ensRes.text()).slice(0, 400), userType };
       const rpcRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/oct_apply_topup`, {
         method: "POST",
         headers: {
