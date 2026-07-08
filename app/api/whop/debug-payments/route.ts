@@ -39,6 +39,8 @@ export async function GET(request: NextRequest) {
           currency: "usd",
           initial_price: 9.99,
           renewal_price: 9.99,
+          title: "Debug sub test",
+          product: { external_identifier: "octopus_debug_sub", title: "Debug sub test" },
         },
         metadata: { type: "debug_sub_test" },
       } as any);
