@@ -34,9 +34,22 @@ export async function POST(request: NextRequest) {
   const delivery = deliveries[0]
   if (!delivery) return NextResponse.json({ error: 'Entrega no encontrada' }, { status: 404 })
   if (delivery.company_id !== user.id) return NextResponse.json({ error: 'No autorizado' }, { status: 403 })
-  if (delivery.status === 'approved' || delivery.status === 'completed') {
+  if (delivery.status === 'approved' || delivery.status === 'completed' || delivery.status === 'processing') {
     return NextResponse.json({ error: 'Esta entrega ya fue aprobada' }, { status: 409 })
   }
+
+  // 1b. CLAIM ATÓMICO contra el doble-pago: marcamos 'processing' SOLO si sigue sin
+  // aprobar/procesar. Si dos requests entran a la vez, únicamente uno cambia la fila;
+  // el otro recibe 0 filas y aborta (sin pagar dos veces).
+  const claimRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/content_deliveries?id=eq.${deliveryId}&status=not.in.("approved","completed","processing")`,
+    { method: 'PATCH', headers: { ...H, Prefer: 'return=representation' }, body: JSON.stringify({ status: 'processing' }) }
+  )
+  const claimed = claimRes.ok ? await claimRes.json() : []
+  if (!Array.isArray(claimed) || claimed.length !== 1) {
+    return NextResponse.json({ error: 'Esta entrega ya está siendo procesada' }, { status: 409 })
+  }
+  const prevStatus = delivery.status // para revertir si el pago falla
 
   // 2. Determinar el monto a liberar (de la entrega o del contrato)
   let amount = Number(delivery.payment_amount) || 0
@@ -62,6 +75,10 @@ export async function POST(request: NextRequest) {
     })
     payment = payRes.ok ? await payRes.json() : null
     if (!payment?.success) {
+      // el pago falló → devolvemos la entrega a su estado previo (soltamos el claim)
+      await fetch(`${SUPABASE_URL}/rest/v1/content_deliveries?id=eq.${deliveryId}`, {
+        method: 'PATCH', headers: H, body: JSON.stringify({ status: prevStatus }),
+      }).catch(() => {})
       return NextResponse.json({
         error: 'Fondos insuficientes en tu wallet. Deposita fondos para liberar el pago al aprobar.',
         needsFunds: true,
