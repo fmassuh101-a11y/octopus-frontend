@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    optimizePackageImports: ['lucide-react', 'framer-motion'],
+    optimizePackageImports: ['lucide-react', 'framer-motion', '@phosphor-icons/react', '@icons-pack/react-simple-icons'],
   },
   images: {
     domains: ['localhost', '127.0.0.1'],

@@ -12,6 +12,8 @@
     "tunnel": "npx ngrok http 3000 --subdomain=octopus-dev"
   },
   "dependencies": {
+    "@icons-pack/react-simple-icons": "^13.11.1",
+    "@phosphor-icons/react": "^2.1.10",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.89.0",
     "@tanstack/react-query": "^5.90.20",
