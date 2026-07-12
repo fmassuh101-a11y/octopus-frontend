@@ -81,6 +81,8 @@ export default function CreatorProfilePage() {
 
   useEffect(() => {
     loadCreatorData()
+    // si vino con ?pay=1 (desde el modal de aplicantes), abrir el pago directo
+    try { if (new URLSearchParams(window.location.search).get('pay') === '1') setPayOpen(true) } catch {}
   }, [creatorId])
 
   const loadCreatorData = async () => {

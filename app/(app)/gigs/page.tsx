@@ -183,6 +183,18 @@ export default function GigsPage() {
   const spotlight = filtered[0]
   const nicheMeta = (key?: string) => NICHES.find(n => n.key === (key || '').toLowerCase())
   const priceLabel = (g: Gig) => (g.budget || '$—').replace(/\s*CLP/gi, '')
+  // acepta imágenes http(s) Y base64 (data:) — la subida de campaña guarda data:
+  const imgOk = (u?: string) => !!u && (u.startsWith('http') || u.startsWith('data:'))
+  // "hace X" estilo SideShift
+  const timeAgo = (at?: string) => {
+    if (!at) return ''
+    const s = Math.floor((Date.now() - new Date(at).getTime()) / 1000)
+    if (s < 60) return 'recién'
+    if (s < 3600) return `hace ${Math.floor(s / 60)} min`
+    if (s < 86400) return `hace ${Math.floor(s / 3600)} h`
+    if (s < 604800) return `hace ${Math.floor(s / 86400)} d`
+    return `hace ${Math.floor(s / 604800)} sem`
+  }
 
   return (
     <div className="relative min-h-[100dvh] pb-32 text-neutral-900">
@@ -233,7 +245,7 @@ export default function GigsPage() {
                 className="mt-3 w-full rounded-3xl border border-neutral-100 bg-white p-4 text-left shadow-sm transition-transform active:scale-[0.985]">
                 <div className="flex items-center gap-4">
                   <div className={`h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br ${GRADS[0]}`}>
-                    {spotlight.image_url?.startsWith('http') && (
+                    {imgOk(spotlight.image_url) && (
                       /* eslint-disable-next-line @next/next/no-img-element */
                       <img src={spotlight.image_url} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
                     )}
@@ -291,7 +303,7 @@ export default function GigsPage() {
                   <button key={gig.id} onClick={() => setSelectedGig(gig)}
                     className="text-left transition-transform active:scale-[0.97]">
                     <div className={`relative aspect-square overflow-hidden rounded-3xl bg-gradient-to-br ${GRADS[idx % GRADS.length]} shadow-sm`}>
-                      {gig.image_url?.startsWith('http') ? (
+                      {imgOk(gig.image_url) ? (
                         /* eslint-disable-next-line @next/next/no-img-element */
                         <img src={gig.image_url} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover"
                           onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
@@ -327,6 +339,7 @@ export default function GigsPage() {
                       </span>
                     </div>
                     <p className="mt-2 truncate text-[17px] font-bold leading-tight">{gig.title}</p>
+                    {gig.created_at && <p className="mt-0.5 text-[13px] text-neutral-400">{timeAgo(gig.created_at)}</p>}
                   </button>
                 ))}
             </div>
@@ -345,7 +358,7 @@ export default function GigsPage() {
                 <Link key={g.id} href="/creator/applications" prefetch
                   className="flex items-center gap-4 rounded-3xl border border-neutral-100 bg-white p-4 shadow-sm transition-transform active:scale-[0.985]">
                   <div className={`flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br ${GRADS[1]}`}>
-                    {g.image_url?.startsWith('http') && (
+                    {imgOk(g.image_url) && (
                       /* eslint-disable-next-line @next/next/no-img-element */
                       <img src={g.image_url} alt="" className="h-full w-full object-cover" />
                     )}
@@ -435,9 +448,16 @@ export default function GigsPage() {
               {selectedGig && (
                 <>
                   <div className={`relative mx-auto aspect-square w-full max-w-sm overflow-hidden rounded-3xl bg-gradient-to-br ${GRADS[0]} shadow`}>
-                    {selectedGig.image_url?.startsWith('http') && (
+                    {imgOk(selectedGig.image_url) ? (
                       /* eslint-disable-next-line @next/next/no-img-element */
                       <img src={selectedGig.image_url} alt="" className="h-full w-full object-cover" />
+                    ) : imgOk((selectedGig as any).company_logo) ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img src={(selectedGig as any).company_logo} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <span className="absolute inset-0 flex items-center justify-center text-[72px] font-extrabold text-white/70">
+                        {(selectedGig.company_name || selectedGig.title || 'O').charAt(0).toUpperCase()}
+                      </span>
                     )}
                   </div>
                   <h2 className="mt-5 text-center text-[28px] font-extrabold leading-tight tracking-tight">
