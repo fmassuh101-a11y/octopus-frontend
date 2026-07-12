@@ -11,7 +11,7 @@ import { ChevronLeft, Wallet, ShieldCheck, Clock3, CreditCard, ArrowDownToLine, 
 
 // Wallet del creador — Paso 1 (activar pagos + KYC) y Paso 2 (saldo del ledger + retiro con fee).
 // El saldo se muestra COMPLETO; el fee (3.7% no-Pro / 0% Pro) se descuenta solo al retirar.
-const MIN_WITHDRAW = 20
+const MIN_WITHDRAW = 5
 const FEE_PERCENT = 0.037
 
 interface Movement {

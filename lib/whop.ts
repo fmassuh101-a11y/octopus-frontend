@@ -45,7 +45,7 @@ export const OCTOPUS_COMPANY_ID =
 // Se aplica UNA sola vez, AL RETIRAR — el creador ve su saldo completo hasta el cashout.
 // Sin cargo fijo nuestro (Whop ya tiene el suyo); mínimo de retiro para proteger montos chicos.
 export const OCTOPUS_FEE_PERCENT = 0.037;
-export const MIN_WITHDRAW_USD = 20;
+export const MIN_WITHDRAW_USD = 5; // bajado de 20 → 5 para el test real de bajo riesgo
 export function octopusFeePercent(isPro: boolean): number {
   return isPro ? 0 : OCTOPUS_FEE_PERCENT;
 }
