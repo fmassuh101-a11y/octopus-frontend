@@ -1,46 +1,59 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// PARTE 4 (mensajes) — callback del OAuth de Whop.
-// Whop vuelve con ?code; lo canjeamos por un access token y lo guardamos en una cookie
-// httpOnly para que el chat embebido (dms) lo use. Requiere WHOP_OAUTH_CLIENT_ID/SECRET.
+// PARTE 4 (mensajes) — callback del OAuth de Whop (con PKCE).
+// Whop vuelve con ?code&state; validamos el state contra la cookie whop_pkce,
+// canjeamos el code con el code_verifier (+ client_secret) y guardamos el access
+// token en una cookie httpOnly para que el chat embebido (dms) lo use.
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://octopus-frontend-tau.vercel.app";
 
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code") || "";
   const stateRaw = request.nextUrl.searchParams.get("state") || "";
-  let next = "/creator/chat";
-  try { next = JSON.parse(Buffer.from(stateRaw, "base64url").toString()).n || next; } catch {}
 
-  if (!code) return NextResponse.redirect(`${APP_URL}${next}?whop=error`);
+  // cookie con el verifier/state/destino que dejó /oauth/start
+  let pkce: { v?: string; s?: string; n?: string; u?: string } = {};
+  try { pkce = JSON.parse(request.cookies.get("whop_pkce")?.value || "{}"); } catch {}
+  const next = pkce.n || "/creator/chat";
 
-  const clientId = process.env.WHOP_OAUTH_CLIENT_ID || process.env.WHOP_APP_ID || "";
+  const fail = (reason: string) => {
+    console.error("[Whop OAuth] fallo:", reason);
+    return NextResponse.redirect(`${APP_URL}${next}?whop=error&why=${encodeURIComponent(reason)}`);
+  };
+
+  if (!code) return fail(request.nextUrl.searchParams.get("error") || "sin code");
+  if (!pkce.v) return fail("cookie pkce ausente (reintentá)");
+  if (pkce.s && stateRaw && pkce.s !== stateRaw) return fail("state no coincide");
+
+  const clientId = process.env.WHOP_OAUTH_CLIENT_ID || process.env.NEXT_PUBLIC_WHOP_APP_ID || "app_D74Fuxu632GOeK";
   const clientSecret = process.env.WHOP_OAUTH_CLIENT_SECRET || "";
-  if (!clientId || !clientSecret) {
-    return NextResponse.redirect(`${APP_URL}${next}?whop=noapp`);
-  }
 
   try {
+    const body: Record<string, string> = {
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: `${APP_URL}/api/whop/oauth/callback`,
+      client_id: clientId,
+      code_verifier: pkce.v,
+    };
+    if (clientSecret) body.client_secret = clientSecret;
+
     const res = await fetch("https://api.whop.com/oauth/token", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        grant_type: "authorization_code",
-        code,
-        client_id: clientId,
-        client_secret: clientSecret,
-        redirect_uri: `${APP_URL}/api/whop/oauth/callback`,
-      }),
+      body: JSON.stringify(body),
     });
+    const text = await res.text();
     if (!res.ok) {
-      console.error("[Whop OAuth] token exchange failed:", res.status, await res.text());
-      return NextResponse.redirect(`${APP_URL}${next}?whop=error`);
+      console.error("[Whop OAuth] token exchange failed:", res.status, text.slice(0, 300));
+      return fail(`canje ${res.status}`);
     }
-    const data = await res.json();
+    let data: any = {};
+    try { data = JSON.parse(text); } catch {}
     const token = data?.access_token || "";
-    if (!token) return NextResponse.redirect(`${APP_URL}${next}?whop=error`);
+    if (!token) return fail("respuesta sin access_token");
 
     const redirect = NextResponse.redirect(`${APP_URL}${next}?whop=ok`);
-    // cookie httpOnly con el token de chat (solo lo lee el server para mintear la sesión)
+    // token de chat en cookie httpOnly (solo el server la lee para /api/whop/chat-token)
     redirect.cookies.set("whop_chat_token", token, {
       httpOnly: true,
       secure: true,
@@ -48,9 +61,20 @@ export async function GET(request: NextRequest) {
       path: "/",
       maxAge: Number(data?.expires_in) || 3600,
     });
+    // guardar el refresh token si viene (para renovar sin re-autorizar)
+    if (data?.refresh_token) {
+      redirect.cookies.set("whop_chat_refresh", String(data.refresh_token), {
+        httpOnly: true,
+        secure: true,
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 30,
+      });
+    }
+    // limpiar la cookie pkce
+    redirect.cookies.set("whop_pkce", "", { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 0 });
     return redirect;
-  } catch (e) {
-    console.error("[Whop OAuth] callback error:", e);
-    return NextResponse.redirect(`${APP_URL}${next}?whop=error`);
+  } catch (e: any) {
+    return fail(e?.message || "error de red");
   }
 }

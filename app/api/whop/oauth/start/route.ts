@@ -1,28 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthenticatedUser } from "@/lib/auth/apiAuth";
+import crypto from "crypto";
 import { WHOP_APP_ID, WHOP_OAUTH_SCOPES } from "@/lib/whopApp";
 
-// PARTE 4 (mensajes) — inicio del OAuth de Whop.
-// Redirige al usuario a la pantalla de autorización de Whop para habilitar el chat
-// embebido (dms). Requiere la App de Whop de Felipe: WHOP_APP_ID + WHOP_OAUTH_CLIENT_ID.
+// PARTE 4 (mensajes) — inicio del OAuth de Whop CON PKCE (obligatorio para Whop).
+// No requiere sesión del server (la sesión vive en localStorage y el server no la ve):
+// el cliente pasa ?u=<userId>&next=<ruta>. Acá generamos code_verifier + state,
+// los guardamos en una cookie httpOnly de 10 min y redirigimos al authorize de Whop.
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://octopus-frontend-tau.vercel.app";
 
-export async function GET(request: NextRequest) {
-  const user = await getAuthenticatedUser(request);
-  if (!user) return NextResponse.redirect(`${APP_URL}/auth/login`);
+const b64url = (buf: Buffer) =>
+  buf.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 
-  // a dónde volver dentro de Octopus después de autorizar
+export async function GET(request: NextRequest) {
   const next = request.nextUrl.searchParams.get("next") || "/creator/chat";
-  const redirectUri = `${APP_URL}/api/whop/oauth/callback`;
-  // state firmado simple: user + destino (se valida en el callback)
-  const state = Buffer.from(JSON.stringify({ u: user.id, n: next })).toString("base64url");
+  const userId = request.nextUrl.searchParams.get("u") || "";
+
+  // PKCE: verifier aleatorio → challenge = SHA256(verifier) en base64url
+  const verifier = b64url(crypto.randomBytes(48));
+  const challenge = b64url(crypto.createHash("sha256").update(verifier).digest());
+  const state = b64url(crypto.randomBytes(24));
+  const nonce = b64url(crypto.randomBytes(16));
 
   const url = new URL("https://api.whop.com/oauth/authorize");
-  url.searchParams.set("client_id", WHOP_APP_ID);
-  url.searchParams.set("redirect_uri", redirectUri);
   url.searchParams.set("response_type", "code");
+  url.searchParams.set("client_id", WHOP_APP_ID);
+  url.searchParams.set("redirect_uri", `${APP_URL}/api/whop/oauth/callback`);
   url.searchParams.set("scope", WHOP_OAUTH_SCOPES);
   url.searchParams.set("state", state);
+  url.searchParams.set("nonce", nonce);
+  url.searchParams.set("code_challenge", challenge);
+  url.searchParams.set("code_challenge_method", "S256");
 
-  return NextResponse.redirect(url.toString());
+  const res = NextResponse.redirect(url.toString());
+  // verifier + state + destino + user, para validar y canjear en el callback
+  res.cookies.set("whop_pkce", JSON.stringify({ v: verifier, s: state, n: next, u: userId }), {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 600,
+  });
+  return res;
 }

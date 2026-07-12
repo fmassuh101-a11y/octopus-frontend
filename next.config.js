@@ -25,7 +25,9 @@ const nextConfig = {
           // No filtrar la URL completa como referrer a otros sitios
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           // Desactiva APIs sensibles del navegador que no usamos
-          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+          // cámara/mic habilitados SOLO para nosotros y el KYC embebido de Whop
+          // (VerifyElement escanea el carnet con la cámara); geolocalización nunca.
+          { key: 'Permissions-Policy', value: 'camera=(self "https://apollo.elements.whop.com"), microphone=(self "https://apollo.elements.whop.com"), geolocation=()' },
           // Fuerza HTTPS en el futuro (HSTS)
           { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
           // CSP: nadie puede inyectar scripts externos ni conectar a servidores ajenos

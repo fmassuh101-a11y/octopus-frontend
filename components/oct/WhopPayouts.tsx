@@ -10,6 +10,7 @@ import { Loader2, ShieldCheck } from 'lucide-react'
 export default function WhopPayouts({ onVerified }: { onVerified?: () => void }) {
   const [mod, setMod] = useState<any>(null)
   const [elements, setElements] = useState<any>(null)
+  const [companyId, setCompanyId] = useState('')
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [error, setError] = useState('')
 
@@ -22,11 +23,12 @@ export default function WhopPayouts({ onVerified }: { onVerified?: () => void })
         const t = await fetch('/api/whop/payout-token', { headers: authHeaders() })
         const data = await t.json().catch(() => ({}))
         if (!alive) return
-        if (!t.ok || !data.token) {
+        if (!t.ok || !data.token || !data.companyId) {
           setError(data.error || 'No se pudo iniciar la verificación. Probá de nuevo.')
           setStatus('error')
           return
         }
+        setCompanyId(data.companyId)
         // 2) recién ahí cargamos los módulos embebibles de Whop
         const [react, vanilla] = await Promise.all([
           import('@whop/embedded-components-react-js'),
@@ -75,9 +77,13 @@ export default function WhopPayouts({ onVerified }: { onVerified?: () => void })
 
   const { Elements, PayoutsSession, VerifyElement, AddPayoutMethodElement, BalanceElement, WithdrawButtonElement, WithdrawalsElement } = mod
 
+  // PayoutsSession EXIGE companyId y redirectUrl (URL absoluta pública) — sin
+  // ellos el portal no inicia y queda en blanco (bug que tuvimos).
+  const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://octopus-frontend-tau.vercel.app'}/creator/wallet?verify=done`
+
   return (
     <Elements elements={elements}>
-      <PayoutsSession token={getToken} currency="usd">
+      <PayoutsSession token={getToken} companyId={companyId} redirectUrl={redirectUrl} currency="usd">
         <div className="space-y-4">
           <div className="flex items-center gap-2 rounded-xl bg-cyan-50 px-3 py-2 text-xs font-semibold text-cyan-700">
             <ShieldCheck className="h-4 w-4" /> Verificación segura, dentro de Octopus

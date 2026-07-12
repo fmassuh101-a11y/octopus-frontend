@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { authHeaders } from '@/lib/auth/clientToken'
-import { whopAuthorizeUrl } from '@/lib/whopApp'
 import { ChatCircleDots, Lock } from '@phosphor-icons/react/dist/ssr'
 import { Loader2 } from 'lucide-react'
 
@@ -18,19 +17,28 @@ export default function WhopChat({ role = 'creator' }: { role?: 'creator' | 'com
 
   const router = useRouter()
   const backTo = role === 'company' ? '/company/chat' : '/creator/chat'
+  const [oauthError, setOauthError] = useState('')
 
-  // Conectar con Whop: armamos la URL de autorización EN EL CLIENTE (tenemos el user id
-  // en localStorage). Así no dependemos del servidor, que no puede leer la sesión y te
-  // rebotaba al dashboard.
+  // Conectar con Whop vía /api/whop/oauth/start: el server genera el PKCE
+  // (code_challenge obligatorio para Whop) y lo guarda en cookie httpOnly.
+  // No requiere sesión del server — le pasamos el user id por query.
   const connect = () => {
     try {
       const userStr = localStorage.getItem('sb-user')
       if (!userStr) { router.push('/auth/login'); return }
       const user = JSON.parse(userStr)
       if (!user?.id) { router.push('/auth/login'); return }
-      window.location.href = whopAuthorizeUrl(user.id, backTo)
+      window.location.href = `/api/whop/oauth/start?u=${encodeURIComponent(user.id)}&next=${encodeURIComponent(backTo)}`
     } catch { router.push('/auth/login') }
   }
+
+  // si el OAuth volvió con error, mostrarlo (antes rebotaba en silencio)
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search)
+    if (p.get('whop') === 'error') {
+      setOauthError(p.get('why') || 'No se pudo conectar con los mensajes. Probá de nuevo.')
+    }
+  }, [])
 
   useEffect(() => {
     let alive = true
@@ -83,6 +91,11 @@ export default function WhopChat({ role = 'creator' }: { role?: 'creator' | 'com
           Chateá con {role === 'company' ? 'los creadores' : 'las marcas'} y armá grupos, todo dentro de Octopus.
           Es un paso único y seguro.
         </p>
+        {oauthError && (
+          <p className="mt-4 rounded-xl bg-red-50 px-4 py-2.5 text-xs font-semibold text-red-600">
+            No se pudo conectar: {oauthError}. Tocá el botón para reintentar.
+          </p>
+        )}
         <button
           onClick={connect}
           className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-neutral-900 px-6 py-3.5 text-sm font-bold text-white transition hover:bg-neutral-800"
