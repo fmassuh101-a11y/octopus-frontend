@@ -7,7 +7,8 @@ import { Drawer } from 'vaul'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import Sky from '@/components/oct/Sky'
 import { toast } from '@/components/oct/toast'
-import { Search, SlidersHorizontal, Trophy, Check, Sparkles, TrendingUp, DollarSign, Video, EyeOff, Share2, Layers as Images, Star, Package, Crown, History as HistoryIcon, Send } from 'lucide-react'
+import { Search, SlidersHorizontal, Trophy, Check, Sparkles, TrendingUp, DollarSign, History as HistoryIcon, Send } from 'lucide-react'
+import { VideoCamera, Scissors, MaskSad, ShareNetwork, Images as ImagesDuo, Star as StarDuo, Package as PackageDuo, Crown as CrownDuo } from '@phosphor-icons/react'
 
 interface Gig {
   id: string
@@ -29,14 +30,14 @@ const REQUIRE_VERIFICATION = false
 
 // Tipos de contenido (niches) con ícono — estilo "Find by niche" de SideShift
 const NICHES = [
-  { key: 'ugc', label: 'UGC', icon: Video },
-  { key: 'clipping', label: 'Clipping', icon: TrendingUp },
-  { key: 'faceless', label: 'Faceless', icon: EyeOff },
-  { key: 'social', label: 'Social Media', icon: Share2 },
-  { key: 'slideshow', label: 'Slideshows', icon: Images },
-  { key: 'review', label: 'Reseñas', icon: Star },
-  { key: 'unboxing', label: 'Unboxing', icon: Package },
-  { key: 'ambassador', label: 'Embajador', icon: Crown },
+  { key: 'ugc', label: 'UGC', icon: VideoCamera },
+  { key: 'clipping', label: 'Clipping', icon: Scissors },
+  { key: 'faceless', label: 'Faceless', icon: MaskSad },
+  { key: 'social', label: 'Social Media', icon: ShareNetwork },
+  { key: 'slideshow', label: 'Slideshows', icon: ImagesDuo },
+  { key: 'review', label: 'Reseñas', icon: StarDuo },
+  { key: 'unboxing', label: 'Unboxing', icon: PackageDuo },
+  { key: 'ambassador', label: 'Embajador', icon: CrownDuo },
 ]
 
 const GRADS = [
@@ -274,7 +275,7 @@ export default function GigsPage() {
                 <button key={n.key} onClick={() => setNiche(niche === n.key ? null : n.key)}
                   className={`flex items-center gap-2 rounded-full border px-4 py-2.5 text-[15px] font-semibold shadow-sm transition-all active:scale-95 ${
                     niche === n.key ? 'border-cyan-400 bg-cyan-50 text-cyan-700' : 'border-neutral-200 bg-white text-neutral-700'}`}>
-                  <n.icon className="h-4 w-4" /> {n.label}
+                  <n.icon className="h-4 w-4" weight="duotone" /> {n.label}
                 </button>
               ))}
             </div>
@@ -405,7 +406,7 @@ export default function GigsPage() {
                 {NICHES.map(n => (
                   <button key={n.key} onClick={() => setNiche(niche === n.key ? null : n.key)}
                     className={`flex items-center gap-2 rounded-full border px-4 py-2.5 text-[15px] font-semibold transition-all active:scale-95 ${niche === n.key ? 'border-cyan-400 bg-cyan-50 text-cyan-700' : 'border-neutral-200 bg-white text-neutral-700'}`}>
-                    <n.icon className="h-4 w-4" /> {n.label}
+                    <n.icon className="h-4 w-4" weight="duotone" /> {n.label}
                   </button>
                 ))}
               </div>
@@ -449,7 +450,7 @@ export default function GigsPage() {
                       <p className="text-sm text-neutral-500">Pago</p>
                     </div>
                     <div className="pl-4">
-                      <Video className="h-6 w-6 text-orange-400" />
+                      <VideoCamera className="h-6 w-6 text-orange-400" weight="duotone" />
                       <p className="mt-2 text-xl font-extrabold">{nicheMeta(selectedGig.category)?.label || 'UGC'}</p>
                       <p className="text-sm text-neutral-500">Tipo de creador</p>
                     </div>

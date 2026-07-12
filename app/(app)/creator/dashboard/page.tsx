@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import Sky from '@/components/oct/Sky'
+import Notifications from '@/components/oct/Notifications'
 import { computeXP, getLevel, getMissions } from '@/lib/xp'
 import { Shield, Star, Flame, Crown, Trophy, Check, Target, Wallet, FileText, Send, Camera, X, Sparkles } from 'lucide-react'
 
@@ -139,23 +140,26 @@ export default function CreatorHome() {
     <div className="relative min-h-[100dvh] pb-32 text-neutral-900">
       <Sky />
       <div className="relative mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl px-5 pt-14">
-        {/* chips superiores */}
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-          <Link href="/leaderboard" prefetch className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/60 bg-white px-3.5 py-2 text-sm font-bold shadow-sm active:scale-95 transition-transform">
-            <span className={`flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br ${level.from} ${level.to}`}>
-              <Shield className="h-3 w-3 text-white" />
-            </span>
-            {level.name}
-          </Link>
-          <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/60 bg-white px-3.5 py-2 text-sm font-bold shadow-sm">
-            <Star className="h-4 w-4 fill-amber-400 text-amber-400" /> 5.0
+        {/* chips superiores + campana de notificaciones */}
+        <div className="flex items-center gap-2">
+          <div className="flex flex-1 items-center gap-2 overflow-x-auto no-scrollbar">
+            <Link href="/leaderboard" prefetch className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/60 bg-white px-3.5 py-2 text-sm font-bold shadow-sm active:scale-95 transition-transform">
+              <span className={`flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br ${level.from} ${level.to}`}>
+                <Shield className="h-3 w-3 text-white" />
+              </span>
+              {level.name}
+            </Link>
+            <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/60 bg-white px-3.5 py-2 text-sm font-bold shadow-sm">
+              <Star className="h-4 w-4 fill-amber-400 text-amber-400" /> 5.0
+            </div>
+            <Link href="/creator/racha" prefetch className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/60 bg-white px-3.5 py-2 text-sm font-bold shadow-sm active:scale-95 transition-transform">
+              <Flame className="h-4 w-4 fill-orange-500 text-orange-500" /> {streak}
+            </Link>
+            <Link href="/creator/pro" prefetch className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/60 bg-white px-3.5 py-2 text-sm font-bold shadow-sm transition-transform active:scale-95">
+              <Crown className="h-4 w-4 fill-amber-400 text-amber-500" /> FREE
+            </Link>
           </div>
-          <Link href="/creator/racha" prefetch className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/60 bg-white px-3.5 py-2 text-sm font-bold shadow-sm active:scale-95 transition-transform">
-            <Flame className="h-4 w-4 fill-orange-500 text-orange-500" /> {streak}
-          </Link>
-          <Link href="/creator/pro" prefetch className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/60 bg-white px-3.5 py-2 text-sm font-bold shadow-sm transition-transform active:scale-95">
-            <Crown className="h-4 w-4 fill-amber-400 text-amber-500" /> FREE
-          </Link>
+          <div className="shrink-0"><Notifications /></div>
         </div>
 
         {/* ganancias */}
