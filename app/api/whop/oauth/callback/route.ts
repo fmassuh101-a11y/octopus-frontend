@@ -8,7 +8,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://octopus-frontend-tau
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code") || "";
   const stateRaw = request.nextUrl.searchParams.get("state") || "";
-  let next = "/creator/messages";
+  let next = "/creator/chat";
   try { next = JSON.parse(Buffer.from(stateRaw, "base64url").toString()).n || next; } catch {}
 
   if (!code) return NextResponse.redirect(`${APP_URL}${next}?whop=error`);

@@ -331,21 +331,25 @@ export default function CreatorWallet() {
 
       {/* Modal EMBEBIDO de pagos (KYC + banco + retiro) — todo dentro de Octopus */}
       {showPayouts && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
-          onClick={() => { setShowPayouts(false); load() }}>
-          <div className="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-[28px] bg-white sm:rounded-[28px]" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
-              <div>
-                <p className="text-lg font-extrabold">Cobrá tu plata</p>
-                <p className="text-sm text-neutral-500">Verificación y cuenta bancaria, dentro de Octopus</p>
-              </div>
-              <button onClick={() => { setShowPayouts(false); load() }} className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-100" aria-label="Cerrar">
-                <ChevronLeft className="h-4 w-4 rotate-45" />
-              </button>
+        <div className="fixed inset-0 z-50 flex flex-col bg-white">
+          {/* Header fijo con botón volver — ocupa toda la pantalla para que el
+              formulario de verificación de Whop se vea COMPLETO */}
+          <div className="flex items-center gap-3 border-b border-neutral-100 px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+            <button
+              onClick={() => { setShowPayouts(false); load() }}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-100"
+              aria-label="Volver"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <div>
+              <p className="text-lg font-extrabold leading-tight">Cobrá tu plata</p>
+              <p className="text-xs text-neutral-500">Verificación y cuenta bancaria, dentro de Octopus</p>
             </div>
-            <div className="p-4">
-              <WhopPayouts />
-            </div>
+          </div>
+          {/* Área scrolleable a pantalla completa */}
+          <div className="flex-1 overflow-y-auto px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <WhopPayouts />
           </div>
         </div>
       )}

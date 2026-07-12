@@ -1,7 +1,9 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { authHeaders } from '@/lib/auth/clientToken'
+import { whopAuthorizeUrl } from '@/lib/whopApp'
 import { ChatCircleDots, Lock } from '@phosphor-icons/react/dist/ssr'
 import { Loader2 } from 'lucide-react'
 
@@ -14,8 +16,21 @@ export default function WhopChat({ role = 'creator' }: { role?: 'creator' | 'com
   const [status, setStatus] = useState<'loading' | 'connected' | 'disconnected' | 'error'>('loading')
   const [selected, setSelected] = useState<string | null>(null)
 
+  const router = useRouter()
   const backTo = role === 'company' ? '/company/chat' : '/creator/chat'
-  const connectUrl = `/api/whop/oauth/start?next=${encodeURIComponent(backTo)}`
+
+  // Conectar con Whop: armamos la URL de autorización EN EL CLIENTE (tenemos el user id
+  // en localStorage). Así no dependemos del servidor, que no puede leer la sesión y te
+  // rebotaba al dashboard.
+  const connect = () => {
+    try {
+      const userStr = localStorage.getItem('sb-user')
+      if (!userStr) { router.push('/auth/login'); return }
+      const user = JSON.parse(userStr)
+      if (!user?.id) { router.push('/auth/login'); return }
+      window.location.href = whopAuthorizeUrl(user.id, backTo)
+    } catch { router.push('/auth/login') }
+  }
 
   useEffect(() => {
     let alive = true
@@ -68,12 +83,12 @@ export default function WhopChat({ role = 'creator' }: { role?: 'creator' | 'com
           Chateá con {role === 'company' ? 'los creadores' : 'las marcas'} y armá grupos, todo dentro de Octopus.
           Es un paso único y seguro.
         </p>
-        <a
-          href={connectUrl}
+        <button
+          onClick={connect}
           className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-neutral-900 px-6 py-3.5 text-sm font-bold text-white transition hover:bg-neutral-800"
         >
           <Lock weight="bold" className="h-4 w-4" /> Activar mensajes
-        </a>
+        </button>
         <p className="mt-3 flex items-center gap-1.5 text-xs text-neutral-400">
           <Lock weight="fill" className="h-3 w-3" /> Cifrado de extremo a extremo
         </p>
