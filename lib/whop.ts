@@ -18,9 +18,11 @@ if (!process.env.WHOP_API_KEY && !TEST_KEY) {
   console.warn("WHOP_API_KEY no está configurada");
 }
 
-// Ambiente: sandbox si hay credenciales de test (o si WHOP_ENVIRONMENT=sandbox)
-export const WHOP_ENVIRONMENT = TEST_KEY ? "sandbox" : process.env.WHOP_ENVIRONMENT || "production";
-const isSandbox = WHOP_ENVIRONMENT === "sandbox";
+// Ambiente: SANDBOX solo si existen credenciales de test reales.
+// Si no hay test keys, va a PRODUCCIÓN aunque quede WHOP_ENVIRONMENT=sandbox
+// (evita el 401 "key de producción contra sandbox" al borrar solo las _Test).
+const isSandbox = !!TEST_KEY;
+export const WHOP_ENVIRONMENT = isSandbox ? "sandbox" : "production";
 
 // URL base según ambiente (sandbox = mirror completo para probar sin plata real)
 const BASE_URL = isSandbox

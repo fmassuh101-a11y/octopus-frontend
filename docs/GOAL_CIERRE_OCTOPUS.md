@@ -18,6 +18,15 @@ la plata nunca pasa por cuentas de Octopus (Whop custodia), verificar con screen
   con lo que haya (handle conectado + edad); la verificación de seguidores se completa en la Parte 6.
 
 ## PARTE 3 — Salir de sandbox + confirmar KYC en producción  [Felipe + Claude]
+### CONCLUSIÓN INVESTIGACIÓN KYC (jul 12): el redirect es INEVITABLE.
+- Whop (como Stripe Connect) hostea la verificación de identidad por COMPLIANCE — no hay componente
+  embebible de KYC (no existe "VerifyElement"). El identity check SIEMPRE redirige a la página hosteada de
+  Whop → Sumsub, y vuelve por return_url. SideShift hace lo mismo (solo lo hace sentir fluido).
+- El formulario largo (business/personal, fecha, teléfono) es el flujo de compliance de Whop — no se puede acortar.
+- SÍ se puede embeber: el MÉTODO DE PAGO (agregar banco) vía embedded components; el identity check no.
+- Acción: mantener el redirect lo más suave posible (abre en pestaña nueva, vuelve a Octopus, botón "Ya me verifiqué").
+  No hay nada que "arreglar" — es un límite legal del proveedor. El bug real (email falso) ya está resuelto.
+
 - Cuando Partes 1 y 2 estén, Felipe borra en Vercel las vars WHOP_API_KEY_Test y WHOP_OCTOPUS_COMPANY_ID_test → Redeploy.
 - Verificar /api/whop/ping → "env":"production".
 - Felipe hace el KYC con una cuenta de EMAIL REAL. Confirmar que pasa a "Verificado".
