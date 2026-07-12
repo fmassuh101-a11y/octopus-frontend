@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { Drawer } from 'vaul'
 import Sky from '@/components/oct/Sky'
 import { toast } from '@/components/oct/toast'
@@ -11,6 +12,7 @@ import { ChevronLeft, Wallet, ShieldCheck, Clock3, CreditCard, ArrowDownToLine, 
 
 // Wallet del creador — Paso 1 (activar pagos + KYC) y Paso 2 (saldo del ledger + retiro con fee).
 // El saldo se muestra COMPLETO; el fee (3.7% no-Pro / 0% Pro) se descuenta solo al retirar.
+const WhopPayouts = dynamic(() => import('@/components/oct/WhopPayouts'), { ssr: false })
 const MIN_WITHDRAW = 5
 const FEE_PERCENT = 0.037
 
@@ -36,6 +38,7 @@ export default function CreatorWallet() {
   const [moves, setMoves] = useState<Movement[]>([])
   const [sheetOpen, setSheetOpen] = useState(false)
   const [amountStr, setAmountStr] = useState('')
+  const [showPayouts, setShowPayouts] = useState(false) // modal KYC/banco/retiro embebido
 
   useEffect(() => { load() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -88,7 +91,7 @@ export default function CreatorWallet() {
     setLoading(false)
   }
 
-  // Paso 1: crear la connected account en Whop y abrir el KYC
+  // Paso 1: crear la connected account en Whop y abrir el KYC EMBEBIDO (dentro de la app)
   const activate = async () => {
     setBusy(true)
     try {
@@ -106,14 +109,12 @@ export default function CreatorWallet() {
         body: JSON.stringify({ email: user.email, fullName: profile.full_name, existingCompanyId: profile.whop_company_id }),
       })
       const data = await res.json()
-      if (data.kycUrl) {
-        // la verificación de identidad es de Whop (obligatorio legal) — se abre en
-        // OTRA pestaña para que Octopus quede abierto; al volver, "Ya verifiqué".
-        window.open(data.kycUrl, '_blank', 'noopener')
-        setPayState('kyc')
-        toast('Se abrió la verificación en otra pestaña. Al terminar, volvé acá.')
-      } else if (data.companyId) { setPayState('kyc'); toast('Cuenta creada. Continuá con la verificación.') }
-      else toast(data.error || 'No se pudo activar. Probá de nuevo.', 'error')
+      if (data.companyId || data.kycUrl) {
+        // la connected account ya existe → abrimos el KYC/banco/retiro EMBEBIDO
+        // (VerifyElement de Whop) sin sacar al usuario de Octopus.
+        setPayState((s) => (s === 'ok' ? 'ok' : 'kyc'))
+        setShowPayouts(true)
+      } else toast(data.error || 'No se pudo activar. Probá de nuevo.', 'error')
     } catch { toast('No se pudo activar. Probá de nuevo.', 'error') }
     setBusy(false)
   }
@@ -327,6 +328,27 @@ export default function CreatorWallet() {
           </Drawer.Content>
         </Drawer.Portal>
       </Drawer.Root>
+
+      {/* Modal EMBEBIDO de pagos (KYC + banco + retiro) — todo dentro de Octopus */}
+      {showPayouts && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
+          onClick={() => { setShowPayouts(false); load() }}>
+          <div className="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-[28px] bg-white sm:rounded-[28px]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
+              <div>
+                <p className="text-lg font-extrabold">Cobrá tu plata</p>
+                <p className="text-sm text-neutral-500">Verificación y cuenta bancaria, dentro de Octopus</p>
+              </div>
+              <button onClick={() => { setShowPayouts(false); load() }} className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-100" aria-label="Cerrar">
+                <ChevronLeft className="h-4 w-4 rotate-45" />
+              </button>
+            </div>
+            <div className="p-4">
+              <WhopPayouts />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

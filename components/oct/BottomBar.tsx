@@ -18,7 +18,7 @@ const ITEMS: Item[] = [
   { href: '/creator/dashboard', icon: Home, label: 'Inicio', match: ['/creator/dashboard'] },
   { href: '/gigs', icon: Search, label: 'Explorar', match: ['/gigs'] },
   { href: '/creator/academia', icon: GraduationCap, label: 'Academia', match: ['/creator/academia', '/creator/misiones'] },
-  { href: '/creator/messages', icon: MessageCircle, label: 'Mensajes', match: ['/creator/messages'] },
+  { href: '/creator/chat', icon: MessageCircle, label: 'Mensajes', match: ['/creator/chat', '/creator/messages'] },
   { href: '/creator/profile', icon: User, label: 'Perfil', match: ['/creator/profile', '/creator/wallet', '/creator/applications', '/creator/contracts', '/creator/deliveries', '/creator/analytics', '/creator/earnings'] },
 ]
 

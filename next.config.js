@@ -38,7 +38,7 @@ const nextConfig = {
               "img-src * data: blob:",
               "media-src 'self' https: blob: data:",
               "font-src 'self' data:",
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.whop.com https://sandbox-api.whop.com",
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.whop.com https://sandbox-api.whop.com https://*.whop.com wss://*.whop.com",
               "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://whop.com https://*.whop.com",
               "frame-ancestors 'self'",
               "base-uri 'self'",
