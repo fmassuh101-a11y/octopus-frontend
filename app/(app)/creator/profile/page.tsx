@@ -6,6 +6,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import Sky from '@/components/oct/Sky'
 import { computeXP, getLevel, getMissions } from '@/lib/xp'
 import { Pencil, Settings, Flame, Eye, Star, Banknote, Shield, ChevronRight, Wallet as WalletIcon, FileText, Award, LogOut, BarChart3, Send } from 'lucide-react'
+import { Wallet as WalletDuo, Cards, Gift, ChartLineUp, UploadSimple, Scroll, PencilSimple } from '@phosphor-icons/react'
 
 // Perfil del creador — copia del perfil de SideShift (tab Overview):
 // cielo, avatar centrado con mini-badge de liga, balance gigante + botón Wallet,
@@ -153,13 +154,13 @@ export default function CreatorProfile() {
 
         {/* accesos */}
         <div className="mt-4 overflow-hidden rounded-3xl border border-neutral-100 bg-white shadow-sm">
-          <Row href="/creator/wallet" icon={<WalletIcon className="h-5 w-5 text-cyan-600" />} label="Wallet y retiros" />
-          <Row href="/creator/applications" icon={<FileText className="h-5 w-5 text-violet-500" />} label="Mis postulaciones" />
-          <Row href="/creator/referidos" icon={<Send className="h-5 w-5 text-sky-500" />} label="Invitá y ganá (referidos)" />
-          <Row href="/creator/analytics" icon={<BarChart3 className="h-5 w-5 text-orange-500" />} label="Analytics" />
-          <Row href="/creator/deliveries" icon={<Send className="h-5 w-5 text-teal-500" />} label="Mis entregas" />
-          <Row href="/creator/contracts" icon={<FileText className="h-5 w-5 text-cyan-700" />} label="Mis contratos" />
-          <Row href="/creator/profile/edit" icon={<Pencil className="h-5 w-5 text-neutral-500" />} label="Editar perfil" last />
+          <Row href="/creator/wallet" icon={<WalletDuo className="h-5 w-5 text-cyan-600" weight="duotone" />} label="Wallet y retiros" />
+          <Row href="/creator/applications" icon={<Cards className="h-5 w-5 text-violet-500" weight="duotone" />} label="Mis postulaciones" />
+          <Row href="/creator/referidos" icon={<Gift className="h-5 w-5 text-sky-500" weight="duotone" />} label="Invitá y ganá (referidos)" />
+          <Row href="/creator/analytics" icon={<ChartLineUp className="h-5 w-5 text-orange-500" weight="duotone" />} label="Analytics" />
+          <Row href="/creator/deliveries" icon={<UploadSimple className="h-5 w-5 text-teal-500" weight="duotone" />} label="Mis entregas" />
+          <Row href="/creator/contracts" icon={<Scroll className="h-5 w-5 text-cyan-700" weight="duotone" />} label="Mis contratos" />
+          <Row href="/creator/profile/edit" icon={<PencilSimple className="h-5 w-5 text-neutral-500" weight="duotone" />} label="Editar perfil" last />
         </div>
 
         <button onClick={logout}
