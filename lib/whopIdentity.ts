@@ -52,13 +52,27 @@ export async function ensureWhopIdentity(user: { id: string; email?: string | nu
     // enrolar al usuario como connected account (crea su cuenta Whop mapeada)
     const email = (user.email || "").trim();
     if (!email || !email.includes("@")) throw new Error("email inválido para crear la cuenta de pagos/chat");
-    const created: any = await (whopClient as any).companies.create({
-      parent_company_id: OCTOPUS_COMPANY_ID,
-      email,
-      title: (profile.full_name || email.split("@")[0]).slice(0, 60),
-    });
-    companyId = created?.id || "";
-    whopUserId = created?.owner_user?.id || "";
+    const title = (profile.full_name || email.split("@")[0]).slice(0, 60);
+    const create = (mail: string) =>
+      (whopClient as any).companies.create({ parent_company_id: OCTOPUS_COMPANY_ID, email: mail, title });
+    try {
+      const created: any = await create(email);
+      companyId = created?.id || "";
+      whopUserId = created?.owner_user?.id || "";
+    } catch (e: any) {
+      // "Your mailbox is full" = ese email ya tiene demasiadas cuentas en Whop
+      // (pasa con emails reutilizados en pruebas). Reintentamos con un alias
+      // determinístico del usuario: los mails llegan a la MISMA casilla real.
+      if (/mailbox is full|already/i.test(e?.message || "")) {
+        const [local, domain] = email.split("@");
+        const aliased = `${local.split("+")[0]}+oct${user.id.replace(/-/g, "").slice(0, 10)}@${domain}`;
+        const created: any = await create(aliased);
+        companyId = created?.id || "";
+        whopUserId = created?.owner_user?.id || "";
+      } else {
+        throw e;
+      }
+    }
   }
 
   if (!companyId || !whopUserId) throw new Error("no se pudo resolver la identidad de Whop");
