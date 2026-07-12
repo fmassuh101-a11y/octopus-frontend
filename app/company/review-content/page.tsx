@@ -890,7 +890,7 @@ export default function CompanyReviewContentPage() {
 
               {/* Message Creator */}
               <Link
-                href={`/company/messages?creator=${selectedDelivery.creator_id}`}
+                href={`/company/chat?user=${selectedDelivery.creator_id}`}
                 className="block w-full py-3 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl font-medium text-center transition-colors border border-neutral-700"
               >
                 Enviar Mensaje

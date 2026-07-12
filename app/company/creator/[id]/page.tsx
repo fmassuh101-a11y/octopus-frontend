@@ -213,7 +213,7 @@ export default function CreatorProfilePage() {
   }
 
   const handleSendMessage = () => {
-    router.push(`/company/messages?creator=${creatorId}`)
+    router.push(`/company/chat?user=${creatorId}`)
   }
 
   // monto del pago (fijo o calculado por views: views/1000 * CPM)

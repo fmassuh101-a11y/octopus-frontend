@@ -1,14 +1,18 @@
 'use client'
 
+import { Suspense } from 'react'
 import dynamic from 'next/dynamic'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { ChevronLeft } from 'lucide-react'
 
 // Chat embebido de Whop (DMs + grupos) dentro de Octopus, para la empresa.
+// ?user=<id> abre directo el DM con ese creador.
 const WhopChat = dynamic(() => import('@/components/oct/WhopChat'), { ssr: false })
 
-export default function CompanyChatPage() {
+function CompanyChatInner() {
   const router = useRouter()
+  const params = useSearchParams()
+  const userId = params.get('user') || ''
   return (
     <div className="min-h-[100dvh] bg-[#F7FAFD] px-4 py-4 text-neutral-900 lg:px-8">
       <div className="mx-auto w-full max-w-4xl">
@@ -22,8 +26,17 @@ export default function CompanyChatPage() {
           </button>
           <h1 className="text-xl font-extrabold">Mensajes</h1>
         </div>
-        <WhopChat role="company" />
+        <WhopChat role="company" initialUserId={userId} />
       </div>
     </div>
+  )
+}
+
+export default function CompanyChatPage() {
+  // useSearchParams necesita Suspense en Next 14
+  return (
+    <Suspense fallback={<div className="min-h-[100dvh] bg-[#F7FAFD]" />}>
+      <CompanyChatInner />
+    </Suspense>
   )
 }

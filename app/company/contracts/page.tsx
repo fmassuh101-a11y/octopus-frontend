@@ -571,7 +571,7 @@ export default function CompanyContractsPage() {
               {/* Actions */}
               <div className="flex gap-3">
                 <Link
-                  href={`/company/messages?creator=${selectedContract.creator_id}`}
+                  href={`/company/chat?user=${selectedContract.creator_id}`}
                   className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-medium text-center transition-colors"
                 >
                   Enviar Mensaje

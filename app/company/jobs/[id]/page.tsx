@@ -483,7 +483,7 @@ export default function JobDetailPage() {
                             Crear Contrato
                           </button>
                           <Link
-                            href={`/company/messages?application_id=${app.id}`}
+                            href={`/company/chat?user=${app.creator_id}`}
                             className="py-2 px-3 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg text-sm font-medium transition"
                           >
                             Mensaje

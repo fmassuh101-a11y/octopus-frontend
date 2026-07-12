@@ -274,7 +274,7 @@ export default function ApplicantsPage() {
     e?.stopPropagation()
     if (app.status === 'accepted') {
       // Already accepted, go to messages
-      router.push(`/company/messages?creator=${app.creator_id}&application=${app.id}`)
+      router.push(`/company/chat?user=${app.creator_id}`)
     } else {
       // Not accepted yet, open accept modal
       setApplicationToAccept(app)
@@ -869,7 +869,7 @@ export default function ApplicantsPage() {
                 {selectedCreator.status === 'accepted' && (
                   <>
                     <Link
-                      href={`/company/messages?creator=${selectedCreator.creator_id}&application=${selectedCreator.id}`}
+                      href={`/company/chat?user=${selectedCreator.creator_id}`}
                       className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-neutral-800 text-white rounded-xl font-medium hover:bg-neutral-700 transition-colors"
                       onClick={() => setSelectedCreator(null)}
                     >

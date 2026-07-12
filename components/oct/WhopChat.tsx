@@ -1,54 +1,42 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { authHeaders } from '@/lib/auth/clientToken'
-import { ChatCircleDots, Lock } from '@phosphor-icons/react/dist/ssr'
+import { ChatCircleDots } from '@phosphor-icons/react/dist/ssr'
 import { Loader2 } from 'lucide-react'
 
-// Chat EMBEBIDO de Whop (DMs + grupos) DENTRO de Octopus. Nunca saca al usuario a
-// whop.com — usa los elementos embebibles (ChatSession + DmsListElement + ChatElement).
-// La lista de DMs de Whop ya trae su propio botón para iniciar un chat o crear un grupo.
-export default function WhopChat({ role = 'creator' }: { role?: 'creator' | 'company' }) {
+// Chat EMBEBIDO de Whop (DMs + grupos) DENTRO de Octopus — SIN OAuth ni login
+// de Whop: el server enrola al usuario y mintea el token con nuestra API key
+// (guía oficial de chat de Whop). El usuario nunca sale de la app.
+// initialUserId: abrir directo el DM con ese usuario de Octopus (?user= en la URL).
+export default function WhopChat({
+  role = 'creator',
+  initialUserId = '',
+}: {
+  role?: 'creator' | 'company'
+  initialUserId?: string
+}) {
   const [mod, setMod] = useState<any>(null)
   const [elements, setElements] = useState<any>(null)
-  const [status, setStatus] = useState<'loading' | 'connected' | 'disconnected' | 'error'>('loading')
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [error, setError] = useState('')
   const [selected, setSelected] = useState<string | null>(null)
-
-  const router = useRouter()
-  const backTo = role === 'company' ? '/company/chat' : '/creator/chat'
-  const [oauthError, setOauthError] = useState('')
-
-  // Conectar con Whop vía /api/whop/oauth/start: el server genera el PKCE
-  // (code_challenge obligatorio para Whop) y lo guarda en cookie httpOnly.
-  // No requiere sesión del server — le pasamos el user id por query.
-  const connect = () => {
-    try {
-      const userStr = localStorage.getItem('sb-user')
-      if (!userStr) { router.push('/auth/login'); return }
-      const user = JSON.parse(userStr)
-      if (!user?.id) { router.push('/auth/login'); return }
-      window.location.href = `/api/whop/oauth/start?u=${encodeURIComponent(user.id)}&next=${encodeURIComponent(backTo)}`
-    } catch { router.push('/auth/login') }
-  }
-
-  // si el OAuth volvió con error, mostrarlo (antes rebotaba en silencio)
-  useEffect(() => {
-    const p = new URLSearchParams(window.location.search)
-    if (p.get('whop') === 'error') {
-      setOauthError(p.get('why') || 'No se pudo conectar con los mensajes. Probá de nuevo.')
-    }
-  }, [])
+  const [openingDm, setOpeningDm] = useState(!!initialUserId)
 
   useEffect(() => {
     let alive = true
     ;(async () => {
       try {
-        // 1) verificar si ya está conectado (token de chat en cookie httpOnly)
+        // 1) probar el token primero (si falla, mostramos el motivo real)
         const check = await fetch('/api/whop/chat-token', { headers: authHeaders() })
+        const data = await check.json().catch(() => ({}))
         if (!alive) return
-        if (!check.ok) { setStatus('disconnected'); return }
-        // 2) cargar los módulos embebibles solo si está conectado
+        if (!check.ok || !data.token) {
+          setError(data.error || 'No se pudo iniciar el chat. Probá de nuevo.')
+          setStatus('error')
+          return
+        }
+        // 2) cargar los módulos embebibles
         const [react, vanilla] = await Promise.all([
           import('@whop/embedded-components-react-js'),
           import('@whop/embedded-components-vanilla-js'),
@@ -56,19 +44,39 @@ export default function WhopChat({ role = 'creator' }: { role?: 'creator' | 'com
         if (!alive) return
         setMod(react)
         setElements(vanilla.loadWhopElements())
-        setStatus('connected')
-      } catch {
-        if (alive) setStatus('error')
+        setStatus('ready')
+      } catch (e: any) {
+        if (alive) { setError(e?.message || 'No se pudo cargar el chat'); setStatus('error') }
       }
     })()
     return () => { alive = false }
   }, [])
 
-  // función token: refresca automáticamente antes de expirar
+  // si venimos con ?user= (ej: "Mensaje" a un creador), abrir/crear ese DM
+  useEffect(() => {
+    if (!initialUserId || status !== 'ready') return
+    let alive = true
+    ;(async () => {
+      try {
+        const res = await fetch('/api/whop/dm/open', {
+          method: 'POST',
+          headers: authHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ userId: initialUserId }),
+        })
+        const data = await res.json()
+        if (!alive) return
+        if (data.ok && data.channelId) setSelected(data.channelId)
+      } catch {}
+      if (alive) setOpeningDm(false)
+    })()
+    return () => { alive = false }
+  }, [initialUserId, status])
+
+  // función token: se refresca sola antes de expirar
   const getToken = useMemo(() => async () => {
     const res = await fetch('/api/whop/chat-token', { headers: authHeaders() })
     const data = await res.json()
-    if (!data.token) throw new Error('sin token de chat')
+    if (!data.token) throw new Error(data.error || 'sin token de chat')
     return data.token as string
   }, [])
 
@@ -80,34 +88,20 @@ export default function WhopChat({ role = 'creator' }: { role?: 'creator' | 'com
     )
   }
 
-  if (status === 'disconnected' || status === 'error') {
+  if (status === 'error') {
     return (
       <div className="mx-auto flex min-h-[60dvh] max-w-sm flex-col items-center justify-center px-6 text-center">
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-cyan-50">
           <ChatCircleDots weight="duotone" className="h-9 w-9 text-cyan-500" />
         </div>
-        <h2 className="mt-5 text-xl font-extrabold text-neutral-900">Activá tus mensajes</h2>
-        <p className="mt-2 text-sm leading-relaxed text-neutral-500">
-          Chateá con {role === 'company' ? 'los creadores' : 'las marcas'} y armá grupos, todo dentro de Octopus.
-        </p>
-        <p className="mt-3 rounded-xl bg-neutral-100 px-4 py-2.5 text-xs leading-relaxed text-neutral-500">
-          Una sola vez: iniciá sesión con Whop, nuestro procesador seguro de pagos y mensajes
-          (el mismo detrás de SideShift). Si no tenés cuenta, se crea en segundos y volvés acá.
-        </p>
-        {oauthError && (
-          <p className="mt-4 rounded-xl bg-red-50 px-4 py-2.5 text-xs font-semibold text-red-600">
-            No se pudo conectar: {oauthError}. Tocá el botón para reintentar.
-          </p>
-        )}
+        <h2 className="mt-5 text-xl font-extrabold text-neutral-900">Mensajes</h2>
+        <p className="mt-3 rounded-xl bg-red-50 px-4 py-2.5 text-xs font-semibold text-red-600">{error}</p>
         <button
-          onClick={connect}
-          className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-neutral-900 px-6 py-3.5 text-sm font-bold text-white transition hover:bg-neutral-800"
+          onClick={() => location.reload()}
+          className="mt-5 w-full rounded-2xl bg-neutral-900 px-6 py-3.5 text-sm font-bold text-white"
         >
-          <Lock weight="bold" className="h-4 w-4" /> Activar mensajes
+          Reintentar
         </button>
-        <p className="mt-3 flex items-center gap-1.5 text-xs text-neutral-400">
-          <Lock weight="fill" className="h-3 w-3" /> Cifrado de extremo a extremo
-        </p>
       </div>
     )
   }
@@ -132,7 +126,11 @@ export default function WhopChat({ role = 'creator' }: { role?: 'creator' | 'com
 
           {/* Conversación abierta */}
           <div className={`min-h-0 ${selected ? 'block' : 'hidden md:block'}`}>
-            {selected ? (
+            {openingDm ? (
+              <div className="flex h-full items-center justify-center gap-2 text-neutral-400">
+                <Loader2 className="h-5 w-5 animate-spin" /> Abriendo conversación…
+              </div>
+            ) : selected ? (
               <div className="flex h-full min-h-0 flex-col">
                 <button
                   onClick={() => setSelected(null)}
