@@ -92,7 +92,8 @@ export default function WhopChat({ role = 'creator' }: { role?: 'creator' | 'com
             <DmsListElement
               selectedChannel={selected || undefined}
               onEvent={(ev: any) => {
-                const id = ev?.detail?.channelId || ev?.channelId
+                // Whop emite channelSelected con el id del canal en ev.detail.id
+                const id = ev?.detail?.id || ev?.detail?.channelId || ev?.channelId
                 if (id) setSelected(id)
               }}
             />

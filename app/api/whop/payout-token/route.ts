@@ -31,13 +31,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Primero activá los pagos", needsSetup: true }, { status: 400 });
     }
 
-    // token con permisos de payouts (KYC, método de pago, balance, retiro)
+    // Token corto para los componentes embebidos (KYC + banco + balance + retiro).
+    // SIN scoped_actions: el token hereda TODOS los permisos de la API key sobre esta
+    // connected account (que es lo que necesita el flujo de payouts). Pasar una lista
+    // con nombres de scope inválidos hacía que Whop devolviera error y el elemento
+    // quedara en blanco.
     const res: any = await (whopClient as any).accessTokens.create({
       company_id: companyId,
-      scoped_actions: [
-        "payouts:read", "payouts:withdraw",
-        "identity:write", "payout_method:manage",
-      ],
     });
     const token = res?.token || res?.access_token || null;
     if (!token) {
@@ -47,7 +47,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ ok: true, token, companyId });
   } catch (e: any) {
-    console.error("[PayoutToken] error:", e?.message || e);
-    return NextResponse.json({ error: "No se pudo crear el token de pagos" }, { status: 500 });
+    const msg = e?.message || String(e);
+    console.error("[PayoutToken] error:", msg);
+    // devolvemos el detalle para que el cliente lo muestre (no dejar el modal en blanco)
+    return NextResponse.json({ error: `No se pudo crear el token de pagos: ${msg}` }, { status: 500 });
   }
 }
