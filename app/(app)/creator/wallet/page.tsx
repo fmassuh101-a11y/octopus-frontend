@@ -206,8 +206,8 @@ export default function CreatorWallet() {
                 <Clock3 className="h-6 w-6 text-amber-600" />
               </div>
               <div>
-                <p className="text-lg font-extrabold leading-tight text-amber-900">Verificación pendiente</p>
-                <p className="mt-1 text-amber-800/80">Terminá tu verificación de identidad para poder cobrar.</p>
+                <p className="text-lg font-extrabold leading-tight text-amber-900">Activá tus cobros</p>
+                <p className="mt-1 text-amber-800/80">Verificá tu identidad y agregá tu banco. Cuando tengas un método de pago cargado, esto desaparece.</p>
               </div>
             </div>
             <button onClick={activate} disabled={busy}

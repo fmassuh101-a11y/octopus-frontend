@@ -36,16 +36,26 @@ export async function POST(request: NextRequest) {
     const theirs = await ensureWhopIdentity({ id: targetId, email: target.email });
 
     // token de chat MÍO → crear el canal DM como yo.
-    // SOLO user_id (sin company_id): los tokens company-scoped no pueden crear
-    // DMs ("This endpoint does not support company-scoped user tokens").
+    // El mint EXIGE company_id, y el create del DM exige declarar el
+    // company_context → se lo pasamos como company_id del canal (la plataforma).
     const tok: any = await (whopClient as any).accessTokens.create({
+      company_id: mine.companyId,
       user_id: mine.whopUserId,
       scoped_actions: CHAT_SCOPES,
     });
     if (!tok?.token) return NextResponse.json({ error: "No se pudo crear el token" }, { status: 502 });
 
     const asMe = new Whop({ apiKey: tok.token, baseURL: "https://api.whop.com/api/v1" });
-    const channel: any = await (asMe as any).dmChannels.create({ with_user_ids: [theirs.whopUserId] });
+    let channel: any;
+    try {
+      channel = await (asMe as any).dmChannels.create({
+        with_user_ids: [theirs.whopUserId],
+        company_id: mine.companyId,
+      });
+    } catch {
+      // fallback: canal sin scope de compañía
+      channel = await (asMe as any).dmChannels.create({ with_user_ids: [theirs.whopUserId] });
+    }
     const channelId = channel?.id || null;
     if (!channelId) return NextResponse.json({ error: "No se pudo abrir el chat" }, { status: 502 });
 

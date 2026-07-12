@@ -68,8 +68,9 @@ export async function GET(request: NextRequest) {
       if (company) {
         balance = (company as any).available_balance ? (company as any).available_balance / 100 : 0
         totalBalance = (company as any).total_balance ? (company as any).total_balance / 100 : balance
-        // Check if payouts are enabled (indicates KYC complete)
-        kycComplete = (company as any).payouts_enabled === true
+        // OJO: companies.retrieve NO devuelve payouts_enabled (siempre undefined),
+        // por eso el banner nunca se marcaba verificado. La señal REAL de que el
+        // creador puede cobrar es tener un método de pago agregado (abajo).
       }
     } catch (companyError) {
       console.error("[Creator Balance] Error fetching company:", companyError)
