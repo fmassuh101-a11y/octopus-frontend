@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { authHeaders } from '@/lib/auth/clientToken'
+import CheckoutFrame from '@/components/oct/CheckoutFrame'
 import { ChevronLeft, CreditCard, Check, Loader2, ShieldCheck } from 'lucide-react'
 
 // Agregar fondos — la empresa deposita a SU cuenta y decide cómo usarlo.
@@ -124,24 +125,23 @@ export default function FondearPage() {
 
         {step === 'pay' && checkout && (
           <div className="mt-6">
-            <div className="rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm">
-              <div className="flex justify-between text-lg"><span className="font-bold">Total a pagar</span><span className="font-extrabold tabular-nums">${fmt(checkout.total)}</span></div>
-              <p className="mt-1 text-sm text-neutral-400">Se acredita completo a tu balance.</p>
-            </div>
-
-            <div className="mt-4 overflow-hidden rounded-3xl border border-neutral-100 bg-white shadow-sm">
+            <CheckoutFrame
+              title={`Agregar $${fmt(checkout.total)}`}
+              subtitle="Se acredita completo a tu balance."
+            >
               <WhopCheckoutEmbed
                 planId={checkout.planId}
                 {...(checkout.sessionId ? { sessionId: checkout.sessionId } : {})}
                 {...(checkout.environment === 'sandbox' ? { environment: 'sandbox' } : {})}
                 theme="light"
+                accentColor="cyan"
                 skipRedirect
                 onComplete={(_planId: string, receiptId?: string) => {
                   if (receiptId) receiptRef.current = receiptId
                   verify(checkout)
                 }}
               />
-            </div>
+            </CheckoutFrame>
 
             {error && <p className="mt-3 text-center text-sm font-semibold text-amber-600">{error}</p>}
             <button onClick={manualVerify} disabled={verifying}

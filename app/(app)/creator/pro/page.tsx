@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import Sky from '@/components/oct/Sky'
 import { toast } from '@/components/oct/toast'
+import CheckoutFrame from '@/components/oct/CheckoutFrame'
 import { authHeaders } from '@/lib/auth/clientToken'
 import { X, Check, Send, Loader2 } from 'lucide-react'
 
@@ -140,30 +141,30 @@ export default function ProPage() {
 
       {/* checkout embebido de la suscripción */}
       {checkout && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center" onClick={() => setCheckout(null)}>
-          <div className="max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white p-4 sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-2 flex items-center justify-between px-1">
-              <div>
-                <p className="text-lg font-extrabold">Suscribirte a Pro</p>
-                {checkout.trialDays ? (
-                  <p className="text-sm font-semibold text-emerald-600">{checkout.trialDays} días gratis, después ${checkout.price}{plan === 'annual' ? '/año' : '/mes'}</p>
-                ) : null}
-              </div>
-              <button onClick={() => setCheckout(null)} className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-100" aria-label="Cerrar">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <WhopCheckoutEmbed
-              planId={checkout.planId}
-              {...(checkout.sessionId ? { sessionId: checkout.sessionId } : {})}
-              {...(checkout.environment === 'sandbox' ? { environment: 'sandbox' } : {})}
-              theme="light"
-              skipRedirect
-              onComplete={(_pid: string, receiptId?: string) => verify(receiptId)}
-            />
-            <button onClick={() => verify()} className="mt-3 w-full rounded-full border-2 border-cyan-500 py-3 font-bold text-cyan-700">
-              Ya pagué — verificar
-            </button>
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4" onClick={() => setCheckout(null)}>
+          <div className="max-h-[92dvh] w-full max-w-md overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <CheckoutFrame
+              title="Suscribirte a Pro"
+              subtitle={checkout.trialDays ? `${checkout.trialDays} días gratis, después $${checkout.price}${plan === 'annual' ? '/año' : '/mes'}` : undefined}
+              onClose={() => setCheckout(null)}
+              footer={
+                <div className="border-t border-neutral-100 bg-white p-4">
+                  <button onClick={() => verify()} className="w-full rounded-full border-2 border-cyan-500 py-3 font-bold text-cyan-700">
+                    Ya pagué — verificar
+                  </button>
+                </div>
+              }
+            >
+              <WhopCheckoutEmbed
+                planId={checkout.planId}
+                {...(checkout.sessionId ? { sessionId: checkout.sessionId } : {})}
+                {...(checkout.environment === 'sandbox' ? { environment: 'sandbox' } : {})}
+                theme="light"
+                accentColor="cyan"
+                skipRedirect
+                onComplete={(_pid: string, receiptId?: string) => verify(receiptId)}
+              />
+            </CheckoutFrame>
           </div>
         </div>
       )}
