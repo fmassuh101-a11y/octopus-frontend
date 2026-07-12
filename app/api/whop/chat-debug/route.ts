@@ -28,8 +28,21 @@ export async function GET(request: NextRequest) {
     }
   };
 
-  const results = [];
+  const results: any[] = [];
   results.push(await tryKey("WHOP_API_KEY (pagos)", process.env.WHOP_API_KEY || ""));
-  results.push(await tryKey("WHOP_OAUTH_CLIENT_SECRET (key de la app)", (process.env.WHOP_OAUTH_CLIENT_SECRET || "").trim()));
+
+  // prueba de crear DM con la API key DIRECTA (como plataforma):
+  // ?dm=user_A,user_B → intenta with_user_ids con ambos
+  const dm = request.nextUrl.searchParams.get("dm") || "";
+  if (dm) {
+    const ids = dm.split(",").map((s) => s.trim()).filter(Boolean);
+    const c = new Whop({ apiKey: process.env.WHOP_API_KEY || "", baseURL: "https://api.whop.com/api/v1" });
+    try {
+      const ch: any = await (c as any).dmChannels.create({ with_user_ids: ids });
+      results.push({ label: `dm apikey [${ids.join(",")}]`, ok: true, channelId: ch?.id, raw: JSON.stringify(ch).slice(0, 300) });
+    } catch (e: any) {
+      results.push({ label: `dm apikey [${ids.join(",")}]`, ok: false, error: (e?.message || "").slice(0, 200) });
+    }
+  }
   return NextResponse.json({ results });
 }
