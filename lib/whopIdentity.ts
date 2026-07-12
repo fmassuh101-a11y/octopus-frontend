@@ -37,9 +37,15 @@ export async function ensureWhopIdentity(user: { id: string; email?: string | nu
   if (companyId && whopUserId) return { companyId, whopUserId };
 
   if (companyId && !whopUserId) {
-    // ya tiene connected account (creadores) → buscar su owner_user
-    const co: any = await whopClient.companies.retrieve(companyId);
-    whopUserId = co?.owner_user?.id || "";
+    // ya tiene connected account (creadores) → buscar su owner_user.
+    // Si la cuenta está rota en Whop (hay cuentas viejas que dan 404
+    // "This Bot was not found"), la tratamos como inexistente y creamos una nueva.
+    try {
+      const co: any = await whopClient.companies.retrieve(companyId);
+      whopUserId = co?.owner_user?.id || "";
+    } catch {
+      companyId = "";
+    }
   }
 
   if (!companyId) {
