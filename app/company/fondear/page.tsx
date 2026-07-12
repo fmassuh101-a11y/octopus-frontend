@@ -35,6 +35,9 @@ export default function FondearPage() {
   const createCheckout = async () => {
     if (amount < 1) { setError('El monto mínimo es $1'); return }
     setBusy(true); setError('')
+    // reset de estado de un intento anterior (para no arrastrar receipt/done viejos)
+    doneRef.current = false
+    receiptRef.current = ''
     try {
       const res = await fetch('/api/whop/fund-wallet', {
         method: 'POST',

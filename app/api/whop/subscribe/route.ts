@@ -11,9 +11,9 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 // Creador Pro: precios fijos. Empresa: precio calculado EN EL SERVER según
 // plan (pro/scale) + período (anual -30% / semestral -15% / mensual) + descuento
 // personal del perfil — nunca se confía en un precio del cliente.
-const CREATOR_TIERS: Record<string, { price: number; period: number; label: string }> = {
-  pro_monthly: { price: 9.99, period: 30, label: "Octopus Pro (mensual)" },
-  pro_annual: { price: 99, period: 365, label: "Octopus Pro (anual)" },
+const CREATOR_TIERS: Record<string, { price: number; period: number; label: string; trial?: number }> = {
+  pro_monthly: { price: 9.99, period: 30, label: "Octopus Pro (mensual)", trial: 3 },
+  pro_annual: { price: 99, period: 365, label: "Octopus Pro (anual)", trial: 3 },
 };
 const COMPANY_MONTHLY: Record<string, number> = { pro: 99, scale: 499 };
 const PERIODS: Record<string, { months: number; off: number; label: string }> = {
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => ({}));
     const tierKey = String(body?.tier || "");
 
-    let tier: { price: number; period: number; label: string } | null = null;
+    let tier: { price: number; period: number; label: string; trial?: number } | null = null;
     if (CREATOR_TIERS[tierKey]) {
       tier = CREATOR_TIERS[tierKey];
     } else if (tierKey.startsWith("company_")) {
@@ -57,6 +57,7 @@ export async function POST(request: NextRequest) {
           price: monthlyEff * per.months,
           period: per.months * 30,
           label: `Plan ${planKey === "pro" ? "Pro" : "Scale"} empresa (${per.label})`,
+          trial: planKey === "pro" ? 3 : 0, // el plan Pro empresa tiene 3 días gratis
         };
       }
     }
@@ -69,8 +70,11 @@ export async function POST(request: NextRequest) {
         plan_type: "renewal",
         billing_period: tier.period,
         currency: "usd",
-        initial_price: tier.price,
+        // NADA hoy: initial_price 0 (si no, Whop lo SUMA al renewal y cobra doble).
+        // Solo se cobra el renewal_price cada período, y tras la prueba gratis si hay.
+        initial_price: 0,
         renewal_price: tier.price,
+        ...(tier.trial ? { trial_period_days: tier.trial } : {}),
         title: tier.label,
         // Whop exige un producto para planes recurrentes — uno fijo por tier
         product: {
@@ -91,7 +95,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       ok: true, planId, sessionId: cfg?.id || null, subId, tier: tierKey,
-      price: tier.price, label: tier.label, environment: WHOP_ENVIRONMENT,
+      price: tier.price, label: tier.label, trialDays: tier.trial || 0, environment: WHOP_ENVIRONMENT,
     });
   } catch (e: any) {
     console.error("[Subscribe] error:", e?.message || e);
@@ -128,13 +132,27 @@ export async function GET(request: NextRequest) {
         payment = items.find((p) => isPaid(p) && p?.metadata?.sub_id === subId) || null;
       } catch {}
     }
-    if (!payment) return NextResponse.json({ ok: true, paid: false });
 
-    // seguridad: el pago debe ser de este usuario y de un tier conocido
-    if (payment.metadata?.octopus_user_id !== user.id) {
+    // durante la PRUEBA GRATIS no hay cobro todavía: buscamos una MEMBRESÍA
+    // (trialing/active) de esta suscripción para activar el plan igual.
+    let membershipMeta: any = null;
+    if (!payment) {
+      try {
+        const mem: any = await (whopClient as any).memberships.list({ company_id: OCTOPUS_COMPANY_ID });
+        const items: any[] = mem?.data || [];
+        const m = items.find((x) => x?.metadata?.sub_id === subId && ['trialing', 'active', 'completed'].includes(String(x?.status)));
+        if (m) membershipMeta = m.metadata;
+      } catch (e) { console.error('[Subscribe] memberships:', e); }
+    }
+
+    if (!payment && !membershipMeta) return NextResponse.json({ ok: true, paid: false });
+
+    const meta = payment?.metadata || membershipMeta || {};
+    // seguridad: la suscripción debe ser de este usuario y de un tier conocido
+    if (meta?.octopus_user_id !== user.id) {
       return NextResponse.json({ error: "Esta suscripción no es tuya" }, { status: 403 });
     }
-    const paidTier = String(payment.metadata?.tier || "");
+    const paidTier = String(meta?.tier || "");
     let apply: Record<string, any> | null = null;
     if (CREATOR_TIERS[paidTier]) apply = { is_pro: true };
     else if (paidTier === "company_pro") apply = { plan: "pro", plan_source: "whop" };

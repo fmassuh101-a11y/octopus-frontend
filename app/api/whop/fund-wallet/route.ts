@@ -127,29 +127,27 @@ export async function GET(request: NextRequest) {
     };
 
     let payment: any = null;
+    // CLAVE anti-falso-positivo: el pago SIEMPRE debe pertenecer a ESTE depósito.
+    // Su metadata.funding_id tiene que ser EXACTAMENTE el de esta transacción — así
+    // un pago viejo (aunque sea del mismo usuario y monto) nunca cuenta como éste.
+    const belongsHere = (p: any) => metaOf(p)?.funding_id === fundingId;
 
     // 2a) camino directo: el receipt id que entrega el checkout embebido al completar
     if (receiptId) {
       try {
         const p: any = await (whopClient as any).payments.retrieve(receiptId);
-        if (p && isPaid(p)) payment = p;
+        if (p && isPaid(p) && belongsHere(p)) payment = p;
       } catch (e) {
         console.error("[FundWallet] payments.retrieve:", e);
       }
     }
 
-    // 2b) respaldo: buscar en la lista por metadata (funding_id) o plan
+    // 2b) respaldo: buscar en la lista SOLO por funding_id de esta transacción
     if (!payment) {
       try {
         const payments: any = await whopClient.payments.list({ company_id: OCTOPUS_COMPANY_ID } as any);
         const items: any[] = payments?.data || payments?.items || (Array.isArray(payments) ? payments : []);
-        payment = items.find((p) => {
-          if (!isPaid(p)) return false;
-          const m = metaOf(p);
-          if (m?.funding_id === fundingId) return true;
-          if (planId && (p?.plan_id === planId || p?.plan?.id === planId)) return true;
-          return false;
-        }) || null;
+        payment = items.find((p) => isPaid(p) && belongsHere(p)) || null;
       } catch (e) {
         console.error("[FundWallet] payments.list:", e);
       }

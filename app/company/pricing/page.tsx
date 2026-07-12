@@ -53,9 +53,10 @@ export default function CompanyPricing() {
 
   // checkout de suscripción (Whop)
   const [subBusy, setSubBusy] = useState<string | null>(null)
-  const [subCheckout, setSubCheckout] = useState<{ planId: string; sessionId?: string; subId: string; label?: string; price?: number; environment?: string } | null>(null)
+  const [subCheckout, setSubCheckout] = useState<{ planId: string; sessionId?: string; subId: string; label?: string; price?: number; trialDays?: number; environment?: string } | null>(null)
 
   const startSubscription = async (planKey: string) => {
+    if (!localStorage.getItem('sb-access-token')) { window.location.href = '/auth/login'; return }
     setSubBusy(planKey)
     try {
       const res = await fetch('/api/whop/subscribe', {
@@ -63,6 +64,7 @@ export default function CompanyPricing() {
         headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ tier: `company_${planKey}`, period: periodKey }),
       })
+      if (res.status === 401) { window.location.href = '/auth/login'; return }
       const data = await res.json()
       if (data.ok && data.planId) setSubCheckout(data)
       else alert(data.error || 'No se pudo iniciar la suscripción')
@@ -312,7 +314,11 @@ export default function CompanyPricing() {
             <div className="mb-2 flex items-center justify-between px-1">
               <div>
                 <p className="text-lg font-extrabold text-neutral-900">{subCheckout.label || 'Suscribirte'}</p>
-                {subCheckout.price ? <p className="text-sm text-neutral-500">${subCheckout.price} por período</p> : null}
+                {subCheckout.trialDays ? (
+                  <p className="text-sm font-semibold text-emerald-600">{subCheckout.trialDays} días gratis, después ${subCheckout.price}</p>
+                ) : subCheckout.price ? (
+                  <p className="text-sm text-neutral-500">${subCheckout.price} por período</p>
+                ) : null}
               </div>
               <button onClick={() => setSubCheckout(null)} className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-100 text-neutral-700" aria-label="Cerrar">
                 <X className="h-4 w-4" />

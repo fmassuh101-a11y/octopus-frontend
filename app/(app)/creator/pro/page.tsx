@@ -26,7 +26,7 @@ export default function ProPage() {
   const router = useRouter()
   const [plan, setPlan] = useState<'annual' | 'monthly'>('annual')
   const [busy, setBusy] = useState(false)
-  const [checkout, setCheckout] = useState<{ planId: string; sessionId?: string; subId: string; environment?: string } | null>(null)
+  const [checkout, setCheckout] = useState<{ planId: string; sessionId?: string; subId: string; environment?: string; trialDays?: number; price?: number } | null>(null)
   const doneRef = useRef(false)
 
   const subscribe = async () => {
@@ -143,7 +143,12 @@ export default function ProPage() {
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center" onClick={() => setCheckout(null)}>
           <div className="max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white p-4 sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-2 flex items-center justify-between px-1">
-              <p className="text-lg font-extrabold">Suscribirte a Pro</p>
+              <div>
+                <p className="text-lg font-extrabold">Suscribirte a Pro</p>
+                {checkout.trialDays ? (
+                  <p className="text-sm font-semibold text-emerald-600">{checkout.trialDays} días gratis, después ${checkout.price}{plan === 'annual' ? '/año' : '/mes'}</p>
+                ) : null}
+              </div>
               <button onClick={() => setCheckout(null)} className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-100" aria-label="Cerrar">
                 <X className="h-4 w-4" />
               </button>
