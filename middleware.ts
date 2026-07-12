@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
+import { WAITLIST_COOKIE, waitlistEnabled, waitlistSecret } from '@/lib/waitlist'
 
 // Escudo en el BORDE (corre en el edge de Vercel, antes de tocar la app).
 // Activo en producción sin ninguna configuración. Capa extra sobre lib/shield.ts
@@ -35,7 +36,32 @@ export function middleware(req: NextRequest) {
     return new NextResponse('Forbidden', { status: 403 })
   }
 
-  // 3) refuerzo de headers en cada respuesta del edge
+  // 3) MURO DE LISTA DE ESPERA: con WAITLIST_ENABLED activo, TODA la app queda
+  //    cerrada (login, onboarding, todo) salvo /waitlist. Se entra con la
+  //    contraseña (cookie httpOnly que setea /api/waitlist/unlock).
+  //    Las /api/* NO se redirigen (webhooks de Whop, OAuth callbacks y las
+  //    propias APIs de la waitlist tienen que seguir andando; cada API ya
+  //    valida su propia auth).
+  if (waitlistEnabled()) {
+    const path = url.pathname
+    const isAllowed =
+      path === '/waitlist' ||
+      path.startsWith('/waitlist/') ||
+      path.startsWith('/api/') ||
+      path.startsWith('/_next') ||
+      path === '/favicon.ico' ||
+      path === '/robots.txt' ||
+      path === '/sitemap.xml'
+    const hasPass = req.cookies.get(WAITLIST_COOKIE)?.value === waitlistSecret()
+    if (!isAllowed && !hasPass) {
+      const dest = url.clone()
+      dest.pathname = '/waitlist'
+      dest.search = url.search // conserva ?ref=... de los links de invitación
+      return NextResponse.redirect(dest)
+    }
+  }
+
+  // 4) refuerzo de headers en cada respuesta del edge
   const res = NextResponse.next()
   res.headers.set('X-Content-Type-Options', 'nosniff')
   res.headers.set('X-Frame-Options', 'SAMEORIGIN')
