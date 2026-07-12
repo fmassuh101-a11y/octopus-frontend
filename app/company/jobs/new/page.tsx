@@ -190,6 +190,11 @@ export default function NewJobPage() {
         budget: getBudgetString(),
         category: contentTypes.find(c => c.label === formData.jobType)?.key || 'ugc',
         requirements: getRequirementsString(),
+        // requisitos estructurados: se chequean al postular
+        require_instagram: !!formData.requireInstagram,
+        require_tiktok: !!formData.requireTikTok,
+        require_age_21: !!formData.requireAge21,
+        min_followers: parseInt(formData.minFollowers || '0', 10) || 0,
         status: 'active'
       }
 

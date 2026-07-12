@@ -24,6 +24,10 @@ interface Gig {
   status: string
   created_at: string
   applicants_count?: number
+  require_instagram?: boolean
+  require_tiktok?: boolean
+  require_age_21?: boolean
+  min_followers?: number
 }
 
 const REQUIRE_VERIFICATION = false
@@ -59,6 +63,8 @@ export default function GigsPage() {
   const [isVerified, setIsVerified] = useState(false)
   const [showVerificationModal, setShowVerificationModal] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
+  // redes conectadas del creador (para chequear requisitos al postular)
+  const [mySocials, setMySocials] = useState<{ instagram?: string; tiktok?: string; youtube?: string; followers?: number }>({})
 
   useEffect(() => {
     // instantáneo: pintar desde caché de la sesión y revalidar en background
@@ -83,7 +89,7 @@ export default function GigsPage() {
       if (token && userData) {
         promises.push(
           fetch(`${SUPABASE_URL}/rest/v1/applications?select=gig_id&creator_id=eq.${userData.id}`, { headers }),
-          fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=bio`, { headers })
+          fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=bio,instagram,tiktok,youtube`, { headers })
         )
       }
       const results = await Promise.all(promises)
@@ -124,11 +130,17 @@ export default function GigsPage() {
       try { sessionStorage.setItem('oct-gigs', JSON.stringify({ gigs: gigsData || [], applied: appliedData || [] })) } catch {}
       if (results[2]?.ok) {
         const profiles = await results[2].json()
-        if (profiles.length && profiles[0].bio) {
-          try {
-            const bio = JSON.parse(profiles[0].bio)
-            setIsVerified(!!(bio.tiktokConnected && bio.tiktokAccounts?.length))
-          } catch { setIsVerified(false) }
+        const prof = profiles[0]
+        if (prof) {
+          let bio: any = {}
+          try { bio = typeof prof.bio === 'string' ? JSON.parse(prof.bio) : (prof.bio || {}) } catch {}
+          setIsVerified(!!(bio.tiktokConnected && bio.tiktokAccounts?.length))
+          setMySocials({
+            instagram: prof.instagram || bio.instagram || '',
+            tiktok: prof.tiktok || bio.tiktok || bio.tiktokAccounts?.[0]?.username || '',
+            youtube: prof.youtube || bio.youtube || '',
+            followers: bio.tiktokAccounts?.[0]?.followerCount || bio.tiktokAccounts?.[0]?.followers || 0,
+          })
         }
       }
     } catch (e) { console.error(e) } finally { setLoading(false) }
@@ -143,6 +155,22 @@ export default function GigsPage() {
       return
     }
     if (appliedGigs.has(gig.id)) return
+
+    // REQUISITOS de la campaña — bloquean con motivo exacto
+    if (gig.require_instagram && !mySocials.instagram) {
+      toast('Este trabajo requiere Instagram. Agregá tu cuenta en tu perfil antes de aplicar.', 'error'); return
+    }
+    if (gig.require_tiktok && !mySocials.tiktok) {
+      toast('Este trabajo requiere TikTok. Agregá tu cuenta en tu perfil antes de aplicar.', 'error'); return
+    }
+    if (gig.min_followers && gig.min_followers > 0 && (mySocials.followers || 0) < gig.min_followers) {
+      // el conteo real de seguidores se valida al conectar las redes (OAuth); si aún no hay datos, avisamos
+      toast(`Este trabajo requiere ${gig.min_followers.toLocaleString('es-CL')}+ seguidores. Conectá tus redes para validarlo.`, 'error'); return
+    }
+    if (gig.require_age_21) {
+      const ok = window.confirm('Este trabajo requiere tener 21 años o más. ¿Confirmás que tenés 21+?')
+      if (!ok) return
+    }
     setAppliedGigs(prev => new Set([...Array.from(prev), gig.id]))
     setSelectedGig(null)
     toast('Postulaste con éxito')
@@ -481,10 +509,25 @@ export default function GigsPage() {
                       <p className="mt-1 whitespace-pre-line text-neutral-600">{selectedGig.description}</p>
                     </div>
                   )}
-                  {selectedGig.requirements && (
+                  {(selectedGig.require_instagram || selectedGig.require_tiktok || selectedGig.require_age_21 || (selectedGig.min_followers || 0) > 0) && (
                     <div className="mt-4 rounded-3xl border border-neutral-100 bg-white p-5 shadow-sm">
-                      <p className="font-bold">Requisitos</p>
-                      <p className="mt-1 whitespace-pre-line text-neutral-600">{selectedGig.requirements}</p>
+                      <p className="font-bold">Requisitos para postular</p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {selectedGig.require_instagram && (
+                          <span className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold ${mySocials.instagram ? 'bg-emerald-50 text-emerald-700' : 'bg-neutral-100 text-neutral-500'}`}>
+                            {mySocials.instagram ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : null} Instagram</span>
+                        )}
+                        {selectedGig.require_tiktok && (
+                          <span className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold ${mySocials.tiktok ? 'bg-emerald-50 text-emerald-700' : 'bg-neutral-100 text-neutral-500'}`}>
+                            {mySocials.tiktok ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : null} TikTok</span>
+                        )}
+                        {(selectedGig.min_followers || 0) > 0 && (
+                          <span className="rounded-full bg-neutral-100 px-3 py-1.5 text-sm font-semibold text-neutral-600">{selectedGig.min_followers!.toLocaleString('es-CL')}+ seguidores</span>
+                        )}
+                        {selectedGig.require_age_21 && (
+                          <span className="rounded-full bg-amber-50 px-3 py-1.5 text-sm font-semibold text-amber-700">21+ años</span>
+                        )}
+                      </div>
                     </div>
                   )}
                   {(selectedGig.applicants_count || 0) > 0 && (
