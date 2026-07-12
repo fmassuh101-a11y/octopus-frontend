@@ -24,7 +24,16 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const userId = user.id;
-    const email = body.email || user.email;
+    // Email REAL de la cuenta (server-side). Whop rechaza dominios falsos, así que
+    // NUNCA inventamos uno: si no hay email real y válido, avisamos claro.
+    const email = (user.email || body.email || '').trim();
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && !email.endsWith('@octopus.app');
+    if (!emailOk) {
+      return NextResponse.json({
+        error: 'Necesitás un email real en tu cuenta para activar los pagos. Actualizá tu email y volvé a intentar.',
+        needsEmail: true,
+      }, { status: 400 });
+    }
     const fullName = body.fullName;
 
     // SEGURIDAD: el companyId NO se acepta del body (IDOR → robo de payouts).
@@ -74,7 +83,7 @@ export async function POST(request: NextRequest) {
     let company;
     try {
       company = await whopClient.companies.create({
-        email: email || `user_${userId}@octopus.app`,
+        email,
         parent_company_id: OCTOPUS_COMPANY_ID,
         title: uniqueTitle,
         metadata: {
@@ -87,7 +96,7 @@ export async function POST(request: NextRequest) {
       if (createError?.message?.includes('same name') || createError?.error?.message?.includes('same name')) {
         console.log("[Setup Creator] Company name conflict, trying with timestamp...");
         company = await whopClient.companies.create({
-          email: email || `user_${userId}@octopus.app`,
+          email,
           parent_company_id: OCTOPUS_COMPANY_ID,
           title: `${uniqueTitle}_${Date.now()}`,
           metadata: {
