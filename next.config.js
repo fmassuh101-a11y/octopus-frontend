@@ -33,13 +33,17 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline'",
-              "style-src 'self' 'unsafe-inline'",
+              // Whop embebido (KYC + chat) inyecta un <script> desde apollo.elements.whop.com
+              // que abre un iframe con la UI. Sin esto en script-src/frame-src, el componente
+              // queda en blanco. Se permiten los subdominios de whop.com para eso.
+              "script-src 'self' 'unsafe-inline' https://apollo.elements.whop.com https://*.elements.whop.com https://*.whop.com",
+              "worker-src 'self' blob:",
+              "style-src 'self' 'unsafe-inline' https://*.whop.com",
               "img-src * data: blob:",
               "media-src 'self' https: blob: data:",
-              "font-src 'self' data:",
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.whop.com https://sandbox-api.whop.com https://*.whop.com wss://*.whop.com",
-              "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://whop.com https://*.whop.com",
+              "font-src 'self' data: https://*.whop.com",
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.whop.com https://sandbox-api.whop.com https://apollo.elements.whop.com https://*.elements.whop.com https://*.whop.com wss://*.whop.com",
+              "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://whop.com https://apollo.elements.whop.com https://*.elements.whop.com https://*.whop.com",
               "frame-ancestors 'self'",
               "base-uri 'self'",
               "form-action 'self'",
