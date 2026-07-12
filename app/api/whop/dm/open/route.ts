@@ -35,9 +35,10 @@ export async function POST(request: NextRequest) {
     const target = ((tRes.ok ? await tRes.json() : [])[0]) || { user_id: targetId };
     const theirs = await ensureWhopIdentity({ id: targetId, email: target.email });
 
-    // token de chat MÍO → crear el canal DM como yo
+    // token de chat MÍO → crear el canal DM como yo.
+    // SOLO user_id (sin company_id): los tokens company-scoped no pueden crear
+    // DMs ("This endpoint does not support company-scoped user tokens").
     const tok: any = await (whopClient as any).accessTokens.create({
-      company_id: mine.companyId,
       user_id: mine.whopUserId,
       scoped_actions: CHAT_SCOPES,
     });
