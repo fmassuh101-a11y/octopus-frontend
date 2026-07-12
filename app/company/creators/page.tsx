@@ -299,7 +299,7 @@ export default function CreatorsPage() {
           {[
             { icon: Home, label: 'Dashboard', href: '/company/dashboard' },
             { icon: ClipboardList, label: 'Campañas', href: '/company/campaigns' },
-            { icon: MessageCircle, label: 'Mensajes', href: '/company/messages' },
+            { icon: MessageCircle, label: 'Mensajes', href: '/company/chat' },
             { icon: Users, label: 'Aplicantes', href: '/company/applicants' },
           ].map((item) => (
             <Link

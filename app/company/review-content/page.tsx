@@ -917,7 +917,7 @@ export default function CompanyReviewContentPage() {
             <FileText className="w-5 h-5" strokeWidth={2} />
             <span className="text-xs mt-1">Contratos</span>
           </Link>
-          <Link href="/company/messages" className="flex flex-col items-center p-2 text-neutral-500">
+          <Link href="/company/chat" className="flex flex-col items-center p-2 text-neutral-500">
             <MessageCircle className="w-5 h-5" strokeWidth={2} />
             <span className="text-xs mt-1">Mensajes</span>
           </Link>

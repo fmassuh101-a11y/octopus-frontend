@@ -30,6 +30,11 @@ interface SavedChat {
 }
 
 export default function SupportChatWidget() {
+  // en la lista de espera no va el globito de soporte (página pública de marketing)
+  const [hidden, setHidden] = useState(false)
+  useEffect(() => {
+    if (window.location.pathname.startsWith('/waitlist')) setHidden(true)
+  }, [])
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputValue, setInputValue] = useState('')
@@ -593,6 +598,8 @@ export default function SupportChatWidget() {
     if (days < 7) return `Hace ${days} dias`
     return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
   }
+
+  if (hidden) return null
 
   return (
     <>

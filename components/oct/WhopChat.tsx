@@ -89,7 +89,10 @@ export default function WhopChat({ role = 'creator' }: { role?: 'creator' | 'com
         <h2 className="mt-5 text-xl font-extrabold text-neutral-900">Activá tus mensajes</h2>
         <p className="mt-2 text-sm leading-relaxed text-neutral-500">
           Chateá con {role === 'company' ? 'los creadores' : 'las marcas'} y armá grupos, todo dentro de Octopus.
-          Es un paso único y seguro.
+        </p>
+        <p className="mt-3 rounded-xl bg-neutral-100 px-4 py-2.5 text-xs leading-relaxed text-neutral-500">
+          Una sola vez: iniciá sesión con Whop, nuestro procesador seguro de pagos y mensajes
+          (el mismo detrás de SideShift). Si no tenés cuenta, se crea en segundos y volvés acá.
         </p>
         {oauthError && (
           <p className="mt-4 rounded-xl bg-red-50 px-4 py-2.5 text-xs font-semibold text-red-600">

@@ -392,7 +392,7 @@ export default function CompanyContractsPage() {
             <h3 className="text-lg font-semibold mb-2">No hay contratos</h3>
             <p className="text-neutral-500 text-sm mb-4">Crea contratos desde el chat con creadores</p>
             <Link
-              href="/company/messages"
+              href="/company/chat"
               className="inline-block px-6 py-3 bg-emerald-600 hover:bg-emerald-500 rounded-xl font-medium transition-colors"
             >
               Ir a Mensajes
@@ -690,7 +690,7 @@ export default function CompanyContractsPage() {
             <FileText className="w-5 h-5" strokeWidth={2} />
             <span className="text-xs">Contratos</span>
           </div>
-          <Link href="/company/messages" className="flex flex-col items-center gap-1 px-4 py-1 text-neutral-500 hover:text-neutral-300">
+          <Link href="/company/chat" className="flex flex-col items-center gap-1 px-4 py-1 text-neutral-500 hover:text-neutral-300">
             <MessageCircle className="w-5 h-5" strokeWidth={2} />
             <span className="text-xs">Mensajes</span>
           </Link>

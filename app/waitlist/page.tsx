@@ -124,24 +124,24 @@ function WaitlistInner() {
     <div className="relative min-h-[100dvh] overflow-x-hidden bg-[#F7FAFD] pb-16 text-neutral-900">
       <Sky height={300} />
 
-      <div className="relative mx-auto w-full max-w-md px-5 pt-12">
+      <div className="relative mx-auto w-full max-w-md px-5 pt-12 md:max-w-2xl md:pt-16">
         {/* marca */}
-        <p className="text-center text-3xl font-black tracking-tight text-white drop-shadow-sm">Octopus</p>
+        <p className="text-center text-3xl font-black tracking-tight text-white drop-shadow-sm md:text-4xl">Octopus</p>
         <p className="mx-auto mt-2 w-fit rounded-full bg-white/25 px-4 py-1 text-xs font-bold uppercase tracking-widest text-white backdrop-blur">
           Lista de espera
         </p>
 
-        <h1 className="mt-8 text-center text-3xl font-black leading-tight">
+        <h1 className="mt-8 text-center text-3xl font-black leading-tight md:mt-10 md:text-5xl">
           Creadores que cobran.
           <br />
           Marcas que crecen.
         </h1>
-        <p className="mt-3 text-center text-sm leading-relaxed text-neutral-500">
+        <p className="mx-auto mt-3 max-w-md text-center text-sm leading-relaxed text-neutral-500 md:text-base">
           Estamos abriendo Octopus de a poco. Anotate y te avisamos apenas te toque entrar.
         </p>
 
         {/* tarjeta principal */}
-        <div className="mt-8 rounded-[28px] border border-neutral-100 bg-white p-5 shadow-[0_20px_60px_-20px_rgba(8,145,178,0.25)]">
+        <div className="mx-auto mt-8 w-full max-w-md rounded-[28px] border border-neutral-100 bg-white p-5 shadow-[0_20px_60px_-20px_rgba(8,145,178,0.25)] md:max-w-lg md:p-6">
           {joinedId ? (
             /* ─── YA ANOTADO: link viral ─── */
             <div>
@@ -307,7 +307,7 @@ function WaitlistInner() {
         </div>
 
         {/* por qué anotarse */}
-        <div className="mt-6 grid grid-cols-2 gap-3">
+        <div className="mx-auto mt-6 grid w-full max-w-md grid-cols-2 gap-3 md:max-w-lg">
           <div className="rounded-2xl border border-neutral-100 bg-white p-4">
             <Megaphone className="h-5 w-5 text-teal-600" />
             <p className="mt-2 text-sm font-extrabold">Marcas reales</p>

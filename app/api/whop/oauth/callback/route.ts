@@ -25,9 +25,10 @@ export async function GET(request: NextRequest) {
   if (pkce.s && stateRaw && pkce.s !== stateRaw) return fail("state no coincide");
 
   const clientId = process.env.WHOP_OAUTH_CLIENT_ID || process.env.NEXT_PUBLIC_WHOP_APP_ID || "app_D74Fuxu632GOeK";
-  const clientSecret = process.env.WHOP_OAUTH_CLIENT_SECRET || "";
 
   try {
+    // Canje SOLO con PKCE (así lo documenta Whop: grant_type, code, redirect_uri,
+    // client_id y code_verifier — SIN client_secret; mandarlo daba 401).
     const body: Record<string, string> = {
       grant_type: "authorization_code",
       code,
@@ -35,13 +36,23 @@ export async function GET(request: NextRequest) {
       client_id: clientId,
       code_verifier: pkce.v,
     };
-    if (clientSecret) body.client_secret = clientSecret;
 
-    const res = await fetch("https://api.whop.com/oauth/token", {
+    let res = await fetch("https://api.whop.com/oauth/token", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
+    // fallback: algunos servidores OAuth solo aceptan form-encoded
+    if (!res.ok && (res.status === 400 || res.status === 401 || res.status === 415)) {
+      const firstStatus = res.status;
+      const firstText = (await res.text()).slice(0, 200);
+      res = await fetch("https://api.whop.com/oauth/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams(body).toString(),
+      });
+      if (!res.ok) console.error("[Whop OAuth] intento JSON:", firstStatus, firstText);
+    }
     const text = await res.text();
     if (!res.ok) {
       console.error("[Whop OAuth] token exchange failed:", res.status, text.slice(0, 300));
