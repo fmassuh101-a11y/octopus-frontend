@@ -25,15 +25,17 @@ export async function GET(request: NextRequest) {
   if (pkce.s && stateRaw && pkce.s !== stateRaw) return fail("state no coincide");
 
   const clientId = process.env.WHOP_OAUTH_CLIENT_ID || process.env.NEXT_PUBLIC_WHOP_APP_ID || "app_D74Fuxu632GOeK";
+  // VERIFICADO contra el endpoint real: Whop EXIGE client_secret ("invalid_client:
+  // client_secret is required") además del code_verifier del PKCE.
+  const clientSecret = (process.env.WHOP_OAUTH_CLIENT_SECRET || "").trim();
 
   try {
-    // Canje SOLO con PKCE (así lo documenta Whop: grant_type, code, redirect_uri,
-    // client_id y code_verifier — SIN client_secret; mandarlo daba 401).
     const body: Record<string, string> = {
       grant_type: "authorization_code",
       code,
       redirect_uri: `${APP_URL}/api/whop/oauth/callback`,
       client_id: clientId,
+      client_secret: clientSecret,
       code_verifier: pkce.v,
     };
 
@@ -56,7 +58,10 @@ export async function GET(request: NextRequest) {
     const text = await res.text();
     if (!res.ok) {
       console.error("[Whop OAuth] token exchange failed:", res.status, text.slice(0, 300));
-      return fail(`canje ${res.status}`);
+      // incluir el motivo real de Whop para no debuggear a ciegas
+      let why = `canje ${res.status}`;
+      try { const e = JSON.parse(text); if (e.error_description || e.error) why += `: ${e.error_description || e.error}`; } catch {}
+      return fail(why);
     }
     let data: any = {};
     try { data = JSON.parse(text); } catch {}
