@@ -57,12 +57,22 @@ export async function ensureWhopIdentity(user: { id: string; email?: string | nu
 
   if (!companyId || !whopUserId) throw new Error("no se pudo resolver la identidad de Whop");
 
-  // 2) persistir para la próxima
+  // 2) persistir para la próxima — en DOS pasos para que el company_id quede
+  //    guardado aunque la columna whop_user_id todavía no exista (sin esto,
+  //    cada llamada crearía OTRA connected account duplicada).
   await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}`, {
     method: "PATCH",
     headers: sbHeaders(),
-    body: JSON.stringify({ whop_company_id: companyId, whop_user_id: whopUserId }),
+    body: JSON.stringify({ whop_company_id: companyId }),
   }).catch(() => {});
+  const uRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}`, {
+    method: "PATCH",
+    headers: sbHeaders(),
+    body: JSON.stringify({ whop_user_id: whopUserId }),
+  }).catch(() => null);
+  if (!uRes || !uRes.ok) {
+    console.error("[WhopIdentity] no se pudo guardar whop_user_id — ¿falta correr MENSAJES_SETUP.sql?");
+  }
 
   return { companyId, whopUserId };
 }
