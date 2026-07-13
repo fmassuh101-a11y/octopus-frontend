@@ -107,7 +107,7 @@ export default function WhopPayouts() {
             {/* VerifyElement solo aparece si la cuenta REQUIERE verificación
                 (verificado = no monta nada). Nunca más un aviso equivocado. */}
             <VerifyElement />
-            <BalanceElement onReady={() => setPortalReady(true)} />
+            <BalanceElement options={{ onReady: () => setPortalReady(true) }} />
             <WithdrawButtonElement />
             <AddPayoutMethodElement />
             <WithdrawalsElement />

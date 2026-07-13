@@ -114,12 +114,16 @@ export default function WhopChat({
         <div className="grid h-[calc(100dvh-7.5rem)] grid-cols-1 overflow-hidden rounded-3xl border border-neutral-200 bg-white md:grid-cols-[340px_1fr]">
           {/* Lista de DMs / grupos — se oculta en móvil cuando hay un chat abierto */}
           <div className={`min-h-0 border-neutral-100 md:border-r ${selected ? 'hidden md:block' : 'block'}`}>
+            {/* OJO: los componentes React de Whop reciben TODO en `options`
+                (pasar props sueltos rompe: React interpreta `style` como CSS). */}
             <DmsListElement
-              selectedChannel={selected || undefined}
-              onEvent={(ev: any) => {
-                // Whop emite channelSelected con el id del canal en ev.detail.id
-                const id = ev?.detail?.id || ev?.detail?.channelId || ev?.channelId
-                if (id) setSelected(id)
+              options={{
+                selectedChannel: selected || undefined,
+                onEvent: (ev: any) => {
+                  // Whop emite channelSelected con el id en ev.detail.id
+                  const id = ev?.detail?.id || ev?.detail?.channelId || ev?.channelId
+                  if (id) setSelected(id)
+                },
               }}
             />
           </div>
@@ -139,7 +143,7 @@ export default function WhopChat({
                   ‹ Mensajes
                 </button>
                 <div className="min-h-0 flex-1">
-                  <ChatElement channelId={selected} style="discord" />
+                  <ChatElement options={{ channelId: selected, style: 'discord' }} />
                 </div>
               </div>
             ) : (

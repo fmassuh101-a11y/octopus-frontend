@@ -85,6 +85,21 @@ export async function POST(request: NextRequest) {
         amount,
       }, { status: 402 })
     }
+
+    // AUTO-PAYOUT: la plata del creador vuela YA a su cuenta Whop (cero
+    // custodia de fondos de terceros). Si falla, queda en su saldo (fallback).
+    try {
+      const { autoPayoutToWhop } = await import('@/lib/autoPayout')
+      const cRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${delivery.creator_id}&select=email`, { headers: H })
+      const cEmail = ((cRes.ok ? await cRes.json() : [])[0])?.email
+      await autoPayoutToWhop({
+        userId: delivery.creator_id,
+        email: cEmail,
+        amount,
+        idempotenceKey: `dlv_${deliveryId}`,
+        notes: `Contenido aprobado: ${delivery.title || 'entrega'}`,
+      })
+    } catch {}
   }
 
   const now = new Date().toISOString()

@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
   // el que paga debe ser empresa y el que cobra debe ser creador
   const [payerRes, creatorRes] = await Promise.all([
     fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=user_type`, { headers: H }),
-    fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${creatorId}&select=user_type,full_name`, { headers: H }),
+    fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${creatorId}&select=user_type,full_name,email`, { headers: H }),
   ])
   const payer = ((payerRes.ok ? await payerRes.json() : [])[0]) || {}
   const creator = ((creatorRes.ok ? await creatorRes.json() : [])[0]) || null
@@ -86,5 +86,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'No se pudo procesar el pago (¿corriste PAGO_DIRECTO_FIX.sql?)' }, { status: 500 })
   }
 
-  return NextResponse.json({ ok: true, amount, creator: creator.full_name })
+  // AUTO-PAYOUT: la plata del creador vuela YA a su cuenta Whop (cero custodia).
+  // Si Whop fallara, queda en su saldo Octopus y la retira manual (fallback).
+  const { autoPayoutToWhop } = await import('@/lib/autoPayout')
+  const payout = await autoPayoutToWhop({
+    userId: creatorId,
+    email: (creator as any).email,
+    amount,
+    idempotenceKey: `pay_${user.id}_${creatorId}_${Date.now()}`,
+    notes: description || 'Pago de campaña Octopus',
+  })
+
+  return NextResponse.json({ ok: true, amount, creator: creator.full_name, sentToWhop: payout.sent })
 }

@@ -14,7 +14,7 @@ import { ChevronLeft, Wallet, ShieldCheck, Clock3, CreditCard, ArrowDownToLine, 
 // El saldo se muestra COMPLETO; el fee (3.7% no-Pro / 0% Pro) se descuenta solo al retirar.
 const WhopPayouts = dynamic(() => import('@/components/oct/WhopPayouts'), { ssr: false })
 const MIN_WITHDRAW = 5 // (el mínimo de Whop $10.20 se muestra dentro de su panel; luego lo reponemos acá)
-const FEE_PERCENT = 0.037
+const FEE_PERCENT = 0 // fee por transaccion pausado (suscripciones por ahora)
 
 interface Movement {
   id?: string

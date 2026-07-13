@@ -60,7 +60,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Completá tu verificación antes de retirar", needsKyc: true }, { status: 400 });
     }
 
-    const feePercent = profile.is_pro ? 0 : OCTOPUS_FEE_PERCENT;
+    // FEE 0 POR AHORA (decisión de Felipe jul-13): la plataforma vive de las
+    // suscripciones hasta cerrar con Whop el % por transacción (feeMarkups /
+    // Whop for Platforms). Cuando se apruebe, volver a: is_pro ? 0 : OCTOPUS_FEE_PERCENT.
+    const feePercent = 0;
+    void OCTOPUS_FEE_PERCENT; void profile.is_pro;
 
     // descuento ATÓMICO del ledger (como el usuario — auth.uid() = él mismo)
     const rpcRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/oct_request_withdrawal`, {
