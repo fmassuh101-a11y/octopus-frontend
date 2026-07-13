@@ -13,7 +13,7 @@ import { ChevronLeft, Wallet, ShieldCheck, Clock3, CreditCard, ArrowDownToLine, 
 // Wallet del creador — Paso 1 (activar pagos + KYC) y Paso 2 (saldo del ledger + retiro con fee).
 // El saldo se muestra COMPLETO; el fee (3.7% no-Pro / 0% Pro) se descuenta solo al retirar.
 const WhopPayouts = dynamic(() => import('@/components/oct/WhopPayouts'), { ssr: false })
-const MIN_WITHDRAW = 5
+const MIN_WITHDRAW = 10.2 // mínimo real de Whop para el payout al banco
 const FEE_PERCENT = 0.037
 
 interface Movement {
@@ -50,13 +50,22 @@ export default function CreatorWallet() {
       const token = localStorage.getItem('sb-access-token')
       const sb = { Authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY }
 
-      // saldo del ledger + perfil + retiros + pagos recibidos + estado Whop, en paralelo
-      const [wRes, pRes, mRes, pmRes, whopRes] = await Promise.all([
+      // El estado de Whop es LO LENTO (2 llamadas a su API): va aparte, sin
+      // bloquear el saldo. El saldo/movimientos (supabase) renderizan al toque.
+      fetch(`/api/whop/creator-balance`, { headers: authHeaders() })
+        .then(async (whopRes) => {
+          if (whopRes.ok) {
+            const whop = await whopRes.json()
+            setPayState(whop.needsSetup ? 'none' : whop.kycComplete ? 'ok' : 'kyc')
+          } else setPayState('none')
+        })
+        .catch(() => setPayState('none'))
+
+      const [wRes, pRes, mRes, pmRes] = await Promise.all([
         fetch(`${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${user.id}&select=balance`, { headers: sb }),
         fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=is_pro`, { headers: sb }),
         fetch(`${SUPABASE_URL}/rest/v1/withdrawal_requests?user_id=eq.${user.id}&select=id,amount,fee_amount,net_amount,status,created_at&order=created_at.desc&limit=12`, { headers: sb }),
         fetch(`${SUPABASE_URL}/rest/v1/wallet_movements?user_id=eq.${user.id}&select=id,amount,kind,description,seen,created_at&order=created_at.desc&limit=12`, { headers: sb }),
-        fetch(`/api/whop/creator-balance`, { headers: authHeaders() }),
       ])
       const wallets = wRes.ok ? await wRes.json() : []
       setBalance(Math.max(0, Number(wallets?.[0]?.balance) || 0))
@@ -81,12 +90,6 @@ export default function CreatorWallet() {
 
       const all = [...withdrawals, ...received].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       setMoves(all.slice(0, 15))
-      if (whopRes.ok) {
-        const whop = await whopRes.json()
-        setPayState(whop.needsSetup ? 'none' : whop.kycComplete ? 'ok' : 'kyc')
-      } else {
-        setPayState('none') // si falla la consulta, ofrecer activar (el server revalida todo)
-      }
     } catch {}
     setLoading(false)
   }
@@ -169,13 +172,19 @@ export default function CreatorWallet() {
             </p>
           )}
           <button
-            onClick={() => setSheetOpen(true)}
-            disabled={loading || payState !== 'ok' || balance < MIN_WITHDRAW}
+            onClick={() => {
+              // SIEMPRE responde algo (nunca un botón muerto):
+              if (payState !== 'ok') { toast('Primero activá tus cobros (verificación + banco)', 'error'); setShowPayouts(true); return }
+              if (balance >= MIN_WITHDRAW) { setSheetOpen(true); return }
+              // sin saldo en Octopus → abrir directo el panel de retiro de Whop
+              setShowPayouts(true)
+            }}
+            disabled={loading}
             className="mt-5 w-full rounded-full bg-gradient-to-b from-[#22D3EE] to-[#0891B2] py-4 text-lg font-bold text-white shadow-lg shadow-cyan-200 transition-transform active:scale-[0.98] disabled:from-neutral-200 disabled:to-neutral-300 disabled:text-neutral-400 disabled:shadow-none">
             Retirar
           </button>
           {!loading && payState === 'ok' && balance < MIN_WITHDRAW && (
-            <p className="mt-2 text-sm text-neutral-500">El retiro mínimo es ${MIN_WITHDRAW}</p>
+            <p className="mt-2 text-sm text-neutral-500">Retiro mínimo ${fmt(MIN_WITHDRAW)} (mínimo de Whop al banco)</p>
           )}
         </div>
 
@@ -213,11 +222,7 @@ export default function CreatorWallet() {
             <button onClick={activate} disabled={busy}
               className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-amber-500 py-3.5 font-bold text-white shadow-lg shadow-amber-200 transition-transform active:scale-[0.98] disabled:opacity-60">
               {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <ChevronRight className="h-5 w-5" />}
-              Continuar verificación
-            </button>
-            <button onClick={() => { setLoading(true); load() }}
-              className="mt-2 w-full py-2 text-sm font-bold text-amber-700 active:opacity-70">
-              Ya me verifiqué — actualizar
+              Completar
             </button>
           </div>
         )}

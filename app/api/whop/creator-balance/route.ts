@@ -62,32 +62,26 @@ export async function GET(request: NextRequest) {
     let kycComplete = false // Default to false - user must verify
     let payoutMethods: any[] = []
 
-    try {
-      const company = await whopClient.companies.retrieve(companyId)
-
-      if (company) {
-        balance = (company as any).available_balance ? (company as any).available_balance / 100 : 0
-        totalBalance = (company as any).total_balance ? (company as any).total_balance / 100 : balance
-        // OJO: companies.retrieve NO devuelve payouts_enabled (siempre undefined),
-        // por eso el banner nunca se marcaba verificado. La señal REAL de que el
-        // creador puede cobrar es tener un método de pago agregado (abajo).
-      }
-    } catch (companyError) {
-      console.error("[Creator Balance] Error fetching company:", companyError)
+    // Las dos llamadas a Whop EN PARALELO (antes iban en serie y la página
+    // esperaba el doble). OJO: companies.retrieve NO devuelve payouts_enabled
+    // (siempre undefined) — la señal REAL de que puede cobrar es tener un
+    // método de pago agregado.
+    const [companyRes, methodsRes] = await Promise.allSettled([
+      whopClient.companies.retrieve(companyId),
+      whopClient.payoutMethods.list({ company_id: companyId }),
+    ])
+    if (companyRes.status === "fulfilled" && companyRes.value) {
+      const company: any = companyRes.value
+      balance = company.available_balance ? company.available_balance / 100 : 0
+      totalBalance = company.total_balance ? company.total_balance / 100 : balance
+    } else if (companyRes.status === "rejected") {
+      console.error("[Creator Balance] Error fetching company:", companyRes.reason)
     }
-
-    // Get payout methods - if they have any, KYC is definitely complete
-    try {
-      const methods = await whopClient.payoutMethods.list({
-        company_id: companyId
-      })
-      payoutMethods = methods.data || []
-      // If user has payout methods configured, they've completed KYC
-      if (payoutMethods.length > 0) {
-        kycComplete = true
-      }
-    } catch (methodsError) {
-      console.error("[Creator Balance] Error fetching payout methods:", methodsError)
+    if (methodsRes.status === "fulfilled") {
+      payoutMethods = (methodsRes.value as any).data || []
+      if (payoutMethods.length > 0) kycComplete = true
+    } else {
+      console.error("[Creator Balance] Error fetching payout methods:", methodsRes.reason)
     }
 
     return NextResponse.json({
