@@ -49,9 +49,25 @@ export async function ensureWhopIdentity(user: { id: string; email?: string | nu
   }
 
   if (!companyId) {
-    // enrolar al usuario como connected account (crea su cuenta Whop mapeada)
     const email = (user.email || "").trim();
     if (!email || !email.includes("@")) throw new Error("email inválido para crear la cuenta de pagos/chat");
+
+    // ¿Otro perfil con el MISMO email ya tiene identidad Whop? (misma persona,
+    // p.ej. cuentas de prueba) → adoptarla en vez de crear otra cuenta.
+    const twinRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/profiles?email=eq.${encodeURIComponent(email)}&whop_user_id=not.is.null&select=whop_user_id,whop_company_id&limit=1`,
+      { headers: sbHeaders() }
+    );
+    const twin = ((twinRes.ok ? await twinRes.json() : [])[0]) || null;
+    if (twin?.whop_user_id) {
+      companyId = twin.whop_company_id || OCTOPUS_COMPANY_ID;
+      whopUserId = twin.whop_user_id;
+    }
+  }
+
+  if (!companyId) {
+    // enrolar al usuario como connected account (crea su cuenta Whop mapeada)
+    const email = (user.email || "").trim();
     const title = (profile.full_name || email.split("@")[0]).slice(0, 60);
     const create = (mail: string) =>
       (whopClient as any).companies.create({ parent_company_id: OCTOPUS_COMPANY_ID, email: mail, title });
@@ -66,9 +82,14 @@ export async function ensureWhopIdentity(user: { id: string; email?: string | nu
       if (/mailbox is full|already/i.test(e?.message || "")) {
         const [local, domain] = email.split("@");
         const aliased = `${local.split("+")[0]}+oct${user.id.replace(/-/g, "").slice(0, 10)}@${domain}`;
-        const created: any = await create(aliased);
-        companyId = created?.id || "";
-        whopUserId = created?.owner_user?.id || "";
+        try {
+          const created: any = await create(aliased);
+          companyId = created?.id || "";
+          whopUserId = created?.owner_user?.id || "";
+        } catch {
+          // solo pasa con emails saturados de cuentas de prueba (no usuarios reales)
+          throw new Error("Este email ya tiene demasiadas cuentas de Whop (de pruebas). Entrá con otro email.");
+        }
       } else {
         throw e;
       }

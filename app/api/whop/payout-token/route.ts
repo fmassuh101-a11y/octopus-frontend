@@ -20,16 +20,9 @@ export async function GET(request: NextRequest) {
     const user = await getAuthenticatedUser(request);
     if (!user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
-    // connected account del creador
-    const apiKey = SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY;
-    const pRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=whop_company_id`,
-      { headers: { Authorization: `Bearer ${apiKey}`, apikey: apiKey } }
-    );
-    const companyId = ((pRes.ok ? await pRes.json() : [])[0])?.whop_company_id || null;
-    if (!companyId) {
-      return NextResponse.json({ error: "Primero activá los pagos", needsSetup: true }, { status: 400 });
-    }
+    // identidad Whop del usuario (se crea sola si no existe — cero pasos previos)
+    const { ensureWhopIdentity } = await import("@/lib/whopIdentity");
+    const { companyId } = await ensureWhopIdentity(user);
 
     // Token corto para los componentes embebidos (KYC + banco + balance + retiro).
     // SIN scoped_actions: el token hereda TODOS los permisos de la API key sobre esta
