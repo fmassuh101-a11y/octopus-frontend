@@ -13,7 +13,7 @@ import { ChevronLeft, Wallet, ShieldCheck, Clock3, CreditCard, ArrowDownToLine, 
 // Wallet del creador — Paso 1 (activar pagos + KYC) y Paso 2 (saldo del ledger + retiro con fee).
 // El saldo se muestra COMPLETO; el fee (3.7% no-Pro / 0% Pro) se descuenta solo al retirar.
 const WhopPayouts = dynamic(() => import('@/components/oct/WhopPayouts'), { ssr: false })
-const MIN_WITHDRAW = 10.2 // mínimo real de Whop para el payout al banco
+const MIN_WITHDRAW = 5 // (el mínimo de Whop $10.20 se muestra dentro de su panel; luego lo reponemos acá)
 const FEE_PERCENT = 0.037
 
 interface Movement {
@@ -130,18 +130,11 @@ export default function CreatorWallet() {
             </p>
           )}
           <button
-            onClick={() => {
-              // SIEMPRE responde algo (nunca un botón muerto):
-              if (balance >= MIN_WITHDRAW) { setSheetOpen(true); return }
-              toast(`Retiro mínimo $${fmt(MIN_WITHDRAW)}. Tu cuenta de cobros está abajo.`)
-            }}
+            onClick={() => setSheetOpen(true)}
             disabled={loading}
             className="mt-5 w-full rounded-full bg-gradient-to-b from-[#22D3EE] to-[#0891B2] py-4 text-lg font-bold text-white shadow-lg shadow-cyan-200 transition-transform active:scale-[0.98] disabled:from-neutral-200 disabled:to-neutral-300 disabled:text-neutral-400 disabled:shadow-none">
             Retirar
           </button>
-          {!loading && balance < MIN_WITHDRAW && (
-            <p className="mt-2 text-sm text-neutral-500">Retiro mínimo ${fmt(MIN_WITHDRAW)}</p>
-          )}
         </div>
 
         {/* Cuenta de cobros de Whop, EMBEBIDA e integrada (el estado de

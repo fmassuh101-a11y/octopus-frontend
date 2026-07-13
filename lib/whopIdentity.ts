@@ -52,10 +52,14 @@ export async function ensureWhopIdentity(user: { id: string; email?: string | nu
     const email = (user.email || "").trim();
     if (!email || !email.includes("@")) throw new Error("email inválido para crear la cuenta de pagos/chat");
 
-    // ¿Otro perfil con el MISMO email ya tiene identidad Whop? (misma persona,
-    // p.ej. cuentas de prueba) → adoptarla en vez de crear otra cuenta.
+    // ¿Otro perfil de la MISMA casilla ya tiene identidad Whop? → adoptarla en
+    // vez de crear otra cuenta. Normalizamos alias de Gmail: para Whop,
+    // "pepe+algo@gmail.com" y "pepe@gmail.com" son la MISMA casilla.
+    const [local, domain] = email.split("@");
+    const base = `${local.split("+")[0]}@${domain}`;
+    const pattern = `${local.split("+")[0]}+%@${domain}`; // pepe+cualquiercosa@dominio
     const twinRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/profiles?email=eq.${encodeURIComponent(email)}&whop_user_id=not.is.null&select=whop_user_id,whop_company_id&limit=1`,
+      `${SUPABASE_URL}/rest/v1/profiles?or=(email.eq.${encodeURIComponent(email)},email.eq.${encodeURIComponent(base)},email.like.${encodeURIComponent(pattern)})&whop_user_id=not.is.null&select=whop_user_id,whop_company_id&limit=1`,
       { headers: sbHeaders() }
     );
     const twin = ((twinRes.ok ? await twinRes.json() : [])[0]) || null;

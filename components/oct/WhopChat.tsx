@@ -111,7 +111,7 @@ export default function WhopChat({
   return (
     <Elements elements={elements}>
       <ChatSession token={getToken}>
-        <div className="grid h-[calc(100dvh-8.5rem)] grid-cols-1 overflow-hidden rounded-3xl border border-neutral-200 bg-white md:grid-cols-[340px_1fr]">
+        <div className="grid h-[calc(100dvh-7.5rem)] grid-cols-1 overflow-hidden rounded-3xl border border-neutral-200 bg-white md:grid-cols-[340px_1fr]">
           {/* Lista de DMs / grupos — se oculta en móvil cuando hay un chat abierto */}
           <div className={`min-h-0 border-neutral-100 md:border-r ${selected ? 'hidden md:block' : 'block'}`}>
             <DmsListElement
@@ -139,7 +139,7 @@ export default function WhopChat({
                   ‹ Mensajes
                 </button>
                 <div className="min-h-0 flex-1">
-                  <ChatElement channelId={selected} style="imessage" />
+                  <ChatElement channelId={selected} style="discord" />
                 </div>
               </div>
             ) : (

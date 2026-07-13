@@ -19,8 +19,10 @@ export default function Toaster() {
 
   useEffect(() => {
     push = (t) => {
-      setItems((prev) => [...prev.slice(-2), t])
-      setTimeout(() => setItems((prev) => prev.filter((x) => x.id !== t.id)), 2600)
+      // UNO a la vez: el nuevo reemplaza al anterior (nada de pilas de avisos),
+      // dura 4 segundos y recien ahi puede aparecer otro.
+      setItems([t])
+      setTimeout(() => setItems((prev) => prev.filter((x) => x.id !== t.id)), 4000)
     }
     return () => { push = null }
   }, [])
