@@ -32,6 +32,24 @@ export async function GET(request: NextRequest) {
   const PAY_KEY = process.env.WHOP_API_KEY || "";
   const APP_KEY = (process.env.WHOP_OAUTH_CLIENT_SECRET || "").trim();
 
+  // inspección de un canal: ¿quiénes son los miembros reales?
+  const inspect = request.nextUrl.searchParams.get("inspect") || "";
+  if (inspect) {
+    const c = new Whop({ apiKey: APP_KEY || PAY_KEY, baseURL: "https://api.whop.com/api/v1" });
+    try {
+      const ch: any = await (c as any).dmChannels.retrieve(inspect);
+      const out: any = { channel: JSON.parse(JSON.stringify(ch)) };
+      try {
+        const members: any[] = [];
+        for await (const m of (c as any).dmMembers.list({ channel_id: inspect })) { members.push(m); if (members.length > 10) break; }
+        out.members = members;
+      } catch (e: any) { out.membersError = (e?.message || "").slice(0, 150); }
+      return NextResponse.json(out);
+    } catch (e: any) {
+      return NextResponse.json({ error: (e?.message || "").slice(0, 200) });
+    }
+  }
+
   // escalera: ¿qué receta de mint produce un token que PUEDE mandar mensajes?
   const msgChannel = request.nextUrl.searchParams.get("msg") || "";
   if (msgChannel) {
