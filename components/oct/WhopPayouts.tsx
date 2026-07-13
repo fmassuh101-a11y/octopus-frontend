@@ -14,6 +14,15 @@ export default function WhopPayouts() {
   const [elements, setElements] = useState<any>(null)
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [error, setError] = useState('')
+  const [portalReady, setPortalReady] = useState(false)
+  const [slow, setSlow] = useState(false)
+
+  // si Whop no termina de dibujar en 12s, avisamos (su portal a veces tiene caídas)
+  useEffect(() => {
+    if (status !== 'ready' || portalReady) return
+    const t = setTimeout(() => setSlow(true), 12000)
+    return () => clearTimeout(t)
+  }, [status, portalReady])
 
   useEffect(() => {
     let alive = true
@@ -73,7 +82,7 @@ export default function WhopPayouts() {
   }
 
   const {
-    Elements, PayoutsSession, StatusBannerElement, AddPayoutMethodElement,
+    Elements, PayoutsSession, VerifyElement, AddPayoutMethodElement,
     BalanceElement, WithdrawButtonElement, WithdrawalsElement,
   } = mod
 
@@ -90,10 +99,15 @@ export default function WhopPayouts() {
             <p className="ml-auto text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Segura · Whop</p>
           </div>
           <div className="space-y-4 p-4">
-            {/* El estado REAL lo dice Whop: si falta verificar muestra su aviso
-                con botón; verificado = no muestra nada. */}
-            <StatusBannerElement />
-            <BalanceElement />
+            {slow && !portalReady && (
+              <div className="rounded-xl bg-amber-50 px-4 py-2.5 text-xs font-semibold text-amber-700">
+                El procesador de pagos está tardando en responder. Esperá un momento o volvé a entrar en unos minutos.
+              </div>
+            )}
+            {/* VerifyElement solo aparece si la cuenta REQUIERE verificación
+                (verificado = no monta nada). Nunca más un aviso equivocado. */}
+            <VerifyElement />
+            <BalanceElement onReady={() => setPortalReady(true)} />
             <WithdrawButtonElement />
             <AddPayoutMethodElement />
             <WithdrawalsElement />
