@@ -29,8 +29,38 @@ export async function GET(request: NextRequest) {
   };
 
   const results: any[] = [];
-  results.push(await tryKey("WHOP_API_KEY (pagos)", process.env.WHOP_API_KEY || ""));
-  results.push(await tryKey("key de la App (client secret)", (process.env.WHOP_OAUTH_CLIENT_SECRET || "").trim()));
+  const PAY_KEY = process.env.WHOP_API_KEY || "";
+  const APP_KEY = (process.env.WHOP_OAUTH_CLIENT_SECRET || "").trim();
+
+  // escalera: ¿qué receta de mint produce un token que PUEDE mandar mensajes?
+  const msgChannel = request.nextUrl.searchParams.get("msg") || "";
+  if (msgChannel) {
+    const recipes: Array<{ label: string; key: string; body: Record<string, unknown> }> = [
+      { label: "payKey user+company", key: PAY_KEY, body: { company_id: companyId, user_id: userId, scoped_actions: CHAT_SCOPES } },
+      { label: "appKey user-only", key: APP_KEY, body: { user_id: userId, scoped_actions: CHAT_SCOPES } },
+      { label: "appKey user+platform", key: APP_KEY, body: { company_id: "biz_RP3n8m53mpKsdU", user_id: userId, scoped_actions: CHAT_SCOPES } },
+      { label: "appKey user+company", key: APP_KEY, body: { company_id: companyId, user_id: userId, scoped_actions: CHAT_SCOPES } },
+      { label: "payKey user+platform", key: PAY_KEY, body: { company_id: "biz_RP3n8m53mpKsdU", user_id: userId, scoped_actions: CHAT_SCOPES } },
+    ];
+    for (const r of recipes) {
+      if (!r.key) { results.push({ label: r.label, ok: false, error: "key ausente" }); continue; }
+      try {
+        const minter = new Whop({ apiKey: r.key, baseURL: "https://api.whop.com/api/v1" });
+        const t: any = await (minter as any).accessTokens.create(r.body);
+        if (!t?.token) { results.push({ label: r.label, ok: false, error: "sin token" }); continue; }
+        const asUser = new Whop({ apiKey: t.token, baseURL: "https://api.whop.com/api/v1" });
+        const m: any = await (asUser as any).messages.create({ channel_id: msgChannel, content: `prueba ${r.label}` });
+        results.push({ label: r.label, ok: true, messageId: m?.id });
+        break; // encontramos la receta — no spamear el canal
+      } catch (e: any) {
+        results.push({ label: r.label, ok: false, error: (e?.message || "").slice(0, 140) });
+      }
+    }
+    return NextResponse.json({ results });
+  }
+
+  results.push(await tryKey("WHOP_API_KEY (pagos)", PAY_KEY));
+  results.push(await tryKey("key de la App (client secret)", APP_KEY));
 
   // prueba de crear DM con cada key DIRECTA: ?dm=user_A,user_B
   const dm = request.nextUrl.searchParams.get("dm") || "";
