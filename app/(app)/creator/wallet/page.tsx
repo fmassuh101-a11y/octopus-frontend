@@ -216,19 +216,8 @@ export default function CreatorWallet() {
               {amount > 0 && amount < MIN_WITHDRAW && <p className="mt-2 text-sm font-semibold text-red-500">El mínimo es ${MIN_WITHDRAW}</p>}
               {amount > balance && <p className="mt-2 text-sm font-semibold text-red-500">No te alcanza el saldo</p>}
 
-              <div className="mt-5 space-y-2.5 rounded-2xl bg-neutral-50 p-4">
-                <div className="flex justify-between text-neutral-500">
-                  <span>Fee de retiro {isPro ? '(Pro: sin fee)' : `(${(FEE_PERCENT * 100).toFixed(1)}%)`}</span>
-                  <span className="font-bold tabular-nums">-${fmt(fee)}</span>
-                </div>
-                <div className="flex justify-between border-t border-neutral-200 pt-2.5 text-lg">
-                  <span className="font-bold">Recibís</span>
-                  <span className="font-extrabold tabular-nums">${fmt(Math.max(0, net))}</span>
-                </div>
-                {!isPro && (
-                  <p className="text-xs text-neutral-400">Con Octopus Pro el fee es 0% y te quedás con todo.</p>
-                )}
-              </div>
+              {/* SIN desglose de fees en la UI (política de la casa: los fees
+                  nunca se muestran — igual que en el depósito). */}
 
               <button onClick={confirmWithdraw} disabled={!canConfirm}
                 className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-[#22D3EE] to-[#0891B2] py-4 text-lg font-bold text-white shadow-lg shadow-cyan-200 transition-transform active:scale-[0.98] disabled:from-neutral-200 disabled:to-neutral-300 disabled:text-neutral-400 disabled:shadow-none">
