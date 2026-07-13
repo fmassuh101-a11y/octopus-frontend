@@ -44,6 +44,27 @@ export async function POST(request: NextRequest) {
     const channel: any = await (asApp as any).dmChannels.create({
       with_user_ids: [mine.whopUserId, theirs.whopUserId],
     });
+
+    // CLAVE (medido con dmMembers.list): el canal nace con los usuarios en
+    // status "requested" → invisible para ambos. Los ACEPTAMOS por API y,
+    // si se puede, sacamos al bot de la App para dejar un DM limpio A↔B.
+    try {
+      const wanted = new Set([mine.whopUserId, theirs.whopUserId]);
+      const members: any[] = [];
+      for await (const m of (asApp as any).dmMembers.list({ channel_id: channel.id })) {
+        members.push(m);
+        if (members.length > 10) break;
+      }
+      for (const m of members) {
+        if (wanted.has(m.user_id) && m.status !== "accepted") {
+          await (asApp as any).dmMembers.update(m.id, { status: "accepted" }).catch(() => {});
+        }
+      }
+      const bot = members.find((m) => !wanted.has(m.user_id));
+      if (bot) await (asApp as any).dmMembers.delete(bot.id).catch(() => {});
+    } catch (e: any) {
+      console.error("[DmOpen] no se pudo aceptar miembros:", e?.message?.slice(0, 120));
+    }
     const channelId = channel?.id || null;
     if (!channelId) return NextResponse.json({ error: "No se pudo abrir el chat" }, { status: 502 });
 
