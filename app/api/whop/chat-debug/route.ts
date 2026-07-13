@@ -35,12 +35,15 @@ export async function GET(request: NextRequest) {
   // escalera: ¿qué receta de mint produce un token que PUEDE mandar mensajes?
   const msgChannel = request.nextUrl.searchParams.get("msg") || "";
   if (msgChannel) {
+    const DMS_ONLY = ["dms:read", "dms:message:manage", "dms:channel:manage"];
     const recipes: Array<{ label: string; key: string; body: Record<string, unknown> }> = [
+      // los DMs usan dms:* (chat:* es para canales de comunidades) — la key de la
+      // App YA tiene los dms:*: pedir solo esos scopes puede bastar
+      { label: "appKey dms-only user+platform", key: APP_KEY, body: { company_id: "biz_RP3n8m53mpKsdU", user_id: userId, scoped_actions: DMS_ONLY } },
+      { label: "appKey dms-only user+company", key: APP_KEY, body: { company_id: companyId, user_id: userId, scoped_actions: DMS_ONLY } },
+      { label: "appKey sin scopes user+platform", key: APP_KEY, body: { company_id: "biz_RP3n8m53mpKsdU", user_id: userId } },
+      { label: "payKey dms-only user+platform", key: PAY_KEY, body: { company_id: "biz_RP3n8m53mpKsdU", user_id: userId, scoped_actions: DMS_ONLY } },
       { label: "payKey user+company", key: PAY_KEY, body: { company_id: companyId, user_id: userId, scoped_actions: CHAT_SCOPES } },
-      { label: "appKey user-only", key: APP_KEY, body: { user_id: userId, scoped_actions: CHAT_SCOPES } },
-      { label: "appKey user+platform", key: APP_KEY, body: { company_id: "biz_RP3n8m53mpKsdU", user_id: userId, scoped_actions: CHAT_SCOPES } },
-      { label: "appKey user+company", key: APP_KEY, body: { company_id: companyId, user_id: userId, scoped_actions: CHAT_SCOPES } },
-      { label: "payKey user+platform", key: PAY_KEY, body: { company_id: "biz_RP3n8m53mpKsdU", user_id: userId, scoped_actions: CHAT_SCOPES } },
     ];
     for (const r of recipes) {
       if (!r.key) { results.push({ label: r.label, ok: false, error: "key ausente" }); continue; }
