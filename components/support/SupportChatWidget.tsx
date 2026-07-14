@@ -30,10 +30,15 @@ interface SavedChat {
 }
 
 export default function SupportChatWidget() {
-  // en la lista de espera no va el globito de soporte (página pública de marketing)
-  const [hidden, setHidden] = useState(false)
+  // El globito de soporte NO va en: la waitlist (página pública), las páginas
+  // de chat (tapa el compositor) ni en CELULAR (molesta y no se usa — pedido
+  // de Felipe; en desktop/dashboard sí queda).
+  const [hidden, setHidden] = useState(true)
   useEffect(() => {
-    if (window.location.pathname.startsWith('/waitlist')) setHidden(true)
+    const path = window.location.pathname
+    const isMobile = window.matchMedia('(max-width: 767px)').matches
+    const isBlockedPage = path.startsWith('/waitlist') || path.includes('/chat') || path.includes('/messages')
+    setHidden(isMobile || isBlockedPage)
   }, [])
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])

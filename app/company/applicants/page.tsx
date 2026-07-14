@@ -311,22 +311,18 @@ export default function ApplicantsPage() {
       )
 
       if (response.ok) {
-        // Send message if needed
+        // Enviar el mensaje POR WHOP (chat real). Cita el gig en el primer
+        // contacto, como SideShift.
         if (sendMessage && message.trim()) {
-          await fetch(`${SUPABASE_URL}/rest/v1/messages`, {
+          await fetch('/api/whop/dm/send', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
-              'apikey': SUPABASE_ANON_KEY
-            },
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
-              conversation_id: applicationToAccept.id,
-              sender_id: user.id,
-              sender_type: 'company',
-              content: message.trim()
+              userId: applicationToAccept.creator_id,
+              content: message.trim(),
+              gigId: applicationToAccept.gig_id || undefined,
             })
-          })
+          }).catch(() => {})
         }
 
         setApplications(prev => prev.map(app =>

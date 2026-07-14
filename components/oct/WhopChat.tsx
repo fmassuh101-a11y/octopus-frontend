@@ -100,12 +100,19 @@ export default function WhopChat({
 
   useEffect(() => {
     let alive = true
+    // VELOCIDAD: precalentar los módulos embebibles de Whop desde ya (el import
+    // pesado corre en paralelo con la lista, no al abrir la conversación)
+    import('@whop/embedded-components-react-js').catch(() => {})
+    import('@whop/embedded-components-vanilla-js').catch(() => {})
     ;(async () => {
       const list = await loadList()
       if (!alive) return
       setLoading(false)
-      // deep-link ?user= → abrir/crear esa conversación
+      // deep-link ?user= → abrir esa conversación
       if (initialUserId) {
+        // VELOCIDAD: si ya existe en la lista, abrir DIRECTO (sin llamar a dm/open)
+        const existing = list.find((c) => c.userId === initialUserId)
+        if (existing) { setSelected(existing); setOpeningDm(false); return }
         try {
           const res = await fetch('/api/whop/dm/open', {
             method: 'POST',

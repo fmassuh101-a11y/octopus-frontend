@@ -30,11 +30,11 @@ export const AVAILABLE_VARIABLES = [
 
 // Categorias de templates
 export const TEMPLATE_CATEGORIES = [
-  { id: 'bienvenida', label: 'Bienvenida', emoji: '👋' },
-  { id: 'negociacion', label: 'Negociacion', emoji: '💼' },
-  { id: 'detalles', label: 'Detalles', emoji: '📋' },
-  { id: 'cierre', label: 'Cierre', emoji: '✅' },
-  { id: 'general', label: 'General', emoji: '💬' },
+  { id: 'bienvenida', label: 'Bienvenida', emoji: '' },
+  { id: 'negociacion', label: 'Negociacion', emoji: '' },
+  { id: 'detalles', label: 'Detalles', emoji: '' },
+  { id: 'cierre', label: 'Cierre', emoji: '' },
+  { id: 'general', label: 'General', emoji: '' },
 ]
 
 /**
