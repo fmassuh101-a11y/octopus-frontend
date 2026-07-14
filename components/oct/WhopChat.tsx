@@ -18,7 +18,16 @@ interface Convo {
   name: string
   photo: string | null
   type: string | null
+  lastMessageAt?: string | null
 }
+
+const seenKey = (ch: string) => `oct-seen-${ch}`
+const isUnread = (c: Convo) => {
+  if (!c.lastMessageAt) return false
+  const seen = typeof window !== 'undefined' ? localStorage.getItem(seenKey(c.channelId)) : null
+  return !seen || new Date(c.lastMessageAt) > new Date(seen)
+}
+const markSeen = (ch: string) => { try { localStorage.setItem(seenKey(ch), new Date().toISOString()) } catch {} }
 
 function Conversation({ channelId }: { channelId: string }) {
   const [mod, setMod] = useState<any>(null)
@@ -87,6 +96,30 @@ export default function WhopChat({
   const [error, setError] = useState('')
   const [selected, setSelected] = useState<Convo | null>(null)
   const [openingDm, setOpeningDm] = useState(!!initialUserId)
+  const [profileOf, setProfileOf] = useState<Convo | null>(null)
+  const [profileData, setProfileData] = useState<any>(null)
+
+  // refresco periódico de la lista (visto/no-visto en vivo)
+  useEffect(() => {
+    const t = setInterval(() => { loadList() }, 30000)
+    return () => clearInterval(t)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // perfil del otro lado (al tocar el nombre, como SideShift)
+  useEffect(() => {
+    if (!profileOf) { setProfileData(null); return }
+    ;(async () => {
+      try {
+        const { SUPABASE_URL, SUPABASE_ANON_KEY } = await import('@/lib/config/supabase')
+        const token = localStorage.getItem('sb-access-token')
+        const r = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${profileOf.userId}&select=full_name,company_name,user_type,bio,about,niche,website,city,country,profile_photo_url,avatar_url`, {
+          headers: { Authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY },
+        })
+        const rows = await r.json()
+        setProfileData(rows?.[0] || {})
+      } catch { setProfileData({}) }
+    })()
+  }, [profileOf])
 
   const loadList = async (): Promise<Convo[]> => {
     try {
@@ -166,7 +199,7 @@ export default function WhopChat({
           convos.map((c) => (
             <button
               key={c.channelId}
-              onClick={() => setSelected(c)}
+              onClick={() => { markSeen(c.channelId); setSelected(c) }}
               className={`flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-neutral-50 ${selected?.channelId === c.channelId ? 'bg-cyan-50/60' : ''}`}
             >
               {c.photo ? (
@@ -177,10 +210,15 @@ export default function WhopChat({
                   {initials(c.name)}
                 </span>
               )}
-              <div className="min-w-0">
-                <p className="truncate font-bold text-neutral-900">{c.name}</p>
-                <p className="truncate text-xs text-neutral-400">{c.type === 'company' ? 'Empresa' : 'Creador'}</p>
+              <div className="min-w-0 flex-1">
+                <p className={`truncate ${isUnread(c) && selected?.channelId !== c.channelId ? 'font-extrabold text-neutral-900' : 'font-bold text-neutral-700'}`}>{c.name}</p>
+                <p className={`truncate text-xs ${isUnread(c) && selected?.channelId !== c.channelId ? 'font-bold text-cyan-600' : 'text-neutral-400'}`}>
+                  {isUnread(c) && selected?.channelId !== c.channelId ? 'Mensaje nuevo' : c.type === 'company' ? 'Empresa' : 'Creador'}
+                </p>
               </div>
+              {isUnread(c) && selected?.channelId !== c.channelId && (
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-cyan-500" />
+              )}
             </button>
           ))
         )}
@@ -196,15 +234,17 @@ export default function WhopChat({
           <div className="flex h-full min-h-0 flex-col">
             <div className="flex items-center gap-2 border-b border-neutral-100 px-4 py-2.5">
               <button onClick={() => setSelected(null)} className="text-sm font-semibold text-neutral-500 md:hidden">‹</button>
-              {selected.photo ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={selected.photo} alt="" className="h-8 w-8 rounded-full object-cover" />
-              ) : (
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-cyan-100 text-sm font-extrabold text-cyan-700">
-                  {initials(selected.name)}
-                </span>
-              )}
-              <p className="font-extrabold text-neutral-900">{selected.name}</p>
+              <button onClick={() => setProfileOf(selected)} className="flex min-w-0 items-center gap-2">
+                {selected.photo ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={selected.photo} alt="" className="h-8 w-8 rounded-full object-cover" />
+                ) : (
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-cyan-100 text-sm font-extrabold text-cyan-700">
+                    {initials(selected.name)}
+                  </span>
+                )}
+                <p className="truncate font-extrabold text-neutral-900 underline-offset-2 hover:underline">{selected.name}</p>
+              </button>
             </div>
             <div className="min-h-0 flex-1">
               <Conversation key={selected.channelId} channelId={selected.channelId} />
@@ -217,6 +257,40 @@ export default function WhopChat({
           </div>
         )}
       </div>
+
+      {/* Perfil del otro lado (tocar el nombre, como SideShift) */}
+      {profileOf && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center" onClick={() => setProfileOf(null)}>
+          <div className="max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-t-[28px] bg-white p-6 sm:rounded-[28px]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-4">
+              {profileOf.photo || profileData?.profile_photo_url || profileData?.avatar_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={profileOf.photo || profileData?.profile_photo_url || profileData?.avatar_url} alt="" className="h-16 w-16 rounded-full object-cover" />
+              ) : (
+                <span className="flex h-16 w-16 items-center justify-center rounded-full bg-cyan-100 text-2xl font-extrabold text-cyan-700">{initials(profileOf.name)}</span>
+              )}
+              <div className="min-w-0">
+                <p className="truncate text-xl font-extrabold">{profileData?.company_name || profileData?.full_name || profileOf.name}</p>
+                <p className="text-sm text-neutral-500">{profileOf.type === 'company' ? 'Empresa' : 'Creador'}{profileData?.city ? ` · ${profileData.city}` : ''}</p>
+              </div>
+            </div>
+            {(profileData?.about || profileData?.bio) && (
+              <p className="mt-4 whitespace-pre-line text-sm leading-relaxed text-neutral-600">
+                {String(profileData.about || profileData.bio).slice(0, 400)}
+              </p>
+            )}
+            {profileData?.website && (
+              <a href={profileData.website} target="_blank" rel="noreferrer" className="mt-3 block truncate text-sm font-bold text-cyan-600">{profileData.website}</a>
+            )}
+            {role === 'company' && profileOf.type !== 'company' && (
+              <a href={`/company/creator/${profileOf.userId}`} className="mt-5 block w-full rounded-2xl bg-neutral-900 py-3.5 text-center text-sm font-bold text-white">
+                Ver perfil completo
+              </a>
+            )}
+            <button onClick={() => setProfileOf(null)} className="mt-3 w-full rounded-2xl border border-neutral-200 py-3 text-sm font-bold text-neutral-500">Cerrar</button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

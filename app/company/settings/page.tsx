@@ -1,5 +1,7 @@
 'use client'
 
+import { uploadIfDataUrl } from '@/lib/uploadImage'
+
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { getPlan, effectiveFee } from '@/lib/plans'
@@ -235,7 +237,7 @@ export default function CompanySettingsPage() {
             await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${profile.id}`, {
               method: 'PATCH',
               headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
-              body: JSON.stringify({ avatar_url: img, bio: JSON.stringify({ ...bioData, logo: img }) }),
+              body: JSON.stringify(await (async () => { const url = await uploadIfDataUrl(img); return { avatar_url: url, bio: JSON.stringify({ ...bioData, logo: url }) } })()),
             })
           }
         } catch (err) { console.error('auto-save foto:', err) }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { whopClient } from "@/lib/whop";
 import { getAuthenticatedUser } from "@/lib/auth/apiAuth";
 import { shieldAsync } from "@/lib/shield";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/config/supabase";
@@ -36,6 +37,17 @@ export async function GET(request: NextRequest) {
     ).json();
     const byId = new Map((Array.isArray(profiles) ? profiles : []).map((p) => [p.user_id, p]));
 
+    // último mensaje de cada canal (para VISTO/NO VISTO) — en paralelo, tolerante a fallas
+    const lastMap = new Map<string, string | null>();
+    await Promise.all(
+      rows.slice(0, 20).map(async (r) => {
+        try {
+          const ch: any = await (whopClient as any).supportChannels.retrieve(r.channel_id);
+          lastMap.set(r.channel_id, ch?.last_message_at ? new Date(Number(ch.last_message_at)).toISOString() : null);
+        } catch { lastMap.set(r.channel_id, null); }
+      })
+    );
+
     const conversations = rows.map((r) => {
       const otherId = r.creator_user === user.id ? r.company_user : r.creator_user;
       const p: any = byId.get(otherId) || {};
@@ -50,6 +62,7 @@ export async function GET(request: NextRequest) {
         photo,
         type: p.user_type || null,
         lastOpenedAt: r.last_opened_at,
+        lastMessageAt: lastMap.get(r.channel_id) || null,
       };
     });
 

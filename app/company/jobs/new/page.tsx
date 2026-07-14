@@ -205,7 +205,20 @@ export default function NewJobPage() {
 
       // Agregar imagen si existe
       if (formData.jobImage) {
-        gigData.image_url = formData.jobImage
+        // NUNCA base64 en la base (lentitud móvil): subir a Storage y guardar la URL
+        let imgUrl = formData.jobImage
+        if (imgUrl.startsWith('data:')) {
+          try {
+            const upRes = await fetch('/api/upload', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify({ kind: 'gig', dataUrl: imgUrl }),
+            })
+            const upData = await upRes.json()
+            if (upData.ok) imgUrl = upData.url
+          } catch {}
+        }
+        gigData.image_url = imgUrl
       }
 
       const response = await fetch(`${SUPABASE_URL}/rest/v1/gigs`, {

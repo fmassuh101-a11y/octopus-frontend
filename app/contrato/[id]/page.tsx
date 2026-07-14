@@ -62,6 +62,10 @@ export default function ContratoDocumento() {
   const usageRights: any = parse(contract?.usage_rights) || {}
   const hashtags: string[] = Array.isArray(contract?.hashtags) ? contract.hashtags : []
   const mentions: string[] = Array.isArray(contract?.mentions) ? contract.mentions : []
+  const isCpm = usageRights?.payment_mode === 'cpm'
+  const cpmRate = Number(usageRights?.cpm_rate || 0)
+  const cpmMin = Number(usageRights?.cpm_min_views || 0)
+  const cpmMax = Number(usageRights?.cpm_max_views || 0)
   const isCreator = me?.id === contract?.creator_id
   const pending = contract?.status === 'pending' || contract?.status === 'sent'
   const fecha = (d?: string) => (d ? new Date(d).toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' }) : '—')
@@ -139,7 +143,9 @@ export default function ContratoDocumento() {
               ['Creador', creatorName],
               ['Email del Creador', creatorEmail || '—'],
               ['Campaña', contract.title],
-              ['Compensación', `$${Number(contract.payment_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })} ${contract.payment_currency || 'USD'}`],
+              ['Compensación', isCpm
+                ? `$${cpmRate} ${contract.payment_currency || 'USD'} por cada 1.000 visitas (CPM)`
+                : `$${Number(contract.payment_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })} ${contract.payment_currency || 'USD'}`],
               ['Fecha de Emisión', fecha(contract.created_at)],
               ['Fecha de Aceptación', contract.accepted_at ? fecha(contract.accepted_at) : 'Pendiente'],
             ].map(([k, v]) => (
@@ -163,10 +169,28 @@ export default function ContratoDocumento() {
         </Section>
 
         <Section n={3} title="Compensación y Pagos">
+          {isCpm ? (
+            <>
+              <p className="text-sm leading-relaxed">
+                Compensación <b>por rendimiento (CPM)</b>: la Empresa pagará al Creador <b>${cpmRate} {contract.payment_currency || 'USD'} por cada 1.000 visitas válidas</b> de cada Entregable aprobado. Las visitas se miden con las métricas nativas de la plataforma social durante los treinta (30) días posteriores a la publicación. El monto final se determina exclusivamente según las visitas reales — <b>no existe monto garantizado por adelantado</b>.
+              </p>
+              <table className="my-3 w-full border-collapse border border-neutral-300 text-sm">
+                <tbody>
+                  <tr><td className="w-56 border border-neutral-300 px-3 py-1.5 font-bold">Tarifa (CPM)</td><td className="border border-neutral-300 px-3 py-1.5">${cpmRate} {contract.payment_currency || 'USD'} / 1.000 visitas</td></tr>
+                  {cpmMin > 0 && <tr><td className="border border-neutral-300 px-3 py-1.5 font-bold">Mínimo de elegibilidad</td><td className="border border-neutral-300 px-3 py-1.5">{cpmMin.toLocaleString('en-US')} visitas por Entregable</td></tr>}
+                  {cpmMax > 0 && <tr><td className="border border-neutral-300 px-3 py-1.5 font-bold">Tope por Entregable</td><td className="border border-neutral-300 px-3 py-1.5">{cpmMax.toLocaleString('en-US')} visitas</td></tr>}
+                </tbody>
+              </table>
+              <p className="text-sm leading-relaxed">
+                Las visitas provenientes de tráfico incentivado, bots o actividad inválida quedan excluidas del cálculo. La Empresa podrá revisar la elegibilidad de cada Entregable conforme a los requisitos de la campaña.
+              </p>
+            </>
+          ) : (
           <p className="text-sm leading-relaxed">
             La Empresa pagará al Creador <b>${Number(contract.payment_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })} {contract.payment_currency || 'USD'}</b> por los Entregables aprobados.
             {contract.payment_terms ? ` Condiciones: ${contract.payment_terms}` : ' El pago se libera una vez aprobado el contenido final.'}
           </p>
+          )}
           <p className="mt-2 text-sm leading-relaxed">
             Los pagos se procesan a través de la infraestructura de pagos de la plataforma. La Empresa es responsable de fondear todos los pagos aprobados que se devenguen bajo este Acuerdo.
           </p>

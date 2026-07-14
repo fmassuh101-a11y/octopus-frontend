@@ -1,5 +1,7 @@
 'use client'
 
+import { uploadIfDataUrl } from '@/lib/uploadImage'
+
 import { useState, useRef, useEffect } from 'react'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { authHeaders } from '@/lib/auth/clientToken'
@@ -145,7 +147,7 @@ export default function CreatorSocialsPage() {
         instagram: instagram.trim() || null,
         tiktok: tiktok.trim() || null,
         youtube: youtube.trim() || null,
-        profile_photo_url: profilePhoto || null,
+        profile_photo_url: (await uploadIfDataUrl(profilePhoto)) || null,
         bio: JSON.stringify(allData),
         updated_at: new Date().toISOString()
       }

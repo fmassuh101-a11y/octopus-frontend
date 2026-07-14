@@ -304,7 +304,7 @@ export async function saveCreatorOnboarding(onboardingData: {
       instagram: onboardingData.socialMedia.instagram || null,
       tiktok: onboardingData.socialMedia.tiktok || null,
       youtube: onboardingData.socialMedia.youtube || null,
-      profile_photo_url: onboardingData.profilePhoto || null,
+      profile_photo_url: (typeof window !== 'undefined' ? await (await import('@/lib/uploadImage')).uploadIfDataUrl(onboardingData.profilePhoto) : onboardingData.profilePhoto) || null,
       user_type: 'creator' as const
     }
 

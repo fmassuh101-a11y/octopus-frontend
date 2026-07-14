@@ -81,6 +81,10 @@ export default function CreateContractModal({
   const [deliverables, setDeliverables] = useState<Deliverable[]>([
     { platform: 'tiktok', content_type: 'video', quantity: 1 }
   ])
+  const [paymentMode, setPaymentMode] = useState<'fijo' | 'cpm'>('cpm') // CPM por defecto (metodología Octopus)
+  const [cpmRate, setCpmRate] = useState('')
+  const [cpmMinViews, setCpmMinViews] = useState('1000')
+  const [cpmMaxViews, setCpmMaxViews] = useState('')
   const [paymentAmount, setPaymentAmount] = useState('')
   const [paymentCurrency, setPaymentCurrency] = useState('USD')
   const [paymentTerms, setPaymentTerms] = useState('El pago se realizara una vez aprobado el contenido final.')
@@ -158,14 +162,16 @@ export default function CreateContractModal({
         title,
         description,
         deliverables: JSON.stringify(deliverables),
-        payment_amount: parseFloat(paymentAmount),
+        payment_amount: paymentMode === 'cpm' ? 0 : parseFloat(paymentAmount),
         payment_currency: paymentCurrency,
-        payment_terms: paymentTerms,
+        payment_terms: paymentMode === 'cpm'
+          ? `Pago por rendimiento (CPM): $${cpmRate} ${paymentCurrency} por cada 1.000 visitas válidas.${cpmMinViews ? ` Mínimo ${Number(cpmMinViews).toLocaleString('en-US')} visitas para elegibilidad.` : ''}${cpmMaxViews ? ` Tope de ${Number(cpmMaxViews).toLocaleString('en-US')} visitas por entregable.` : ''} Las visitas se miden en la plataforma social durante los 30 días posteriores a la publicación. El monto final se determina según las visitas reales.`
+          : paymentTerms,
         content_due_date: contentDueDate || null,
         hashtags: hashtags ? hashtags.split(',').map(h => h.trim()) : [],
         mentions: mentions ? mentions.split(',').map(m => m.trim()) : [],
         brand_guidelines: brandGuidelines,
-        usage_rights: JSON.stringify(usageRights),
+        usage_rights: JSON.stringify({ ...usageRights, payment_mode: paymentMode, cpm_rate: paymentMode === 'cpm' ? parseFloat(cpmRate) || 0 : undefined, cpm_min_views: paymentMode === 'cpm' ? parseInt(cpmMinViews) || 0 : undefined, cpm_max_views: paymentMode === 'cpm' && cpmMaxViews ? parseInt(cpmMaxViews) : undefined }),
         exclusivity_enabled: exclusivity.enabled,
         exclusivity_days: exclusivity.enabled ? exclusivity.days : 0,
         exclusivity_competitors: exclusivity.enabled && exclusivity.competitors
@@ -196,19 +202,30 @@ export default function CreateContractModal({
       const [contract] = await response.json()
       console.log('Contract created successfully:', contract)
 
-      // El contrato aparece EN EL CHAT (mensaje por Whop, con cita del gig)
-      await fetch('/api/whop/dm/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({
-          userId: creatorId,
-          gigId: gigId || undefined,
-          content: `Te envié un contrato: "${title}" por ${CURRENCIES.find(c => c.id === paymentCurrency)?.symbol || '$'}${paymentAmount} ${paymentCurrency}. Revisalo y aceptalo acá: ${window.location.origin}/contrato/${contract?.id || ""}`,
+      // El contrato aparece EN EL CHAT (mensaje por Whop, con cita del gig).
+      // Si el envío falla, SE AVISA (nunca en silencio).
+      const pagoTxt = paymentMode === 'cpm'
+        ? `$${cpmRate} por cada 1.000 visitas`
+        : `${CURRENCIES.find(c => c.id === paymentCurrency)?.symbol || '$'}${paymentAmount} ${paymentCurrency}`
+      try {
+        const dmRes = await fetch('/api/whop/dm/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({
+            userId: creatorId,
+            gigId: gigId || undefined,
+            content: `Te envié un contrato: "${title}" (${pagoTxt}). Revisalo y aceptalo acá: ${window.location.origin}/contrato/${contract?.id || ""}`,
+          })
         })
-      }).catch(() => {})
-
-      // Show success alert
-      alert(`Contrato "${title}" enviado exitosamente a ${creatorName}`)
+        const dmData = await dmRes.json().catch(() => ({}))
+        if (!dmRes.ok || !dmData.ok) {
+          alert(`Contrato creado, pero el mensaje al chat falló: ${dmData.error || 'reintentá desde Mensajes'}`)
+        } else {
+          alert(`Contrato "${title}" enviado a ${creatorName} (revisá el chat)`)
+        }
+      } catch {
+        alert('Contrato creado, pero el mensaje al chat falló')
+      }
 
       onSuccess(contract)
       onClose()
@@ -385,7 +402,45 @@ export default function CreateContractModal({
           {/* Step 2: Payment */}
           {step === 2 && (
             <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
+              {/* Modo de pago: CPM (por visitas, metodología Octopus) o monto fijo */}
+              <div>
+                <label className="block text-sm font-medium text-neutral-300 mb-2">Modo de pago</label>
+                <div className="grid grid-cols-2 gap-1 rounded-xl bg-neutral-800 p-1">
+                  <button type="button" onClick={() => setPaymentMode('cpm')}
+                    className={`rounded-lg py-2.5 text-sm font-bold transition ${paymentMode === 'cpm' ? 'bg-emerald-600 text-white' : 'text-neutral-400'}`}>
+                    Por CPM (visitas)
+                  </button>
+                  <button type="button" onClick={() => setPaymentMode('fijo')}
+                    className={`rounded-lg py-2.5 text-sm font-bold transition ${paymentMode === 'fijo' ? 'bg-emerald-600 text-white' : 'text-neutral-400'}`}>
+                    Monto fijo
+                  </button>
+                </div>
+                {paymentMode === 'cpm' && (
+                  <p className="mt-2 text-xs text-neutral-500">El monto final se calcula con las visitas reales del video (se pagan al medirse, no por adelantado).</p>
+                )}
+              </div>
+
+              {paymentMode === 'cpm' && (
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-300 mb-2">CPM (USD / 1.000 visitas)</label>
+                    <input type="number" min="0" step="0.01" value={cpmRate} onChange={(e) => setCpmRate(e.target.value)} placeholder="1.00"
+                      className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-300 mb-2">Mínimo de visitas</label>
+                    <input type="number" min="0" value={cpmMinViews} onChange={(e) => setCpmMinViews(e.target.value)} placeholder="1000"
+                      className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-300 mb-2">Tope de visitas (opcional)</label>
+                    <input type="number" min="0" value={cpmMaxViews} onChange={(e) => setCpmMaxViews(e.target.value)} placeholder="500000"
+                      className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500" />
+                  </div>
+                </div>
+              )}
+
+              <div className={paymentMode === 'cpm' ? 'hidden' : 'grid grid-cols-2 gap-4'}>
                 <div>
                   <label className="block text-sm font-medium text-neutral-300 mb-2">
                     Monto a Pagar
@@ -596,7 +651,7 @@ export default function CreateContractModal({
           ) : (
             <button
               onClick={handleSubmit}
-              disabled={loading || !title || !paymentAmount}
+              disabled={loading || !title || (paymentMode === "cpm" ? !cpmRate : !paymentAmount)}
               className="px-6 py-2 bg-green-600 hover:bg-green-500 text-white rounded-xl font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {loading ? (
