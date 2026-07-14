@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Whop } from "@whop/sdk";
 import { whopClient } from "@/lib/whop";
 import { getAuthenticatedUser } from "@/lib/auth/apiAuth";
+import { ensureWhopIdentity, CHAT_SCOPES } from "@/lib/whopIdentity";
 import { shieldAsync } from "@/lib/shield";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/config/supabase";
 
@@ -21,7 +23,7 @@ export async function GET(request: NextRequest) {
 
     const rows: any[] = await (
       await fetch(
-        `${SUPABASE_URL}/rest/v1/chat_channels?or=(creator_user.eq.${user.id},company_user.eq.${user.id})&select=channel_id,creator_user,company_user,last_opened_at&order=last_opened_at.desc&limit=50`,
+        `${SUPABASE_URL}/rest/v1/chat_channels?or=(creator_user.eq.${user.id},company_user.eq.${user.id})&select=channel_id,creator_user,company_user,host_company,last_opened_at&order=last_opened_at.desc&limit=50`,
         { headers: H }
       )
     ).json();
@@ -37,16 +39,33 @@ export async function GET(request: NextRequest) {
     ).json();
     const byId = new Map((Array.isArray(profiles) ? profiles : []).map((p) => [p.user_id, p]));
 
-    // último mensaje de cada canal (para VISTO/NO VISTO) — en paralelo, tolerante a fallas
+    // último mensaje de cada canal (VISTO/NO VISTO). La API key no puede leer
+    // support channels, pero el TOKEN DE CHAT sí (igual que el embed): minteamos
+    // un token por host y leemos con él. Tolerante a fallas.
     const lastMap = new Map<string, string | null>();
-    await Promise.all(
-      rows.slice(0, 20).map(async (r) => {
+    try {
+      const { whopUserId } = await ensureWhopIdentity(user);
+      const hosts = Array.from(new Set(rows.slice(0, 20).map((r) => r.host_company).filter(Boolean))).slice(0, 10);
+      const clients = new Map<string, any>();
+      await Promise.all(hosts.map(async (host) => {
         try {
-          const ch: any = await (whopClient as any).supportChannels.retrieve(r.channel_id);
-          lastMap.set(r.channel_id, ch?.last_message_at ? new Date(Number(ch.last_message_at)).toISOString() : null);
-        } catch { lastMap.set(r.channel_id, null); }
-      })
-    );
+          const t: any = await (whopClient as any).accessTokens.create({
+            company_id: host, user_id: whopUserId, scoped_actions: CHAT_SCOPES,
+          });
+          if (t?.token) clients.set(host, new Whop({ apiKey: t.token, baseURL: "https://api.whop.com/api/v1" }));
+        } catch {}
+      }));
+      await Promise.all(
+        rows.slice(0, 20).map(async (r) => {
+          const c = clients.get(r.host_company);
+          if (!c) return;
+          try {
+            const ch: any = await (c as any).supportChannels.retrieve(r.channel_id);
+            lastMap.set(r.channel_id, ch?.last_message_at ? new Date(Number(ch.last_message_at)).toISOString() : null);
+          } catch {}
+        })
+      );
+    } catch {}
 
     const conversations = rows.map((r) => {
       const otherId = r.creator_user === user.id ? r.company_user : r.creator_user;
