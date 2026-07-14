@@ -390,12 +390,12 @@ export default function CompanyContractsPage() {
               </svg>
             </div>
             <h3 className="text-lg font-semibold mb-2">No hay contratos</h3>
-            <p className="text-neutral-500 text-sm mb-4">Crea contratos desde el chat con creadores</p>
+            <p className="text-neutral-500 text-sm mb-4">Los contratos se crean desde Aplicantes: elegi al creador y toca "Crear Contrato".</p>
             <Link
-              href="/company/chat"
+              href="/company/applicants"
               className="inline-block px-6 py-3 bg-emerald-600 hover:bg-emerald-500 rounded-xl font-medium transition-colors"
             >
-              Ir a Mensajes
+              Ir a Aplicantes
             </Link>
           </div>
         ) : (

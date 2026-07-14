@@ -196,30 +196,16 @@ export default function CreateContractModal({
       const [contract] = await response.json()
       console.log('Contract created successfully:', contract)
 
-      // Send a system message in the conversation about the contract
-      if (applicationId) {
-        const messageRes = await fetch(`${SUPABASE_URL}/rest/v1/messages`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-            'apikey': SUPABASE_ANON_KEY,
-            'Prefer': 'return=representation'
-          },
-          body: JSON.stringify({
-            conversation_id: applicationId,
-            sender_id: companyId,
-            sender_type: 'company',
-            content: `Te he enviado un contrato: "${title}" por ${CURRENCIES.find(c => c.id === paymentCurrency)?.symbol || '$'}${paymentAmount} ${paymentCurrency}. Revísalo en tu sección de contratos.`
-          })
+      // El contrato aparece EN EL CHAT (mensaje por Whop, con cita del gig)
+      await fetch('/api/whop/dm/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({
+          userId: creatorId,
+          gigId: gigId || undefined,
+          content: `Te envié un contrato: "${title}" por ${CURRENCIES.find(c => c.id === paymentCurrency)?.symbol || '$'}${paymentAmount} ${paymentCurrency}. Revisalo y aceptalo acá: ${window.location.origin}/creator/contracts`,
         })
-
-        if (!messageRes.ok) {
-          console.error('Error sending contract message:', await messageRes.text())
-        } else {
-          console.log('Contract message sent successfully')
-        }
-      }
+      }).catch(() => {})
 
       // Show success alert
       alert(`Contrato "${title}" enviado exitosamente a ${creatorName}`)

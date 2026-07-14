@@ -10,14 +10,15 @@ import WorkspaceSwitcher from '@/components/ui/WorkspaceSwitcher'
 import { getPlan } from '@/lib/plans'
 import { getActiveCompany } from '@/lib/workspace'
 
-const ACTION_ITEMS = [
-  { id: 1, label: 'Publica tu primer trabajo', completed: false, link: '/company/jobs/new' },
-  { id: 2, label: 'Invita usuarios a tu equipo', completed: false, link: '/company/settings?tab=team' },
-  { id: 3, label: 'Revisa aplicaciones de creadores', completed: false, link: '/company/campaigns' },
-  { id: 4, label: 'Configura método de pago', completed: false, link: '/company/settings?tab=paymentMethods' },
-  { id: 5, label: 'Completa el perfil de empresa', completed: true, link: '/company/settings' },
-  { id: 6, label: 'Explora el marketplace de creadores', completed: false, link: '/company/recruit' },
-  { id: 7, label: 'Crea tu primera campaña', completed: false, link: '/company/jobs/new' },
+// Tareas pendientes: se COMPLETAN SOLAS con datos reales (antes estaban hardcodeadas)
+const ACTION_ITEMS_BASE = [
+  { id: 1, label: 'Publica tu primer trabajo', link: '/company/jobs/new' },
+  { id: 2, label: 'Invita usuarios a tu equipo', link: '/company/settings?tab=team' },
+  { id: 3, label: 'Revisa aplicaciones de creadores', link: '/company/applicants' },
+  { id: 4, label: 'Configura método de pago', link: '/company/fondear' },
+  { id: 5, label: 'Completa el perfil de empresa', link: '/company/settings' },
+  { id: 6, label: 'Explora el marketplace de creadores', link: '/company/recruit' },
+  { id: 7, label: 'Crea tu primera campaña', link: '/company/jobs/new' },
 ]
 
 export default function CompanyDashboard() {
@@ -35,6 +36,40 @@ export default function CompanyDashboard() {
     activeCreators: 0
   })
   const [wallet, setWallet] = useState<{ balance: number; pending_balance: number } | null>(null)
+  const [tasksDone, setTasksDone] = useState<Record<number, boolean>>({})
+
+  // Tareas pendientes: se completan SOLAS con datos reales
+  useEffect(() => {
+    const token = localStorage.getItem('sb-access-token')
+    const userStr = localStorage.getItem('sb-user')
+    if (!token || !userStr) return
+    const uid = JSON.parse(userStr).id
+    const H = { Authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY }
+    ;(async () => {
+      try {
+        const [gigsR, teamR, appsR, topupsR, profR] = await Promise.all([
+          fetch(`${SUPABASE_URL}/rest/v1/gigs?company_id=eq.${uid}&select=id&limit=1`, { headers: H }),
+          fetch(`${SUPABASE_URL}/rest/v1/team_members?company_id=eq.${uid}&select=id&limit=1`, { headers: H }),
+          fetch(`${SUPABASE_URL}/rest/v1/applications?status=neq.pending&select=id&limit=1`, { headers: H }),
+          fetch(`${SUPABASE_URL}/rest/v1/wallet_topups?user_id=eq.${uid}&select=id&limit=1`, { headers: H }),
+          fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${uid}&select=company_name`, { headers: H }),
+        ])
+        const has = async (r: Response) => r.ok && ((await r.json())?.length > 0)
+        const prof = profR.ok ? (await profR.json())?.[0] : null
+        const hasGigs = await has(gigsR)
+        setTasksDone({
+          1: hasGigs,
+          2: await has(teamR),
+          3: await has(appsR),
+          4: await has(topupsR),
+          5: !!prof?.company_name,
+          6: localStorage.getItem('oct-visited-recruit') === '1',
+          7: hasGigs,
+        })
+      } catch {}
+    })()
+  }, [])
+
   const [giftModal, setGiftModal] = useState<{ type: 'plan' | 'discount'; plan: string; discount: number } | null>(null)
 
   useEffect(() => {
@@ -590,30 +625,30 @@ export default function CompanyDashboard() {
           <div className="bg-neutral-900 rounded-xl border border-neutral-800 p-6 text-white placeholder-neutral-500">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-white">Tus Tareas Pendientes</h3>
-              <span className="text-sm text-neutral-500">{ACTION_ITEMS.filter(i => i.completed).length}/{ACTION_ITEMS.length} completadas</span>
+              <span className="text-sm text-neutral-500">{ACTION_ITEMS_BASE.filter(i => tasksDone[i.id]).length}/{ACTION_ITEMS_BASE.length} completadas</span>
             </div>
             <div className="space-y-3">
-              {ACTION_ITEMS.map((item) => (
+              {ACTION_ITEMS_BASE.map((item) => (
                 <Link
                   key={item.id}
                   href={item.link}
                   className={`flex items-center space-x-3 p-3 rounded-lg transition-colors ${
-                    item.completed ? 'bg-green-50' : 'bg-neutral-950 hover:bg-neutral-800'
+                    tasksDone[item.id] ? 'bg-green-50' : 'bg-neutral-950 hover:bg-neutral-800'
                   } text-white placeholder-neutral-500`}
                 >
                   <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                    item.completed ? 'bg-green-500' : 'border-2 border-neutral-700'
+                    tasksDone[item.id] ? 'bg-green-500' : 'border-2 border-neutral-700'
                   } text-white placeholder-neutral-500`}>
-                    {item.completed && (
+                    {tasksDone[item.id] && (
                       <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
                     )}
                   </div>
-                  <span className={`flex-1 ${item.completed ? 'text-neutral-500 line-through' : 'text-white'}`}>
+                  <span className={`flex-1 ${tasksDone[item.id] ? 'text-neutral-500 line-through' : 'text-white'}`}>
                     {item.label}
                   </span>
-                  {!item.completed && (
+                  {!tasksDone[item.id] && (
                     <svg className="w-5 h-5 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>

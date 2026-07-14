@@ -56,6 +56,8 @@ function CreatorCardSkeleton() {
 }
 
 export default function RecruitPage() {
+  // tarea 6 del dashboard: marca que exploro el marketplace
+  if (typeof window !== 'undefined') localStorage.setItem('oct-visited-recruit', '1')
   const [handle, setHandle] = useState('')
   const [loading, setLoading] = useState(false)
   const [loadingAll, setLoadingAll] = useState(true)
