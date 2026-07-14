@@ -60,8 +60,14 @@ export async function GET(request: NextRequest) {
           const c = clients.get(r.host_company);
           if (!c) return;
           try {
-            const ch: any = await (c as any).supportChannels.retrieve(r.channel_id);
-            lastMap.set(r.channel_id, ch?.last_message_at ? new Date(Number(ch.last_message_at)).toISOString() : null);
+            // el último mensaje real (misma vía que usa el embed)
+            for await (const m of (c as any).messages.list({ channel_id: r.channel_id })) {
+              if (m?.created_at) {
+                const t = typeof m.created_at === "string" && /^\d+$/.test(m.created_at) ? Number(m.created_at) : m.created_at;
+                lastMap.set(r.channel_id, new Date(t).toISOString());
+              }
+              break; // solo el primero (más reciente)
+            }
           } catch {}
         })
       );
