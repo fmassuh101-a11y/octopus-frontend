@@ -32,6 +32,42 @@ export async function GET(request: NextRequest) {
   const PAY_KEY = process.env.WHOP_API_KEY || "";
   const APP_KEY = (process.env.WHOP_OAUTH_CLIENT_SECRET || "").trim();
 
+  // PLAN B: support chat empresa↔creador (company-scoped por diseño)
+  // ?support=1 → crea el canal de soporte (compañía del creador + user de la
+  // empresa) y prueba mandar un mensaje con el token minteado del creador.
+  if (request.nextUrl.searchParams.get("support")) {
+    const out: any = {};
+    const CREATOR_CO = "biz_Jjlf9sjoapzaSk"; // compañía del creador fmassuh122
+    const CREATOR_USER = "user_1HfLh48caSJhM";
+    const EMPRESA_USER = "user_seGlwPi2BZY2v"; // empresa de prueba A
+    const pay = new Whop({ apiKey: PAY_KEY, baseURL: "https://api.whop.com/api/v1" });
+    try {
+      const ch: any = await (pay as any).supportChannels.create({ company_id: CREATOR_CO, user_id: EMPRESA_USER });
+      out.channel = { id: ch?.id, name: ch?.name };
+      // token del CREADOR (scoped a SU company) → ¿puede mandar en su support chat?
+      const t: any = await (pay as any).accessTokens.create({
+        company_id: CREATOR_CO, user_id: CREATOR_USER, scoped_actions: CHAT_SCOPES,
+      });
+      const asCreator = new Whop({ apiKey: t.token, baseURL: "https://api.whop.com/api/v1" });
+      try {
+        const m: any = await (asCreator as any).messages.create({ channel_id: ch.id, content: "Hola! (prueba soporte creador)" });
+        out.creatorSend = { ok: true, id: m?.id };
+      } catch (e: any) { out.creatorSend = { ok: false, error: (e?.message || "").slice(0, 140) }; }
+      // token de la EMPRESA scoped a la company del CREADOR (es el "customer" del support chat)
+      const t2: any = await (pay as any).accessTokens.create({
+        company_id: CREATOR_CO, user_id: EMPRESA_USER, scoped_actions: CHAT_SCOPES,
+      });
+      const asEmpresa = new Whop({ apiKey: t2.token, baseURL: "https://api.whop.com/api/v1" });
+      try {
+        const m2: any = await (asEmpresa as any).messages.create({ channel_id: ch.id, content: "Hola! (prueba soporte empresa)" });
+        out.empresaSend = { ok: true, id: m2?.id };
+      } catch (e: any) { out.empresaSend = { ok: false, error: (e?.message || "").slice(0, 140) }; }
+    } catch (e: any) {
+      out.createError = (e?.message || "").slice(0, 200);
+    }
+    return NextResponse.json(out);
+  }
+
   // inspección de un canal: ¿quiénes son los miembros reales?
   const inspect = request.nextUrl.searchParams.get("inspect") || "";
   if (inspect) {
