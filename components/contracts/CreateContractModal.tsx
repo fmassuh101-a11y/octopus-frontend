@@ -203,7 +203,7 @@ export default function CreateContractModal({
         body: JSON.stringify({
           userId: creatorId,
           gigId: gigId || undefined,
-          content: `Te envié un contrato: "${title}" por ${CURRENCIES.find(c => c.id === paymentCurrency)?.symbol || '$'}${paymentAmount} ${paymentCurrency}. Revisalo y aceptalo acá: ${window.location.origin}/creator/contracts`,
+          content: `Te envié un contrato: "${title}" por ${CURRENCIES.find(c => c.id === paymentCurrency)?.symbol || '$'}${paymentAmount} ${paymentCurrency}. Revisalo y aceptalo acá: ${window.location.origin}/contrato/${contract?.id || ""}`,
         })
       }).catch(() => {})
 

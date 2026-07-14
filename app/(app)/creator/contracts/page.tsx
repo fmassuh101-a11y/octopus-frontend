@@ -262,26 +262,19 @@ export default function CreatorContractsPage() {
         `${SUPABASE_URL}/rest/v1/applications?creator_id=eq.${user.id}&company_id=eq.${selectedContract.company_id}&status=eq.accepted&select=id&limit=1`,
         { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
       )
-      if (appsRes.ok) {
-        const apps = await appsRes.json()
-        if (apps.length > 0) {
-          const handlesText = creatorHandles.map(h => `${h.platform}: ${h.handle}`).join(', ')
-          await fetch(`${SUPABASE_URL}/rest/v1/messages`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
-              'apikey': SUPABASE_ANON_KEY
-            },
-            body: JSON.stringify({
-              conversation_id: apps[0].id,
-              sender_id: user.id,
-              sender_type: 'creator',
-              content: `He aceptado el contrato "${selectedContract.title}".\n\nMis handles: ${handlesText}`
-            })
-          })
-        }
+      // Avisar a la empresa POR EL CHAT DE WHOP (el sistema viejo quedó muerto)
+      {
+        const handlesText = creatorHandles.map(h => `${h.platform}: ${h.handle}`).join(', ')
+        await fetch('/api/whop/dm/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({
+            userId: selectedContract.company_id,
+            content: `Acepté el contrato "${selectedContract.title}".${handlesText ? `\nMis handles: ${handlesText}` : ''}`,
+          }),
+        }).catch(() => {})
       }
+      void appsRes
 
       // Update local state
       setContracts(prev => prev.map(c =>
@@ -429,6 +422,7 @@ export default function CreatorContractsPage() {
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
                     <h3 className="font-semibold text-neutral-900 mb-1">{contract.title}</h3>
+                    <a href={`/contrato/${contract.id}`} className="mb-1 inline-block text-xs font-bold text-cyan-600 underline-offset-2 hover:underline" onClick={(e) => e.stopPropagation()}>Ver documento del contrato</a>
                     <p className="text-sm text-neutral-400">{contract.company_name}</p>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusInfo.bg} ${statusInfo.color}`}>

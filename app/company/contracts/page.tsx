@@ -411,6 +411,7 @@ export default function CompanyContractsPage() {
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
                     <h3 className="font-semibold text-white mb-1">{contract.title}</h3>
+                    <a href={`/contrato/${contract.id}`} className="mb-1 inline-block text-xs font-bold text-emerald-400 underline-offset-2 hover:underline" onClick={(e) => e.stopPropagation()}>Ver documento del contrato</a>
                     <p className="text-sm text-neutral-400">{contract.creator_name}</p>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusInfo.bg} ${statusInfo.color}`}>
