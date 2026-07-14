@@ -39,11 +39,15 @@ export async function GET(request: NextRequest) {
     const conversations = rows.map((r) => {
       const otherId = r.creator_user === user.id ? r.company_user : r.creator_user;
       const p: any = byId.get(otherId) || {};
+      // VELOCIDAD: las fotos guardadas como base64 pesan MB — no viajan en la
+      // lista (inicial en su lugar). Las URLs http/https sí pasan.
+      const rawPhoto = p.profile_photo_url || p.avatar_url || null;
+      const photo = rawPhoto && !String(rawPhoto).startsWith("data:") ? rawPhoto : null;
       return {
         channelId: r.channel_id,
         userId: otherId,
         name: p.company_name || p.full_name || "Usuario",
-        photo: p.profile_photo_url || p.avatar_url || null,
+        photo,
         type: p.user_type || null,
         lastOpenedAt: r.last_opened_at,
       };

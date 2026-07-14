@@ -56,12 +56,6 @@ export async function POST(request: NextRequest) {
     const channelId = channel?.id;
     if (!channelId) return NextResponse.json({ error: "No se pudo abrir el chat" }, { status: 502 });
 
-    // ¿es primer contacto? (si la fila no existía, citamos el gig)
-    const existing: any[] = await (
-      await fetch(`${SUPABASE_URL}/rest/v1/chat_channels?channel_id=eq.${encodeURIComponent(channelId)}&select=channel_id&limit=1`, { headers: H })
-    ).json();
-    const isFirstContact = !existing?.length;
-
     await fetch(`${SUPABASE_URL}/rest/v1/chat_channels?on_conflict=channel_id`, {
       method: "POST",
       headers: { ...H, "Content-Type": "application/json", Prefer: "resolution=merge-duplicates" },
@@ -83,8 +77,9 @@ export async function POST(request: NextRequest) {
     if (!tok?.token) return NextResponse.json({ error: "No se pudo crear el token" }, { status: 502 });
     const asMe = new Whop({ apiKey: tok.token, baseURL: "https://api.whop.com/api/v1" });
 
-    // CITA DEL GIG (estilo SideShift): primero el link de la campaña, después el texto
-    if (gigId && isFirstContact) {
+    // CITA DEL GIG (estilo SideShift): SIEMPRE que el mensaje venga de una
+    // campaña, primero el link de la campaña (tarjeta clickeable) y después el texto
+    if (gigId) {
       try {
         const gigs: any[] = await (
           await fetch(`${SUPABASE_URL}/rest/v1/gigs?id=eq.${encodeURIComponent(gigId)}&select=title&limit=1`, { headers: H })

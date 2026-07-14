@@ -6,6 +6,8 @@ import QueryProvider from '../lib/providers/QueryProvider'
 import SupportChatWidget from '../components/support/SupportChatWidget'
 import SessionRefresher from '../components/SessionRefresher'
 import InviteNotifier from '../components/InviteNotifier'
+import Toaster from '../components/oct/toast'
+import AlertBridge from '../components/oct/AlertBridge'
 
 const inter = Inter({ subsets: ['latin'], display: 'swap' })
 
@@ -42,6 +44,8 @@ export default function RootLayout({
               {children}
             </div>
             <SupportChatWidget />
+            <Toaster />
+            <AlertBridge />
           </AuthProvider>
         </QueryProvider>
       </body>
