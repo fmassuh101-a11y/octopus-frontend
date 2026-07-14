@@ -55,6 +55,21 @@ export async function POST(request: NextRequest) {
     const channelId = channel?.id || null;
     if (!channelId) return NextResponse.json({ error: "No se pudo abrir el chat" }, { status: 502 });
 
+    // registrar la conversación (para la lista lateral y el permiso del token)
+    const creatorUser = iAmCreator ? me.id : targetId;
+    const companyUser = iAmCreator ? targetId : me.id;
+    await fetch(`${SUPABASE_URL}/rest/v1/chat_channels?on_conflict=channel_id`, {
+      method: "POST",
+      headers: { ...H, "Content-Type": "application/json", Prefer: "resolution=merge-duplicates" },
+      body: JSON.stringify({
+        channel_id: channelId,
+        host_company: hostCompany,
+        creator_user: creatorUser,
+        company_user: companyUser,
+        last_opened_at: new Date().toISOString(),
+      }),
+    }).catch(() => {});
+
     return NextResponse.json({ ok: true, channelId });
   } catch (e: any) {
     console.error("[DmOpen] error:", e?.message || e);

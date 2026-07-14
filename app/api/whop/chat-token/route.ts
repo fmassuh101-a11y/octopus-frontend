@@ -3,15 +3,19 @@ import { whopClient } from "@/lib/whop";
 import { getAuthenticatedUser } from "@/lib/auth/apiAuth";
 import { ensureWhopIdentity, CHAT_SCOPES } from "@/lib/whopIdentity";
 import { shieldAsync } from "@/lib/shield";
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/config/supabase";
 
 /**
- * GET /api/whop/chat-token — token del chat embebido (DMs + grupos) DENTRO de Octopus.
- * SIN OAuth y SIN login de Whop: enrolamos al usuario como connected account con
- * nuestra API key y minteamos un access token con los scopes de chat (guía oficial
- * docs.whop.com/developer/guides/chat/quickstart). El usuario nunca sale de la app.
+ * GET /api/whop/chat-token[?channel=feed_...] — token del chat embebido.
+ * Los tokens de Whop son ESTRICTOS por compañía: para abrir una conversación
+ * (support channel, que vive en la compañía del creador) el token debe ir
+ * scoped a ESA compañía. Con ?channel= verificamos que el usuario sea parte
+ * de la conversación y minteamos scoped al host. Sin ?channel=, va scoped a
+ * la compañía propia (sirve para el creador y como healthcheck).
+ * Verificado E2E: ambos lados envían y leen. Sin OAuth, sin salir de la app.
  */
 export async function GET(request: NextRequest) {
-  const blocked = await shieldAsync(request as unknown as Request, { limit: 30 });
+  const blocked = await shieldAsync(request as unknown as Request, { limit: 60 });
   if (blocked) return blocked;
 
   try {
@@ -20,35 +24,31 @@ export async function GET(request: NextRequest) {
 
     const { companyId, whopUserId } = await ensureWhopIdentity(user);
 
-    // Preferir la KEY DE LA APP (dueña del chat): sus tokens no son "company-scoped"
-    // y pueden operar DMs/mensajes. Requiere que la key tenga los permisos de chat
-    // marcados (checkboxes de la key, aparte de los permisos de la App). Si aún no
-    // los tiene, caemos a la key de pagos (la lista carga, enviar queda pendiente).
-    const { OCTOPUS_COMPANY_ID } = await import("@/lib/whop");
-    const appKey = (process.env.WHOP_CHAT_API_KEY || process.env.WHOP_OAUTH_CLIENT_SECRET || "").trim();
-    let token: string | null = null;
-    if (appKey) {
-      try {
-        const { Whop } = await import("@whop/sdk");
-        const asApp = new Whop({ apiKey: appKey, baseURL: "https://api.whop.com/api/v1" });
-        const r: any = await (asApp as any).accessTokens.create({
-          company_id: OCTOPUS_COMPANY_ID,
-          user_id: whopUserId,
-          scoped_actions: CHAT_SCOPES,
-        });
-        token = r?.token || null;
-      } catch (e: any) {
-        console.error("[ChatToken] app key aún sin permisos de chat:", e?.message?.slice(0, 120));
+    // ¿scoped a una conversación específica?
+    let scopeCompany = companyId;
+    const channelId = request.nextUrl.searchParams.get("channel") || "";
+    if (channelId) {
+      const key = process.env.SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;
+      const rows: any[] = await (
+        await fetch(
+          `${SUPABASE_URL}/rest/v1/chat_channels?channel_id=eq.${encodeURIComponent(channelId)}&select=host_company,creator_user,company_user&limit=1`,
+          { headers: { Authorization: `Bearer ${key}`, apikey: key } }
+        )
+      ).json();
+      const row = rows?.[0];
+      if (!row) return NextResponse.json({ error: "Conversación no encontrada" }, { status: 404 });
+      if (row.creator_user !== user.id && row.company_user !== user.id) {
+        return NextResponse.json({ error: "No es tu conversación" }, { status: 403 });
       }
+      scopeCompany = row.host_company;
     }
-    if (!token) {
-      const res: any = await (whopClient as any).accessTokens.create({
-        company_id: companyId,
-        user_id: whopUserId,
-        scoped_actions: CHAT_SCOPES,
-      });
-      token = res?.token || null;
-    }
+
+    const res: any = await (whopClient as any).accessTokens.create({
+      company_id: scopeCompany,
+      user_id: whopUserId,
+      scoped_actions: CHAT_SCOPES,
+    });
+    const token = res?.token || null;
     if (!token) return NextResponse.json({ error: "No se pudo crear el token de chat" }, { status: 502 });
 
     return NextResponse.json({ ok: true, token, whopUserId });
