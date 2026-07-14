@@ -1,14 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Whop } from "@whop/sdk";
 import { whopClient } from "@/lib/whop";
 import { getAuthenticatedUser } from "@/lib/auth/apiAuth";
-import { ensureWhopIdentity, CHAT_SCOPES } from "@/lib/whopIdentity";
+import { ensureWhopIdentity } from "@/lib/whopIdentity";
 import { shieldAsync } from "@/lib/shield";
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/config/supabase";
 
 /**
- * POST /api/whop/dm/open { userId } — abre (o encuentra) el DM de Whop entre
- * el usuario autenticado y otro usuario de Octopus (ej: empresa → creador).
- * Devuelve el channelId para abrirlo en el chat embebido. Todo dentro de la app.
+ * POST /api/whop/dm/open { userId } — abre (o encuentra) la conversación entre
+ * el usuario autenticado y otro usuario de Octopus, DENTRO de la app.
+ *
+ * MECANISMO (verificado E2E): SUPPORT CHANNEL de Whop — la conversación vive en
+ * la compañía del CREADOR con el usuario de la EMPRESA como cliente. Es
+ * idempotente (siempre devuelve el mismo canal → la conversación se guarda), y
+ * los tokens company-scoped SÍ pueden leer y escribir (los DMs personales no,
+ * exigen OAuth). Sin login de Whop, sin salir de la app.
  */
 export async function POST(request: NextRequest) {
   const blocked = await shieldAsync(request as unknown as Request, { limit: 20 });
@@ -23,48 +28,30 @@ export async function POST(request: NextRequest) {
     if (!targetId) return NextResponse.json({ error: "Falta el usuario" }, { status: 400 });
     if (targetId === me.id) return NextResponse.json({ error: "No podés chatear con vos mismo" }, { status: 400 });
 
-    // identidad Whop de ambos (se crean solas si no existen)
-    const mine = await ensureWhopIdentity(me);
-    // el destinatario: buscamos su email en auth vía su perfil (el helper lo necesita si hay que crearlo)
-    const { SUPABASE_URL, SUPABASE_ANON_KEY } = await import("@/lib/config/supabase");
+    // perfiles de ambos (tipo + email para crear identidades si faltan)
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;
-    const tRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${targetId}&select=user_id,email`,
-      { headers: { Authorization: `Bearer ${key}`, apikey: key } }
-    );
-    const target = ((tRes.ok ? await tRes.json() : [])[0]) || { user_id: targetId };
-    const theirs = await ensureWhopIdentity({ id: targetId, email: target.email });
+    const H = { Authorization: `Bearer ${key}`, apikey: key };
+    const rows: any[] = await (
+      await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles?user_id=in.(${me.id},${targetId})&select=user_id,user_type,email`,
+        { headers: H }
+      )
+    ).json();
+    const myProfile = rows.find((r) => r.user_id === me.id) || {};
+    const targetProfile = rows.find((r) => r.user_id === targetId) || {};
 
-    // El canal lo crea la KEY DE LA APP (tiene los permisos dms:channel:manage
-    // que Felipe le aprobó): un DM entre los dos usuarios, verificado E2E.
-    // (Los tokens minteados no sirven acá: el endpoint rechaza company-scoped.)
-    const appKey = (process.env.WHOP_CHAT_API_KEY || process.env.WHOP_OAUTH_CLIENT_SECRET || "").trim();
-    if (!appKey) return NextResponse.json({ error: "Falta la key de mensajes (WHOP_OAUTH_CLIENT_SECRET)" }, { status: 500 });
-    const asApp = new Whop({ apiKey: appKey, baseURL: "https://api.whop.com/api/v1" });
-    const channel: any = await (asApp as any).dmChannels.create({
-      with_user_ids: [mine.whopUserId, theirs.whopUserId],
+    const mine = await ensureWhopIdentity({ id: me.id, email: me.email || myProfile.email });
+    const theirs = await ensureWhopIdentity({ id: targetId, email: targetProfile.email });
+
+    // la conversación vive en la compañía del CREADOR; el otro es el "cliente"
+    const iAmCreator = myProfile.user_type === "creator" && targetProfile.user_type !== "creator";
+    const hostCompany = iAmCreator ? mine.companyId : theirs.companyId;
+    const guestUser = iAmCreator ? theirs.whopUserId : mine.whopUserId;
+
+    const channel: any = await (whopClient as any).supportChannels.create({
+      company_id: hostCompany,
+      user_id: guestUser,
     });
-
-    // CLAVE (medido con dmMembers.list): el canal nace con los usuarios en
-    // status "requested" → invisible para ambos. Los ACEPTAMOS por API y,
-    // si se puede, sacamos al bot de la App para dejar un DM limpio A↔B.
-    try {
-      const wanted = new Set([mine.whopUserId, theirs.whopUserId]);
-      const members: any[] = [];
-      for await (const m of (asApp as any).dmMembers.list({ channel_id: channel.id })) {
-        members.push(m);
-        if (members.length > 10) break;
-      }
-      for (const m of members) {
-        if (wanted.has(m.user_id) && m.status !== "accepted") {
-          await (asApp as any).dmMembers.update(m.id, { status: "accepted" }).catch(() => {});
-        }
-      }
-      const bot = members.find((m) => !wanted.has(m.user_id));
-      if (bot) await (asApp as any).dmMembers.delete(bot.id).catch(() => {});
-    } catch (e: any) {
-      console.error("[DmOpen] no se pudo aceptar miembros:", e?.message?.slice(0, 120));
-    }
     const channelId = channel?.id || null;
     if (!channelId) return NextResponse.json({ error: "No se pudo abrir el chat" }, { status: 502 });
 

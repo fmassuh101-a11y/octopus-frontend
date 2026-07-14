@@ -62,6 +62,17 @@ export async function GET(request: NextRequest) {
         const m2: any = await (asEmpresa as any).messages.create({ channel_id: ch.id, content: "Hola! (prueba soporte empresa)" });
         out.empresaSend = { ok: true, id: m2?.id };
       } catch (e: any) { out.empresaSend = { ok: false, error: (e?.message || "").slice(0, 140) }; }
+      // CLAVE para un solo token por sesión: ¿la empresa puede mandar al canal
+      // del creador con un token scoped a SU PROPIA company? (membresía manda)
+      const EMPRESA_CO = "biz_jPUCZocRVQnj85";
+      const t3: any = await (pay as any).accessTokens.create({
+        company_id: EMPRESA_CO, user_id: EMPRESA_USER, scoped_actions: CHAT_SCOPES,
+      });
+      const asEmpresaOwn = new Whop({ apiKey: t3.token, baseURL: "https://api.whop.com/api/v1" });
+      try {
+        const m3: any = await (asEmpresaOwn as any).messages.create({ channel_id: ch.id, content: "Hola! (empresa con token propio)" });
+        out.empresaSendOwnCo = { ok: true, id: m3?.id };
+      } catch (e: any) { out.empresaSendOwnCo = { ok: false, error: (e?.message || "").slice(0, 140) }; }
     } catch (e: any) {
       out.createError = (e?.message || "").slice(0, 200);
     }
