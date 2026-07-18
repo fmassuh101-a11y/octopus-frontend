@@ -77,19 +77,53 @@ export async function POST(request: NextRequest) {
     if (!tok?.token) return NextResponse.json({ error: "No se pudo crear el token" }, { status: 502 });
     const asMe = new Whop({ apiKey: tok.token, baseURL: "https://api.whop.com/api/v1" });
 
-    // CITA DEL GIG (estilo SideShift): SIEMPRE que el mensaje venga de una
-    // campaña, primero el link de la campaña (tarjeta clickeable) y después el texto
+    // CITA DEL GIG (estilo SideShift): imagen de la campaña ADJUNTA + título +
+    // link a la tarjeta pública. El chat de Whop no "unfurlea" links, así que la
+    // imagen va como attachment real (files.upload → attachments).
     if (gigId) {
       try {
         const gigs: any[] = await (
-          await fetch(`${SUPABASE_URL}/rest/v1/gigs?id=eq.${encodeURIComponent(gigId)}&select=title&limit=1`, { headers: H })
+          await fetch(`${SUPABASE_URL}/rest/v1/gigs?id=eq.${encodeURIComponent(gigId)}&select=title,image_url&limit=1`, { headers: H })
         ).json();
-        const title = gigs?.[0]?.title ? `**${gigs[0].title}**\n` : "";
+        const gig = gigs?.[0] || {};
+        const title = gig.title ? `**${gig.title}**\n` : "";
+
+        // adjuntar la imagen de la campaña (si existe y es URL http)
+        let attachments: Array<{ id: string }> | undefined;
+        const img = String(gig.image_url || "");
+        if (img.startsWith("http")) {
+          try {
+            const imgRes = await fetch(img);
+            if (imgRes.ok) {
+              const buf = Buffer.from(await imgRes.arrayBuffer());
+              const mime = imgRes.headers.get("content-type") || "image/jpeg";
+              const created: any = await (whopClient as any).files.create({
+                filename: `campana-${gigId}.${mime.includes("png") ? "png" : "jpg"}`,
+                content_type: mime,
+              });
+              if (created?.upload_url) {
+                const up = await fetch(created.upload_url, {
+                  method: "PUT",
+                  headers: { "Content-Type": mime, ...(created.upload_headers || {}) },
+                  body: new Uint8Array(buf),
+                });
+                if (up.ok) {
+                  // esperar a que el archivo esté listo (poll corto)
+                  for (let i = 0; i < 6; i++) {
+                    const f: any = await (whopClient as any).files.retrieve(created.id);
+                    if (f?.upload_status === "ready") { attachments = [{ id: created.id }]; break; }
+                    await new Promise((r) => setTimeout(r, 800));
+                  }
+                }
+              }
+            }
+          } catch (e: any) { console.error("[DmSend] adjunto falló:", e?.message?.slice(0, 100)); }
+        }
+
         await (asMe as any).messages.create({
           channel_id: channelId,
-          // /c/<id> es la tarjeta pública con OG (imagen+título) → el chat la
-          // muestra como card linda, estilo SideShift
           content: `${title}${APP_URL}/c/${gigId}`,
+          ...(attachments ? { attachments } : {}),
         });
       } catch {}
     }

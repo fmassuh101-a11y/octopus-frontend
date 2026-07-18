@@ -10,11 +10,14 @@ import { toast } from '@/components/oct/toast'
 export default function SettingsPage() {
   const router = useRouter()
 
-  const logout = () => {
+  const logout = async () => {
     localStorage.removeItem('sb-access-token')
     localStorage.removeItem('sb-refresh-token')
     localStorage.removeItem('sb-user')
-    window.location.href = '/'
+    localStorage.removeItem('oct-user-type')
+    // al cerrar sesión, el navegador vuelve DETRÁS del muro de waitlist
+    try { await fetch('/api/waitlist/lock', { method: 'POST' }) } catch {}
+    window.location.href = '/waitlist'
   }
 
   return (

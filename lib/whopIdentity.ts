@@ -48,7 +48,19 @@ export async function ensureWhopIdentity(user: { id: string; email?: string | nu
     }
   }
 
-  const emailForTwin = (user.email || "").trim();
+  // Email: el que venga → el del perfil → el de AUTH (admin). Sin esto, las
+  // cuentas cuyo perfil no guardó email caían al fallback del dueño y las
+  // conversaciones salían como "Octopus"/chanchito y se duplicaban.
+  let resolvedEmail = (user.email || "").trim();
+  if (!resolvedEmail.includes("@") && SERVICE_KEY) {
+    try {
+      const aRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${user.id}`, {
+        headers: { Authorization: `Bearer ${SERVICE_KEY}`, apikey: SERVICE_KEY },
+      });
+      if (aRes.ok) resolvedEmail = ((await aRes.json())?.email || "").trim();
+    } catch {}
+  }
+  const emailForTwin = resolvedEmail;
   if (!companyId && emailForTwin.includes("@")) {
     const email = emailForTwin;
 

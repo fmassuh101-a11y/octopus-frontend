@@ -874,6 +874,12 @@ export default function ApplicantsPage() {
                       </svg>
                       Mensaje
                     </Link>
+                    <button
+                      onClick={() => { setContractFor(selectedCreator); setSelectedCreator(null) }}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-600 text-white rounded-xl font-bold hover:bg-cyan-700 transition-colors"
+                    >
+                      Crear contrato
+                    </button>
                     <Link
                       href={`/company/creator/${selectedCreator.creator_id}?pay=1`}
                       className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-colors"

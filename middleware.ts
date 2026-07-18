@@ -48,6 +48,7 @@ export function middleware(req: NextRequest) {
       path === '/waitlist' ||
       path.startsWith('/waitlist/') ||
       path.startsWith('/c/') || // tarjeta pública de campaña (OG para el chat)
+      path.startsWith('/k/') || // tarjeta pública de contrato
       path.startsWith('/api/') ||
       path.startsWith('/_next') ||
       path === '/favicon.ico' ||

@@ -30,6 +30,10 @@ export default function ContratoDocumento() {
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  // PROCESO DE FIRMA (estilo SideShift): al aceptar, el creador ingresa sus
+  // handles de las plataformas del contrato; la empresa luego los aprueba.
+  const [showHandles, setShowHandles] = useState(false)
+  const [handles, setHandles] = useState<Record<string, string>>({})
 
   useEffect(() => {
     ;(async () => {
@@ -66,25 +70,87 @@ export default function ContratoDocumento() {
   const cpmRate = Number(usageRights?.cpm_rate || 0)
   const cpmMin = Number(usageRights?.cpm_min_views || 0)
   const cpmMax = Number(usageRights?.cpm_max_views || 0)
+  const contractPlatforms: string[] = Array.from(new Set((deliverables || []).map((d: any) => d.platform).filter((p: string) => p && p !== 'ugc')))
+  const signedHandles: any[] = parse(contract?.creator_handles) || []
+  const isCompany = me?.id === contract?.company_id
   const isCreator = me?.id === contract?.creator_id
   const pending = contract?.status === 'pending' || contract?.status === 'sent'
   const fecha = (d?: string) => (d ? new Date(d).toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' }) : '—')
 
-  const decide = async (accept: boolean) => {
+  const reject = async () => {
     setBusy(true)
     try {
       const token = localStorage.getItem('sb-access-token')
       const res = await fetch(`${SUPABASE_URL}/rest/v1/contracts?id=eq.${id}`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
-        body: JSON.stringify(accept
-          ? { status: 'accepted', accepted_at: new Date().toISOString() }
-          : { status: 'rejected' }),
+        body: JSON.stringify({ status: 'rejected' }),
       })
       if (!res.ok) throw new Error()
-      toast(accept ? 'Contrato aceptado' : 'Contrato rechazado')
-      setContract((c: any) => ({ ...c, status: accept ? 'accepted' : 'rejected', accepted_at: accept ? new Date().toISOString() : c.accepted_at }))
+      toast('Contrato rechazado')
+      setContract((c: any) => ({ ...c, status: 'rejected' }))
     } catch { toast('No se pudo procesar', 'error') }
+    setBusy(false)
+  }
+
+  // Firma del creador: handles + aceptación electrónica (estilo SideShift)
+  const signWithHandles = async () => {
+    setBusy(true)
+    try {
+      const token = localStorage.getItem('sb-access-token')
+      const creatorHandles = Object.entries(handles)
+        .filter(([, h]) => h.trim())
+        .map(([platform, handle]) => ({ platform, handle: handle.trim().replace(/^@+/, '@') }))
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/contracts?id=eq.${id}`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'accepted',
+          accepted_at: new Date().toISOString(),
+          creator_signed_at: new Date().toISOString(),
+          creator_handles: JSON.stringify(creatorHandles),
+        }),
+      })
+      if (!res.ok) throw new Error()
+      // avisar a la empresa por el chat de Whop
+      const handlesText = creatorHandles.map((h) => `${h.platform}: ${h.handle}`).join(', ')
+      fetch('/api/whop/dm/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          userId: contract.company_id,
+          content: `Firmé el contrato "${contract.title}".${handlesText ? `\nMis handles: ${handlesText}` : ''}`,
+        }),
+      }).catch(() => {})
+      toast('Contrato firmado')
+      setShowHandles(false)
+      setContract((c: any) => ({ ...c, status: 'accepted', accepted_at: new Date().toISOString(), creator_handles: JSON.stringify(creatorHandles) }))
+    } catch { toast('No se pudo firmar', 'error') }
+    setBusy(false)
+  }
+
+  // Aprobación de handles por la EMPRESA (cierra el proceso)
+  const approveHandles = async () => {
+    setBusy(true)
+    try {
+      const token = localStorage.getItem('sb-access-token')
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/contracts?id=eq.${id}`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'in_progress' }),
+      })
+      if (!res.ok) throw new Error()
+      fetch('/api/whop/dm/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          userId: contract.creator_id,
+          content: `Aprobamos tus handles para "${contract.title}". El contrato está EN MARCHA — ya podés crear el contenido.`,
+        }),
+      }).catch(() => {})
+      toast('Handles aprobados — contrato en marcha')
+      setContract((c: any) => ({ ...c, status: 'in_progress' }))
+    } catch { toast('No se pudo aprobar', 'error') }
     setBusy(false)
   }
 
@@ -287,6 +353,11 @@ export default function ContratoDocumento() {
             <div className="mt-2 border-t border-neutral-400 pt-1">
               <p className="text-sm font-bold">{creatorName}</p>
               <p className="text-xs text-neutral-500">Fecha: {contract.accepted_at ? fecha(contract.accepted_at) : 'Pendiente de aceptación'}</p>
+              {signedHandles.length > 0 && (
+                <p className="mt-1 text-xs text-neutral-500">
+                  Cuentas: {signedHandles.map((h: any) => `${h.platform} ${h.handle}`).join(' · ')}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -301,19 +372,74 @@ export default function ContratoDocumento() {
         <div className="fixed inset-x-0 bottom-0 border-t border-neutral-200 bg-white/95 p-4 backdrop-blur print:hidden">
           <div className="mx-auto flex w-full max-w-3xl gap-3">
             <button
-              onClick={() => decide(false)}
+              onClick={reject}
               disabled={busy}
               className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-neutral-200 py-3.5 font-bold text-neutral-600 disabled:opacity-50"
             >
               <X className="h-4 w-4" /> Rechazar
             </button>
             <button
-              onClick={() => decide(true)}
+              onClick={() => setShowHandles(true)}
               disabled={busy}
               className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-[#22D3EE] to-[#0891B2] py-3.5 font-bold text-white shadow-lg shadow-cyan-200 disabled:opacity-50"
             >
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Aceptar contrato
+              <Check className="h-4 w-4" /> Aceptar y firmar
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* EMPRESA: aprobar los handles del creador (cierra el proceso de firma) */}
+      {isCompany && contract.status === 'accepted' && (
+        <div className="fixed inset-x-0 bottom-0 border-t border-neutral-200 bg-white/95 p-4 backdrop-blur print:hidden">
+          <div className="mx-auto w-full max-w-3xl">
+            {signedHandles.length > 0 && (
+              <p className="mb-2 text-center text-sm text-neutral-500">
+                Handles del creador: <b>{signedHandles.map((h: any) => `${h.platform}: ${h.handle}`).join(' · ')}</b>
+              </p>
+            )}
+            <button
+              onClick={approveHandles}
+              disabled={busy}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-[#22D3EE] to-[#0891B2] py-3.5 font-bold text-white shadow-lg shadow-cyan-200 disabled:opacity-50"
+            >
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Aprobar handles y poner en marcha
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* PASO DE FIRMA DEL CREADOR: sus handles (estilo SideShift) */}
+      {showHandles && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 print:hidden sm:items-center" onClick={() => setShowHandles(false)}>
+          <div className="w-full max-w-md rounded-t-[28px] bg-white p-6 sm:rounded-[28px]" onClick={(e) => e.stopPropagation()}>
+            <p className="text-lg font-extrabold">Firmá con tus cuentas</p>
+            <p className="mt-1 text-sm text-neutral-500">
+              Ingresá el handle de la cuenta desde la que vas a publicar. La empresa los verá y aprobará.
+            </p>
+            <div className="mt-4 space-y-3">
+              {(contractPlatforms.length ? contractPlatforms : ['tiktok']).map((p) => (
+                <div key={p}>
+                  <p className="mb-1 text-xs font-bold uppercase tracking-wide text-neutral-400">{PLATFORM_LABEL[p] || p}</p>
+                  <input
+                    value={handles[p] || ''}
+                    onChange={(e) => setHandles((h) => ({ ...h, [p]: e.target.value }))}
+                    placeholder="@tucuenta"
+                    className="w-full rounded-2xl border border-neutral-200 px-4 py-3 text-sm font-semibold outline-none focus:border-cyan-400"
+                  />
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={signWithHandles}
+              disabled={busy || (contractPlatforms.length > 0 && !contractPlatforms.some((p) => (handles[p] || '').trim()))}
+              className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-[#22D3EE] to-[#0891B2] py-3.5 font-bold text-white shadow-lg shadow-cyan-200 disabled:opacity-40"
+            >
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Firmar contrato
+            </button>
+            <p className="mt-3 text-center text-[11px] text-neutral-400">
+              Tu firma electrónica queda registrada con fecha y equivale a una firma manuscrita.
+            </p>
           </div>
         </div>
       )}

@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import PendingContracts from '@/components/oct/PendingContracts'
 import { motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
@@ -140,6 +141,7 @@ export default function CreatorHome() {
     <div className="relative min-h-[100dvh] pb-32 text-neutral-900">
       <Sky />
       <div className="relative mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl px-5 pt-14">
+        <PendingContracts />
         {/* chips superiores + campana de notificaciones */}
         <div className="flex items-center gap-2">
           <div className="flex flex-1 items-center gap-2 overflow-x-auto no-scrollbar">

@@ -64,11 +64,14 @@ export default function SlideMenu({ userType, userName, userEmail, avatarUrl }: 
     }
   }, [isOpen])
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     localStorage.removeItem('sb-access-token')
     localStorage.removeItem('sb-refresh-token')
     localStorage.removeItem('sb-user')
-    window.location.href = '/auth/login'
+    localStorage.removeItem('oct-user-type')
+    // al cerrar sesión, el navegador vuelve DETRÁS del muro de waitlist
+    try { await fetch('/api/waitlist/lock', { method: 'POST' }) } catch {}
+    window.location.href = '/waitlist'
   }
 
   return (

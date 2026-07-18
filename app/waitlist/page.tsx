@@ -132,7 +132,15 @@ function WaitlistInner() {
       {/* ═══ HERO INMERSIVO (océano profundo) ═══ */}
       <section className="relative h-[100dvh] w-full overflow-hidden">
         <DeepOcean />
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-[#03141f]" />
+        {/* video inmersivo (la referencia de Felipe); si falla, queda el canvas */}
+        <video
+          autoPlay muted loop playsInline
+          className="absolute inset-0 h-full w-full object-cover"
+          style={{ objectPosition: '70% center' }}
+          onError={(e) => { (e.target as HTMLVideoElement).style.display = 'none' }}
+          src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260622_204221_5339e40b-e73d-4ab0-9c65-79c18c66fd50.mp4"
+        />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-[#03141f]" />
 
         {/* nav */}
         <div className="relative z-10 flex items-center justify-between px-6 py-5 md:px-12">
@@ -145,58 +153,61 @@ function WaitlistInner() {
           </button>
         </div>
 
-        {/* hero content */}
-        <div className="relative z-10 flex h-[calc(100dvh-80px)] flex-col justify-between px-6 pb-10 pt-10 md:px-12 md:pb-14">
-          <div className="max-w-3xl">
-            <p className="mb-4 text-xs text-white/80 [animation:fadeSlideUp_0.8s_ease_0.2s_both] sm:text-sm">
+        {/* hero content — texto arriba, grande y visible; CTA centrado */}
+        <div className="relative z-10 flex h-[calc(100dvh-80px)] flex-col px-6 pt-6 md:px-12 md:pt-10">
+          <div className="max-w-4xl">
+            <p className="mb-4 text-sm font-medium text-white/90 drop-shadow [animation:fadeSlideUp_0.8s_ease_0.2s_both]">
               Lista de espera abierta — Latinoamérica
             </p>
-            <h1 className="text-4xl font-medium leading-[1.08] tracking-tight [animation:fadeSlideUp_0.8s_ease_0.4s_both] sm:text-6xl lg:text-7xl">
-              Creadores que cobran.
+            <h1 className="text-5xl font-semibold leading-[1.05] tracking-tight drop-shadow-lg [animation:fadeSlideUp_0.8s_ease_0.4s_both] sm:text-7xl lg:text-8xl">
+              Creadores
               <br />
-              Marcas que crecen.
+              que cobran.
             </h1>
-          </div>
-
-          <div>
-            {/* CONTADOR CON META EN VIVO */}
-            <div className="mb-6 max-w-md [animation:fadeSlideUp_0.8s_ease_0.6s_both]">
-              <div className="flex items-end justify-between">
-                <p className="text-sm font-medium uppercase tracking-widest text-white/70">
-                  {role === 'creator' ? 'Creadores' : 'Empresas'}
-                </p>
-                <p className="text-2xl font-semibold tabular-nums">
-                  {count ?? '—'}<span className="text-white/50">/{goal}</span>
-                </p>
-              </div>
-              <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/15">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-cyan-500 transition-all duration-1000"
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
-              <p className="mt-2 text-xs text-white/50">Cuando llegue a la meta, abrimos las puertas.</p>
-            </div>
-
-            <p className="mb-5 max-w-lg text-sm leading-relaxed text-white/60 [animation:fadeSlideUp_0.8s_ease_0.7s_both] sm:text-base">
+            <p className="mt-5 max-w-xl text-base leading-relaxed text-white/80 drop-shadow [animation:fadeSlideUp_0.8s_ease_0.6s_both] sm:text-lg">
               El marketplace que conecta creadores de contenido con marcas de toda Latinoamérica. Campañas pagas, contratos claros y cobros seguros.
             </p>
+          </div>
+
+          <div className="mt-auto pb-12 text-center">
+            {/* CONTADOR — SOLO CREADORES (meta única) */}
+            <div className="mx-auto mb-7 max-w-md [animation:fadeSlideUp_0.8s_ease_0.7s_both]">
+              <div className="flex items-end justify-between">
+                <p className="text-sm font-semibold uppercase tracking-widest text-white/80 drop-shadow">Creadores</p>
+                <p className="text-3xl font-bold tabular-nums drop-shadow">
+                  {stats?.creators ?? '—'}<span className="text-white/50">/{stats?.goalCreators || 250}</span>
+                </p>
+              </div>
+              <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-white/20">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-cyan-500 shadow-[0_0_12px_rgba(34,211,238,0.8)] transition-all duration-1000"
+                  style={{ width: `${Math.min(100, Math.round(((stats?.creators || 0) / (stats?.goalCreators || 250)) * 100))}%` }}
+                />
+              </div>
+              <p className="mt-2 text-xs text-white/60">Cuando lleguemos a la meta, abrimos las puertas.</p>
+            </div>
+
             <button
               onClick={scrollToForm}
-              className="inline-flex items-center gap-2 rounded-lg bg-white px-6 py-3 text-sm font-medium text-black transition-transform [animation:fadeSlideUp_0.8s_ease_0.9s_both] hover:scale-105"
+              className="inline-flex items-center gap-2 rounded-xl bg-white px-8 py-4 text-base font-semibold text-black shadow-2xl transition-transform [animation:fadeSlideUp_0.8s_ease_0.9s_both] hover:scale-105"
             >
-              Unirme a la lista <ArrowDown size={16} />
+              Unirme a la lista <ArrowDown size={18} />
             </button>
           </div>
         </div>
       </section>
 
       {/* ═══ FORMULARIO / REFERIDOS ═══ */}
-      <section id="anotarse" className="relative px-5 pb-24 pt-16">
-        <div className="mx-auto w-full max-w-md">
+      <section id="anotarse" className="relative overflow-hidden px-5 pb-24 pt-20">
+        {/* continuidad del océano: glow cian de fondo */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(60%_100%_at_50%_0%,rgba(34,211,238,0.16),transparent)]" />
+        <div className="relative mx-auto w-full max-w-lg">
+          <h2 className="text-center text-3xl font-semibold [animation:fadeSlideUp_0.8s_ease_both] sm:text-4xl">Unite a la lista</h2>
+          <p className="mt-2 text-center text-white/50">Entrás con prioridad cuando abramos las puertas.</p>
+          <div className="mt-8">
           {joinedId ? (
             /* YA ANOTADO → referral destacado */
-            <div className="rounded-[28px] border border-white/10 bg-white/[0.06] p-6 backdrop-blur">
+            <div className="rounded-[28px] border border-cyan-400/20 bg-white/[0.07] p-7 shadow-[0_0_60px_-20px_rgba(34,211,238,0.4)] backdrop-blur">
               <div className="flex items-center gap-3">
                 <span className="flex h-11 w-11 items-center justify-center rounded-full bg-cyan-400/20">
                   <Check className="h-5 w-5 text-cyan-300" />
@@ -228,11 +239,8 @@ function WaitlistInner() {
               </div>
             </div>
           ) : (
-            <div className="rounded-[28px] border border-white/10 bg-white/[0.06] p-6 backdrop-blur">
-              <h2 className="text-xl font-semibold">Unite a la lista de espera</h2>
-              <p className="mt-1 text-sm text-white/50">Entrás con prioridad cuando abramos.</p>
-
-              <div className="mt-5 grid grid-cols-2 gap-1 rounded-2xl bg-black/30 p-1">
+            <div className="rounded-[28px] border border-cyan-400/20 bg-white/[0.07] p-7 shadow-[0_0_60px_-20px_rgba(34,211,238,0.4)] backdrop-blur">
+              <div className="grid grid-cols-2 gap-1 rounded-2xl bg-black/30 p-1">
                 {([['creator', 'Soy creador'], ['company', 'Soy empresa']] as const).map(([v, t]) => (
                   <button key={v} onClick={() => setRole(v)}
                     className={`rounded-xl py-2.5 text-sm font-semibold transition ${role === v ? 'bg-white text-black' : 'text-white/60'}`}>
@@ -294,6 +302,7 @@ function WaitlistInner() {
             </div>
           )}
 
+          </div>
           <p className="mt-10 text-center text-[11px] text-white/30">Octopus — Creadores que cobran. Marcas que crecen.</p>
         </div>
       </section>
