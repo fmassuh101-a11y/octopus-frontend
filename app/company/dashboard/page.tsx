@@ -9,6 +9,7 @@ import { Crown, Wallet, Briefcase, Gift as GiftIcon } from 'lucide-react'
 import WorkspaceSwitcher from '@/components/ui/WorkspaceSwitcher'
 import { getPlan } from '@/lib/plans'
 import { getActiveCompany } from '@/lib/workspace'
+import { readCache, writeCache } from '@/lib/useCachedFetch'
 
 // Tareas pendientes: se COMPLETAN SOLAS con datos reales (antes estaban hardcodeadas)
 const ACTION_ITEMS_BASE = [
@@ -73,6 +74,14 @@ export default function CompanyDashboard() {
   const [giftModal, setGiftModal] = useState<{ type: 'plan' | 'discount'; plan: string; discount: number } | null>(null)
 
   useEffect(() => {
+    // FLUIDEZ: pintar al instante lo último visto (refresco por detrás)
+    const c = readCache<any>('company-home')
+    if (c?.profile) {
+      setProfile(c.profile)
+      if (c.stats) setStats(c.stats)
+      if (c.wallet) setWallet(c.wallet)
+      setLoading(false)
+    }
     checkAuth()
   }, [])
 
@@ -131,6 +140,7 @@ export default function CompanyDashboard() {
             } catch (e) {}
           }
           setProfile(finalProfile)
+          writeCache('company-home', { ...(readCache<any>('company-home') || {}), profile: finalProfile })
 
           // PARALLEL: Fetch wallet while profile is already loaded
           fetch(`${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${userData.id}&select=balance,pending_balance`, {
@@ -138,7 +148,10 @@ export default function CompanyDashboard() {
           }).then(async walletRes => {
             if (walletRes.ok) {
               const wallets = await walletRes.json()
-              if (wallets.length > 0) setWallet(wallets[0])
+              if (wallets.length > 0) {
+                setWallet(wallets[0])
+                writeCache('company-home', { ...(readCache<any>('company-home') || {}), wallet: wallets[0] })
+              }
             }
           }).catch(() => {})
 
