@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { authHeaders } from '@/lib/auth/clientToken'
 import { ChatCircleDots } from '@phosphor-icons/react/dist/ssr'
-import { Loader2 } from 'lucide-react'
+import { Loader2, FileText } from 'lucide-react'
+import CreateContractModal from '@/components/contracts/CreateContractModal'
 
 // Chat empresa↔creador DENTRO de Octopus (verificado E2E):
 // - Los MENSAJES viven en Whop (support channels) y se muestran con su
@@ -98,6 +99,8 @@ export default function WhopChat({
   const [openingDm, setOpeningDm] = useState(!!initialUserId)
   const [profileOf, setProfileOf] = useState<Convo | null>(null)
   const [profileData, setProfileData] = useState<any>(null)
+  const [contractFor, setContractFor] = useState<Convo | null>(null)
+  const myId = typeof window !== 'undefined' ? (JSON.parse(localStorage.getItem('sb-user') || '{}').id || '') : ''
 
   // refresco periódico de la lista (visto/no-visto en vivo)
   useEffect(() => {
@@ -245,6 +248,14 @@ export default function WhopChat({
                 )}
                 <p className="truncate font-extrabold text-neutral-900 underline-offset-2 hover:underline">{selected.name}</p>
               </button>
+              {role === 'company' && selected.type !== 'company' && (
+                <button
+                  onClick={() => setContractFor(selected)}
+                  className="ml-auto flex shrink-0 items-center gap-1.5 rounded-xl bg-gradient-to-b from-[#22D3EE] to-[#0891B2] px-3 py-2 text-xs font-bold text-white shadow-sm"
+                >
+                  <FileText className="h-3.5 w-3.5" /> Enviar contrato
+                </button>
+              )}
             </div>
             <div className="min-h-0 flex-1">
               <Conversation key={selected.channelId} channelId={selected.channelId} />
@@ -257,6 +268,18 @@ export default function WhopChat({
           </div>
         )}
       </div>
+
+      {/* Contrato directo desde el chat (rol empresa) */}
+      {contractFor && (
+        <CreateContractModal
+          isOpen={!!contractFor}
+          onClose={() => setContractFor(null)}
+          onSuccess={() => setContractFor(null)}
+          companyId={myId}
+          creatorId={contractFor.userId}
+          creatorName={contractFor.name}
+        />
+      )}
 
       {/* Perfil del otro lado (tocar el nombre, como SideShift) */}
       {profileOf && (

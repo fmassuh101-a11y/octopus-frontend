@@ -149,6 +149,12 @@ export default function GigsPage() {
   // One-tap apply optimista (rollback si falla)
   const handleApply = async (gig: Gig) => {
     if (!user) { router.push('/auth/login'); return }
+    // SEGURIDAD: solo CREADORES pueden postular (una empresa jamás)
+    if (localStorage.getItem('oct-user-type') === 'company') {
+      toast('Las empresas no pueden postular a campañas', 'error')
+      router.push('/company/dashboard')
+      return
+    }
     if (REQUIRE_VERIFICATION && !isVerified) {
       setSelectedGig(null)
       setTimeout(() => setShowVerificationModal(true), 100)

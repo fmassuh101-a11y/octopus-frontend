@@ -47,6 +47,7 @@ export function middleware(req: NextRequest) {
     const isAllowed =
       path === '/waitlist' ||
       path.startsWith('/waitlist/') ||
+      path.startsWith('/c/') || // tarjeta pública de campaña (OG para el chat)
       path.startsWith('/api/') ||
       path.startsWith('/_next') ||
       path === '/favicon.ico' ||

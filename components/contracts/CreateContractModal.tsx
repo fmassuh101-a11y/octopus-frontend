@@ -16,8 +16,8 @@ interface CreateContractModalProps {
   isOpen: boolean
   onClose: () => void
   onSuccess: (contract: any) => void
-  applicationId: string
-  gigId: string
+  applicationId?: string // opcional: contrato directo desde el chat/perfil
+  gigId?: string
   companyId: string
   creatorId: string
   creatorName: string
@@ -155,8 +155,8 @@ export default function CreateContractModal({
       }
 
       const contractData = {
-        application_id: applicationId,
-        gig_id: gigId,
+        application_id: applicationId || null,
+        gig_id: gigId || null,
         company_id: companyId,
         creator_id: creatorId,
         title,

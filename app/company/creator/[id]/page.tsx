@@ -2,6 +2,7 @@
 import { safeExternalUrl } from '@/lib/safe'
 
 import { useState, useEffect } from 'react'
+import CreateContractModal from '@/components/contracts/CreateContractModal'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
@@ -52,6 +53,7 @@ interface Application {
 }
 
 export default function CreatorProfilePage() {
+  const [showContract, setShowContract] = useState(false)
   const router = useRouter()
   const params = useParams()
   const creatorId = params.id as string
@@ -751,6 +753,12 @@ export default function CreatorProfilePage() {
             </svg>
           </button>
           <button
+            onClick={() => setShowContract(true)}
+            className="flex-1 py-3 bg-cyan-600 hover:bg-cyan-700 rounded-xl font-semibold transition flex items-center justify-center gap-2"
+          >
+            Enviar Contrato
+          </button>
+          <button
             onClick={handleSendMessage}
             className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 rounded-xl font-semibold transition flex items-center justify-center gap-2"
           >
@@ -761,6 +769,17 @@ export default function CreatorProfilePage() {
           </button>
         </div>
       </div>
+
+      {showContract && (
+        <CreateContractModal
+          isOpen={showContract}
+          onClose={() => setShowContract(false)}
+          onSuccess={() => setShowContract(false)}
+          companyId={typeof window !== 'undefined' ? (JSON.parse(localStorage.getItem('sb-user') || '{}').id || '') : ''}
+          creatorId={creatorId as string}
+          creatorName={getCreatorName()}
+        />
+      )}
 
       {/* Modal: Pagar a creador (fijo o por views/CPM) */}
       {payOpen && (

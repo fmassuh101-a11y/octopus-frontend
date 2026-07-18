@@ -87,7 +87,9 @@ export async function POST(request: NextRequest) {
         const title = gigs?.[0]?.title ? `**${gigs[0].title}**\n` : "";
         await (asMe as any).messages.create({
           channel_id: channelId,
-          content: `${title}${APP_URL}/gigs/${gigId}`,
+          // /c/<id> es la tarjeta pública con OG (imagen+título) → el chat la
+          // muestra como card linda, estilo SideShift
+          content: `${title}${APP_URL}/c/${gigId}`,
         });
       } catch {}
     }
