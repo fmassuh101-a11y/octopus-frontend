@@ -13,7 +13,7 @@ async function getGig(id: string) {
   try {
     const key = SERVICE_KEY || SUPABASE_ANON_KEY
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/gigs?id=eq.${encodeURIComponent(id)}&select=id,title,niche,cpm,image_url,description`,
+      `${SUPABASE_URL}/rest/v1/gigs?id=eq.${encodeURIComponent(id)}&select=id,title,category,budget,budget_min,budget_currency,image_url,description,company_name`,
       { headers: { Authorization: `Bearer ${key}`, apikey: key }, next: { revalidate: 300 } }
     )
     const rows = await res.json()
@@ -24,9 +24,10 @@ async function getGig(id: string) {
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const gig = await getGig(params.id)
   const title = gig?.title ? `${gig.title} — Campaña en Octopus` : 'Campaña en Octopus'
-  const description = gig?.cpm
-    ? `$${gig.cpm} CPM · ${gig.niche || 'UGC'} · Aplicá en Octopus`
-    : 'Campañas pagas para creadores de contenido en LATAM'
+  const pay = gig?.budget || gig?.budget_min
+  const description = pay
+    ? `$${pay} ${gig?.budget_currency === 'CPM' ? 'CPM' : gig?.budget_currency || 'USD'} · ${gig?.category || 'UGC'} · Aplicá en Octopus`
+    : `${gig?.category || 'UGC'} · Campañas pagas para creadores en LATAM`
   const image = gig?.image_url && String(gig.image_url).startsWith('http') ? gig.image_url : `${APP_URL}/icon.png`
   return {
     title,
@@ -50,8 +51,12 @@ export default async function CampaignCard({ params }: { params: { id: string } 
           <p className="text-xs font-bold uppercase tracking-widest text-cyan-600">Campaña en Octopus</p>
           <h1 className="mt-1 text-2xl font-extrabold leading-tight">{gig?.title || 'Campaña'}</h1>
           <div className="mt-3 flex flex-wrap gap-2 text-sm">
-            {gig?.niche && <span className="rounded-full bg-neutral-100 px-3 py-1 font-bold text-neutral-600">{gig.niche}</span>}
-            {gig?.cpm && <span className="rounded-full bg-cyan-50 px-3 py-1 font-extrabold text-cyan-700">${gig.cpm} CPM</span>}
+            {gig?.category && <span className="rounded-full bg-neutral-100 px-3 py-1 font-bold text-neutral-600">{gig.category}</span>}
+            {(gig?.budget || gig?.budget_min) && (
+              <span className="rounded-full bg-cyan-50 px-3 py-1 font-extrabold text-cyan-700">
+                ${gig.budget || gig.budget_min} {gig?.budget_currency === 'CPM' ? 'CPM' : gig?.budget_currency || 'USD'}
+              </span>
+            )}
           </div>
           {gig?.description && (
             <p className="mt-3 text-sm leading-relaxed text-neutral-500">{String(gig.description).slice(0, 180)}</p>
