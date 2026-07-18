@@ -79,6 +79,35 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(out);
   }
 
+  // prueba del flujo de ARCHIVOS (adjuntos): ?file=1
+  if (request.nextUrl.searchParams.get("file")) {
+    const out: any = {};
+    try {
+      const png = Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+        "base64"
+      );
+      const c = new Whop({ apiKey: PAY_KEY, baseURL: "https://api.whop.com/api/v1" });
+      const created: any = await (c as any).files.create({ filename: "test.png", content_type: "image/png" });
+      out.create = { id: created?.id, hasUrl: !!created?.upload_url, headers: Object.keys(created?.upload_headers || {}) };
+      if (created?.upload_url) {
+        const up = await fetch(created.upload_url, {
+          method: "PUT",
+          headers: { "Content-Type": "image/png", ...(created.upload_headers || {}) },
+          body: new Uint8Array(png),
+        });
+        out.put = { status: up.status, body: up.ok ? "ok" : (await up.text()).slice(0, 150) };
+        for (let i = 0; i < 6; i++) {
+          const f: any = await (c as any).files.retrieve(created.id);
+          out.status = f?.upload_status;
+          if (f?.upload_status === "ready" || f?.upload_status === "failed") break;
+          await new Promise((r) => setTimeout(r, 800));
+        }
+      }
+    } catch (e: any) { out.error = (e?.message || "").slice(0, 200); }
+    return NextResponse.json(out);
+  }
+
   // inspección de un canal: ¿quiénes son los miembros reales?
   const inspect = request.nextUrl.searchParams.get("inspect") || "";
   if (inspect) {
