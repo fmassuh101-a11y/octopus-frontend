@@ -107,11 +107,13 @@ export async function POST(request: NextRequest) {
                   body: new Uint8Array(buf),
                 });
                 if (up.ok) {
-                  // esperar a que el archivo esté listo (poll corto)
-                  for (let i = 0; i < 6; i++) {
+                  // el upload salió bien: adjuntamos ya (Whop lo procesa async;
+                  // esperamos un toque a que quede listo pero no lo exigimos)
+                  attachments = [{ id: created.id }];
+                  for (let i = 0; i < 5; i++) {
                     const f: any = await (whopClient as any).files.retrieve(created.id);
-                    if (f?.upload_status === "ready") { attachments = [{ id: created.id }]; break; }
-                    await new Promise((r) => setTimeout(r, 800));
+                    if (f?.upload_status === "ready") break;
+                    await new Promise((r) => setTimeout(r, 1000));
                   }
                 }
               }
