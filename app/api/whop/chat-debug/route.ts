@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
         "base64"
       );
       const c = new Whop({ apiKey: PAY_KEY, baseURL: "https://api.whop.com/api/v1" });
-      const created: any = await (c as any).files.create({ filename: "test.png", content_type: "image/png" });
+      const created: any = await (c as any).files.create({ filename: "test.png" });
       out.create = { id: created?.id, hasUrl: !!created?.upload_url, headers: Object.keys(created?.upload_headers || {}) };
       if (created?.upload_url) {
         const up = await fetch(created.upload_url, {

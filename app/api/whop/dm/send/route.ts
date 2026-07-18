@@ -99,7 +99,6 @@ export async function POST(request: NextRequest) {
               const mime = imgRes.headers.get("content-type") || "image/jpeg";
               const created: any = await (whopClient as any).files.create({
                 filename: `campana-${gigId}.${mime.includes("png") ? "png" : "jpg"}`,
-                content_type: mime,
               });
               if (created?.upload_url) {
                 const up = await fetch(created.upload_url, {
