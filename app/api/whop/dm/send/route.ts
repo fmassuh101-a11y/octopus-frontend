@@ -107,12 +107,12 @@ export async function POST(request: NextRequest) {
                   body: new Uint8Array(buf),
                 });
                 if (up.ok) {
-                  // el upload salió bien: adjuntamos ya (Whop lo procesa async;
-                  // esperamos un toque a que quede listo pero no lo exigimos)
-                  attachments = [{ id: created.id }];
-                  for (let i = 0; i < 5; i++) {
+                  // esperar el "ready" (hasta ~8s); un adjunto pending hace
+                  // fallar messages.create
+                  for (let i = 0; i < 8; i++) {
                     const f: any = await (whopClient as any).files.retrieve(created.id);
-                    if (f?.upload_status === "ready") break;
+                    if (f?.upload_status === "ready") { attachments = [{ id: created.id }]; break; }
+                    if (f?.upload_status === "failed") break;
                     await new Promise((r) => setTimeout(r, 1000));
                   }
                 }
@@ -121,11 +121,20 @@ export async function POST(request: NextRequest) {
           } catch (e: any) { console.error("[DmSend] adjunto falló:", e?.message?.slice(0, 100)); }
         }
 
-        await (asMe as any).messages.create({
-          channel_id: channelId,
-          content: `${title}${APP_URL}/c/${gigId}`,
-          ...(attachments ? { attachments } : {}),
-        });
+        // enviar la cita: con adjunto si se pudo; si falla, sin adjunto (la
+        // cita SIEMPRE tiene que llegar)
+        try {
+          await (asMe as any).messages.create({
+            channel_id: channelId,
+            content: `${title}${APP_URL}/c/${gigId}`,
+            ...(attachments ? { attachments } : {}),
+          });
+        } catch {
+          await (asMe as any).messages.create({
+            channel_id: channelId,
+            content: `${title}${APP_URL}/c/${gigId}`,
+          }).catch(() => {});
+        }
       } catch {}
     }
 
