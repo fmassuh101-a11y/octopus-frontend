@@ -34,7 +34,7 @@ export default function CreatorHome() {
       setStreak(count)
       if (localStorage.getItem('oct-rank-banner') === '0') setShowRankBanner(false)
       // instantáneo: pintar desde caché de sesión y revalidar detrás
-      const home = JSON.parse(sessionStorage.getItem('oct-home') || 'null')
+      const home = JSON.parse(localStorage.getItem('oct-home') || 'null')
       if (home?.profile) {
         setProfile(home.profile)
         if (home.wallet) setWallet(home.wallet)
@@ -92,7 +92,7 @@ export default function CreatorHome() {
   // guardar snapshot para próxima visita instantánea
   useEffect(() => {
     if (!loading && profile) {
-      try { sessionStorage.setItem('oct-home', JSON.stringify({ profile, wallet, stats })) } catch {}
+      try { localStorage.setItem('oct-home', JSON.stringify({ profile, wallet, stats })) } catch {}
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, profile, wallet, stats])

@@ -69,7 +69,7 @@ export default function GigsPage() {
   useEffect(() => {
     // instantáneo: pintar desde caché de la sesión y revalidar en background
     try {
-      const cached = JSON.parse(sessionStorage.getItem('oct-gigs') || 'null')
+      const cached = JSON.parse(localStorage.getItem('oct-gigs') || 'null')
       if (cached?.gigs?.length) { setGigs(cached.gigs); setLoading(false) }
       if (cached?.applied) setAppliedGigs(new Set(cached.applied))
     } catch {}
@@ -127,7 +127,7 @@ export default function GigsPage() {
         appliedData = applied.map((a: any) => a.gig_id)
         setAppliedGigs(new Set(appliedData!))
       }
-      try { sessionStorage.setItem('oct-gigs', JSON.stringify({ gigs: gigsData || [], applied: appliedData || [] })) } catch {}
+      try { localStorage.setItem('oct-gigs', JSON.stringify({ gigs: gigsData || [], applied: appliedData || [] })) } catch {}
       if (results[2]?.ok) {
         const profiles = await results[2].json()
         const prof = profiles[0]

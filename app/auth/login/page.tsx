@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { isAdminEmail } from '@/lib/isAdmin'
-import OctopusMascot, { OctoMood } from '@/components/OctopusMascot'
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false)
@@ -16,12 +15,6 @@ export default function LoginPage() {
   const [focusedField, setFocusedField] = useState<'email' | 'password' | null>(null)
 
   // Estado de ánimo del pulpo según lo que hace el usuario
-  const octoMood: OctoMood =
-    error ? 'error'
-    : loading ? 'success'
-    : focusedField === 'password' ? 'hiding'
-    : focusedField === 'email' ? 'happy'
-    : 'idle'
 
   // Sigue con la mirada lo que escribís en el email (side-eye)
   const octoLook =

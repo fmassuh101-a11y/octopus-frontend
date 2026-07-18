@@ -8,6 +8,7 @@ import Sky from '@/components/oct/Sky'
 import { toast } from '@/components/oct/toast'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { authHeaders } from '@/lib/auth/clientToken'
+import { readCache, writeCache } from '@/lib/useCachedFetch'
 import { ChevronLeft, Wallet, ShieldCheck, Clock3, CreditCard, ArrowDownToLine, Check, Loader2, ChevronRight } from 'lucide-react'
 
 // Wallet del creador — Paso 1 (activar pagos + KYC) y Paso 2 (saldo del ledger + retiro con fee).
@@ -37,7 +38,12 @@ export default function CreatorWallet() {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [amountStr, setAmountStr] = useState('')
 
-  useEffect(() => { load() }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    // FLUIDEZ: saldo y movimientos cacheados AL INSTANTE (refresco por detrás)
+    const c = readCache<{ b: number; p: boolean; m: Movement[] }>('wallet')
+    if (c) { setBalance(c.b); setIsPro(c.p); setMoves(c.m); setLoading(false) }
+    load()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const load = async () => {
     try {
@@ -76,6 +82,7 @@ export default function CreatorWallet() {
 
       const all = [...withdrawals, ...received].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       setMoves(all.slice(0, 15))
+      writeCache('wallet', { b: Math.max(0, Number(wallets?.[0]?.balance) || 0), p: !!profs?.[0]?.is_pro, m: all.slice(0, 15) })
     } catch {}
     setLoading(false)
   }

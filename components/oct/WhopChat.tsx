@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { authHeaders } from '@/lib/auth/clientToken'
+import { readCache, writeCache } from '@/lib/useCachedFetch'
 import { ChatCircleDots } from '@phosphor-icons/react/dist/ssr'
 import { Loader2, FileText } from 'lucide-react'
 import CreateContractModal from '@/components/contracts/CreateContractModal'
@@ -128,7 +129,11 @@ export default function WhopChat({
     try {
       const res = await fetch('/api/whop/dm/list', { headers: authHeaders() })
       const data = await res.json()
-      if (data.ok) { setConvos(data.conversations); return data.conversations }
+      if (data.ok) {
+        setConvos(data.conversations)
+        writeCache('convos', data.conversations) // fluidez: lista instantánea la próxima
+        return data.conversations
+      }
       setError(data.error || 'No se pudo cargar')
     } catch { setError('No se pudo cargar la lista') }
     return []
@@ -140,6 +145,9 @@ export default function WhopChat({
     // pesado corre en paralelo con la lista, no al abrir la conversación)
     import('@whop/embedded-components-react-js').catch(() => {})
     import('@whop/embedded-components-vanilla-js').catch(() => {})
+    // FLUIDEZ: mostrar la lista cacheada AL INSTANTE (se refresca por detrás)
+    const cached = readCache<Convo[]>('convos')
+    if (cached?.length) { setConvos(cached); setLoading(false) }
     ;(async () => {
       const list = await loadList()
       if (!alive) return

@@ -119,6 +119,8 @@ export default function CreatorSocialsPage() {
     try {
       const existing = JSON.parse(localStorage.getItem('creatorOnboarding') || '{}')
 
+      // foto: SUBIR A STORAGE UNA VEZ y usar la URL en bio y columna (nunca base64 en la base)
+      const photoUrl = (await uploadIfDataUrl(profilePhoto)) || null
       const allData = {
         userType: 'creator',
         firstName: existing.firstName || null,
@@ -131,7 +133,7 @@ export default function CreatorSocialsPage() {
         instagram: instagram.trim() || null,
         tiktok: tiktok.trim() || null,
         youtube: youtube.trim() || null,
-        profilePhoto: profilePhoto || null,
+        profilePhoto: photoUrl,
         referredBy: (typeof window !== 'undefined' && localStorage.getItem('oct-ref')) || null
       }
 
@@ -147,7 +149,7 @@ export default function CreatorSocialsPage() {
         instagram: instagram.trim() || null,
         tiktok: tiktok.trim() || null,
         youtube: youtube.trim() || null,
-        profile_photo_url: (await uploadIfDataUrl(profilePhoto)) || null,
+        profile_photo_url: photoUrl,
         bio: JSON.stringify(allData),
         updated_at: new Date().toISOString()
       }

@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import OctopusMascot, { OctoMood } from '@/components/OctopusMascot'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
@@ -23,12 +22,6 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [focusedField, setFocusedField] = useState<'email' | 'password' | 'confirm' | null>(null)
 
-  const octoMood: OctoMood =
-    error ? 'error'
-    : loading ? 'success'
-    : (focusedField === 'password' || focusedField === 'confirm') ? 'hiding'
-    : focusedField === 'email' ? 'happy'
-    : 'idle'
 
   const octoLook =
     focusedField === 'email'
