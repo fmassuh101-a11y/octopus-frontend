@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import LegalContractDocument from '@/components/contracts/LegalContractDocument'
 import CreateDeliveryModal from '@/components/deliveries/CreateDeliveryModal'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { readCache, writeCache } from '@/lib/useCachedFetch'
 import { Music2, Instagram, Youtube, Clapperboard, Smartphone, BarChart3, ClipboardList, Package, MessageCircle, User, type LucideIcon } from 'lucide-react'
 
 interface Contract {
@@ -91,6 +92,13 @@ export default function CreatorContractsPage() {
 
     const userData = JSON.parse(userStr)
     setUser(userData)
+
+    // FLUIDEZ: pinta al instante lo último visto; lo fresco llega por detrás
+    const cachedContracts = readCache<Contract[]>(`contracts-${userData.id}`)
+    if (cachedContracts) {
+      setContracts(cachedContracts)
+      setLoading(false)
+    }
 
     // FLUIDEZ: el nombre del perfil no bloquea la lista — corre en paralelo
     const profilePromise = (async () => {
@@ -199,6 +207,7 @@ export default function CreatorContractsPage() {
       }))
 
       setContracts(enrichedContracts)
+      writeCache(`contracts-${userId}`, enrichedContracts)
 
       // Mark as viewed if not already
       const unviewedIds = enrichedContracts
