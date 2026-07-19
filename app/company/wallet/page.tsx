@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { BarChart3, Briefcase, Inbox, MessageCircle, Users, Wallet } from 'lucide-react'
 
@@ -204,10 +205,10 @@ export default function CompanyWallet() {
           </div>
 
           {/* Agregar fondos */}
-          <a href="/company/fondear"
+          <Link href="/company/fondear"
             className="block w-full rounded-2xl bg-white py-3.5 text-center font-bold text-sky-700 shadow-lg transition-transform active:scale-[0.98]">
             Agregar fondos
-          </a>
+          </Link>
         </div>
 
         {/* How It Works */}
@@ -287,7 +288,7 @@ export default function CompanyWallet() {
             </div>
 
             {/* Agregar fondos */}
-            <a href="/company/fondear" className="block rounded-2xl border border-sky-500/30 bg-gradient-to-r from-sky-500/10 to-blue-500/10 p-6 transition-transform active:scale-[0.99]">
+            <Link href="/company/fondear" className="block rounded-2xl border border-sky-500/30 bg-gradient-to-r from-sky-500/10 to-blue-500/10 p-6 transition-transform active:scale-[0.99]">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-sky-500/20 flex items-center justify-center">
                   <MessageCircle className="w-6 h-6" strokeWidth={2} />
@@ -299,7 +300,7 @@ export default function CompanyWallet() {
                   </p>
                 </div>
               </div>
-            </a>
+            </Link>
           </div>
         )}
 
