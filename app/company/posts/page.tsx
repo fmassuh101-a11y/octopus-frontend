@@ -82,20 +82,19 @@ export default function CompanyPostsPage() {
 
       const creatorIds = Array.from(new Set(applications.map((a: any) => a.creator_id))) as string[]
 
-      // Get profiles
-      const profilesRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?user_id=in.(${creatorIds.join(',')})&select=user_id,full_name,bio,avatar_url`,
-        { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
-      )
+      // FLUIDEZ: perfiles y datos de TikTok en paralelo (antes: dos viajes en fila)
+      const [profilesRes, tiktokRes] = await Promise.all([
+        fetch(
+          `${SUPABASE_URL}/rest/v1/profiles?user_id=in.(${creatorIds.join(',')})&select=user_id,full_name,bio,avatar_url`,
+          { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+        ),
+        fetch(
+          `${SUPABASE_URL}/rest/v1/tiktok_data?user_id=in.(${creatorIds.join(',')})&select=user_id,videos&order=created_at.desc`,
+          { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+        ),
+      ])
 
       const profiles = profilesRes.ok ? await profilesRes.json() : []
-
-      // Get TikTok data
-      const tiktokRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/tiktok_data?user_id=in.(${creatorIds.join(',')})&select=user_id,videos&order=created_at.desc`,
-        { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
-      )
-
       const tiktokData = tiktokRes.ok ? await tiktokRes.json() : []
 
       // Build posts and creators list

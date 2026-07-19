@@ -92,8 +92,9 @@ export default function CreatorContractsPage() {
     const userData = JSON.parse(userStr)
     setUser(userData)
 
-    // Fetch creator's name from profile
-    try {
+    // FLUIDEZ: el nombre del perfil no bloquea la lista — corre en paralelo
+    const profilePromise = (async () => {
+      try {
       const profileRes = await fetch(
         `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=full_name,username,bio`,
         { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
@@ -111,11 +112,12 @@ export default function CreatorContractsPage() {
           setCreatorName(name)
         }
       }
-    } catch (err) {
-      console.error('Error fetching profile:', err)
-    }
+      } catch (err) {
+        console.error('Error fetching profile:', err)
+      }
+    })()
 
-    await loadContracts(userData.id, token)
+    await Promise.all([profilePromise, loadContracts(userData.id, token)])
   }
 
   const loadContracts = async (userId: string, token: string) => {
@@ -146,12 +148,24 @@ export default function CreatorContractsPage() {
       let companiesMap = new Map<string, string>()
       let gigsMap = new Map<string, string>()
 
-      if (companyIds.length > 0) {
-        const companiesRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/profiles?user_id=in.(${companyIds.join(',')})&select=user_id,company_name,bio`,
-          { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
-        )
-        if (companiesRes.ok) {
+      // FLUIDEZ: nombres de empresa y títulos de gig en paralelo (antes: en fila)
+      const [companiesRes, gigsRes] = await Promise.all([
+        companyIds.length > 0
+          ? fetch(
+              `${SUPABASE_URL}/rest/v1/profiles?user_id=in.(${companyIds.join(',')})&select=user_id,company_name,bio`,
+              { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+            )
+          : Promise.resolve(null),
+        gigIds.length > 0
+          ? fetch(
+              `${SUPABASE_URL}/rest/v1/gigs?id=in.(${gigIds.join(',')})&select=id,title`,
+              { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+            )
+          : Promise.resolve(null),
+      ])
+
+      if (companiesRes && companiesRes.ok) {
+        {
           const companies = await companiesRes.json()
           companies.forEach((c: any) => {
             let name = c.company_name || 'Empresa'
@@ -166,12 +180,8 @@ export default function CreatorContractsPage() {
         }
       }
 
-      if (gigIds.length > 0) {
-        const gigsRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/gigs?id=in.(${gigIds.join(',')})&select=id,title`,
-          { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
-        )
-        if (gigsRes.ok) {
+      if (gigsRes && gigsRes.ok) {
+        {
           const gigs = await gigsRes.json()
           gigs.forEach((g: any) => gigsMap.set(g.id, g.title))
         }
@@ -196,7 +206,8 @@ export default function CreatorContractsPage() {
         .map((c: Contract) => c.id)
 
       if (unviewedIds.length > 0) {
-        await fetch(`${SUPABASE_URL}/rest/v1/contracts?id=in.(${unviewedIds.join(',')})`, {
+        // FLUIDEZ: marcar como visto no bloquea el render de la lista
+        fetch(`${SUPABASE_URL}/rest/v1/contracts?id=in.(${unviewedIds.join(',')})`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
@@ -207,7 +218,7 @@ export default function CreatorContractsPage() {
             status: 'viewed',
             viewed_at: new Date().toISOString()
           })
-        })
+        }).catch(() => {})
       }
     } catch (err) {
       console.error('Error:', err)

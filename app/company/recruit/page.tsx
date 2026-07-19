@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { pgSearchTerm } from '@/lib/safe'
+import { readCache, writeCache } from '@/lib/useCachedFetch'
 import { Home, ClipboardList, MessageCircle, Users } from 'lucide-react'
 
 interface CreatorProfile {
@@ -69,6 +70,13 @@ export default function RecruitPage() {
 
   // Load all creators on mount
   useEffect(() => {
+    // FLUIDEZ: mostrar al instante la última lista vista mientras llega lo fresco
+    const cached = readCache<CreatorProfile[]>('recruit-creators')
+    if (cached && cached.length) {
+      setAllCreators(cached)
+      setFilteredCreators(cached)
+      setLoadingAll(false)
+    }
     loadAllCreators()
   }, [])
 
@@ -93,8 +101,9 @@ export default function RecruitPage() {
   const loadAllCreators = async () => {
     try {
       const token = localStorage.getItem('sb-access-token')
+      // FLUIDEZ: solo las columnas que la tarjeta usa (antes: select=* con bios enteras)
       const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?user_type=eq.creator&select=*`,
+        `${SUPABASE_URL}/rest/v1/profiles?user_type=eq.creator&select=id,full_name,avatar_url,profile_photo_url,bio,location,tiktok,instagram,youtube,studies,academic_level`,
         { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
       )
 
@@ -122,6 +131,7 @@ export default function RecruitPage() {
         }))
         setAllCreators(creators)
         setFilteredCreators(creators)
+        writeCache('recruit-creators', creators)
       }
     } catch (err) {
       console.error('Error loading creators:', err)

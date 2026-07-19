@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { readCache, writeCache } from '@/lib/useCachedFetch'
 import { ClipboardList, Music2, Instagram, Youtube, Clapperboard, Sparkles, CheckCheck, Check } from 'lucide-react'
 
 interface Application {
@@ -46,6 +47,12 @@ export default function ApplicationsPage() {
 
     const userData = JSON.parse(userStr)
     setUser(userData)
+    // FLUIDEZ: pinta al instante lo último visto; lo fresco llega por detrás
+    const cached = readCache<Application[]>(`apps-${userData.id}`)
+    if (cached) {
+      setApplications(cached)
+      setLoading(false)
+    }
     await loadApplications(userData.id, token)
   }
 
@@ -65,6 +72,7 @@ export default function ApplicationsPage() {
       if (response.ok) {
         const data = await response.json()
         setApplications(data)
+        writeCache(`apps-${userId}`, data)
       } else {
         // Si la tabla no existe, mostrar vacío
         setApplications([])

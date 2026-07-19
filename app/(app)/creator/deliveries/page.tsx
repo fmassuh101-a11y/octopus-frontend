@@ -97,12 +97,24 @@ export default function CreatorDeliveriesPage() {
       let companiesMap = new Map<string, string>()
       let gigsMap = new Map<string, string>()
 
-      if (companyIds.length > 0) {
-        const companiesRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/profiles?user_id=in.(${companyIds.join(',')})&select=user_id,company_name,bio`,
-          { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
-        )
-        if (companiesRes.ok) {
+      // FLUIDEZ: empresa y gig en paralelo (antes: dos viajes en fila)
+      const [companiesRes, gigsRes] = await Promise.all([
+        companyIds.length > 0
+          ? fetch(
+              `${SUPABASE_URL}/rest/v1/profiles?user_id=in.(${companyIds.join(',')})&select=user_id,company_name,bio`,
+              { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+            )
+          : Promise.resolve(null),
+        gigIds.length > 0
+          ? fetch(
+              `${SUPABASE_URL}/rest/v1/gigs?id=in.(${gigIds.join(',')})&select=id,title`,
+              { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+            )
+          : Promise.resolve(null),
+      ])
+
+      if (companiesRes && companiesRes.ok) {
+        {
           const companies = await companiesRes.json()
           companies.forEach((c: any) => {
             let name = c.company_name || 'Empresa'
@@ -117,12 +129,8 @@ export default function CreatorDeliveriesPage() {
         }
       }
 
-      if (gigIds.length > 0) {
-        const gigsRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/gigs?id=in.(${gigIds.join(',')})&select=id,title`,
-          { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
-        )
-        if (gigsRes.ok) {
+      if (gigsRes && gigsRes.ok) {
+        {
           const gigs = await gigsRes.json()
           gigs.forEach((g: any) => gigsMap.set(g.id, g.title))
         }

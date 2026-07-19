@@ -9,6 +9,7 @@ import { MessageTemplate } from '@/lib/utils/messageTemplates'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { SocialRow } from '@/components/oct/Socials'
 import { getActiveCompanyId } from '@/lib/workspace'
+import { readCache, writeCache } from '@/lib/useCachedFetch'
 import CreatorLevelBadge from '@/components/ui/CreatorLevelBadge'
 
 type TabType = 'new' | 'reviewed' | 'messaged' | 'declined' | 'bookmarked' | 'accepted'
@@ -103,8 +104,15 @@ export default function ApplicantsPage() {
 
     const userData = JSON.parse(userStr)
     setUser(userData)
+    // FLUIDEZ: pinta al instante lo último visto; lo fresco llega por detrás
+    const cid = getActiveCompanyId(userData.id)
+    const cached = readCache<any[]>(`applicants-${cid}`)
+    if (cached) {
+      setApplications(cached)
+      setLoading(false)
+    }
     await Promise.all([
-      loadApplications(getActiveCompanyId(userData.id), token),
+      loadApplications(cid, token),
       loadTemplates(token),
       loadCompanyName(userData.id, token)
     ])
@@ -164,7 +172,7 @@ export default function ApplicantsPage() {
             { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
           ) : Promise.resolve(null),
           creatorIds.length > 0 ? fetch(
-            `${SUPABASE_URL}/rest/v1/profiles?user_id=in.(${creatorIds.join(',')})&select=*`,
+            `${SUPABASE_URL}/rest/v1/profiles?user_id=in.(${creatorIds.join(',')})&select=user_id,full_name,avatar_url,profile_photo_url,bio,instagram,tiktok,youtube`,
             { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
           ) : Promise.resolve(null)
         ])
@@ -207,6 +215,7 @@ export default function ApplicantsPage() {
         }))
 
         setApplications(enrichedApps)
+        writeCache(`applicants-${userId}`, enrichedApps)
       }
     } catch (err) {
       console.error('Error loading applications:', err)
