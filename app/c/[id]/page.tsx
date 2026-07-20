@@ -67,7 +67,7 @@ export default async function CampaignCard({ params }: { params: { id: string } 
           >
             Ver campaña en Octopus
           </a>
-          <p className="mt-3 text-center text-[11px] text-neutral-400">Creadores que cobran. Marcas que crecen.</p>
+          <p className="mt-3 text-center text-[11px] text-neutral-400">Creadores que monetizan. Marcas que crecen.</p>
         </div>
       </div>
     </div>

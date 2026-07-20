@@ -101,9 +101,10 @@ export default function RecruitPage() {
   const loadAllCreators = async () => {
     try {
       const token = localStorage.getItem('sb-access-token')
-      // FLUIDEZ: solo las columnas que la tarjeta usa (antes: select=* con bios enteras)
+      // SEGURIDAD: directorio de OTROS usuarios → vista pública (sin email/teléfono),
+      // nunca la tabla profiles completa. Columnas ya acotadas a lo que la tarjeta usa.
       const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?user_type=eq.creator&select=id,full_name,avatar_url,profile_photo_url,bio,location,tiktok,instagram,youtube,studies,academic_level`,
+        `${SUPABASE_URL}/rest/v1/public_profiles?user_type=eq.creator&select=id,full_name,avatar_url,profile_photo_url,bio,location,tiktok,instagram,youtube,studies,academic_level`,
         { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
       )
 
@@ -164,7 +165,7 @@ export default function RecruitPage() {
       // Search in database by name or handle
       const token = localStorage.getItem('sb-access-token')
       const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?or=(tiktok.ilike.%25${cleanHandle}%25,instagram.ilike.%25${cleanHandle}%25,full_name.ilike.%25${cleanHandle}%25)&user_type=eq.creator&select=user_id,full_name,username,avatar_url,profile_photo_url,tiktok,instagram,youtube,location,bio,verified`,
+        `${SUPABASE_URL}/rest/v1/public_profiles?or=(tiktok.ilike.%25${cleanHandle}%25,instagram.ilike.%25${cleanHandle}%25,full_name.ilike.%25${cleanHandle}%25)&user_type=eq.creator&select=user_id,full_name,username,avatar_url,profile_photo_url,tiktok,instagram,youtube,location,bio,verified`,
         { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
       )
 

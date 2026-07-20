@@ -80,7 +80,7 @@ export default function CreatorsPage() {
 
       // Get profiles
       const profilesRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?user_id=in.(${creatorIds.join(',')})&select=*`,
+        `${SUPABASE_URL}/rest/v1/public_profiles?user_id=in.(${creatorIds.join(',')})&select=*`,
         { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
       )
 

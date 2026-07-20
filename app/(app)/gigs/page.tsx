@@ -102,7 +102,7 @@ export default function GigsPage() {
         try {
           const ids = Array.from(new Set(gigsData.map((g: any) => g.company_id).filter(Boolean)))
           if (ids.length) {
-            const pr = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=in.(${ids.join(',')})&select=user_id,company_name,full_name,profile_photo_url,avatar_url,bio`, { headers })
+            const pr = await fetch(`${SUPABASE_URL}/rest/v1/public_profiles?user_id=in.(${ids.join(',')})&select=user_id,company_name,full_name,profile_photo_url,avatar_url,bio`, { headers })
             if (pr.ok) {
               const profs = await pr.json()
               const map = new Map(profs.map((p: any) => {

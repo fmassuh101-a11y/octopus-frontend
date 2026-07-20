@@ -85,7 +85,7 @@ export default function CompanyPostsPage() {
       // FLUIDEZ: perfiles y datos de TikTok en paralelo (antes: dos viajes en fila)
       const [profilesRes, tiktokRes] = await Promise.all([
         fetch(
-          `${SUPABASE_URL}/rest/v1/profiles?user_id=in.(${creatorIds.join(',')})&select=user_id,full_name,bio,avatar_url`,
+          `${SUPABASE_URL}/rest/v1/public_profiles?user_id=in.(${creatorIds.join(',')})&select=user_id,full_name,bio,avatar_url`,
           { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
         ),
         fetch(

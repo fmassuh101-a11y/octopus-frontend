@@ -162,7 +162,7 @@ function WaitlistInner() {
             <h1 className="text-5xl font-semibold leading-[1.05] tracking-tight drop-shadow-lg [animation:fadeSlideUp_0.8s_ease_0.4s_both] sm:text-7xl lg:text-8xl">
               Creadores
               <br />
-              que cobran.
+              que monetizan.
             </h1>
             <p className="mt-5 max-w-xl text-base leading-relaxed text-white/80 drop-shadow [animation:fadeSlideUp_0.8s_ease_0.6s_both] sm:text-lg">
               El marketplace que conecta creadores de contenido con marcas de toda Latinoamérica. Campañas pagas, contratos claros y cobros seguros.
@@ -303,7 +303,7 @@ function WaitlistInner() {
           )}
 
           </div>
-          <p className="mt-10 text-center text-[11px] text-white/30">Octopus — Creadores que cobran. Marcas que crecen.</p>
+          <p className="mt-10 text-center text-[11px] text-white/30">Octopus — Creadores que monetizan. Marcas que crecen.</p>
         </div>
       </section>
 

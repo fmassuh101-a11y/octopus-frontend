@@ -116,7 +116,7 @@ export default function WhopChat({
       try {
         const { SUPABASE_URL, SUPABASE_ANON_KEY } = await import('@/lib/config/supabase')
         const token = localStorage.getItem('sb-access-token')
-        const r = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${profileOf.userId}&select=full_name,company_name,user_type,bio,about,niche,website,city,country,profile_photo_url,avatar_url`, {
+        const r = await fetch(`${SUPABASE_URL}/rest/v1/public_profiles?user_id=eq.${profileOf.userId}&select=full_name,company_name,user_type,bio,website,profile_photo_url,avatar_url`, {
           headers: { Authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY },
         })
         const rows = await r.json()

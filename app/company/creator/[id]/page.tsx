@@ -97,7 +97,7 @@ export default function CreatorProfilePage() {
     try {
       // Load creator profile
       const profileRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${creatorId}&select=*`,
+        `${SUPABASE_URL}/rest/v1/public_profiles?user_id=eq.${creatorId}&select=*`,
         { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
       )
 

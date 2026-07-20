@@ -98,7 +98,7 @@ export default function CompanyReviewContentPage() {
       const [creatorsRes, gigsRes] = await Promise.all([
         creatorIds.length > 0
           ? fetch(
-              `${SUPABASE_URL}/rest/v1/profiles?user_id=in.(${creatorIds.join(',')})&select=user_id,full_name,username,bio`,
+              `${SUPABASE_URL}/rest/v1/public_profiles?user_id=in.(${creatorIds.join(',')})&select=user_id,full_name,username,bio`,
               { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
             )
           : Promise.resolve(null),

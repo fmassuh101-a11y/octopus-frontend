@@ -160,7 +160,7 @@ export default function CreatorContractsPage() {
       const [companiesRes, gigsRes] = await Promise.all([
         companyIds.length > 0
           ? fetch(
-              `${SUPABASE_URL}/rest/v1/profiles?user_id=in.(${companyIds.join(',')})&select=user_id,company_name,bio`,
+              `${SUPABASE_URL}/rest/v1/public_profiles?user_id=in.(${companyIds.join(',')})&select=user_id,company_name,bio`,
               { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
             )
           : Promise.resolve(null),

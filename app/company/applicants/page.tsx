@@ -172,7 +172,7 @@ export default function ApplicantsPage() {
             { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
           ) : Promise.resolve(null),
           creatorIds.length > 0 ? fetch(
-            `${SUPABASE_URL}/rest/v1/profiles?user_id=in.(${creatorIds.join(',')})&select=user_id,full_name,avatar_url,profile_photo_url,bio,instagram,tiktok,youtube`,
+            `${SUPABASE_URL}/rest/v1/public_profiles?user_id=in.(${creatorIds.join(',')})&select=user_id,full_name,avatar_url,profile_photo_url,bio,instagram,tiktok,youtube`,
             { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
           ) : Promise.resolve(null)
         ])
