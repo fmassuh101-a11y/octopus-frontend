@@ -45,19 +45,20 @@ export async function POST(request: NextRequest) {
     if (role === "creator") {
       row.name = clean(body.name);
       row.experience = ["si", "mas_o_menos", "empezando", "no"].includes(body.experience) ? body.experience : null;
-      if (!row.name) return NextResponse.json({ error: "Poné tu nombre" }, { status: 400 });
+      if (!row.name) return NextResponse.json({ error: "Escribe tu nombre" }, { status: 400 });
     } else {
       row.company_name = clean(body.companyName);
       row.niche = clean(body.niche);
       row.marketing_experience = ["si", "no", "algo"].includes(body.marketingExperience) ? body.marketingExperience : null;
-      if (!row.company_name) return NextResponse.json({ error: "Poné el nombre de tu empresa" }, { status: 400 });
+      if (!row.company_name) return NextResponse.json({ error: "Escribe el nombre de tu empresa" }, { status: 400 });
     }
     const country = clean(body.country, 60);
     if (country) row.country = country;
     const source = ["tiktok", "instagram", "recomendacion", "google", "otro"].includes(body.source) ? body.source : "";
     if (source) row.source = source;
     const message = clean(body.message, 500);
-    if (message) row.message = message;
+    if (!message) return NextResponse.json({ error: "Cuéntanos algo antes de unirte" }, { status: 400 });
+    row.message = message;
 
     // referido: viene como ?ref=<id> en el link de invitación
     const ref = clean(body.ref, 40);

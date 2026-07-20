@@ -131,8 +131,8 @@ function WaitlistInner() {
   }
 
   const canJoin = role === 'creator'
-    ? name.trim() && email.trim() && experience && country
-    : companyName.trim() && email.trim() && mkt && country
+    ? name.trim() && email.trim() && experience && country && message.trim()
+    : companyName.trim() && email.trim() && mkt && country && message.trim()
 
   const count = role === 'creator' ? stats?.creators : stats?.companies
   const goal = role === 'creator' ? stats?.goalCreators || 250 : stats?.goalCompanies || 50
@@ -310,13 +310,13 @@ function WaitlistInner() {
                   </>
                 )}
 
-                {/* opcionales, para ambos roles: atribución + comentario libre */}
+                {/* para ambos roles: atribución (opcional) + comentario libre (obligatorio) */}
                 <select value={source} onChange={(e) => setSource(e.target.value)}
                   className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3.5 text-sm text-white outline-none focus:border-cyan-400/60 [&>option]:bg-[#062a3f]" style={{ color: source ? '#fff' : 'rgba(255,255,255,0.35)' }}>
                   <option value="" disabled>¿Cómo nos encontraste? (opcional)</option>
                   {FUENTES.map((f) => <option key={f.v} value={f.v} style={{ color: '#fff' }}>{f.t}</option>)}
                 </select>
-                <textarea value={message} onChange={(e) => setMessage(e.target.value.slice(0, 500))} placeholder="¿Algo que quieras contarnos? (opcional)" rows={3}
+                <textarea value={message} onChange={(e) => setMessage(e.target.value.slice(0, 500))} placeholder="Cuéntanos algo — ¿por qué te interesa Octapi?" rows={3}
                   className="w-full resize-none rounded-2xl border border-white/10 bg-black/30 px-4 py-3.5 text-sm text-white placeholder-white/35 outline-none focus:border-cyan-400/60" />
               </div>
 
