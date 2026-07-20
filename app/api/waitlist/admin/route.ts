@@ -17,12 +17,16 @@ export async function GET(request: NextRequest) {
   }
 
   const H = { Authorization: `Bearer ${SERVICE_KEY}`, apikey: SERVICE_KEY };
-  const rows = await (
-    await fetch(
-      `${SUPABASE_URL}/rest/v1/waitlist?select=id,role,email,name,company_name,niche,experience,marketing_experience,referral_count,created_at&order=created_at.desc&limit=1000`,
-      { headers: H }
-    )
-  ).json();
+  const FULL = "id,role,email,name,company_name,niche,experience,marketing_experience,country,referral_count,created_at";
+  const BASE = "id,role,email,name,company_name,niche,experience,marketing_experience,referral_count,created_at";
+
+  let res = await fetch(`${SUPABASE_URL}/rest/v1/waitlist?select=${FULL}&order=created_at.desc&limit=1000`, { headers: H });
+  // si "country" todavía no existe en la base (falta pegar el SQL), no rompemos
+  // el panel entero — reintentamos sin esa columna.
+  if (!res.ok) {
+    res = await fetch(`${SUPABASE_URL}/rest/v1/waitlist?select=${BASE}&order=created_at.desc&limit=1000`, { headers: H });
+  }
+  const rows = res.ok ? await res.json() : [];
 
   return NextResponse.json({ ok: true, rows: Array.isArray(rows) ? rows : [] });
 }

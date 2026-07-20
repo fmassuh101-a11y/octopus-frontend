@@ -52,16 +52,34 @@ export async function POST(request: NextRequest) {
       row.marketing_experience = ["si", "no", "algo"].includes(body.marketingExperience) ? body.marketingExperience : null;
       if (!row.company_name) return NextResponse.json({ error: "Poné el nombre de tu empresa" }, { status: 400 });
     }
+    const country = clean(body.country, 60);
+    if (country) row.country = country;
 
     // referido: viene como ?ref=<id> en el link de invitación
     const ref = clean(body.ref, 40);
     if (UUID_RX.test(ref)) row.referred_by = ref;
 
-    const ins = await sb("waitlist?select=id", {
+    let ins = await sb("waitlist?select=id", {
       method: "POST",
       headers: { Prefer: "return=representation" },
       body: JSON.stringify(row),
     });
+    // si la columna "country" todavía no existe en la base (falta pegar el SQL),
+    // reintentamos sin ella — el registro NUNCA debe fallar por esto.
+    if (!ins.ok && country) {
+      const errText = await ins.text();
+      if (/column .*country.* does not exist/i.test(errText) || /PGRST204/.test(errText)) {
+        delete row.country;
+        ins = await sb("waitlist?select=id", {
+          method: "POST",
+          headers: { Prefer: "return=representation" },
+          body: JSON.stringify(row),
+        });
+      } else {
+        console.error("[Waitlist] insert:", ins.status, errText.slice(0, 200));
+        return NextResponse.json({ error: "No se pudo guardar. Probá de nuevo." }, { status: 500 });
+      }
+    }
     if (!ins.ok) {
       console.error("[Waitlist] insert:", ins.status, (await ins.text()).slice(0, 200));
       return NextResponse.json({ error: "No se pudo guardar. Probá de nuevo." }, { status: 500 });

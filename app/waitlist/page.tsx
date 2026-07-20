@@ -4,6 +4,9 @@ import { useEffect, useMemo, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import DeepOcean from '@/components/oct/DeepOcean'
 import { Loader2, Check, Copy, Lock, ChevronRight, Users, ArrowDown } from 'lucide-react'
+import { countries } from '@/lib/data/countries'
+
+const COUNTRY_NAMES = Array.from(new Set(countries.map((c) => c.name))).sort((a, b) => a.localeCompare(b, 'es'))
 
 // LISTA DE ESPERA v2 — inmersiva (océano profundo con canvas propio), contador
 // con meta EN VIVO ("Creadores X/250"), formulario por rol y referral link
@@ -29,6 +32,7 @@ function WaitlistInner() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [experience, setExperience] = useState('')
+  const [country, setCountry] = useState('')
   const [companyName, setCompanyName] = useState('')
   const [niche, setNiche] = useState('')
   const [mkt, setMkt] = useState('')
@@ -80,7 +84,7 @@ function WaitlistInner() {
       const res = await fetch('/api/waitlist/join', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role, email, name, experience, companyName, niche, marketingExperience: mkt, ref: refId }),
+        body: JSON.stringify({ role, email, name, experience, country, companyName, niche, marketingExperience: mkt, ref: refId }),
       })
       const data = await res.json()
       if (data.ok && data.id) {
@@ -118,8 +122,8 @@ function WaitlistInner() {
   }
 
   const canJoin = role === 'creator'
-    ? name.trim() && email.trim() && experience
-    : companyName.trim() && email.trim() && mkt
+    ? name.trim() && email.trim() && experience && country
+    : companyName.trim() && email.trim() && mkt && country
 
   const count = role === 'creator' ? stats?.creators : stats?.companies
   const goal = role === 'creator' ? stats?.goalCreators || 250 : stats?.goalCompanies || 50
@@ -256,6 +260,11 @@ function WaitlistInner() {
                       className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3.5 text-sm text-white placeholder-white/35 outline-none focus:border-cyan-400/60" />
                     <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Tu email" type="email" inputMode="email" autoCapitalize="none"
                       className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3.5 text-sm text-white placeholder-white/35 outline-none focus:border-cyan-400/60" />
+                    <select value={country} onChange={(e) => setCountry(e.target.value)}
+                      className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3.5 text-sm text-white outline-none focus:border-cyan-400/60 [&>option]:bg-[#062a3f]" style={{ color: country ? '#fff' : 'rgba(255,255,255,0.35)' }}>
+                      <option value="" disabled>¿De qué país sos?</option>
+                      {COUNTRY_NAMES.map((c) => <option key={c} value={c} style={{ color: '#fff' }}>{c}</option>)}
+                    </select>
                     <div>
                       <p className="px-1 pb-2 text-xs font-semibold uppercase tracking-wide text-white/40">¿Tenés experiencia creando contenido?</p>
                       <div className="grid grid-cols-2 gap-2">
@@ -276,6 +285,11 @@ function WaitlistInner() {
                       className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3.5 text-sm text-white placeholder-white/35 outline-none focus:border-cyan-400/60" />
                     <input value={niche} onChange={(e) => setNiche(e.target.value)} placeholder="Nicho (apps, ecommerce, educación...)"
                       className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3.5 text-sm text-white placeholder-white/35 outline-none focus:border-cyan-400/60" />
+                    <select value={country} onChange={(e) => setCountry(e.target.value)}
+                      className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3.5 text-sm text-white outline-none focus:border-cyan-400/60 [&>option]:bg-[#062a3f]" style={{ color: country ? '#fff' : 'rgba(255,255,255,0.35)' }}>
+                      <option value="" disabled>¿En qué país está la empresa?</option>
+                      {COUNTRY_NAMES.map((c) => <option key={c} value={c} style={{ color: '#fff' }}>{c}</option>)}
+                    </select>
                     <div>
                       <p className="px-1 pb-2 text-xs font-semibold uppercase tracking-wide text-white/40">¿Hicieron marketing con creadores antes?</p>
                       <div className="grid grid-cols-3 gap-2">

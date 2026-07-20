@@ -9,7 +9,7 @@ import { Loader2, Send, Users, Building2 } from 'lucide-react'
 
 interface Row {
   id: string; role: string; email: string; name?: string; company_name?: string
-  niche?: string; experience?: string; marketing_experience?: string
+  niche?: string; experience?: string; marketing_experience?: string; country?: string
   referral_count: number; created_at: string
 }
 
@@ -105,6 +105,7 @@ export default function AdminWaitlist() {
               <tr>
                 <th className="px-4 py-3">Rol</th>
                 <th className="px-4 py-3">Nombre</th>
+                <th className="px-4 py-3">País</th>
                 <th className="px-4 py-3">Email</th>
                 <th className="px-4 py-3">Detalle</th>
                 <th className="px-4 py-3">Referidos</th>
@@ -120,6 +121,7 @@ export default function AdminWaitlist() {
                     </span>
                   </td>
                   <td className="px-4 py-3 font-semibold">{r.name || r.company_name || '—'}</td>
+                  <td className="px-4 py-3 text-neutral-400">{r.country || '—'}</td>
                   <td className="px-4 py-3 text-neutral-400">{r.email}</td>
                   <td className="px-4 py-3 text-neutral-500">{r.role === 'creator' ? (r.experience || '—') : `${r.niche || '—'} · mkt: ${r.marketing_experience || '—'}`}</td>
                   <td className="px-4 py-3 tabular-nums">{r.referral_count}</td>
@@ -127,7 +129,7 @@ export default function AdminWaitlist() {
                 </tr>
               ))}
               {visible.length === 0 && (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-neutral-500">Sin inscriptos todavía</td></tr>
+                <tr><td colSpan={7} className="px-4 py-8 text-center text-neutral-500">Sin inscriptos todavía</td></tr>
               )}
             </tbody>
           </table>
