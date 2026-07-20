@@ -82,7 +82,7 @@ export default function LessonPage() {
               <div className="h-full rounded-full bg-gradient-to-r from-[#22D3EE] to-[#0891B2] transition-[width]" style={{ width: `${pct}%` }} />
             </div>
             <p className="mt-2 text-sm text-neutral-500">
-              {pct >= 80 ? '¡Listo! Ya podés completar la lección.' : `Mirá al menos el 80% para completar (${pct}%)`}
+              {pct >= 80 ? '¡Listo! Ya puedes completar la lección.' : `Mira al menos el 80% para completar (${pct}%)`}
             </p>
           </div>
         )}

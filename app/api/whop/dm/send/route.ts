@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     const content = String(body.content || "").trim().slice(0, 4000);
     const gigId = String(body.gigId || "").trim();
     if (!targetId || !content) return NextResponse.json({ error: "Faltan datos" }, { status: 400 });
-    if (targetId === me.id) return NextResponse.json({ error: "No podés escribirte a vos mismo" }, { status: 400 });
+    if (targetId === me.id) return NextResponse.json({ error: "No puedes escribirte a ti mismo" }, { status: 400 });
 
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;
     const H = { Authorization: `Bearer ${key}`, apikey: key };

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { FileText, ChevronRight } from 'lucide-react'
 
-// Banner "tenés un contrato pendiente" para el home del creador — sin esto no
+// Banner "tienes un contrato pendiente" para el home del creador — sin esto no
 // había forma de enterarse (pedido de Felipe). Linkea directo al documento.
 export default function PendingContracts() {
   const [pending, setPending] = useState<Array<{ id: string; title: string }>>([])
@@ -41,7 +41,7 @@ export default function PendingContracts() {
             <FileText className="h-5 w-5 text-amber-600" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="font-extrabold leading-tight text-amber-900">Tenés un contrato para firmar</p>
+            <p className="font-extrabold leading-tight text-amber-900">Tienes un contrato para firmar</p>
             <p className="truncate text-sm text-amber-800/70">{c.title}</p>
           </div>
           <ChevronRight className="h-5 w-5 shrink-0 text-amber-500" />

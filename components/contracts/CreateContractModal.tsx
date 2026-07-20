@@ -214,7 +214,7 @@ export default function CreateContractModal({
           body: JSON.stringify({
             userId: creatorId,
             gigId: gigId || undefined,
-            content: `Te envié un contrato: "${title}" (${pagoTxt}). Revisalo y aceptalo acá: ${window.location.origin}/k/${contract?.id || ""}`,
+            content: `Te envié un contrato: "${title}" (${pagoTxt}). Revísalo y acéptalo aquí: ${window.location.origin}/k/${contract?.id || ""}`,
           })
         })
         const dmData = await dmRes.json().catch(() => ({}))

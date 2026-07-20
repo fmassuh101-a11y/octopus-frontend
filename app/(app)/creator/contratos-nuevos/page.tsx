@@ -90,7 +90,7 @@ export default function ContratosNuevosPage() {
           ) : items.length === 0 ? (
             <div className="mx-auto flex h-[380px] w-full max-w-sm flex-col items-center justify-center rounded-[28px] bg-white/[0.06] px-8 text-center">
               <FileText className="h-12 w-12 text-neutral-500" />
-              <p className="mt-4 text-xl font-bold">No tenés contratos pendientes</p>
+              <p className="mt-4 text-xl font-bold">No tienes contratos pendientes</p>
               <p className="mt-1 text-neutral-400">Cuando una marca te mande un contrato, aparece acá.</p>
             </div>
           ) : (

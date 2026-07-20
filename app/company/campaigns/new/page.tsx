@@ -107,7 +107,7 @@ export default function NewCampaignPage() {
             <textarea
               value={objective}
               onChange={e => setObjective(e.target.value)}
-              placeholder="¿Qué querés lograr con esta campaña? ej. dar a conocer la app y conseguir descargas"
+              placeholder="¿Qué quieres lograr con esta campaña? ej. dar a conocer la app y conseguir descargas"
               rows={3}
               className="w-full px-4 py-3 rounded-xl border border-neutral-800 bg-neutral-900 text-white placeholder-neutral-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none resize-none"
             />

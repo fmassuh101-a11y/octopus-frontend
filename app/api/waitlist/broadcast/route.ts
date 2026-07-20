@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Solo admin" }, { status: 403 });
   }
   if (!RESEND_KEY) {
-    return NextResponse.json({ error: "Falta RESEND_API_KEY en Vercel (creá una cuenta gratis en resend.com y agregá la key)" }, { status: 500 });
+    return NextResponse.json({ error: "Falta RESEND_API_KEY en Vercel (crea una cuenta gratis en resend.com y agrega la key)" }, { status: 500 });
   }
 
   const body = await request.json().catch(() => ({}));

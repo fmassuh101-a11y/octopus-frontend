@@ -8,18 +8,18 @@ import { toast } from '@/components/oct/toast'
 import { X, Copy, Share2, UserPlus, Banknote, TrendingUp } from 'lucide-react'
 
 // Referidos — copia de la pantalla Affiliates de SideShift:
-// "Invitá gente. Ganá plata.", carousel "Qué ganás", "Cómo funciona",
+// "Invita gente. Gana plata.", carousel "Qué ganas", "Cómo funciona",
 // link de referido con copiar, stats y CTA sticky.
 const EARN_CARDS = [
-  { amount: '$5', desc: 'Ganás un bono cuando un creador que invitaste completa su primer trabajo.' },
-  { amount: '$10', desc: 'Ganás $10 cuando tu invitado acumula $100 ganados en Octopus.' },
-  { amount: '$50', desc: 'Ganás $50 cuando un invitado llega a $1.000 ganados en la plataforma.' },
+  { amount: '$5', desc: 'Ganas un bono cuando un creador que invitaste completa su primer trabajo.' },
+  { amount: '$10', desc: 'Ganas $10 cuando tu invitado acumula $100 ganados en Octapi.' },
+  { amount: '$50', desc: 'Ganas $50 cuando un invitado llega a $1.000 ganados en la plataforma.' },
 ]
 
 const STEPS = [
-  { n: '1', t: 'Compartí tu link', d: 'Mandáselo a cualquier creador al que le sirva.' },
-  { n: '2', t: 'Se registran', d: 'Quedan atribuidos a vos automáticamente.' },
-  { n: '3', t: 'Ganás', d: 'Cobrás cuando ellos empiezan a generar.' },
+  { n: '1', t: 'Comparte tu link', d: 'Mándaselo a cualquier creador al que le sirva.' },
+  { n: '2', t: 'Se registran', d: 'Quedan atribuidos a ti automáticamente.' },
+  { n: '3', t: 'Ganas', d: 'Cobras cuando ellos empiezan a generar.' },
 ]
 
 export default function ReferidosPage() {
@@ -57,7 +57,7 @@ export default function ReferidosPage() {
 
   const share = async () => {
     try {
-      if (navigator.share) await navigator.share({ title: 'Sumate a Octopus', text: 'Ganá plata creando contenido para marcas', url: link })
+      if (navigator.share) await navigator.share({ title: 'Súmate a Octapi', text: 'Gana plata creando contenido para marcas', url: link })
       else await copy()
     } catch {}
   }
@@ -72,14 +72,14 @@ export default function ReferidosPage() {
         </button>
 
         <h1 className="mt-8 text-center text-[38px] font-extrabold leading-tight tracking-tight">
-          Invitá gente.<br />Ganá plata.
+          Invita gente.<br />Gana plata.
         </h1>
         <p className="mx-auto mt-3 max-w-xs text-center text-lg text-neutral-500">
-          Invitá creadores a Octopus y ganá por su actividad.
+          Invita creadores a Octapi y gana por su actividad.
         </p>
 
-        {/* qué ganás */}
-        <h2 className="mt-9 text-[24px] font-extrabold tracking-tight">Qué ganás</h2>
+        {/* qué ganas */}
+        <h2 className="mt-9 text-[24px] font-extrabold tracking-tight">Qué ganas</h2>
         <div className="mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto no-scrollbar" onScroll={(e) => {
           const el = e.currentTarget
           setCard(Math.round(el.scrollLeft / (el.clientWidth * 0.8)))

@@ -81,7 +81,7 @@ export default function FondearPage() {
     setVerifying(true)
     setError('')
     const ok = await verify(checkout)
-    if (!ok) setError((prev) => prev || 'Todavía no vemos el pago. Si ya pagaste, esperá unos segundos y probá de nuevo.')
+    if (!ok) setError((prev) => prev || 'Todavía no vemos el pago. Si ya pagaste, espera unos segundos y prueba de nuevo.')
     setVerifying(false)
   }
 
@@ -96,7 +96,7 @@ export default function FondearPage() {
         </button>
 
         <h1 className="mt-5 text-[28px] font-extrabold tracking-tight">Agregar fondos</h1>
-        <p className="mt-1 text-neutral-500">El dinero queda en tu cuenta y vos decidís cómo usarlo.</p>
+        <p className="mt-1 text-neutral-500">El dinero queda en tu cuenta y tú decides cómo usarlo.</p>
 
         {step === 'amount' && (
           <div className="mt-6 rounded-3xl border border-neutral-100 bg-white p-6 shadow-sm">

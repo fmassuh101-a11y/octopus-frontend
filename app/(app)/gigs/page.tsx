@@ -174,7 +174,7 @@ export default function GigsPage() {
       toast(`Este trabajo requiere ${gig.min_followers.toLocaleString('es-CL')}+ seguidores. Conectá tus redes para validarlo.`, 'error'); return
     }
     if (gig.require_age_21) {
-      const ok = window.confirm('Este trabajo requiere tener 21 años o más. ¿Confirmás que tenés 21+?')
+      const ok = window.confirm('Este trabajo requiere tener 21 años o más. ¿Confirmas que tienes 21+?')
       if (!ok) return
     }
     setAppliedGigs(prev => new Set([...Array.from(prev), gig.id]))

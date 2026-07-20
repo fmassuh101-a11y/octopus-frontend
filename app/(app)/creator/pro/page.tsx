@@ -54,7 +54,7 @@ export default function ProPage() {
       const data = await res.json()
       if (data.paid) {
         doneRef.current = true
-        toast('¡Ya sos Pro! Bienvenido al club.')
+        toast('¡Ya eres Pro! Bienvenido al club.')
         router.push('/creator/dashboard')
       } else if (data.error) toast(data.error, 'error')
     } catch {}

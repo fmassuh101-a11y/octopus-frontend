@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => ({}));
     const targetId = String(body.userId || "").trim();
     if (!targetId) return NextResponse.json({ error: "Falta el usuario" }, { status: 400 });
-    if (targetId === me.id) return NextResponse.json({ error: "No podés chatear con vos mismo" }, { status: 400 });
+    if (targetId === me.id) return NextResponse.json({ error: "No puedes chatear contigo mismo" }, { status: 400 });
 
     // perfiles de ambos (tipo + email para crear identidades si faltan)
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;

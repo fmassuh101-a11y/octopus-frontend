@@ -156,7 +156,7 @@ export default function CreatorProfile() {
         <div className="mt-4 overflow-hidden rounded-3xl border border-neutral-100 bg-white shadow-sm">
           <Row href="/creator/wallet" icon={<WalletDuo className="h-5 w-5 text-cyan-600" weight="duotone" />} label="Wallet y retiros" />
           <Row href="/creator/applications" icon={<Cards className="h-5 w-5 text-violet-500" weight="duotone" />} label="Mis postulaciones" />
-          <Row href="/creator/referidos" icon={<Gift className="h-5 w-5 text-sky-500" weight="duotone" />} label="Invitá y ganá (referidos)" />
+          <Row href="/creator/referidos" icon={<Gift className="h-5 w-5 text-sky-500" weight="duotone" />} label="Invita y gana (referidos)" />
           <Row href="/creator/analytics" icon={<ChartLineUp className="h-5 w-5 text-orange-500" weight="duotone" />} label="Analytics" />
           <Row href="/creator/deliveries" icon={<UploadSimple className="h-5 w-5 text-teal-500" weight="duotone" />} label="Mis entregas" />
           <Row href="/creator/contracts" icon={<Scroll className="h-5 w-5 text-cyan-700" weight="duotone" />} label="Mis contratos" />

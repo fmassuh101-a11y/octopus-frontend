@@ -145,7 +145,7 @@ export default function ContratoDocumento() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           userId: contract.creator_id,
-          content: `Aprobamos tus handles para "${contract.title}". El contrato está EN MARCHA — ya podés crear el contenido.`,
+          content: `Aprobamos tus handles para "${contract.title}". El contrato está EN MARCHA — ya puedes crear el contenido.`,
         }),
       }).catch(() => {})
       toast('Handles aprobados — contrato en marcha')

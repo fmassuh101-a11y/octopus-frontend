@@ -39,8 +39,8 @@ export default function AcademiaPage() {
             <GraduationCap className="h-6 w-6 text-cyan-600" />
           </div>
           <div>
-            <h1 className="text-2xl font-extrabold tracking-tight">Academia Octopus</h1>
-            <p className="text-sm text-neutral-600">Aprendé y ganá más — {completed}/{total} lecciones</p>
+            <h1 className="text-2xl font-extrabold tracking-tight">Academia Octapi</h1>
+            <p className="text-sm text-neutral-600">Aprende y gana más — {completed}/{total} lecciones</p>
           </div>
         </div>
 

@@ -114,11 +114,11 @@ export interface Mission { key: string; label: string; desc: string; xp: number;
 
 export function getMissions(a: XPInput): Mission[] {
   return [
-    { key: 'photo', label: 'Poné tu foto de perfil', desc: 'Un perfil con foto genera más confianza.', xp: XP.completeProfile, done: !!a.hasPhoto },
-    { key: 'social', label: 'Conectá tus redes', desc: 'Sumá TikTok, Instagram o YouTube.', xp: XP.connectSocials, done: !!a.hasSocials },
-    { key: 'apply', label: 'Aplicá a tu primer trabajo', desc: 'Explorá campañas y postulate.', xp: XP.apply, done: (a.applications || 0) >= 1 },
-    { key: 'contract', label: 'Aceptá tu primer contrato', desc: 'Cuando una marca te elige.', xp: XP.firstContract, done: (a.accepted || 0) >= 1 },
-    { key: 'first', label: 'Completá tu primer trabajo', desc: 'Entregá y que te lo aprueben.', xp: XP.completeJob, done: (a.completed || 0) >= 1 },
-    { key: 'five', label: 'Completá 5 trabajos', desc: 'Ganá ritmo y subí de liga.', xp: XP.completeJob, done: (a.completed || 0) >= 5 },
+    { key: 'photo', label: 'Pon tu foto de perfil', desc: 'Un perfil con foto genera más confianza.', xp: XP.completeProfile, done: !!a.hasPhoto },
+    { key: 'social', label: 'Conecta tus redes', desc: 'Suma TikTok, Instagram o YouTube.', xp: XP.connectSocials, done: !!a.hasSocials },
+    { key: 'apply', label: 'Aplica a tu primer trabajo', desc: 'Explora campañas y postúlate.', xp: XP.apply, done: (a.applications || 0) >= 1 },
+    { key: 'contract', label: 'Acepta tu primer contrato', desc: 'Cuando una marca te elige.', xp: XP.firstContract, done: (a.accepted || 0) >= 1 },
+    { key: 'first', label: 'Completa tu primer trabajo', desc: 'Entrega y que te lo aprueben.', xp: XP.completeJob, done: (a.completed || 0) >= 1 },
+    { key: 'five', label: 'Completa 5 trabajos', desc: 'Gana ritmo y sube de liga.', xp: XP.completeJob, done: (a.completed || 0) >= 5 },
   ]
 }

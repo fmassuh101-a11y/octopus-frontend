@@ -30,7 +30,7 @@ const INTENTS: Intent[] = [
   },
   {
     keywords: ['disputa', 'problema con', 'estafa', 'no me pago', 'reclamo', 'reportar'],
-    answer: 'Si tenés un problema serio con una entrega o pago, se puede abrir una disputa y nuestro equipo media entre ambas partes de forma justa. Contanos qué pasó y, si hace falta, un admin se conectará para resolverlo.',
+    answer: 'Si tienes un problema serio con una entrega o pago, se puede abrir una disputa y nuestro equipo media entre ambas partes de forma justa. Cuéntanos qué pasó y, si hace falta, un admin se conectará para resolverlo.',
   },
   {
     keywords: ['plan', 'precio', 'suscripcion', 'cuanto cuesta', 'starter', 'pro', 'scale', 'enterprise', 'planes'],
@@ -46,15 +46,15 @@ const INTENTS: Intent[] = [
   },
   {
     keywords: ['clipping', 'clips', 'por views', 'cpm', 'vistas'],
-    answer: 'El clipping es cuando la empresa te da su contenido y vos hacés clips que subís a tu propia cuenta; te pagan por cada 1.000 views (CPM). Es ideal para creadores que generan muchas vistas. Buscá campañas de tipo "Clipping" en el feed.',
+    answer: 'El clipping es cuando la empresa te da su contenido y tú haces clips que subes a tu propia cuenta; te pagan por cada 1.000 views (CPM). Es ideal para creadores que generan muchas vistas. Busca campañas de tipo "Clipping" en el feed.',
   },
   {
     keywords: ['nivel', 'bronce', 'plata', 'oro', 'gamif', 'xp', 'ranking', 'leaderboard', 'recompensa'],
-    answer: 'Ganás nivel completando trabajos aprobados: Bronce → Plata → Oro → Platino. Un nivel más alto te da más visibilidad ante las empresas y mejores oportunidades. ¡Entregá buen contenido y subí de nivel!',
+    answer: 'Ganas nivel completando trabajos aprobados: Bronce → Plata → Oro → Platino. Un nivel más alto te da más visibilidad ante las empresas y mejores oportunidades. ¡Entrega buen contenido y sube de nivel!',
   },
   {
     keywords: ['cuenta', 'perfil', 'foto', 'contraseña', 'email', 'registro', 'registrarme'],
-    answer: 'Podés editar tu perfil (foto, datos, redes) desde la sección Perfil/Configuración. Un buen perfil con foto y tus redes conectadas hace que las empresas confíen más en vos y te acepten más rápido.',
+    answer: 'Puedes editar tu perfil (foto, datos, redes) desde la sección Perfil/Configuración. Un buen perfil con foto y tus redes conectadas hace que las empresas confíen más en ti y te acepten más rápido.',
   },
 ]
 

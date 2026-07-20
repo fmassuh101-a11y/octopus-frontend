@@ -135,15 +135,12 @@ function WaitlistInner() {
     <div className="min-h-[100dvh] bg-[#03141f] font-sans text-white">
       {/* ═══ HERO INMERSIVO (océano profundo) ═══ */}
       <section className="relative h-[100dvh] w-full overflow-hidden">
+        {/* SEGURIDAD/CALIDAD (20 jul): el video de fondo mostraba un botón de
+            play visible en celulares con Modo de Bajo Consumo — iOS bloquea
+            el autoplay ahí pase lo que pase con los atributos, así que se ve
+            roto de forma impredecible. Se saca del todo: el canvas propio
+            (DeepOcean) es 100% confiable en cualquier dispositivo/batería. */}
         <DeepOcean />
-        {/* video inmersivo (la referencia de Felipe); si falla, queda el canvas */}
-        <video
-          autoPlay muted loop playsInline
-          className="absolute inset-0 h-full w-full object-cover"
-          style={{ objectPosition: '70% center' }}
-          onError={(e) => { (e.target as HTMLVideoElement).style.display = 'none' }}
-          src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260622_204221_5339e40b-e73d-4ab0-9c65-79c18c66fd50.mp4"
-        />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-[#03141f]" />
 
         {/* nav */}
