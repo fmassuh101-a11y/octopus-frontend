@@ -92,14 +92,14 @@ function WaitlistInner() {
         setJoinedId(data.id)
         setReferrals(data.referrals || 0)
         loadStats()
-      } else setError(data.error || 'No se pudo guardar. Probá de nuevo.')
-    } catch { setError('No se pudo guardar. Probá de nuevo.') }
+      } else setError(data.error || 'No se pudo guardar. Prueba de nuevo.')
+    } catch { setError('No se pudo guardar. Prueba de nuevo.') }
     setBusy(false)
   }
 
   const copyLink = async () => {
     try {
-      await navigator.clipboard.writeText(`Me anoté en Octapi, el marketplace donde los creadores monetizan haciendo clips y contenido. Sumate con mi link y entramos antes: ${inviteLink}`)
+      await navigator.clipboard.writeText(`Me anoté en Octapi, el marketplace donde los creadores monetizan haciendo clips y contenido. Súmate con mi link y entramos antes: ${inviteLink}`)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {}
@@ -117,7 +117,7 @@ function WaitlistInner() {
       const data = await res.json()
       if (data.ok) { window.location.href = '/'; return }
       setPassError(data.error || 'Contraseña incorrecta')
-    } catch { setPassError('No se pudo validar. Probá de nuevo.') }
+    } catch { setPassError('No se pudo validar. Prueba de nuevo.') }
     setPassBusy(false)
   }
 
@@ -206,8 +206,8 @@ function WaitlistInner() {
         {/* continuidad del océano: glow cian de fondo */}
         <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(60%_100%_at_50%_0%,rgba(34,211,238,0.16),transparent)]" />
         <div className="relative mx-auto w-full max-w-lg">
-          <h2 className="text-center text-3xl font-semibold [animation:fadeSlideUp_0.8s_ease_both] sm:text-4xl">Unite a la lista</h2>
-          <p className="mt-2 text-center text-white/50">Entrás con prioridad cuando abramos las puertas.</p>
+          <h2 className="text-center text-3xl font-semibold [animation:fadeSlideUp_0.8s_ease_both] sm:text-4xl">Únete a la lista</h2>
+          <p className="mt-2 text-center text-white/50">Entras con prioridad cuando abramos las puertas.</p>
           <div className="mt-8">
           {joinedId ? (
             /* YA ANOTADO → referral destacado */
@@ -223,7 +223,7 @@ function WaitlistInner() {
               </div>
 
               <div className="mt-6 rounded-2xl bg-white/[0.06] p-4">
-                <p className="font-semibold">Invitá y entrá antes</p>
+                <p className="font-semibold">Invita y entra antes</p>
                 <p className="mt-1 text-xs leading-relaxed text-white/50">
                   Cada persona que se anote con tu link te sube en la fila — y acerca la meta para que abramos antes.
                 </p>
@@ -262,11 +262,11 @@ function WaitlistInner() {
                       className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3.5 text-sm text-white placeholder-white/35 outline-none focus:border-cyan-400/60" />
                     <select value={country} onChange={(e) => setCountry(e.target.value)}
                       className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3.5 text-sm text-white outline-none focus:border-cyan-400/60 [&>option]:bg-[#062a3f]" style={{ color: country ? '#fff' : 'rgba(255,255,255,0.35)' }}>
-                      <option value="" disabled>¿De qué país sos?</option>
+                      <option value="" disabled>¿De qué país eres?</option>
                       {COUNTRY_NAMES.map((c) => <option key={c} value={c} style={{ color: '#fff' }}>{c}</option>)}
                     </select>
                     <div>
-                      <p className="px-1 pb-2 text-xs font-semibold uppercase tracking-wide text-white/40">¿Tenés experiencia creando contenido?</p>
+                      <p className="px-1 pb-2 text-xs font-semibold uppercase tracking-wide text-white/40">¿Tienes experiencia creando contenido?</p>
                       <div className="grid grid-cols-2 gap-2">
                         {EXPERIENCIA_CREADOR.map((o) => (
                           <button key={o.v} onClick={() => setExperience(o.v)}
@@ -312,7 +312,7 @@ function WaitlistInner() {
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ChevronRight className="h-4 w-4" />}
                 Unirme a la lista
               </button>
-              {refId && <p className="mt-3 text-center text-xs font-semibold text-cyan-300">Venís invitado — entrás con prioridad.</p>}
+              {refId && <p className="mt-3 text-center text-xs font-semibold text-cyan-300">Vienes invitado — entras con prioridad.</p>}
             </div>
           )}
 

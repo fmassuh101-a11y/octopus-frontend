@@ -31,7 +31,7 @@ function pagoTexto(c: any): string {
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const c = await getContract(params.id)
   const title = c?.title ? `Contrato: ${c.title} — Octapi` : 'Contrato en Octapi'
-  const description = c ? `${pagoTexto(c)} · Revisalo y aceptalo en Octapi` : 'Contrato de campaña en Octapi'
+  const description = c ? `${pagoTexto(c)} · Revísalo y acéptalo en Octapi` : 'Contrato de campaña en Octapi'
   return { title, description, openGraph: { title, description, siteName: 'Octapi' } }
 }
 
@@ -52,7 +52,7 @@ export default async function ContractCard({ params }: { params: { id: string } 
             <p className="mt-1 text-xl font-extrabold text-neutral-900">{c ? pagoTexto(c) : '—'}</p>
           </div>
           <p className="mt-4 text-sm leading-relaxed text-neutral-500">
-            Acuerdo de participación con firma electrónica. Ingresá a Octapi para leer el documento completo y aceptarlo.
+            Acuerdo de participación con firma electrónica. Ingresa a Octapi para leer el documento completo y aceptarlo.
           </p>
           <a
             href={`${APP_URL}/contrato/${params.id}`}
