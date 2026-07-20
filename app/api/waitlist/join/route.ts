@@ -54,22 +54,27 @@ export async function POST(request: NextRequest) {
     }
     const country = clean(body.country, 60);
     if (country) row.country = country;
+    const source = ["tiktok", "instagram", "recomendacion", "google", "otro"].includes(body.source) ? body.source : "";
+    if (source) row.source = source;
+    const message = clean(body.message, 500);
+    if (message) row.message = message;
 
     // referido: viene como ?ref=<id> en el link de invitación
     const ref = clean(body.ref, 40);
     if (UUID_RX.test(ref)) row.referred_by = ref;
 
+    // columnas opcionales nuevas: si alguna todavía no existe en la base
+    // (falta pegar el SQL correspondiente), reintentamos sin las opcionales —
+    // el registro NUNCA debe fallar por esto, solo se pierde ese dato puntual.
     let ins = await sb("waitlist?select=id", {
       method: "POST",
       headers: { Prefer: "return=representation" },
       body: JSON.stringify(row),
     });
-    // si la columna "country" todavía no existe en la base (falta pegar el SQL),
-    // reintentamos sin ella — el registro NUNCA debe fallar por esto.
-    if (!ins.ok && country) {
+    if (!ins.ok) {
       const errText = await ins.text();
-      if (/column .*country.* does not exist/i.test(errText) || /PGRST204/.test(errText)) {
-        delete row.country;
+      if (/column .* does not exist/i.test(errText) || /PGRST204/.test(errText)) {
+        delete row.country; delete row.source; delete row.message;
         ins = await sb("waitlist?select=id", {
           method: "POST",
           headers: { Prefer: "return=representation" },

@@ -10,7 +10,12 @@ import { Loader2, Send, Users, Building2 } from 'lucide-react'
 interface Row {
   id: string; role: string; email: string; name?: string; company_name?: string
   niche?: string; experience?: string; marketing_experience?: string; country?: string
+  source?: string; message?: string
   referral_count: number; created_at: string
+}
+
+const FUENTE_LABEL: Record<string, string> = {
+  tiktok: 'TikTok', instagram: 'Instagram', recomendacion: 'Recomendación', google: 'Google', otro: 'Otro',
 }
 
 export default function AdminWaitlist() {
@@ -108,6 +113,8 @@ export default function AdminWaitlist() {
                 <th className="px-4 py-3">País</th>
                 <th className="px-4 py-3">Email</th>
                 <th className="px-4 py-3">Detalle</th>
+                <th className="px-4 py-3">Fuente</th>
+                <th className="px-4 py-3">Mensaje</th>
                 <th className="px-4 py-3">Referidos</th>
                 <th className="px-4 py-3">Fecha</th>
               </tr>
@@ -124,12 +131,14 @@ export default function AdminWaitlist() {
                   <td className="px-4 py-3 text-neutral-400">{r.country || '—'}</td>
                   <td className="px-4 py-3 text-neutral-400">{r.email}</td>
                   <td className="px-4 py-3 text-neutral-500">{r.role === 'creator' ? (r.experience || '—') : `${r.niche || '—'} · mkt: ${r.marketing_experience || '—'}`}</td>
+                  <td className="px-4 py-3 text-neutral-500">{r.source ? (FUENTE_LABEL[r.source] || r.source) : '—'}</td>
+                  <td className="px-4 py-3 max-w-[220px] truncate text-neutral-500" title={r.message || ''}>{r.message || '—'}</td>
                   <td className="px-4 py-3 tabular-nums">{r.referral_count}</td>
                   <td className="px-4 py-3 text-neutral-500">{new Date(r.created_at).toLocaleDateString('es-CL')}</td>
                 </tr>
               ))}
               {visible.length === 0 && (
-                <tr><td colSpan={7} className="px-4 py-8 text-center text-neutral-500">Sin inscriptos todavía</td></tr>
+                <tr><td colSpan={9} className="px-4 py-8 text-center text-neutral-500">Sin inscriptos todavía</td></tr>
               )}
             </tbody>
           </table>

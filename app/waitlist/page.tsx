@@ -23,6 +23,13 @@ const EXPERIENCIA_EMPRESA = [
   { v: 'algo', t: 'Algo' },
   { v: 'no', t: 'No' },
 ]
+const FUENTES = [
+  { v: 'tiktok', t: 'TikTok' },
+  { v: 'instagram', t: 'Instagram' },
+  { v: 'recomendacion', t: 'Me recomendó alguien' },
+  { v: 'google', t: 'Búsqueda en Google' },
+  { v: 'otro', t: 'Otro' },
+]
 
 function WaitlistInner() {
   const params = useSearchParams()
@@ -36,6 +43,8 @@ function WaitlistInner() {
   const [companyName, setCompanyName] = useState('')
   const [niche, setNiche] = useState('')
   const [mkt, setMkt] = useState('')
+  const [source, setSource] = useState('')
+  const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -84,7 +93,7 @@ function WaitlistInner() {
       const res = await fetch('/api/waitlist/join', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role, email, name, experience, country, companyName, niche, marketingExperience: mkt, ref: refId }),
+        body: JSON.stringify({ role, email, name, experience, country, companyName, niche, marketingExperience: mkt, source, message, ref: refId }),
       })
       const data = await res.json()
       if (data.ok && data.id) {
@@ -300,6 +309,15 @@ function WaitlistInner() {
                     </div>
                   </>
                 )}
+
+                {/* opcionales, para ambos roles: atribución + comentario libre */}
+                <select value={source} onChange={(e) => setSource(e.target.value)}
+                  className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3.5 text-sm text-white outline-none focus:border-cyan-400/60 [&>option]:bg-[#062a3f]" style={{ color: source ? '#fff' : 'rgba(255,255,255,0.35)' }}>
+                  <option value="" disabled>¿Cómo nos encontraste? (opcional)</option>
+                  {FUENTES.map((f) => <option key={f.v} value={f.v} style={{ color: '#fff' }}>{f.t}</option>)}
+                </select>
+                <textarea value={message} onChange={(e) => setMessage(e.target.value.slice(0, 500))} placeholder="¿Algo que quieras contarnos? (opcional)" rows={3}
+                  className="w-full resize-none rounded-2xl border border-white/10 bg-black/30 px-4 py-3.5 text-sm text-white placeholder-white/35 outline-none focus:border-cyan-400/60" />
               </div>
 
               {error && <p className="mt-3 text-center text-xs font-semibold text-red-400">{error}</p>}
