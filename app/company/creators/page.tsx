@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
-import { ClipboardList, Eye, Home, MessageCircle, Smartphone, Users, Wallet } from 'lucide-react'
+import { ClipboardList, Home, MessageCircle, Smartphone, Users, Wallet } from 'lucide-react'
 
 interface Creator {
   id: string
@@ -15,7 +15,6 @@ interface Creator {
   status: 'active' | 'completed' | 'paused'
   total_spent: number
   total_posts: number
-  total_views: number
   campaigns: number
   last_active: string
 }
@@ -78,17 +77,25 @@ export default function CreatorsPage() {
       // Get unique creator IDs
       const creatorIds = Array.from(new Set(applications.map((a: any) => a.creator_id))) as string[]
 
-      // Get profiles
-      const profilesRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/public_profiles?user_id=in.(${creatorIds.join(',')})&select=*`,
-        { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
-      )
+      // Get profiles + entregas reales (para el conteo real de posts — antes era Math.random())
+      const [profilesRes, deliveriesRes] = await Promise.all([
+        fetch(
+          `${SUPABASE_URL}/rest/v1/public_profiles?user_id=in.(${creatorIds.join(',')})&select=*`,
+          { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+        ),
+        fetch(
+          `${SUPABASE_URL}/rest/v1/content_deliveries?company_id=eq.${user.id}&creator_id=in.(${creatorIds.join(',')})&status=in.(approved,completed)&select=creator_id`,
+          { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+        ),
+      ])
 
       const profiles = profilesRes.ok ? await profilesRes.json() : []
+      const deliveries = deliveriesRes.ok ? await deliveriesRes.json() : []
 
       // Build creator data
       const creatorsData: Creator[] = profiles.map((p: any) => {
         const creatorApps = applications.filter((a: any) => a.creator_id === p.user_id)
+        const realPosts = deliveries.filter((d: any) => d.creator_id === p.user_id).length
         return {
           id: p.user_id,
           user_id: p.user_id,
@@ -98,8 +105,7 @@ export default function CreatorsPage() {
           tiktok_handle: p.tiktok_handle || '',
           status: 'active',
           total_spent: creatorApps.reduce((sum: number, a: any) => sum + (a.gigs?.budget || 0), 0),
-          total_posts: Math.floor(Math.random() * 10),
-          total_views: Math.floor(Math.random() * 100000),
+          total_posts: realPosts,
           campaigns: creatorApps.length,
           last_active: new Date().toISOString()
         }
@@ -120,11 +126,6 @@ export default function CreatorsPage() {
     return matchesFilter && matchesSearch
   })
 
-  const formatNumber = (num: number): string => {
-    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
-    if (num >= 1000) return (num / 1000).toFixed(1) + 'K'
-    return num.toString()
-  }
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white pb-24">
@@ -187,12 +188,11 @@ export default function CreatorsPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-3 gap-4 mb-8">
           {[
             { label: 'Creadores', value: creators.length, icon: Users },
             { label: 'Gasto Total', value: `$${creators.reduce((s, c) => s + c.total_spent, 0).toLocaleString()}`, icon: Wallet },
             { label: 'Posts Totales', value: creators.reduce((s, c) => s + c.total_posts, 0), icon: Smartphone },
-            { label: 'Views Totales', value: formatNumber(creators.reduce((s, c) => s + c.total_views, 0)), icon: Eye },
           ].map((stat) => (
             <div key={stat.label} className="bg-neutral-900 rounded-xl p-4 border border-neutral-800 text-white placeholder-neutral-500">
               <div className="flex items-center justify-between mb-2">

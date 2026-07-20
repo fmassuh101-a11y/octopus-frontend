@@ -15,6 +15,7 @@ export default function CreatorProfile() {
   const [profile, setProfile] = useState<any>(null)
   const [wallet, setWallet] = useState<{ balance: number; total_earned: number } | null>(null)
   const [stats, setStats] = useState({ pending: 0, accepted: 0, completed: 0, total: 0 })
+  const [avgRating, setAvgRating] = useState<{ avg: number; count: number } | null>(null)
   const [streak, setStreak] = useState(1)
   const [loading, setLoading] = useState(true)
 
@@ -27,11 +28,12 @@ export default function CreatorProfile() {
         if (!token || !userStr) { window.location.href = '/auth/login'; return }
         const user = JSON.parse(userStr)
         const headers = { Authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY }
-        const [pRes, wRes, aRes, dRes] = await Promise.all([
+        const [pRes, wRes, aRes, dRes, rRes] = await Promise.all([
           fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=*`, { headers }),
           fetch(`${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${user.id}&select=balance,total_earned`, { headers }),
           fetch(`${SUPABASE_URL}/rest/v1/applications?creator_id=eq.${user.id}&select=id,status`, { headers }),
           fetch(`${SUPABASE_URL}/rest/v1/content_deliveries?creator_id=eq.${user.id}&status=in.(approved,completed)&select=id`, { headers }),
+          fetch(`${SUPABASE_URL}/rest/v1/reviews?reviewee_id=eq.${user.id}&select=rating`, { headers }),
         ])
         if (pRes.ok) {
           const ps = await pRes.json()
@@ -42,6 +44,10 @@ export default function CreatorProfile() {
           }
         }
         if (wRes.ok) { const w = await wRes.json(); if (w.length) setWallet(w[0]) }
+        if (rRes.ok) {
+          const revs = await rRes.json()
+          if (revs.length) setAvgRating({ avg: revs.reduce((s: number, r: any) => s + r.rating, 0) / revs.length, count: revs.length })
+        }
         let deliv = 0
         if (dRes.ok) { try { deliv = (await dRes.json()).length } catch {} }
         if (aRes.ok) {
@@ -136,7 +142,7 @@ export default function CreatorProfile() {
         <div className="mt-3 grid grid-cols-2 rounded-3xl border border-neutral-100 bg-white shadow-sm">
           <StatCell icon={<Flame className="h-6 w-6 fill-orange-500 text-orange-500" />} value={`${streak}`} label={streak === 1 ? 'día' : 'días'} divider="rb" />
           <StatCell icon={<Eye className="h-6 w-6 text-cyan-700" />} value={xp.toLocaleString('es-CL')} label="XP" divider="b" />
-          <StatCell icon={<Star className="h-6 w-6 fill-amber-400 text-amber-400" />} value="5.0" label="rating" divider="r" />
+          <StatCell icon={<Star className="h-6 w-6 fill-amber-400 text-amber-400" />} value={avgRating ? avgRating.avg.toFixed(1) : '—'} label="rating" divider="r" />
           <StatCell icon={<Banknote className="h-6 w-6 text-cyan-600" />} value={`$${Math.floor(earned).toLocaleString('es-CL')}`} label="ganado" />
         </div>
 

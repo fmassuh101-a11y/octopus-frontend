@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     const profiles = profRes.ok ? await profRes.json() : [];
     const profile = profiles[0] || {};
     if (!profile.whop_company_id) {
-      return NextResponse.json({ error: "Primero activá los pagos", needsSetup: true }, { status: 400 });
+      return NextResponse.json({ error: "Primero activa los pagos", needsSetup: true }, { status: 400 });
     }
 
     // KYC aprobado en Whop (si no, no puede cobrar)
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
       }
     } catch {}
     if (!kycOk) {
-      return NextResponse.json({ error: "Completá tu verificación antes de retirar", needsKyc: true }, { status: 400 });
+      return NextResponse.json({ error: "Completa tu verificación antes de retirar", needsKyc: true }, { status: 400 });
     }
 
     // FEE 0 POR AHORA (decisión de Felipe jul-13): la plataforma vive de las
