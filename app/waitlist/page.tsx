@@ -23,13 +23,6 @@ const EXPERIENCIA_EMPRESA = [
   { v: 'algo', t: 'Algo' },
   { v: 'no', t: 'No' },
 ]
-const FUENTES = [
-  { v: 'tiktok', t: 'TikTok' },
-  { v: 'instagram', t: 'Instagram' },
-  { v: 'recomendacion', t: 'Me recomendó alguien' },
-  { v: 'google', t: 'Búsqueda en Google' },
-  { v: 'otro', t: 'Otro' },
-]
 
 function WaitlistInner() {
   const params = useSearchParams()
@@ -131,8 +124,8 @@ function WaitlistInner() {
   }
 
   const canJoin = role === 'creator'
-    ? name.trim() && email.trim() && experience && country && source && message.trim()
-    : companyName.trim() && email.trim() && mkt && country && source && message.trim()
+    ? name.trim() && email.trim() && experience && country && source.trim() && message.trim()
+    : companyName.trim() && email.trim() && mkt && country && source.trim() && message.trim()
 
   const count = role === 'creator' ? stats?.creators : stats?.companies
   const goal = role === 'creator' ? stats?.goalCreators || 250 : stats?.goalCompanies || 50
@@ -310,12 +303,9 @@ function WaitlistInner() {
                   </>
                 )}
 
-                {/* para ambos roles: atribución y comentario libre, ambos obligatorios */}
-                <select value={source} onChange={(e) => setSource(e.target.value)}
-                  className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3.5 text-sm text-white outline-none focus:border-cyan-400/60 [&>option]:bg-[#062a3f]" style={{ color: source ? '#fff' : 'rgba(255,255,255,0.35)' }}>
-                  <option value="" disabled>¿Cómo nos encontraste?</option>
-                  {FUENTES.map((f) => <option key={f.v} value={f.v} style={{ color: '#fff' }}>{f.t}</option>)}
-                </select>
+                {/* para ambos roles: dónde nos encontró (texto libre) y comentario libre, ambos obligatorios */}
+                <input value={source} onChange={(e) => setSource(e.target.value)} placeholder="¿Cómo nos encontraste?"
+                  className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3.5 text-sm text-white placeholder-white/35 outline-none focus:border-cyan-400/60" />
                 <textarea value={message} onChange={(e) => setMessage(e.target.value.slice(0, 500))} placeholder="Cuéntanos algo — ¿por qué te interesa Octapi?" rows={3}
                   className="w-full resize-none rounded-2xl border border-white/10 bg-black/30 px-4 py-3.5 text-sm text-white placeholder-white/35 outline-none focus:border-cyan-400/60" />
               </div>

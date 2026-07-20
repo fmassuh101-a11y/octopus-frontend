@@ -14,10 +14,6 @@ interface Row {
   referral_count: number; created_at: string
 }
 
-const FUENTE_LABEL: Record<string, string> = {
-  tiktok: 'TikTok', instagram: 'Instagram', recomendacion: 'Recomendación', google: 'Google', otro: 'Otro',
-}
-
 export default function AdminWaitlist() {
   const [rows, setRows] = useState<Row[]>([])
   const [loading, setLoading] = useState(true)
@@ -131,7 +127,7 @@ export default function AdminWaitlist() {
                   <td className="px-4 py-3 text-neutral-400">{r.country || '—'}</td>
                   <td className="px-4 py-3 text-neutral-400">{r.email}</td>
                   <td className="px-4 py-3 text-neutral-500">{r.role === 'creator' ? (r.experience || '—') : `${r.niche || '—'} · mkt: ${r.marketing_experience || '—'}`}</td>
-                  <td className="px-4 py-3 text-neutral-500">{r.source ? (FUENTE_LABEL[r.source] || r.source) : '—'}</td>
+                  <td className="px-4 py-3 text-neutral-500">{r.source || '—'}</td>
                   <td className="px-4 py-3 max-w-[220px] truncate text-neutral-500" title={r.message || ''}>{r.message || '—'}</td>
                   <td className="px-4 py-3 tabular-nums">{r.referral_count}</td>
                   <td className="px-4 py-3 text-neutral-500">{new Date(r.created_at).toLocaleDateString('es-CL')}</td>

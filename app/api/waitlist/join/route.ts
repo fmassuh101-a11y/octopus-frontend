@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     }
     const country = clean(body.country, 60);
     if (country) row.country = country;
-    const source = ["tiktok", "instagram", "recomendacion", "google", "otro"].includes(body.source) ? body.source : "";
+    const source = clean(body.source, 200);
     if (!source) return NextResponse.json({ error: "Cuéntanos cómo nos encontraste" }, { status: 400 });
     row.source = source;
     const message = clean(body.message, 500);
