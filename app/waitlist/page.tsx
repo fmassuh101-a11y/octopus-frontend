@@ -95,7 +95,7 @@ function WaitlistInner() {
 
   const copyLink = async () => {
     try {
-      await navigator.clipboard.writeText(`Me anoté en Octopus, el marketplace donde los creadores cobran por hacer clips y contenido. Sumate con mi link y entramos antes: ${inviteLink}`)
+      await navigator.clipboard.writeText(`Me anoté en Octapi, el marketplace donde los creadores monetizan haciendo clips y contenido. Sumate con mi link y entramos antes: ${inviteLink}`)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {}
@@ -144,7 +144,7 @@ function WaitlistInner() {
 
         {/* nav */}
         <div className="relative z-10 flex items-center justify-between px-6 py-5 md:px-12">
-          <p className="text-lg font-semibold tracking-tight sm:text-xl">Octopus</p>
+          <p className="text-lg font-semibold tracking-tight sm:text-xl">Octapi</p>
           <button
             onClick={() => setShowPass(true)}
             className="rounded-lg bg-white/10 px-4 py-2 text-sm font-medium text-white/90 backdrop-blur transition hover:bg-white/20"
@@ -303,7 +303,7 @@ function WaitlistInner() {
           )}
 
           </div>
-          <p className="mt-10 text-center text-[11px] text-white/30">Octopus — Creadores que monetizan. Marcas que crecen.</p>
+          <p className="mt-10 text-center text-[11px] text-white/30">Octapi — Creadores que monetizan. Marcas que crecen.</p>
         </div>
       </section>
 

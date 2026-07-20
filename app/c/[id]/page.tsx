@@ -4,7 +4,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 // Tarjeta PÚBLICA de campaña (/c/<id>) — pensada para los links del chat:
 // tiene OG tags (imagen + título) para que Whop/WhatsApp/etc. la muestren como
 // tarjeta linda, sin abrir el resto de la app (el muro de waitlist la permite).
-// Muestra lo mínimo: imagen, título, tipo y CPM — y CTA a Octopus.
+// Muestra lo mínimo: imagen, título, tipo y CPM — y CTA a Octapi.
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://octopus-frontend-tau.vercel.app'
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
@@ -23,16 +23,16 @@ async function getGig(id: string) {
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const gig = await getGig(params.id)
-  const title = gig?.title ? `${gig.title} — Campaña en Octopus` : 'Campaña en Octopus'
+  const title = gig?.title ? `${gig.title} — Campaña en Octapi` : 'Campaña en Octapi'
   const pay = gig?.budget || gig?.budget_min
   const description = pay
-    ? `$${pay} ${gig?.budget_currency === 'CPM' ? 'CPM' : gig?.budget_currency || 'USD'} · ${gig?.category || 'UGC'} · Aplicá en Octopus`
+    ? `$${pay} ${gig?.budget_currency === 'CPM' ? 'CPM' : gig?.budget_currency || 'USD'} · ${gig?.category || 'UGC'} · Aplicá en Octapi`
     : `${gig?.category || 'UGC'} · Campañas pagas para creadores en LATAM`
   const image = gig?.image_url && String(gig.image_url).startsWith('http') ? gig.image_url : `${APP_URL}/icon.png`
   return {
     title,
     description,
-    openGraph: { title, description, images: [{ url: image }], siteName: 'Octopus' },
+    openGraph: { title, description, images: [{ url: image }], siteName: 'Octapi' },
     twitter: { card: 'summary_large_image', title, description, images: [image] },
   }
 }
@@ -48,7 +48,7 @@ export default async function CampaignCard({ params }: { params: { id: string } 
           <img src={gig.image_url} alt="" className="h-52 w-full object-cover" />
         )}
         <div className="p-6">
-          <p className="text-xs font-bold uppercase tracking-widest text-cyan-600">Campaña en Octopus</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-cyan-600">Campaña en Octapi</p>
           <h1 className="mt-1 text-2xl font-extrabold leading-tight">{gig?.title || 'Campaña'}</h1>
           <div className="mt-3 flex flex-wrap gap-2 text-sm">
             {gig?.category && <span className="rounded-full bg-neutral-100 px-3 py-1 font-bold text-neutral-600">{gig.category}</span>}
@@ -65,7 +65,7 @@ export default async function CampaignCard({ params }: { params: { id: string } 
             href={`${APP_URL}/gigs/${params.id}`}
             className="mt-5 block w-full rounded-2xl bg-gradient-to-b from-[#22D3EE] to-[#0891B2] py-3.5 text-center font-bold text-white shadow-lg"
           >
-            Ver campaña en Octopus
+            Ver campaña en Octapi
           </a>
           <p className="mt-3 text-center text-[11px] text-neutral-400">Creadores que monetizan. Marcas que crecen.</p>
         </div>

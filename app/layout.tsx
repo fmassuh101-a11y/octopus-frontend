@@ -12,10 +12,10 @@ import AlertBridge from '../components/oct/AlertBridge'
 const inter = Inter({ subsets: ['latin'], display: 'swap' })
 
 export const metadata: Metadata = {
-  title: 'App Octopus - Marketplace Digital Global',
+  title: 'Octapi - Marketplace Digital Global',
   description: 'Conecta creadores con marcas para tareas de UGC, servicios digitales y más',
   keywords: 'UGC, marketplace, freelance, contenido digital, servicios digitales',
-  appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: 'Octopus' },
+  appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: 'Octapi' },
 }
 
 // Viewport nativo: cubre el notch (safe-area), evita el zoom al enfocar inputs

@@ -30,9 +30,9 @@ function pagoTexto(c: any): string {
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const c = await getContract(params.id)
-  const title = c?.title ? `Contrato: ${c.title} — Octopus` : 'Contrato en Octopus'
-  const description = c ? `${pagoTexto(c)} · Revisalo y aceptalo en Octopus` : 'Contrato de campaña en Octopus'
-  return { title, description, openGraph: { title, description, siteName: 'Octopus' } }
+  const title = c?.title ? `Contrato: ${c.title} — Octapi` : 'Contrato en Octapi'
+  const description = c ? `${pagoTexto(c)} · Revisalo y aceptalo en Octapi` : 'Contrato de campaña en Octapi'
+  return { title, description, openGraph: { title, description, siteName: 'Octapi' } }
 }
 
 export default async function ContractCard({ params }: { params: { id: string } }) {
@@ -52,15 +52,15 @@ export default async function ContractCard({ params }: { params: { id: string } 
             <p className="mt-1 text-xl font-extrabold text-neutral-900">{c ? pagoTexto(c) : '—'}</p>
           </div>
           <p className="mt-4 text-sm leading-relaxed text-neutral-500">
-            Acuerdo de participación con firma electrónica. Ingresá a Octopus para leer el documento completo y aceptarlo.
+            Acuerdo de participación con firma electrónica. Ingresá a Octapi para leer el documento completo y aceptarlo.
           </p>
           <a
             href={`${APP_URL}/contrato/${params.id}`}
             className="mt-5 block w-full rounded-2xl bg-gradient-to-b from-[#22D3EE] to-[#0891B2] py-3.5 text-center font-bold text-white shadow-lg"
           >
-            Revisar y firmar en Octopus
+            Revisar y firmar en Octapi
           </a>
-          <p className="mt-3 text-center text-[11px] text-neutral-400">Octopus actúa como plataforma intermediaria.</p>
+          <p className="mt-3 text-center text-[11px] text-neutral-400">Octapi actúa como plataforma intermediaria.</p>
         </div>
       </div>
     </div>

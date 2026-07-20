@@ -353,7 +353,7 @@ function HomeInner() {
             <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center">
               <span className="text-xl font-black text-white">O</span>
             </div>
-            <span className="text-2xl font-bold">Octopus</span>
+            <span className="text-2xl font-bold">Octapi</span>
           </div>
 
           <div className="flex items-center space-x-4">
@@ -504,7 +504,7 @@ function HomeInner() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="text-white/40 text-sm">
-              © 2024 Octopus. Todos los derechos reservados.
+              © 2024 Octapi. Todos los derechos reservados.
             </div>
             <div className="flex items-center gap-6 text-sm">
               <a href="/terms" className="text-white/40 hover:text-white/70 transition">
