@@ -50,6 +50,20 @@ function emailShell(bodyHtml: string): string {
     </div>`;
 }
 
+// Timeout duro en cada llamada a Resend — sin esto, si Resend se cuelga sin
+// responder, el join del usuario (que espera a este await, ver route.ts)
+// se queda pegado indefinidamente y el botón de "Unirme a la lista" nunca
+// se libera. 8s es de sobra para una API que normalmente responde en <1s.
+async function fetchWithTimeout(url: string, init: RequestInit, ms = 8000): Promise<Response> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, { ...init, signal: ctrl.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // Intenta cada key en orden — si la primera se quedó sin cuota diaria (o
 // cualquier otro error), reintenta automáticamente con la siguiente. Un
 // 429 (rate limit) es la señal típica de "se acabó el límite del día".
@@ -61,7 +75,7 @@ async function sendResendEmail(to: string, subject: string, html: string): Promi
   let lastError = "";
   for (const account of RESEND_ACCOUNTS) {
     try {
-      const res = await fetch("https://api.resend.com/emails", {
+      const res = await fetchWithTimeout("https://api.resend.com/emails", {
         method: "POST",
         headers: { Authorization: `Bearer ${account.key}`, "Content-Type": "application/json" },
         body: JSON.stringify({ from: account.from, to: [to], subject, html }),
@@ -70,7 +84,7 @@ async function sendResendEmail(to: string, subject: string, html: string): Promi
       lastError = (await res.text()).slice(0, 300);
       console.error("[ResendEmail] fallo:", res.status, lastError);
     } catch (e: any) {
-      lastError = e?.message?.slice(0, 200) || "error desconocido";
+      lastError = e?.name === "AbortError" ? "Resend no respondió a tiempo (timeout)" : e?.message?.slice(0, 200) || "error desconocido";
       console.error("[ResendEmail] excepción:", lastError);
     }
   }
@@ -86,7 +100,7 @@ export async function sendResendBatch(emails: Array<{ to: string; subject: strin
   for (const account of RESEND_ACCOUNTS) {
     const payload = emails.map((e) => ({ from: account.from, to: [e.to], subject: e.subject, html: e.html }));
     try {
-      const res = await fetch("https://api.resend.com/emails/batch", {
+      const res = await fetchWithTimeout("https://api.resend.com/emails/batch", {
         method: "POST",
         headers: { Authorization: `Bearer ${account.key}`, "Content-Type": "application/json" },
         body: JSON.stringify(payload),

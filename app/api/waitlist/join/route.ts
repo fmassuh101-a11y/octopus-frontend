@@ -7,16 +7,22 @@ import { sendWelcomeEmail } from "@/lib/waitlistEmail";
 // desde el server; la tabla tiene RLS cerrado así que nadie puede leerla del cliente.
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
-const sb = (path: string, init: RequestInit = {}) =>
-  fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+// timeout duro — sin esto, si Supabase se cuelga, esta ruta nunca responde
+// y el botón de "Unirme a la lista" del usuario queda girando para siempre.
+const sb = (path: string, init: RequestInit = {}) => {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 8000);
+  return fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     ...init,
+    signal: ctrl.signal,
     headers: {
       Authorization: `Bearer ${SERVICE_KEY}`,
       apikey: SERVICE_KEY,
       "Content-Type": "application/json",
       ...(init.headers || {}),
     },
-  });
+  }).finally(() => clearTimeout(timer));
+};
 
 // Antes esto dejaba pasar cosas como "algo@.com" o "algo@dominio..com" — se
 // exige que cada parte del dominio sea una etiqueta real (sin empezar/terminar

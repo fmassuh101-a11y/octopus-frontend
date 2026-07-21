@@ -95,11 +95,17 @@ function WaitlistInner() {
   const join = async () => {
     setError('')
     setBusy(true)
+    // sin esto, si el servidor se cuelga (ej. esperando al email) el botón
+    // se queda girando para siempre — con AbortController cortamos el
+    // pedido a los 20s pase lo que pase y liberamos el botón.
+    const timeout = new AbortController()
+    const timer = setTimeout(() => timeout.abort(), 20000)
     try {
       const res = await fetch('/api/waitlist/join', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role, email, name, experience, country, companyName, niche, marketingExperience: mkt, source, message, ref: refId }),
+        signal: timeout.signal,
       })
       const data = await res.json()
       if (data.ok && data.id) {
@@ -109,6 +115,7 @@ function WaitlistInner() {
         loadStats()
       } else setError(data.error || 'No se pudo guardar. Prueba de nuevo.')
     } catch { setError('No se pudo guardar. Prueba de nuevo.') }
+    clearTimeout(timer)
     setBusy(false)
   }
 
