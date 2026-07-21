@@ -153,7 +153,7 @@ function WaitlistInner() {
           <div className="flex items-center gap-2">
             <button
               onClick={scrollToCompanies}
-              className="rounded-lg bg-emerald-400 px-4 py-2.5 text-sm font-bold text-black shadow-lg shadow-emerald-500/30 transition hover:bg-emerald-300 hover:scale-105 sm:px-5 sm:text-base"
+              className="rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-black shadow-lg transition hover:scale-105 hover:bg-white/90 sm:px-5 sm:text-base"
             >
               Empresas
             </button>
