@@ -33,6 +33,13 @@ interface Contract {
   company_signed_at?: string
   creator_name?: string
   creator_id: string
+  application_id?: string
+  handle_request?: {
+    id: string
+    handles: Array<{ platform: string; handle: string; verified: boolean; verified_at: string | null; connected_username: string | null }>
+    status: string
+    company_approved_at: string | null
+  } | null
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }> = {
@@ -70,30 +77,6 @@ const buildProfileUrl = (platform: string, handle: string): string => {
     default:
       return '#'
   }
-}
-
-// Simple analytics display based on handle
-const HandleAnalytics = ({ platform, handle }: { platform: string; handle: string }) => {
-  const profileUrl = buildProfileUrl(platform, handle)
-
-  return (
-    <div className="mt-2 p-3 bg-neutral-800/50 rounded-lg">
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-neutral-400">Perfil público:</span>
-        <a
-          href={profileUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-emerald-400 hover:text-emerald-300"
-        >
-          Ver perfil →
-        </a>
-      </div>
-      <p className="text-xs text-neutral-500 mt-1">
-        Estadísticas avanzadas disponibles si el creador conectó su cuenta via OAuth
-      </p>
-    </div>
-  )
 }
 
 export default function CompanyContractsPage() {
@@ -213,13 +196,30 @@ export default function CompanyContractsPage() {
         }
       }
 
+      // handle_requests trae el estado REAL de verificación (aprobado por
+      // la empresa + verificado contra la cuenta conectada del creador) —
+      // sin esto, la insignia "Verificados" de abajo mentía siempre.
+      const appIds = Array.from(new Set(contractsData.map((c: any) => c.application_id).filter(Boolean)))
+      let handleRequestsMap = new Map<string, any>()
+      if (appIds.length > 0) {
+        const hrRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/handle_requests?application_id=in.(${appIds.join(',')})&select=*`,
+          { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+        )
+        if (hrRes.ok) {
+          const rows = await hrRes.json()
+          rows.forEach((r: any) => handleRequestsMap.set(r.application_id, r))
+        }
+      }
+
       const enrichedContracts = contractsData.map((c: any) => ({
         ...c,
         deliverables: typeof c.deliverables === 'string' ? JSON.parse(c.deliverables) : c.deliverables,
         usage_rights: typeof c.usage_rights === 'string' ? JSON.parse(c.usage_rights) : c.usage_rights,
         creator_handles: typeof c.creator_handles === 'string' ? JSON.parse(c.creator_handles) : c.creator_handles,
         exclusivity_competitors: typeof c.exclusivity_competitors === 'string' ? JSON.parse(c.exclusivity_competitors) : c.exclusivity_competitors,
-        creator_name: creatorsMap.get(c.creator_id) || 'Creador'
+        creator_name: creatorsMap.get(c.creator_id) || 'Creador',
+        handle_request: handleRequestsMap.get(c.application_id) || null
       }))
 
       setContracts(enrichedContracts)
@@ -237,6 +237,32 @@ export default function CompanyContractsPage() {
       month: 'short',
       year: 'numeric'
     })
+  }
+
+  const [approvingHandles, setApprovingHandles] = useState(false)
+
+  // La empresa aprueba los handles que escribió el creador — recién ahí el
+  // creador puede verificarlos (conectar su cuenta y que coincida).
+  const approveHandles = async (contract: Contract) => {
+    if (!contract.handle_request?.id || !user?.id) return
+    setApprovingHandles(true)
+    try {
+      const token = localStorage.getItem('sb-access-token')
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/handle_requests?id=eq.${contract.handle_request.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY },
+        body: JSON.stringify({ company_approved_at: new Date().toISOString(), company_approved_by: user.id }),
+      })
+      if (res.ok) {
+        const updated = { ...contract.handle_request, company_approved_at: new Date().toISOString() }
+        setContracts(prev => prev.map(c => c.id === contract.id ? { ...c, handle_request: updated } : c))
+        setSelectedContract(prev => prev && prev.id === contract.id ? { ...prev, handle_request: updated } : prev)
+      }
+    } catch (err) {
+      console.error('Error approving handles:', err)
+    } finally {
+      setApprovingHandles(false)
+    }
   }
 
   const cancelContract = async (contractId: string, reason: string) => {
@@ -487,36 +513,69 @@ export default function CompanyContractsPage() {
                 </p>
               </div>
 
-              {/* Creator Handles - THE KEY SECTION */}
+              {/* Handles del creador — estado REAL, no una insignia que
+                  siempre decía "Verificados" sin verificar nada. */}
               {selectedContract.creator_handles && selectedContract.creator_handles.length > 0 && (
                 <div>
-                  <h4 className="font-semibold mb-3 flex items-center gap-2">
-                    <span>Handles del Creador</span>
-                    <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded text-xs">Verificados</span>
-                  </h4>
+                  <h4 className="font-semibold mb-3">Handles del Creador</h4>
+
+                  {!selectedContract.handle_request?.company_approved_at ? (
+                    <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mb-3">
+                      <p className="text-sm text-amber-400 mb-3">
+                        Todavía no aprobaste estos handles. Hasta que lo hagas, el creador no puede verificar sus cuentas.
+                      </p>
+                      <button
+                        onClick={() => approveHandles(selectedContract)}
+                        disabled={approvingHandles || !selectedContract.handle_request}
+                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
+                      >
+                        {approvingHandles ? 'Aprobando…' : 'Aprobar handles'}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 mb-3">
+                      <p className="text-sm text-emerald-400">
+                        Aprobados el {formatDate(selectedContract.handle_request.company_approved_at)} — esperando que el creador verifique sus cuentas.
+                      </p>
+                    </div>
+                  )}
+
                   <div className="space-y-3">
-                    {selectedContract.creator_handles.map((h: any, i: number) => (
-                      <div key={i} className="bg-neutral-800 rounded-xl p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <span className="text-2xl">{PLATFORM_ICONS[h.platform] || ''}</span>
-                            <div>
-                              <p className="font-semibold">{h.handle}</p>
-                              <p className="text-xs text-neutral-500 capitalize">{h.platform}</p>
+                    {selectedContract.creator_handles.map((h: any, i: number) => {
+                      const verifiedEntry = selectedContract.handle_request?.handles?.find((x: any) => x.platform === h.platform)
+                      const isVerified = verifiedEntry?.verified === true
+                      const isMismatch = verifiedEntry && verifiedEntry.connected_username && !verifiedEntry.verified
+                      return (
+                        <div key={i} className="bg-neutral-800 rounded-xl p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <span className="text-2xl">{PLATFORM_ICONS[h.platform] || ''}</span>
+                              <div>
+                                <p className="font-semibold">{h.handle}</p>
+                                <p className="text-xs text-neutral-500 capitalize">{h.platform}</p>
+                              </div>
                             </div>
+                            <a
+                              href={buildProfileUrl(h.platform, h.handle)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors"
+                            >
+                              Ver Perfil
+                            </a>
                           </div>
-                          <a
-                            href={buildProfileUrl(h.platform, h.handle)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors"
-                          >
-                            Ver Perfil
-                          </a>
+                          <div className="mt-2 p-3 bg-neutral-800/50 rounded-lg text-sm">
+                            {isVerified ? (
+                              <span className="text-emerald-400 font-medium">✓ Verificado — coincide con la cuenta que el creador conectó</span>
+                            ) : isMismatch ? (
+                              <span className="text-red-400 font-medium">⚠ El handle no coincide con la cuenta conectada (@{verifiedEntry.connected_username}) — revisar antes de pagar</span>
+                            ) : (
+                              <span className="text-neutral-500">Sin verificar — el creador todavía no conectó esta cuenta</span>
+                            )}
+                          </div>
                         </div>
-                        <HandleAnalytics platform={h.platform} handle={h.handle} />
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
               )}

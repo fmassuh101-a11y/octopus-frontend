@@ -39,6 +39,12 @@ interface Contract {
   application_id?: string
   company_name?: string
   gig_title?: string
+  handle_request?: {
+    id: string
+    handles: Array<{ platform: string; handle: string; verified: boolean; verified_at: string | null; connected_username: string | null }>
+    status: string
+    company_approved_at: string | null
+  } | null
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }> = {
@@ -76,6 +82,44 @@ export default function CreatorContractsPage() {
   const [handles, setHandles] = useState<Record<string, string>>({})
   const [accepting, setAccepting] = useState(false)
   const [filter, setFilter] = useState<'all' | 'pending' | 'active'>('all')
+  const [verifyingId, setVerifyingId] = useState<string | null>(null)
+  const [verifyResult, setVerifyResult] = useState<Record<string, { platform: string; result: string }[]>>({})
+
+  // Compara los handles conectados de verdad (OAuth) contra lo que el
+  // creador escribió para este contrato. Solo se puede correr después de
+  // que la empresa aprobó los handles.
+  const verifyHandles = async (contract: Contract) => {
+    if (!contract.application_id) return
+    setVerifyingId(contract.id)
+    try {
+      const token = localStorage.getItem('sb-access-token')
+      const res = await fetch('/api/handle-requests/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ applicationId: contract.application_id }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setVerifyResult(prev => ({ ...prev, [contract.id]: data.results }))
+        // refresca el estado local para que se vea el resultado sin recargar la página
+        setContracts(prev => prev.map(c => {
+          if (c.id !== contract.id || !c.handle_request) return c
+          const handles = c.handle_request.handles.map((h: any) => {
+            const r = data.results.find((x: any) => x.platform === h.platform)
+            return r ? { ...h, verified: r.result === 'verified', connected_username: r.result !== 'not_connected' ? h.connected_username : h.connected_username } : h
+          })
+          return { ...c, handle_request: { ...c.handle_request, handles } }
+        }))
+      } else {
+        alert(data.error || 'No se pudo verificar')
+      }
+    } catch (err) {
+      console.error('Error verifying handles:', err)
+      alert('No se pudo verificar')
+    } finally {
+      setVerifyingId(null)
+    }
+  }
 
   useEffect(() => {
     checkAuth()
@@ -195,6 +239,21 @@ export default function CreatorContractsPage() {
         }
       }
 
+      // handle_requests dice si la empresa ya aprobó los handles — recién
+      // ahí este creador puede verificar sus cuentas conectadas.
+      const appIds = Array.from(new Set(contractsData.map((c: any) => c.application_id).filter(Boolean)))
+      let handleRequestsMap = new Map<string, any>()
+      if (appIds.length > 0) {
+        const hrRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/handle_requests?application_id=in.(${appIds.join(',')})&select=*`,
+          { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+        )
+        if (hrRes.ok) {
+          const rows = await hrRes.json()
+          rows.forEach((r: any) => handleRequestsMap.set(r.application_id, r))
+        }
+      }
+
       // Enrich contracts with company and gig info
       const enrichedContracts = contractsData.map((c: any) => ({
         ...c,
@@ -202,6 +261,7 @@ export default function CreatorContractsPage() {
         usage_rights: typeof c.usage_rights === 'string' ? JSON.parse(c.usage_rights) : c.usage_rights,
         creator_handles: typeof c.creator_handles === 'string' ? JSON.parse(c.creator_handles) : c.creator_handles,
         exclusivity_competitors: typeof c.exclusivity_competitors === 'string' ? JSON.parse(c.exclusivity_competitors) : c.exclusivity_competitors,
+        handle_request: handleRequestsMap.get(c.application_id) || null,
         company_name: companiesMap.get(c.company_id) || 'Empresa',
         gig_title: gigsMap.get(c.gig_id) || c.title
       }))
@@ -275,6 +335,38 @@ export default function CreatorContractsPage() {
       })
 
       if (!response.ok) throw new Error('Error al aceptar contrato')
+
+      // Deja el registro en handle_requests (tabla que ya existía, ahora
+      // conectada de verdad) para que la empresa pueda aprobar los handles
+      // y, recién después, este mismo creador pueda verificar sus cuentas
+      // conectadas contra lo que acaba de escribir acá.
+      if (selectedContract.application_id) {
+        try {
+          const handlesForRequest = creatorHandles
+            .filter(h => h.platform !== 'ugc')
+            .map(h => ({ platform: h.platform, handle: h.handle, verified: false, verified_at: null, connected_username: null }))
+          if (handlesForRequest.length > 0) {
+            const existing = await fetch(
+              `${SUPABASE_URL}/rest/v1/handle_requests?application_id=eq.${selectedContract.application_id}&select=id`,
+              { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+            ).then(r => r.ok ? r.json() : [])
+            const body = JSON.stringify({ handles: handlesForRequest, status: 'submitted', submitted_at: new Date().toISOString() })
+            if (existing?.[0]?.id) {
+              await fetch(`${SUPABASE_URL}/rest/v1/handle_requests?id=eq.${existing[0].id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY },
+                body,
+              })
+            } else {
+              await fetch(`${SUPABASE_URL}/rest/v1/handle_requests`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY },
+                body: JSON.stringify({ application_id: selectedContract.application_id, ...JSON.parse(body) }),
+              })
+            }
+          }
+        } catch { /* no bloquea la aceptación del contrato si esto falla */ }
+      }
 
       // Send notification message to company
       // First get the application_id for the conversation
@@ -485,6 +577,45 @@ export default function CreatorContractsPage() {
                     </svg>
                     <span className="text-sm font-medium">Entregar Contenido</span>
                   </div>
+                )}
+
+                {/* Verificación de cuentas — solo aparece una vez que la
+                    empresa aprobó los handles que mandaste al aceptar */}
+                {contract.status === 'accepted' && contract.handle_request?.company_approved_at && (
+                  (() => {
+                    const allVerified = contract.handle_request!.handles.length > 0 && contract.handle_request!.handles.every(h => h.verified)
+                    const anyMismatch = contract.handle_request!.handles.some(h => h.connected_username && !h.verified)
+                    if (allVerified) {
+                      return (
+                        <div className="mt-3 flex items-center gap-2 text-emerald-600 bg-emerald-500/10 border border-emerald-500/30 rounded-xl px-3 py-2">
+                          <span className="text-sm font-medium">✓ Tus cuentas están verificadas para este contrato</span>
+                        </div>
+                      )
+                    }
+                    return (
+                      <div className="mt-3 rounded-xl px-3 py-2.5 bg-cyan-500/10 border border-cyan-500/30">
+                        <p className="text-sm text-cyan-700 mb-2">
+                          {anyMismatch
+                            ? 'Uno de tus handles no coincide con la cuenta que tienes conectada — revísalo antes de entregar contenido.'
+                            : 'La empresa ya aprobó tus handles. Conecta tus cuentas para verificarlos.'}
+                        </p>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); verifyHandles(contract) }}
+                          disabled={verifyingId === contract.id}
+                          className="px-3 py-1.5 bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-white rounded-lg text-xs font-medium transition-colors"
+                        >
+                          {verifyingId === contract.id ? 'Verificando…' : 'Verificar mis cuentas'}
+                        </button>
+                        <Link
+                          href="/creator/analytics"
+                          onClick={(e) => e.stopPropagation()}
+                          className="ml-2 text-xs font-medium text-cyan-700 underline underline-offset-2"
+                        >
+                          Conectar cuentas
+                        </Link>
+                      </div>
+                    )
+                  })()
                 )}
               </button>
             )
