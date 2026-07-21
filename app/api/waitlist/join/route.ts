@@ -84,12 +84,12 @@ export async function POST(request: NextRequest) {
         });
       } else {
         console.error("[Waitlist] insert:", ins.status, errText.slice(0, 200));
-        return NextResponse.json({ error: "No se pudo guardar. Probá de nuevo." }, { status: 500 });
+        return NextResponse.json({ error: "No se pudo guardar. Prueba de nuevo." }, { status: 500 });
       }
     }
     if (!ins.ok) {
       console.error("[Waitlist] insert:", ins.status, (await ins.text()).slice(0, 200));
-      return NextResponse.json({ error: "No se pudo guardar. Probá de nuevo." }, { status: 500 });
+      return NextResponse.json({ error: "No se pudo guardar. Prueba de nuevo." }, { status: 500 });
     }
     const created = (await ins.json())?.[0];
 
