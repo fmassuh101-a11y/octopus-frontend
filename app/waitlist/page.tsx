@@ -153,13 +153,13 @@ function WaitlistInner() {
           <div className="flex items-center gap-2">
             <button
               onClick={scrollToCompanies}
-              className="rounded-lg px-4 py-2 text-sm font-medium text-white/90 backdrop-blur transition hover:bg-white/10"
+              className="rounded-lg bg-emerald-400 px-4 py-2.5 text-sm font-bold text-black shadow-lg shadow-emerald-500/30 transition hover:bg-emerald-300 hover:scale-105 sm:px-5 sm:text-base"
             >
               Empresas
             </button>
             <button
               onClick={() => setShowPass(true)}
-              className="rounded-lg bg-white/10 px-4 py-2 text-sm font-medium text-white/90 backdrop-blur transition hover:bg-white/20"
+              className="rounded-lg bg-white/10 px-4 py-2.5 text-sm font-medium text-white/90 backdrop-blur transition hover:bg-white/20"
             >
               Acceso
             </button>
