@@ -3,16 +3,24 @@
 // Archivo separado de lib/waitlist.ts a propósito: ese lo importa el
 // middleware (edge runtime) y este solo lo usan rutas API (Node runtime).
 
-// Dos keys posibles: RESEND_API_KEY (principal) y RESEND_API_KEY_2 (cuenta
-// de respaldo, opcional). El plan gratis de Resend tope 100 emails/día — el
-// email de bienvenida es automático y corre TODOS LOS DÍAS mientras la
-// waitlist esté activa, así que si algún día se pasa de 100 registros
-// reales, la segunda key entra sola sin que nadie tenga que hacer nada.
-// Sin RESEND_API_KEY_2 configurada, esto se comporta exactamente igual que
-// antes (una sola key).
-const RESEND_KEYS = [process.env.RESEND_API_KEY, process.env.RESEND_API_KEY_2].filter(Boolean) as string[];
-// Sin dominio propio verificado, Resend permite enviar desde onboarding@resend.dev
-const FROM = process.env.RESEND_FROM || "Octapi <onboarding@resend.dev>";
+// Dos cuentas posibles: la principal (RESEND_API_KEY) y una de respaldo
+// (RESEND_API_KEY_2, opcional). El plan gratis de Resend tope 100
+// emails/día — el email de bienvenida es automático y corre TODOS LOS DÍAS
+// mientras la waitlist esté activa, así que si algún día se pasa de 100
+// registros reales, la segunda cuenta entra sola sin que nadie haga nada.
+// Cada cuenta necesita SU PROPIO remitente verificado — Resend no deja
+// verificar el mismo dominio exacto en dos cuentas distintas, así que la
+// segunda cuenta usa un subdominio propio (ej. updates.octapiapp.com) con
+// su propia variable RESEND_FROM_2. Sin RESEND_API_KEY_2/RESEND_FROM_2
+// configuradas, esto se comporta igual que con una sola cuenta.
+const RESEND_ACCOUNTS: Array<{ key: string; from: string }> = [
+  process.env.RESEND_API_KEY
+    ? { key: process.env.RESEND_API_KEY, from: process.env.RESEND_FROM || "Octapi <onboarding@resend.dev>" }
+    : null,
+  process.env.RESEND_API_KEY_2 && process.env.RESEND_FROM_2
+    ? { key: process.env.RESEND_API_KEY_2, from: process.env.RESEND_FROM_2 }
+    : null,
+].filter((a): a is { key: string; from: string } => a !== null);
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://octopus-frontend-tau.vercel.app";
 
 // SEGURIDAD: el celular de Felipe SOLO va en el email a empresas, y SOLO
@@ -49,14 +57,14 @@ function emailShell(bodyHtml: string): string {
 // en el panel admin — antes quedaba solo en los logs de Vercel, que Felipe
 // no puede revisar.
 async function sendResendEmail(to: string, subject: string, html: string): Promise<{ ok: boolean; error?: string }> {
-  if (!RESEND_KEYS.length) return { ok: false, error: "Falta RESEND_API_KEY en Vercel" };
+  if (!RESEND_ACCOUNTS.length) return { ok: false, error: "Falta RESEND_API_KEY en Vercel" };
   let lastError = "";
-  for (const key of RESEND_KEYS) {
+  for (const account of RESEND_ACCOUNTS) {
     try {
       const res = await fetch("https://api.resend.com/emails", {
         method: "POST",
-        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ from: FROM, to: [to], subject, html }),
+        headers: { Authorization: `Bearer ${account.key}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ from: account.from, to: [to], subject, html }),
       });
       if (res.ok) return { ok: true };
       lastError = (await res.text()).slice(0, 300);
@@ -71,16 +79,16 @@ async function sendResendEmail(to: string, subject: string, html: string): Promi
 
 // Igual que sendResendEmail pero para el endpoint de batch (hasta 100 por
 // request) que usan el broadcast y la bienvenida retroactiva. Si la
-// primera key falla, reintenta el batch completo con la siguiente.
+// primera cuenta falla, reintenta el batch completo con la siguiente.
 export async function sendResendBatch(emails: Array<{ to: string; subject: string; html: string }>): Promise<{ ok: boolean; error?: string }> {
   if (!emails.length) return { ok: true };
-  const payload = emails.map((e) => ({ from: FROM, to: [e.to], subject: e.subject, html: e.html }));
   let lastError = "Falta RESEND_API_KEY en Vercel";
-  for (const key of RESEND_KEYS) {
+  for (const account of RESEND_ACCOUNTS) {
+    const payload = emails.map((e) => ({ from: account.from, to: [e.to], subject: e.subject, html: e.html }));
     try {
       const res = await fetch("https://api.resend.com/emails/batch", {
         method: "POST",
-        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+        headers: { Authorization: `Bearer ${account.key}`, "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       if (res.ok) return { ok: true };
