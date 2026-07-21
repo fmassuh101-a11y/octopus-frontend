@@ -9,6 +9,21 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { readCache, writeCache } from '@/lib/useCachedFetch'
 import { Music2, Instagram, Youtube, Clapperboard, Smartphone, BarChart3, ClipboardList, Package, MessageCircle, User, type LucideIcon } from 'lucide-react'
 
+const TIKTOK_CLIENT_KEY = process.env.NEXT_PUBLIC_TIKTOK_CLIENT_KEY || 'aw5n2omdzbjx4xf8'
+
+// Un solo toque: del mensaje "verifica tus cuentas" directo a la pantalla de
+// TikTok pidiendo permiso — nada de mandar a la persona a buscar un botón
+// en otra pantalla. Al volver, la conexión se auto-verifica sola (ver
+// app/auth/tiktok/callback/page.tsx) contra cualquier contrato pendiente.
+function connectTikTokNow() {
+  const state = Math.random().toString(36).substring(2, 15)
+  localStorage.setItem('tiktok_csrf_state', state)
+  localStorage.setItem('tiktok_oauth_state', state)
+  const redirectUri = encodeURIComponent('https://octopus-frontend-tau.vercel.app/')
+  const scope = encodeURIComponent('user.info.basic,user.info.profile,user.info.stats,video.list')
+  window.location.href = `https://www.tiktok.com/v2/auth/authorize/?client_key=${TIKTOK_CLIENT_KEY}&response_type=code&scope=${scope}&redirect_uri=${redirectUri}&state=${state}&disable_auto_auth=1`
+}
+
 interface Contract {
   id: string
   title: string
@@ -82,44 +97,6 @@ export default function CreatorContractsPage() {
   const [handles, setHandles] = useState<Record<string, string>>({})
   const [accepting, setAccepting] = useState(false)
   const [filter, setFilter] = useState<'all' | 'pending' | 'active'>('all')
-  const [verifyingId, setVerifyingId] = useState<string | null>(null)
-  const [verifyResult, setVerifyResult] = useState<Record<string, { platform: string; result: string }[]>>({})
-
-  // Compara los handles conectados de verdad (OAuth) contra lo que el
-  // creador escribió para este contrato. Solo se puede correr después de
-  // que la empresa aprobó los handles.
-  const verifyHandles = async (contract: Contract) => {
-    if (!contract.application_id) return
-    setVerifyingId(contract.id)
-    try {
-      const token = localStorage.getItem('sb-access-token')
-      const res = await fetch('/api/handle-requests/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ applicationId: contract.application_id }),
-      })
-      const data = await res.json()
-      if (res.ok) {
-        setVerifyResult(prev => ({ ...prev, [contract.id]: data.results }))
-        // refresca el estado local para que se vea el resultado sin recargar la página
-        setContracts(prev => prev.map(c => {
-          if (c.id !== contract.id || !c.handle_request) return c
-          const handles = c.handle_request.handles.map((h: any) => {
-            const r = data.results.find((x: any) => x.platform === h.platform)
-            return r ? { ...h, verified: r.result === 'verified', connected_username: r.result !== 'not_connected' ? h.connected_username : h.connected_username } : h
-          })
-          return { ...c, handle_request: { ...c.handle_request, handles } }
-        }))
-      } else {
-        alert(data.error || 'No se pudo verificar')
-      }
-    } catch (err) {
-      console.error('Error verifying handles:', err)
-      alert('No se pudo verificar')
-    } finally {
-      setVerifyingId(null)
-    }
-  }
 
   useEffect(() => {
     checkAuth()
@@ -580,42 +557,25 @@ export default function CreatorContractsPage() {
                 )}
 
                 {/* Verificación de cuentas — solo aparece una vez que la
-                    empresa aprobó los handles que mandaste al aceptar */}
+                    empresa aprobó los handles que mandaste al aceptar. Un
+                    solo botón: lo apretás y va directo a la pantalla de
+                    TikTok pidiendo permiso — se verifica sola al volver. */}
                 {contract.status === 'accepted' && contract.handle_request?.company_approved_at && (
-                  (() => {
-                    const allVerified = contract.handle_request!.handles.length > 0 && contract.handle_request!.handles.every(h => h.verified)
-                    const anyMismatch = contract.handle_request!.handles.some(h => h.connected_username && !h.verified)
-                    if (allVerified) {
-                      return (
-                        <div className="mt-3 flex items-center gap-2 text-emerald-600 bg-emerald-500/10 border border-emerald-500/30 rounded-xl px-3 py-2">
-                          <span className="text-sm font-medium">✓ Tus cuentas están verificadas para este contrato</span>
-                        </div>
-                      )
-                    }
-                    return (
-                      <div className="mt-3 rounded-xl px-3 py-2.5 bg-cyan-500/10 border border-cyan-500/30">
-                        <p className="text-sm text-cyan-700 mb-2">
-                          {anyMismatch
-                            ? 'Uno de tus handles no coincide con la cuenta que tienes conectada — revísalo antes de entregar contenido.'
-                            : 'La empresa ya aprobó tus handles. Conecta tus cuentas para verificarlos.'}
-                        </p>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); verifyHandles(contract) }}
-                          disabled={verifyingId === contract.id}
-                          className="px-3 py-1.5 bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-white rounded-lg text-xs font-medium transition-colors"
-                        >
-                          {verifyingId === contract.id ? 'Verificando…' : 'Verificar mis cuentas'}
-                        </button>
-                        <Link
-                          href="/creator/analytics"
-                          onClick={(e) => e.stopPropagation()}
-                          className="ml-2 text-xs font-medium text-cyan-700 underline underline-offset-2"
-                        >
-                          Conectar cuentas
-                        </Link>
-                      </div>
-                    )
-                  })()
+                  contract.handle_request!.handles.length > 0 && contract.handle_request!.handles.every(h => h.verified) ? (
+                    <div className="mt-3 flex items-center gap-2 text-emerald-600 bg-emerald-500/10 border border-emerald-500/30 rounded-xl px-3 py-2">
+                      <span className="text-sm font-medium">✓ Tus cuentas están verificadas para este contrato</span>
+                    </div>
+                  ) : (
+                    <div className="mt-3 rounded-xl px-3 py-2.5 bg-cyan-500/10 border border-cyan-500/30">
+                      <p className="text-sm text-cyan-700 mb-2">La empresa ya aprobó tus handles.</p>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); connectTikTokNow() }}
+                        className="px-3 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-white rounded-lg text-xs font-medium transition-colors"
+                      >
+                        Verifica tus cuentas
+                      </button>
+                    </div>
+                  )
                 )}
               </button>
             )
