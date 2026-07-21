@@ -2,9 +2,12 @@
 -- creador manda handles -> empresa los aprueba -> recién ahí el creador puede
 -- verificar (conectar OAuth) esas cuentas. Aditivo, no rompe nada existente.
 
+-- company_approved_by referencia auth.users(id) directo — NO
+-- public.profiles(id), que es un UUID propio random sin relación con el id
+-- del usuario logueado (ese coincide con profiles.user_id).
 ALTER TABLE public.handle_requests
   ADD COLUMN IF NOT EXISTS company_approved_at TIMESTAMPTZ,
-  ADD COLUMN IF NOT EXISTS company_approved_by UUID REFERENCES public.profiles(id),
+  ADD COLUMN IF NOT EXISTS company_approved_by UUID REFERENCES auth.users(id),
   ADD COLUMN IF NOT EXISTS contract_id UUID REFERENCES public.contracts(id) ON DELETE CASCADE;
 
 -- IMPORTANTE: la tabla exigía application_id (NOT NULL) — pero los

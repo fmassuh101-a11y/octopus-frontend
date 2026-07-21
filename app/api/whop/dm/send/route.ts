@@ -6,7 +6,7 @@ import { ensureWhopIdentity, CHAT_SCOPES } from "@/lib/whopIdentity";
 import { shieldAsync } from "@/lib/shield";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/config/supabase";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://octopus-frontend-tau.vercel.app";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://octapiapp.com";
 
 /**
  * POST /api/whop/dm/send { userId, content, gigId? } — envía un mensaje POR WHOP

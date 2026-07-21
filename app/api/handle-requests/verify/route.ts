@@ -74,7 +74,9 @@ export async function POST(request: NextRequest) {
   }
 
   // 3. Bio del creador — UNA sola vez, se usa para todas las solicitudes.
-  const profRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}&select=bio`, { headers: H });
+  // ojo: profiles.id es un UUID propio random, NO el id del usuario logueado
+  // — el que coincide con auth.users(id)/user.id es profiles.user_id.
+  const profRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=bio`, { headers: H });
   const profile = (profRes.ok ? await profRes.json() : [])[0];
   let bio = profile?.bio;
   if (typeof bio === "string") { try { bio = JSON.parse(bio); } catch { bio = {}; } }

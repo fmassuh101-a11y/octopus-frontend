@@ -223,7 +223,7 @@ export default function CreateContractModal({
             // dominio (antes, con window.location.origin, a veces quedaba
             // en un dominio distinto al que la otra persona tenía abierto y
             // Safari lo trataba como "salir de la app").
-            content: `Te envié un contrato: "${title}" (${pagoTxt}). Revísalo y acéptalo aquí: ${process.env.NEXT_PUBLIC_APP_URL || 'https://octopus-frontend-tau.vercel.app'}/k/${contract?.id || ""}`,
+            content: `Te envié un contrato: "${title}" (${pagoTxt}). Revísalo y acéptalo aquí: ${process.env.NEXT_PUBLIC_APP_URL || 'https://octapiapp.com'}/k/${contract?.id || ""}`,
           })
         })
         const dmData = await dmRes.json().catch(() => ({}))

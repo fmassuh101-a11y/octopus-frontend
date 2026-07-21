@@ -86,7 +86,7 @@ export default function WhopPayouts() {
     BalanceElement, WithdrawButtonElement, WithdrawalsElement,
   } = mod
 
-  const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://octopus-frontend-tau.vercel.app'}/creator/wallet?verify=done`
+  const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://octapiapp.com'}/creator/wallet?verify=done`
 
   return (
     <Elements elements={elements}>

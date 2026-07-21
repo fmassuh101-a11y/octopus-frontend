@@ -6,7 +6,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 // tarjeta linda, sin abrir el resto de la app (el muro de waitlist la permite).
 // Muestra lo mínimo: imagen, título, tipo y CPM — y CTA a Octapi.
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://octopus-frontend-tau.vercel.app'
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://octapiapp.com'
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 
 async function getGig(id: string) {

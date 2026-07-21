@@ -5,7 +5,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 // lo mínimo (título + compensación + partes por nombre) con branding lindo.
 // El documento completo vive en /contrato/<id> (requiere sesión).
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://octopus-frontend-tau.vercel.app'
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://octapiapp.com'
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 
 async function getContract(id: string) {

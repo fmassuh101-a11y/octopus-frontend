@@ -152,14 +152,17 @@ export default function ContratoDocumento() {
         }
       } catch (e) { console.error('[handle_requests] error:', e) }
 
-      // avisar a la empresa por el chat de Whop
+      // avisar a la empresa por el chat de Whop, CON link directo a este
+      // mismo contrato — un toque desde el mensaje y ya está en la pantalla
+      // de "Aprobar handles", sin tener que ir a buscarlo a otro lado.
       const handlesText = creatorHandles.map((h) => `${h.platform}: ${h.handle}`).join(', ')
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://octapiapp.com'
       fetch('/api/whop/dm/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           userId: contract.company_id,
-          content: `Firmé el contrato "${contract.title}".${handlesText ? `\nMis handles: ${handlesText}` : ''}`,
+          content: `Firmé el contrato "${contract.title}".${handlesText ? `\nMis handles: ${handlesText}` : ''}\nApruébalos acá: ${appUrl}/contrato/${id}`,
         }),
       }).catch(() => {})
       toast('Contrato firmado')

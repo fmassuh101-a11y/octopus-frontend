@@ -59,8 +59,8 @@ export async function POST(request: NextRequest) {
         const accountLink = await whopClient.accountLinks.create({
           company_id: existingCompanyId,
           use_case: "payouts_portal",
-          return_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://octopus-frontend-tau.vercel.app'}/creator/wallet`,
-          refresh_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://octopus-frontend-tau.vercel.app'}/creator/wallet/setup`,
+          return_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://octapiapp.com'}/creator/wallet`,
+          refresh_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://octapiapp.com'}/creator/wallet/setup`,
         });
 
         return NextResponse.json({
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
     // Create new sub-company in Whop with minimal required fields
     console.log("[Setup Creator] Creating new sub-company...");
     const uniqueTitle = fullName || `Creator_${userId.slice(0, 8)}`;
-    const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://octopus-frontend-tau.vercel.app';
+    const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://octapiapp.com';
 
     let company;
     try {

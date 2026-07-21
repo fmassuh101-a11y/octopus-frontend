@@ -21,7 +21,7 @@ const RESEND_ACCOUNTS: Array<{ key: string; from: string }> = [
     ? { key: process.env.RESEND_API_KEY_2, from: process.env.RESEND_FROM_2 }
     : null,
 ].filter((a): a is { key: string; from: string } => a !== null);
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://octopus-frontend-tau.vercel.app";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://octapiapp.com";
 
 // SEGURIDAD: el celular de Felipe SOLO va en el email a empresas, y SOLO
 // se lee desde una variable de entorno de Vercel — nunca hardcodeado acá,

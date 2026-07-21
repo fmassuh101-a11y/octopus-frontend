@@ -342,33 +342,20 @@ export default function CompanyContractsPage() {
         throw new Error(`Error al cancelar contrato: ${response.status}`)
       }
 
-      // Send notification message to creator
+      // Avisar al creador por el chat de Whop — antes esto le pegaba a una
+      // tabla "messages" de un sistema de chat viejo que ya no se usa para
+      // nada (el resto de la app manda todo por Whop DM), así que el aviso
+      // nunca llegaba a ningún lado.
       const contract = selectedContract
       if (contract) {
-        // Find the application ID for this creator-company conversation
-        const appsRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/applications?company_id=eq.${user.id}&creator_id=eq.${contract.creator_id}&status=eq.accepted&select=id&limit=1`,
-          { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
-        )
-        if (appsRes.ok) {
-          const [app] = await appsRes.json()
-          if (app) {
-            await fetch(`${SUPABASE_URL}/rest/v1/messages`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-                'apikey': SUPABASE_ANON_KEY
-              },
-              body: JSON.stringify({
-                conversation_id: app.id,
-                sender_id: user.id,
-                sender_type: 'company',
-                content: `El contrato "${contract.title}" ha sido cancelado por la empresa.${reason ? ` Razón: ${reason}` : ''}`
-              })
-            })
-          }
-        }
+        fetch('/api/whop/dm/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({
+            userId: contract.creator_id,
+            content: `El contrato "${contract.title}" fue cancelado.${reason ? ` Razón: ${reason}` : ''}`,
+          }),
+        }).catch(() => {})
       }
 
       // Update local state
