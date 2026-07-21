@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
   if (!payment?.success) {
     if (payment?.error === 'insufficient') {
       return NextResponse.json({
-        error: 'Fondos insuficientes en tu wallet. Agregá fondos y volvé a intentar.',
+        error: 'Fondos insuficientes en tu wallet. Agrega fondos y vuelve a intentar.',
         needsFunds: true,
         amount,
       }, { status: 402 })

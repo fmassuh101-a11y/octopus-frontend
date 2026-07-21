@@ -110,7 +110,7 @@ export default function AdminAcademia() {
           <GraduationCap className="h-7 w-7 text-cyan-400" />
           <div>
             <h1 className="text-2xl font-extrabold">Academia — Admin</h1>
-            <p className="text-sm text-neutral-400">Agregá, editá y ordená los videos de aprendizaje.</p>
+            <p className="text-sm text-neutral-400">Agrega, edita y ordena los videos de aprendizaje.</p>
           </div>
         </div>
 

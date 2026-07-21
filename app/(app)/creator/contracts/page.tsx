@@ -442,7 +442,7 @@ export default function CreatorContractsPage() {
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
                     <h3 className="font-semibold text-neutral-900 mb-1">{contract.title}</h3>
-                    <a href={`/contrato/${contract.id}`} className="mb-1 inline-block text-xs font-bold text-cyan-600 underline-offset-2 hover:underline" onClick={(e) => e.stopPropagation()}>Ver documento del contrato</a>
+                    <Link href={`/contrato/${contract.id}`} className="mb-1 inline-block text-xs font-bold text-cyan-600 underline-offset-2 hover:underline" onClick={(e) => e.stopPropagation()}>Ver documento del contrato</Link>
                     <p className="text-sm text-neutral-400">{contract.company_name}</p>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusInfo.bg} ${statusInfo.color}`}>

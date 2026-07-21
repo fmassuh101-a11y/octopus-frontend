@@ -16,6 +16,509 @@ interface ProfileSection {
   component: JSX.Element
 }
 
+// Las 5 secciones de abajo se movieron a scope de módulo: si quedan
+// definidas dentro de ProfilePage, React les da una identidad de componente
+// nueva en cada render del padre y remonta la sección activa entera
+// (pierde scroll/foco/transición) ante cualquier cambio de estado, no solo
+// al cambiar de tab. Mismo bug que había en company/applicants.
+
+// Account Information Section
+function AccountSection({ profile, bioData, user }: { profile: any; bioData: any; user: any }) {
+  // Use profile (with merged bio) or fallback to bioData
+  const data = { ...bioData, ...profile }
+
+  return (
+  <div className="space-y-6">
+    <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
+      <h3 className="text-lg font-semibold text-neutral-900 mb-4">Informacion Personal</h3>
+      <div className="space-y-4">
+        <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
+          <span className="text-neutral-400">Nombre Completo</span>
+          <span className="font-medium text-neutral-900">
+            {data.full_name || `${data.firstName || ''} ${data.lastName || ''}`.trim() || 'Sin configurar'}
+          </span>
+        </div>
+        <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
+          <span className="text-neutral-400">Email</span>
+          <span className="font-medium text-neutral-900">{user?.email || 'Sin configurar'}</span>
+        </div>
+        <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
+          <span className="text-neutral-400">Telefono</span>
+          <span className="font-medium text-neutral-900">{data.phoneNumber || 'Sin configurar'}</span>
+        </div>
+        <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
+          <span className="text-neutral-400">Ubicacion</span>
+          <span className="font-medium text-neutral-900">{data.location || 'Sin configurar'}</span>
+        </div>
+        <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
+          <span className="text-neutral-400">Nivel Academico</span>
+          <span className="font-medium text-neutral-900">{data.academicLevel || 'Sin configurar'}</span>
+        </div>
+        <div className="flex flex-col items-start gap-0.5 py-3">
+          <span className="text-neutral-400">Estudios</span>
+          <span className="font-medium text-neutral-900">{data.studies || 'Sin configurar'}</span>
+        </div>
+      </div>
+      <button
+        onClick={() => window.location.href = '/onboarding/creator/name'}
+        className="mt-6 w-full py-3 bg-cyan-500 text-neutral-900 rounded-xl font-medium hover:bg-emerald-600 transition-colors"
+      >
+        {data.firstName ? 'Editar Informacion' : 'Completar Perfil'}
+      </button>
+    </div>
+
+    <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
+      <h3 className="text-lg font-semibold text-neutral-900 mb-4">Redes Sociales</h3>
+      <div className="space-y-4">
+        <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-cyan-600 rounded-lg flex items-center justify-center">
+              <svg className="w-5 h-5 text-neutral-900" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+              </svg>
+            </div>
+            <span className="text-neutral-400">Instagram</span>
+          </div>
+          <span className="font-medium text-neutral-900">
+            {data.instagram ? `@${data.instagram}` : 'Sin configurar'}
+          </span>
+        </div>
+        <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-[#F7FAFD] rounded-lg flex items-center justify-center">
+              <svg className="w-5 h-5 text-neutral-900" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M19.321 5.562a5.124 5.124 0 0 1-.443-.258 6.228 6.228 0 0 1-1.137-.966c-.849-.849-1.432-1.884-1.432-3.052V.621h-3.714v14.325c0 1.568-1.277 2.845-2.845 2.845s-2.845-1.277-2.845-2.845 1.277-2.845 2.845-2.845c.195 0 .39.02.579.058V8.539c-.193-.013-.386-.02-.579-.02-3.462 0-6.265 2.803-6.265 6.265s2.803 6.265 6.265 6.265 6.265-2.803 6.265-6.265V8.317a9.14 9.14 0 0 0 5.125 1.553V6.538a5.549 5.549 0 0 1-2.119-.976z"/>
+              </svg>
+            </div>
+            <span className="text-neutral-400">TikTok</span>
+          </div>
+          <span className="font-medium text-neutral-900">
+            {data.tiktok ? `@${data.tiktok}` : 'Sin configurar'}
+          </span>
+        </div>
+        <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
+              <svg className="w-5 h-5 text-neutral-900" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+              </svg>
+            </div>
+            <span className="text-neutral-400">YouTube</span>
+          </div>
+          <span className="font-medium text-neutral-900">
+            {data.youtube ? `@${data.youtube}` : 'Sin configurar'}
+          </span>
+        </div>
+        <div className="flex flex-col items-start gap-0.5 py-3">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-blue-700 rounded-lg flex items-center justify-center">
+              <svg className="w-5 h-5 text-neutral-900" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+              </svg>
+            </div>
+            <span className="text-neutral-400">LinkedIn</span>
+          </div>
+          <span className="font-medium text-neutral-900">
+            {data.linkedInUrl || data.linkedin || 'Sin configurar'}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    {/* Experience & Education */}
+    <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
+      <h3 className="text-lg font-semibold text-neutral-900 mb-4">Educacion y Experiencia</h3>
+      <div className="space-y-4">
+        <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
+          <span className="text-neutral-400">Nivel Academico</span>
+          <span className="font-medium text-neutral-900">{data.academicLevel || 'Sin configurar'}</span>
+        </div>
+        <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
+          <span className="text-neutral-400">Estudios</span>
+          <span className="font-medium text-neutral-900">{data.studies || 'Sin configurar'}</span>
+        </div>
+        <div className="flex flex-col items-start gap-0.5 py-3">
+          <span className="text-neutral-400">LinkedIn</span>
+          <span className="font-medium text-neutral-900 text-right max-w-[200px] truncate">
+            {data.linkedInUrl ? (
+              <a href={safeExternalUrl(data.linkedInUrl)} target="_blank" rel="noopener noreferrer" className="text-cyan-700 hover:underline">
+                Ver perfil
+              </a>
+            ) : 'Sin configurar'}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+  )
+}
+
+// Earnings Section
+function EarningsSection() {
+  return (
+    <div className="space-y-6">
+      <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
+        <h3 className="text-lg font-semibold text-neutral-900 mb-6">Resumen de Ganancias</h3>
+
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="bg-green-50 p-4 rounded-xl">
+            <p className="text-green-600 text-sm mb-1">Total Ganado</p>
+            <p className="text-2xl font-bold text-green-700">$0</p>
+            <p className="text-xs text-green-600 mt-1">Desde el inicio</p>
+          </div>
+          <div className="bg-blue-50 p-4 rounded-xl">
+            <p className="text-cyan-700 text-sm mb-1">Este Mes</p>
+            <p className="text-2xl font-bold text-blue-700">$0</p>
+            <p className="text-xs text-cyan-700 mt-1">0 campanas</p>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
+            <span className="text-neutral-400">Pendiente de Pago</span>
+            <span className="font-medium text-neutral-900">$0</span>
+          </div>
+          <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
+            <span className="text-neutral-400">En Revision</span>
+            <span className="font-medium text-neutral-900">$0</span>
+          </div>
+          <div className="flex flex-col items-start gap-0.5 py-3">
+            <span className="text-neutral-400">Proximo Pago</span>
+            <span className="font-medium text-neutral-900">No programado</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
+        <h3 className="text-lg font-semibold text-neutral-900 mb-4">Metodos de Pago</h3>
+        <p className="text-neutral-400 mb-4">No tienes metodos de pago configurados</p>
+        <button className="w-full py-3 bg-cyan-500 text-neutral-900 rounded-xl font-medium hover:bg-emerald-600 transition-colors">
+          Agregar Metodo de Pago
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// Privacy & Security Section
+function SecuritySection() {
+  return (
+    <div className="space-y-6">
+      <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
+        <h3 className="text-lg font-semibold text-neutral-900 mb-4">Seguridad de la Cuenta</h3>
+        <div className="space-y-4">
+          <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
+            <div>
+              <p className="font-medium text-neutral-900">Contrasena</p>
+              <p className="text-sm text-neutral-500">Ultima actualizacion: Nunca</p>
+            </div>
+            <button className="text-cyan-700 hover:text-blue-700 font-medium">Cambiar</button>
+          </div>
+          <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
+            <div>
+              <p className="font-medium text-neutral-900">Autenticacion de dos factores</p>
+              <p className="text-sm text-neutral-500">Anade una capa extra de seguridad</p>
+            </div>
+            <button className="text-cyan-700 hover:text-blue-700 font-medium">Activar</button>
+          </div>
+          <div className="flex flex-col items-start gap-0.5 py-3">
+            <div>
+              <p className="font-medium text-neutral-900">Dispositivos conectados</p>
+              <p className="text-sm text-neutral-500">1 dispositivo activo</p>
+            </div>
+            <button className="text-cyan-700 hover:text-blue-700 font-medium">Ver todos</button>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
+        <h3 className="text-lg font-semibold text-neutral-900 mb-4">Privacidad</h3>
+        <div className="space-y-4">
+          <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
+            <div>
+              <p className="font-medium text-neutral-900">Perfil Publico</p>
+              <p className="text-sm text-neutral-500">Las marcas pueden ver tu perfil</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" defaultChecked className="sr-only peer bg-white border border-neutral-100 text-neutral-900 placeholder-neutral-400" />
+              <div className="w-11 h-6 bg-neutral-100 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white border border-neutral-100 after:border-neutral-700 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500 text-neutral-900 placeholder-neutral-400"></div>
+            </label>
+          </div>
+          <div className="flex flex-col items-start gap-0.5 py-3">
+            <div>
+              <p className="font-medium text-neutral-900">Mostrar Estadisticas</p>
+              <p className="text-sm text-neutral-500">Campanas completadas y rating</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" defaultChecked className="sr-only peer bg-white border border-neutral-100 text-neutral-900 placeholder-neutral-400" />
+              <div className="w-11 h-6 bg-neutral-100 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white border border-neutral-100 after:border-neutral-700 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500 text-neutral-900 placeholder-neutral-400"></div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-red-50 rounded-2xl p-6 border border-red-100">
+        <h3 className="text-lg font-semibold text-red-900 mb-2">Zona de Peligro</h3>
+        <p className="text-sm text-red-700 mb-4">Una vez que elimines tu cuenta, no hay vuelta atras. Por favor, estes seguro.</p>
+        <button className="px-6 py-2 bg-red-600 text-neutral-900 rounded-xl font-medium hover:bg-red-700 transition-colors">
+          Eliminar Cuenta
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// Verification Section - REAL OAuth verification
+function VerificationSection({ profile, bioData, onConnectTikTok, onRemoveTikTok }: { profile: any; bioData: any; onConnectTikTok: () => void; onRemoveTikTok: () => void }) {
+  const data = { ...bioData, ...profile }
+  const tiktokAccounts = data.tiktokAccounts || []
+  const isTiktokVerified = data.tiktokConnected && tiktokAccounts.length > 0
+  const tiktokAccount = tiktokAccounts[0] // Get first connected account
+
+  return (
+    <div className="space-y-6">
+      {/* Verification Status Card */}
+      <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+            <svg className="w-6 h-6 text-cyan-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-neutral-900">Verificacion de Cuentas</h3>
+            <p className="text-sm text-neutral-500">Conecta tus redes para aplicar a trabajos</p>
+          </div>
+        </div>
+
+        {/* Warning if not verified */}
+        {!isTiktokVerified && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+            <div className="flex items-start gap-3">
+              <svg className="w-5 h-5 text-amber-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <div>
+                <p className="font-medium text-amber-800">Verifica al menos una cuenta</p>
+                <p className="text-sm text-amber-700 mt-1">
+                  Necesitas verificar al menos una red social para poder aplicar a trabajos. Esto ayuda a las empresas a confiar en ti.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Success if verified */}
+        {isTiktokVerified && (
+          <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
+            <div className="flex items-start gap-3">
+              <svg className="w-5 h-5 text-green-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <div>
+                <p className="font-medium text-green-800">Cuenta verificada</p>
+                <p className="text-sm text-green-700 mt-1">
+                  Ya puedes aplicar a trabajos. Las empresas podran ver tus estadisticas.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TikTok */}
+        <div className={`p-4 rounded-xl border-2 transition-colors ${
+          isTiktokVerified ? 'border-green-500 bg-green-50' : 'border-neutral-100 bg-[#F7FAFD]'
+        } text-neutral-900 placeholder-neutral-400`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-[#F7FAFD] rounded-xl flex items-center justify-center">
+                <svg className="w-7 h-7 text-neutral-900" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M19.321 5.562a5.124 5.124 0 0 1-.443-.258 6.228 6.228 0 0 1-1.137-.966c-.849-.849-1.432-1.884-1.432-3.052V.621h-3.714v14.325c0 1.568-1.277 2.845-2.845 2.845s-2.845-1.277-2.845-2.845 1.277-2.845 2.845-2.845c.195 0 .39.02.579.058V8.539c-.193-.013-.386-.02-.579-.02-3.462 0-6.265 2.803-6.265 6.265s2.803 6.265 6.265 6.265 6.265-2.803 6.265-6.265V8.317a9.14 9.14 0 0 0 5.125 1.553V6.538a5.549 5.549 0 0 1-2.119-.976z"/>
+                </svg>
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold text-neutral-900">TikTok</p>
+                  {isTiktokVerified && (
+                    <span className="inline-flex items-center gap-1 bg-green-500 text-neutral-900 text-xs px-2 py-0.5 rounded-full">
+                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      Verificado
+                    </span>
+                  )}
+                </div>
+                {isTiktokVerified && tiktokAccount ? (
+                  <p className="text-sm text-neutral-400">@{tiktokAccount.username} · {tiktokAccount.followers?.toLocaleString() || 0} seguidores</p>
+                ) : (
+                  <p className="text-sm text-neutral-500">No conectado</p>
+                )}
+              </div>
+            </div>
+
+            {isTiktokVerified ? (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={onConnectTikTok}
+                  className="px-4 py-2 text-sm font-medium text-neutral-400 bg-white border border-neutral-100 border border-neutral-700 rounded-lg hover:bg-[#F7FAFD] transition-colors text-neutral-900 placeholder-neutral-400"
+                >
+                  Reconectar
+                </button>
+                <button
+                  onClick={onRemoveTikTok}
+                  className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                  title="Eliminar cuenta"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={onConnectTikTok}
+                className="px-4 py-2 text-sm font-medium text-neutral-900 bg-[#F7FAFD] rounded-lg hover:bg-gray-800 transition-colors"
+              >
+                Verificar
+              </button>
+            )}
+          </div>
+
+          {/* TikTok Stats if verified */}
+          {isTiktokVerified && tiktokAccount && (
+            <div className="mt-4 pt-4 border-t border-green-200 grid grid-cols-3 gap-4">
+              <div className="text-center">
+                <p className="text-lg font-bold text-neutral-900">{tiktokAccount.followers?.toLocaleString() || 0}</p>
+                <p className="text-xs text-neutral-500">Seguidores</p>
+              </div>
+              <div className="text-center">
+                <p className="text-lg font-bold text-neutral-900">{tiktokAccount.likes?.toLocaleString() || 0}</p>
+                <p className="text-xs text-neutral-500">Likes</p>
+              </div>
+              <div className="text-center">
+                <p className="text-lg font-bold text-neutral-900">{tiktokAccount.videoCount || 0}</p>
+                <p className="text-xs text-neutral-500">Videos</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Instagram - Coming Soon */}
+        <div className="mt-4 p-4 rounded-xl border-2 border-neutral-100 bg-[#F7FAFD] opacity-60 text-neutral-900 placeholder-neutral-400">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-gradient-to-r from-cyan-500 to-cyan-600 rounded-xl flex items-center justify-center">
+                <svg className="w-7 h-7 text-neutral-900" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                </svg>
+              </div>
+              <div>
+                <p className="font-semibold text-neutral-900">Instagram</p>
+                <p className="text-sm text-neutral-500">Proximamente</p>
+              </div>
+            </div>
+            <span className="px-3 py-1 text-xs font-medium text-neutral-500 bg-neutral-100 rounded-full">
+              Pronto
+            </span>
+          </div>
+        </div>
+
+        {/* YouTube - Coming Soon */}
+        <div className="mt-4 p-4 rounded-xl border-2 border-neutral-100 bg-[#F7FAFD] opacity-60 text-neutral-900 placeholder-neutral-400">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-red-600 rounded-xl flex items-center justify-center">
+                <svg className="w-7 h-7 text-neutral-900" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                </svg>
+              </div>
+              <div>
+                <p className="font-semibold text-neutral-900">YouTube</p>
+                <p className="text-sm text-neutral-500">Proximamente</p>
+              </div>
+            </div>
+            <span className="px-3 py-1 text-xs font-medium text-neutral-500 bg-neutral-100 rounded-full">
+              Pronto
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Why Verify Card */}
+      <div className="bg-gradient-to-br from-cyan-500 to-teal-600 rounded-2xl p-6 text-neutral-900">
+        <h3 className="text-lg font-semibold mb-3">¿Por que verificar?</h3>
+        <ul className="space-y-2 text-sm text-neutral-900/90">
+          <li className="flex items-start gap-2">
+            <svg className="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+            <span>Las empresas pueden ver tus estadisticas reales</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <svg className="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+            <span>Mayor confianza = mas oportunidades de trabajo</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <svg className="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+            <span>Requisito obligatorio para aplicar a trabajos</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  )
+}
+
+// Statistics Section
+function StatsSection() {
+  return (
+    <div className="space-y-6">
+      <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
+        <h3 className="text-lg font-semibold text-neutral-900 mb-6">Estadisticas de Rendimiento</h3>
+
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="text-center p-4 bg-[#F7FAFD] rounded-xl">
+            <p className="text-3xl font-bold text-neutral-900">0</p>
+            <p className="text-sm text-neutral-400">Campanas Completadas</p>
+          </div>
+          <div className="text-center p-4 bg-[#F7FAFD] rounded-xl">
+            <p className="text-3xl font-bold text-neutral-900">0%</p>
+            <p className="text-sm text-neutral-400">Tasa de Exito</p>
+          </div>
+          <div className="text-center p-4 bg-[#F7FAFD] rounded-xl">
+            <p className="text-3xl font-bold text-neutral-900">0</p>
+            <p className="text-sm text-neutral-400">Aplicaciones</p>
+          </div>
+          <div className="text-center p-4 bg-[#F7FAFD] rounded-xl">
+            <p className="text-3xl font-bold text-neutral-900">0.0</p>
+            <p className="text-sm text-neutral-400">Rating Promedio</p>
+          </div>
+        </div>
+
+        <div className="border-t border-neutral-100 pt-4">
+          <p className="text-sm text-neutral-500 text-center">
+            Las estadisticas se actualizan en tiempo real
+          </p>
+        </div>
+      </div>
+
+      <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
+        <h3 className="text-lg font-semibold text-neutral-900 mb-4">Actividad Reciente</h3>
+        <div className="text-center py-8 text-neutral-500">
+          <svg className="w-16 h-16 mx-auto mb-4 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <p>No hay actividad reciente</p>
+          <p className="text-sm mt-2">Comienza aplicando a trabajos disponibles</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function ProfilePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -142,247 +645,6 @@ export default function ProfilePage() {
     window.location.href = '/'
   }
 
-  // Account Information Section
-  const AccountSection = () => {
-    // Use profile (with merged bio) or fallback to bioData
-    const data = { ...bioData, ...profile }
-
-    return (
-    <div className="space-y-6">
-      <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
-        <h3 className="text-lg font-semibold text-neutral-900 mb-4">Informacion Personal</h3>
-        <div className="space-y-4">
-          <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
-            <span className="text-neutral-400">Nombre Completo</span>
-            <span className="font-medium text-neutral-900">
-              {data.full_name || `${data.firstName || ''} ${data.lastName || ''}`.trim() || 'Sin configurar'}
-            </span>
-          </div>
-          <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
-            <span className="text-neutral-400">Email</span>
-            <span className="font-medium text-neutral-900">{user?.email || 'Sin configurar'}</span>
-          </div>
-          <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
-            <span className="text-neutral-400">Telefono</span>
-            <span className="font-medium text-neutral-900">{data.phoneNumber || 'Sin configurar'}</span>
-          </div>
-          <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
-            <span className="text-neutral-400">Ubicacion</span>
-            <span className="font-medium text-neutral-900">{data.location || 'Sin configurar'}</span>
-          </div>
-          <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
-            <span className="text-neutral-400">Nivel Academico</span>
-            <span className="font-medium text-neutral-900">{data.academicLevel || 'Sin configurar'}</span>
-          </div>
-          <div className="flex flex-col items-start gap-0.5 py-3">
-            <span className="text-neutral-400">Estudios</span>
-            <span className="font-medium text-neutral-900">{data.studies || 'Sin configurar'}</span>
-          </div>
-        </div>
-        <button
-          onClick={() => window.location.href = '/onboarding/creator/name'}
-          className="mt-6 w-full py-3 bg-cyan-500 text-neutral-900 rounded-xl font-medium hover:bg-emerald-600 transition-colors"
-        >
-          {data.firstName ? 'Editar Informacion' : 'Completar Perfil'}
-        </button>
-      </div>
-
-      <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
-        <h3 className="text-lg font-semibold text-neutral-900 mb-4">Redes Sociales</h3>
-        <div className="space-y-4">
-          <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-cyan-600 rounded-lg flex items-center justify-center">
-                <svg className="w-5 h-5 text-neutral-900" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-                </svg>
-              </div>
-              <span className="text-neutral-400">Instagram</span>
-            </div>
-            <span className="font-medium text-neutral-900">
-              {data.instagram ? `@${data.instagram}` : 'Sin configurar'}
-            </span>
-          </div>
-          <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-[#F7FAFD] rounded-lg flex items-center justify-center">
-                <svg className="w-5 h-5 text-neutral-900" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M19.321 5.562a5.124 5.124 0 0 1-.443-.258 6.228 6.228 0 0 1-1.137-.966c-.849-.849-1.432-1.884-1.432-3.052V.621h-3.714v14.325c0 1.568-1.277 2.845-2.845 2.845s-2.845-1.277-2.845-2.845 1.277-2.845 2.845-2.845c.195 0 .39.02.579.058V8.539c-.193-.013-.386-.02-.579-.02-3.462 0-6.265 2.803-6.265 6.265s2.803 6.265 6.265 6.265 6.265-2.803 6.265-6.265V8.317a9.14 9.14 0 0 0 5.125 1.553V6.538a5.549 5.549 0 0 1-2.119-.976z"/>
-                </svg>
-              </div>
-              <span className="text-neutral-400">TikTok</span>
-            </div>
-            <span className="font-medium text-neutral-900">
-              {data.tiktok ? `@${data.tiktok}` : 'Sin configurar'}
-            </span>
-          </div>
-          <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
-                <svg className="w-5 h-5 text-neutral-900" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                </svg>
-              </div>
-              <span className="text-neutral-400">YouTube</span>
-            </div>
-            <span className="font-medium text-neutral-900">
-              {data.youtube ? `@${data.youtube}` : 'Sin configurar'}
-            </span>
-          </div>
-          <div className="flex flex-col items-start gap-0.5 py-3">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-blue-700 rounded-lg flex items-center justify-center">
-                <svg className="w-5 h-5 text-neutral-900" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                </svg>
-              </div>
-              <span className="text-neutral-400">LinkedIn</span>
-            </div>
-            <span className="font-medium text-neutral-900">
-              {data.linkedInUrl || data.linkedin || 'Sin configurar'}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Experience & Education */}
-      <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
-        <h3 className="text-lg font-semibold text-neutral-900 mb-4">Educacion y Experiencia</h3>
-        <div className="space-y-4">
-          <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
-            <span className="text-neutral-400">Nivel Academico</span>
-            <span className="font-medium text-neutral-900">{data.academicLevel || 'Sin configurar'}</span>
-          </div>
-          <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
-            <span className="text-neutral-400">Estudios</span>
-            <span className="font-medium text-neutral-900">{data.studies || 'Sin configurar'}</span>
-          </div>
-          <div className="flex flex-col items-start gap-0.5 py-3">
-            <span className="text-neutral-400">LinkedIn</span>
-            <span className="font-medium text-neutral-900 text-right max-w-[200px] truncate">
-              {data.linkedInUrl ? (
-                <a href={safeExternalUrl(data.linkedInUrl)} target="_blank" rel="noopener noreferrer" className="text-cyan-700 hover:underline">
-                  Ver perfil
-                </a>
-              ) : 'Sin configurar'}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  )}
-
-  // Earnings Section
-  const EarningsSection = () => (
-    <div className="space-y-6">
-      <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
-        <h3 className="text-lg font-semibold text-neutral-900 mb-6">Resumen de Ganancias</h3>
-
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="bg-green-50 p-4 rounded-xl">
-            <p className="text-green-600 text-sm mb-1">Total Ganado</p>
-            <p className="text-2xl font-bold text-green-700">$0</p>
-            <p className="text-xs text-green-600 mt-1">Desde el inicio</p>
-          </div>
-          <div className="bg-blue-50 p-4 rounded-xl">
-            <p className="text-cyan-700 text-sm mb-1">Este Mes</p>
-            <p className="text-2xl font-bold text-blue-700">$0</p>
-            <p className="text-xs text-cyan-700 mt-1">0 campanas</p>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
-            <span className="text-neutral-400">Pendiente de Pago</span>
-            <span className="font-medium text-neutral-900">$0</span>
-          </div>
-          <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
-            <span className="text-neutral-400">En Revision</span>
-            <span className="font-medium text-neutral-900">$0</span>
-          </div>
-          <div className="flex flex-col items-start gap-0.5 py-3">
-            <span className="text-neutral-400">Proximo Pago</span>
-            <span className="font-medium text-neutral-900">No programado</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
-        <h3 className="text-lg font-semibold text-neutral-900 mb-4">Metodos de Pago</h3>
-        <p className="text-neutral-400 mb-4">No tienes metodos de pago configurados</p>
-        <button className="w-full py-3 bg-cyan-500 text-neutral-900 rounded-xl font-medium hover:bg-emerald-600 transition-colors">
-          Agregar Metodo de Pago
-        </button>
-      </div>
-    </div>
-  )
-
-  // Privacy & Security Section
-  const SecuritySection = () => (
-    <div className="space-y-6">
-      <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
-        <h3 className="text-lg font-semibold text-neutral-900 mb-4">Seguridad de la Cuenta</h3>
-        <div className="space-y-4">
-          <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
-            <div>
-              <p className="font-medium text-neutral-900">Contrasena</p>
-              <p className="text-sm text-neutral-500">Ultima actualizacion: Nunca</p>
-            </div>
-            <button className="text-cyan-700 hover:text-blue-700 font-medium">Cambiar</button>
-          </div>
-          <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
-            <div>
-              <p className="font-medium text-neutral-900">Autenticacion de dos factores</p>
-              <p className="text-sm text-neutral-500">Anade una capa extra de seguridad</p>
-            </div>
-            <button className="text-cyan-700 hover:text-blue-700 font-medium">Activar</button>
-          </div>
-          <div className="flex flex-col items-start gap-0.5 py-3">
-            <div>
-              <p className="font-medium text-neutral-900">Dispositivos conectados</p>
-              <p className="text-sm text-neutral-500">1 dispositivo activo</p>
-            </div>
-            <button className="text-cyan-700 hover:text-blue-700 font-medium">Ver todos</button>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
-        <h3 className="text-lg font-semibold text-neutral-900 mb-4">Privacidad</h3>
-        <div className="space-y-4">
-          <div className="flex flex-col items-start gap-0.5 py-3 border-b border-neutral-100">
-            <div>
-              <p className="font-medium text-neutral-900">Perfil Publico</p>
-              <p className="text-sm text-neutral-500">Las marcas pueden ver tu perfil</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" defaultChecked className="sr-only peer bg-white border border-neutral-100 text-neutral-900 placeholder-neutral-400" />
-              <div className="w-11 h-6 bg-neutral-100 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white border border-neutral-100 after:border-neutral-700 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500 text-neutral-900 placeholder-neutral-400"></div>
-            </label>
-          </div>
-          <div className="flex flex-col items-start gap-0.5 py-3">
-            <div>
-              <p className="font-medium text-neutral-900">Mostrar Estadisticas</p>
-              <p className="text-sm text-neutral-500">Campanas completadas y rating</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" defaultChecked className="sr-only peer bg-white border border-neutral-100 text-neutral-900 placeholder-neutral-400" />
-              <div className="w-11 h-6 bg-neutral-100 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white border border-neutral-100 after:border-neutral-700 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500 text-neutral-900 placeholder-neutral-400"></div>
-            </label>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-red-50 rounded-2xl p-6 border border-red-100">
-        <h3 className="text-lg font-semibold text-red-900 mb-2">Zona de Peligro</h3>
-        <p className="text-sm text-red-700 mb-4">Una vez que elimines tu cuenta, no hay vuelta atras. Por favor, estes seguro.</p>
-        <button className="px-6 py-2 bg-red-600 text-neutral-900 rounded-xl font-medium hover:bg-red-700 transition-colors">
-          Eliminar Cuenta
-        </button>
-      </div>
-    </div>
-  )
-
   // Handle TikTok OAuth connection - go directly to TikTok
   const handleConnectTikTok = () => {
     console.log('[TikTok] handleConnectTikTok called from profile')
@@ -486,258 +748,9 @@ export default function ProfilePage() {
     }
   }
 
-  // Verification Section - REAL OAuth verification
-  const VerificationSection = () => {
-    const data = { ...bioData, ...profile }
-    const tiktokAccounts = data.tiktokAccounts || []
-    const isTiktokVerified = data.tiktokConnected && tiktokAccounts.length > 0
-    const tiktokAccount = tiktokAccounts[0] // Get first connected account
-
-    return (
-      <div className="space-y-6">
-        {/* Verification Status Card */}
-        <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-              <svg className="w-6 h-6 text-cyan-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-neutral-900">Verificacion de Cuentas</h3>
-              <p className="text-sm text-neutral-500">Conecta tus redes para aplicar a trabajos</p>
-            </div>
-          </div>
-
-          {/* Warning if not verified */}
-          {!isTiktokVerified && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
-              <div className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-amber-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-                <div>
-                  <p className="font-medium text-amber-800">Verifica al menos una cuenta</p>
-                  <p className="text-sm text-amber-700 mt-1">
-                    Necesitas verificar al menos una red social para poder aplicar a trabajos. Esto ayuda a las empresas a confiar en ti.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Success if verified */}
-          {isTiktokVerified && (
-            <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
-              <div className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-green-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <div>
-                  <p className="font-medium text-green-800">Cuenta verificada</p>
-                  <p className="text-sm text-green-700 mt-1">
-                    Ya puedes aplicar a trabajos. Las empresas podran ver tus estadisticas.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TikTok */}
-          <div className={`p-4 rounded-xl border-2 transition-colors ${
-            isTiktokVerified ? 'border-green-500 bg-green-50' : 'border-neutral-100 bg-[#F7FAFD]'
-          } text-neutral-900 placeholder-neutral-400`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-[#F7FAFD] rounded-xl flex items-center justify-center">
-                  <svg className="w-7 h-7 text-neutral-900" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M19.321 5.562a5.124 5.124 0 0 1-.443-.258 6.228 6.228 0 0 1-1.137-.966c-.849-.849-1.432-1.884-1.432-3.052V.621h-3.714v14.325c0 1.568-1.277 2.845-2.845 2.845s-2.845-1.277-2.845-2.845 1.277-2.845 2.845-2.845c.195 0 .39.02.579.058V8.539c-.193-.013-.386-.02-.579-.02-3.462 0-6.265 2.803-6.265 6.265s2.803 6.265 6.265 6.265 6.265-2.803 6.265-6.265V8.317a9.14 9.14 0 0 0 5.125 1.553V6.538a5.549 5.549 0 0 1-2.119-.976z"/>
-                  </svg>
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="font-semibold text-neutral-900">TikTok</p>
-                    {isTiktokVerified && (
-                      <span className="inline-flex items-center gap-1 bg-green-500 text-neutral-900 text-xs px-2 py-0.5 rounded-full">
-                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                        Verificado
-                      </span>
-                    )}
-                  </div>
-                  {isTiktokVerified && tiktokAccount ? (
-                    <p className="text-sm text-neutral-400">@{tiktokAccount.username} · {tiktokAccount.followers?.toLocaleString() || 0} seguidores</p>
-                  ) : (
-                    <p className="text-sm text-neutral-500">No conectado</p>
-                  )}
-                </div>
-              </div>
-
-              {isTiktokVerified ? (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleConnectTikTok}
-                    className="px-4 py-2 text-sm font-medium text-neutral-400 bg-white border border-neutral-100 border border-neutral-700 rounded-lg hover:bg-[#F7FAFD] transition-colors text-neutral-900 placeholder-neutral-400"
-                  >
-                    Reconectar
-                  </button>
-                  <button
-                    onClick={handleRemoveTikTok}
-                    className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-                    title="Eliminar cuenta"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={handleConnectTikTok}
-                  className="px-4 py-2 text-sm font-medium text-neutral-900 bg-[#F7FAFD] rounded-lg hover:bg-gray-800 transition-colors"
-                >
-                  Verificar
-                </button>
-              )}
-            </div>
-
-            {/* TikTok Stats if verified */}
-            {isTiktokVerified && tiktokAccount && (
-              <div className="mt-4 pt-4 border-t border-green-200 grid grid-cols-3 gap-4">
-                <div className="text-center">
-                  <p className="text-lg font-bold text-neutral-900">{tiktokAccount.followers?.toLocaleString() || 0}</p>
-                  <p className="text-xs text-neutral-500">Seguidores</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-lg font-bold text-neutral-900">{tiktokAccount.likes?.toLocaleString() || 0}</p>
-                  <p className="text-xs text-neutral-500">Likes</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-lg font-bold text-neutral-900">{tiktokAccount.videoCount || 0}</p>
-                  <p className="text-xs text-neutral-500">Videos</p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Instagram - Coming Soon */}
-          <div className="mt-4 p-4 rounded-xl border-2 border-neutral-100 bg-[#F7FAFD] opacity-60 text-neutral-900 placeholder-neutral-400">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-r from-cyan-500 to-cyan-600 rounded-xl flex items-center justify-center">
-                  <svg className="w-7 h-7 text-neutral-900" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-                  </svg>
-                </div>
-                <div>
-                  <p className="font-semibold text-neutral-900">Instagram</p>
-                  <p className="text-sm text-neutral-500">Proximamente</p>
-                </div>
-              </div>
-              <span className="px-3 py-1 text-xs font-medium text-neutral-500 bg-neutral-100 rounded-full">
-                Pronto
-              </span>
-            </div>
-          </div>
-
-          {/* YouTube - Coming Soon */}
-          <div className="mt-4 p-4 rounded-xl border-2 border-neutral-100 bg-[#F7FAFD] opacity-60 text-neutral-900 placeholder-neutral-400">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-red-600 rounded-xl flex items-center justify-center">
-                  <svg className="w-7 h-7 text-neutral-900" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                  </svg>
-                </div>
-                <div>
-                  <p className="font-semibold text-neutral-900">YouTube</p>
-                  <p className="text-sm text-neutral-500">Proximamente</p>
-                </div>
-              </div>
-              <span className="px-3 py-1 text-xs font-medium text-neutral-500 bg-neutral-100 rounded-full">
-                Pronto
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Why Verify Card */}
-        <div className="bg-gradient-to-br from-cyan-500 to-teal-600 rounded-2xl p-6 text-neutral-900">
-          <h3 className="text-lg font-semibold mb-3">¿Por que verificar?</h3>
-          <ul className="space-y-2 text-sm text-neutral-900/90">
-            <li className="flex items-start gap-2">
-              <svg className="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              <span>Las empresas pueden ver tus estadisticas reales</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <svg className="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              <span>Mayor confianza = mas oportunidades de trabajo</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <svg className="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              <span>Requisito obligatorio para aplicar a trabajos</span>
-            </li>
-          </ul>
-        </div>
-      </div>
-    )
-  }
-
-  // Statistics Section
-  const StatsSection = () => (
-    <div className="space-y-6">
-      <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
-        <h3 className="text-lg font-semibold text-neutral-900 mb-6">Estadisticas de Rendimiento</h3>
-
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="text-center p-4 bg-[#F7FAFD] rounded-xl">
-            <p className="text-3xl font-bold text-neutral-900">0</p>
-            <p className="text-sm text-neutral-400">Campanas Completadas</p>
-          </div>
-          <div className="text-center p-4 bg-[#F7FAFD] rounded-xl">
-            <p className="text-3xl font-bold text-neutral-900">0%</p>
-            <p className="text-sm text-neutral-400">Tasa de Exito</p>
-          </div>
-          <div className="text-center p-4 bg-[#F7FAFD] rounded-xl">
-            <p className="text-3xl font-bold text-neutral-900">0</p>
-            <p className="text-sm text-neutral-400">Aplicaciones</p>
-          </div>
-          <div className="text-center p-4 bg-[#F7FAFD] rounded-xl">
-            <p className="text-3xl font-bold text-neutral-900">0.0</p>
-            <p className="text-sm text-neutral-400">Rating Promedio</p>
-          </div>
-        </div>
-
-        <div className="border-t border-neutral-100 pt-4">
-          <p className="text-sm text-neutral-500 text-center">
-            Las estadisticas se actualizan en tiempo real
-          </p>
-        </div>
-      </div>
-
-      <div className="bg-white border border-neutral-100 rounded-2xl p-6 border border-neutral-100 text-neutral-900 placeholder-neutral-400">
-        <h3 className="text-lg font-semibold text-neutral-900 mb-4">Actividad Reciente</h3>
-        <div className="text-center py-8 text-neutral-500">
-          <svg className="w-16 h-16 mx-auto mb-4 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          <p>No hay actividad reciente</p>
-          <p className="text-sm mt-2">Comienza aplicando a trabajos disponibles</p>
-        </div>
-      </div>
-    </div>
-  )
-
   const sections: ProfileSection[] = [
-    { id: 'account', title: 'Mi Cuenta', icon: User, component: <AccountSection /> },
-    { id: 'verification', title: 'Verificacion', icon: ShieldCheck, component: <VerificationSection /> },
+    { id: 'account', title: 'Mi Cuenta', icon: User, component: <AccountSection profile={profile} bioData={bioData} user={user} /> },
+    { id: 'verification', title: 'Verificacion', icon: ShieldCheck, component: <VerificationSection profile={profile} bioData={bioData} onConnectTikTok={handleConnectTikTok} onRemoveTikTok={handleRemoveTikTok} /> },
     { id: 'earnings', title: 'Ganancias', icon: Wallet, component: <EarningsSection /> },
     { id: 'stats', title: 'Estadisticas', icon: BarChart3, component: <StatsSection /> },
     { id: 'security', title: 'Seguridad', icon: Lock, component: <SecuritySection /> }

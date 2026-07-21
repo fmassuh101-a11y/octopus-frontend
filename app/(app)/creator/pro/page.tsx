@@ -107,7 +107,7 @@ export default function ProPage() {
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-neutral-100 bg-white/95 px-5 pb-[calc(env(safe-area-inset-bottom)+86px)] pt-4 backdrop-blur-xl">
         <div className="mx-auto w-full max-w-md md:max-w-lg">
           <div className="flex items-center justify-between">
-            <p className="font-extrabold">Elegí tu plan</p>
+            <p className="font-extrabold">Elige tu plan</p>
             <p className="text-sm text-neutral-500">Cancelá cuando quieras</p>
           </div>
           <div className="mt-3 grid grid-cols-2 gap-3">

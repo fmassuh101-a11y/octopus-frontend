@@ -54,7 +54,7 @@ export default function Notifications() {
         })),
         ...contratos.map((c: any) => ({
           id: `c_${c.id}`, kind: 'contrato' as const,
-          title: 'Nuevo contrato', sub: c.title || 'Revisá los términos', at: c.created_at, href: '/creator/contratos-nuevos',
+          title: 'Nuevo contrato', sub: c.title || 'Revisa los términos', at: c.created_at, href: '/creator/contratos-nuevos',
         })),
         ...apps.map((a: any) => ({
           id: `a_${a.id}`, kind: 'aceptado' as const,

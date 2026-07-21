@@ -124,7 +124,7 @@ export default function ContratosNuevosPage() {
                       </div>
                     )}
                     <div className="flex-1" />
-                    <p className="text-sm text-neutral-400">Revisá los términos completos antes de aceptar.</p>
+                    <p className="text-sm text-neutral-400">Revisa los términos completos antes de aceptar.</p>
                   </div>
                 </div>
               ))}

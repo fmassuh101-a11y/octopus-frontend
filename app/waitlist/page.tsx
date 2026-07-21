@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import DeepOcean from '@/components/oct/DeepOcean'
-import { Loader2, Check, Copy, Lock, ChevronRight, Users, ArrowDown } from 'lucide-react'
+import { Loader2, Check, Copy, Lock, ChevronRight, Users, ArrowDown, Building2, FileText, ShieldCheck } from 'lucide-react'
 import { countries } from '@/lib/data/countries'
 
 const COUNTRY_NAMES = Array.from(new Set(countries.map((c) => c.name))).sort((a, b) => a.localeCompare(b, 'es'))
@@ -197,6 +197,52 @@ function WaitlistInner() {
               Unirme a la lista <ArrowDown size={18} />
             </button>
           </div>
+        </div>
+      </section>
+
+      {/* ═══ PARA EMPRESAS — invitación explícita y formal (antes la página
+          se leía como "solo para creadores"; las marcas quedaban como una
+          opción escondida dentro del formulario) ═══ */}
+      <section className="relative overflow-hidden border-y border-white/5 bg-[#04182a] px-5 py-20">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(50%_100%_at_50%_0%,rgba(16,185,129,0.14),transparent)]" />
+        <div className="relative mx-auto w-full max-w-3xl text-center">
+          <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-emerald-300">
+            <Building2 className="h-3.5 w-3.5" /> Para empresas y marcas
+          </span>
+          <h2 className="mt-5 text-3xl font-semibold leading-tight sm:text-4xl">
+            ¿Tu empresa quiere crecer con creadores de contenido?
+          </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-white/70 sm:text-lg">
+            Octapi conecta a tu marca con creadores verificados de toda Latinoamérica, listos para producir contenido auténtico que convierte. Publicas tu campaña, revisas los perfiles que aplican y solo pagas por el contenido que apruebas — con un contrato claro desde el primer mensaje.
+          </p>
+
+          <div className="mt-8 grid gap-3 text-left sm:grid-cols-3">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+              <Users className="h-5 w-5 text-emerald-300" />
+              <p className="mt-3 font-semibold">Creadores verificados</p>
+              <p className="mt-1 text-sm text-white/50">Perfiles reales, con redes conectadas y métricas visibles antes de contratar.</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+              <FileText className="h-5 w-5 text-emerald-300" />
+              <p className="mt-3 font-semibold">Contratos claros</p>
+              <p className="mt-1 text-sm text-white/50">Condiciones, entregables y plazos por escrito antes de que empiece el trabajo.</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+              <ShieldCheck className="h-5 w-5 text-emerald-300" />
+              <p className="mt-3 font-semibold">Pagos seguros</p>
+              <p className="mt-1 text-sm text-white/50">Solo liberas el pago cuando apruebas el contenido entregado.</p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => { setRole('company'); scrollToForm() }}
+            className="mt-9 inline-flex items-center gap-2 rounded-xl bg-emerald-400 px-8 py-4 text-base font-semibold text-black shadow-2xl transition-transform hover:scale-105"
+          >
+            Postula tu empresa <ArrowDown size={18} />
+          </button>
+          {!!stats?.companies && (
+            <p className="mt-4 text-xs text-white/40">{stats.companies} empresas ya están en la lista de espera.</p>
+          )}
         </div>
       </section>
 

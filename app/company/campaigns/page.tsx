@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { getActiveCompanyId } from '@/lib/workspace'
+import { readCache, writeCache } from '@/lib/useCachedFetch'
 import { Eye } from 'lucide-react'
 
 interface Gig {
@@ -33,6 +34,12 @@ export default function CampaignsPage() {
   const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
+    // FLUIDEZ: pinta al instante lo último visto; lo fresco llega por detrás
+    const cached = readCache<Gig[]>('company-campaigns')
+    if (cached) {
+      setGigs(cached)
+      setLoading(false)
+    }
     loadGigs()
   }, [])
 
@@ -50,7 +57,7 @@ export default function CampaignsPage() {
 
       // Fetch company's gigs
       const response = await fetch(
-        `${SUPABASE_URL}/rest/v1/gigs?company_id=eq.${getActiveCompanyId(userData.id)}&select=*&order=created_at.desc`,
+        `${SUPABASE_URL}/rest/v1/gigs?company_id=eq.${getActiveCompanyId(userData.id)}&select=id,title,description,budget,category,status,requirements,deliverables,deadline,created_at&order=created_at.desc`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -80,6 +87,7 @@ export default function CampaignsPage() {
         }
 
         setGigs(data)
+        writeCache('company-campaigns', data)
       } else {
         setGigs([])
       }

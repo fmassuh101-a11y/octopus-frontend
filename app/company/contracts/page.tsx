@@ -125,30 +125,32 @@ export default function CompanyContractsPage() {
     const userData = JSON.parse(userStr)
     setUser(userData)
 
-    // Fetch company name from profile
-    try {
-      const profileRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=company_name,bio`,
-        { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
-      )
-      if (profileRes.ok) {
-        const [profile] = await profileRes.json()
-        if (profile) {
-          let name = profile.company_name || 'Empresa'
-          if (profile.bio) {
-            try {
-              const bioData = JSON.parse(profile.bio)
-              if (bioData.companyName) name = bioData.companyName
-            } catch (e) {}
+    // El nombre de la empresa y los contratos no dependen entre sí.
+    const nameFetch = (async () => {
+      try {
+        const profileRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=company_name,bio`,
+          { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+        )
+        if (profileRes.ok) {
+          const [profile] = await profileRes.json()
+          if (profile) {
+            let name = profile.company_name || 'Empresa'
+            if (profile.bio) {
+              try {
+                const bioData = JSON.parse(profile.bio)
+                if (bioData.companyName) name = bioData.companyName
+              } catch (e) {}
+            }
+            setCompanyName(name)
           }
-          setCompanyName(name)
         }
+      } catch (err) {
+        console.error('Error fetching profile:', err)
       }
-    } catch (err) {
-      console.error('Error fetching profile:', err)
-    }
+    })()
 
-    await loadContracts(userData.id, token)
+    await Promise.all([nameFetch, loadContracts(userData.id, token)])
   }
 
   const loadContracts = async (userId: string, token: string) => {
@@ -411,7 +413,7 @@ export default function CompanyContractsPage() {
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
                     <h3 className="font-semibold text-white mb-1">{contract.title}</h3>
-                    <a href={`/contrato/${contract.id}`} className="mb-1 inline-block text-xs font-bold text-emerald-400 underline-offset-2 hover:underline" onClick={(e) => e.stopPropagation()}>Ver documento del contrato</a>
+                    <Link href={`/contrato/${contract.id}`} className="mb-1 inline-block text-xs font-bold text-emerald-400 underline-offset-2 hover:underline" onClick={(e) => e.stopPropagation()}>Ver documento del contrato</Link>
                     <p className="text-sm text-neutral-400">{contract.creator_name}</p>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusInfo.bg} ${statusInfo.color}`}>
@@ -449,8 +451,8 @@ export default function CompanyContractsPage() {
 
       {/* Contract Detail Modal */}
       {selectedContract && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center">
-          <div className="bg-neutral-900 rounded-t-3xl sm:rounded-2xl w-full sm:max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center animate-fade-in">
+          <div className="bg-neutral-900 rounded-t-3xl sm:rounded-2xl w-full sm:max-w-lg max-h-[90vh] overflow-hidden flex flex-col animate-fade-in-up">
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-neutral-800 flex items-center justify-between">
               <div>
@@ -604,8 +606,8 @@ export default function CompanyContractsPage() {
 
       {/* Cancel Contract Modal */}
       {showCancelModal && selectedContract && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-neutral-900 rounded-2xl w-full max-w-md overflow-hidden">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-neutral-900 rounded-2xl w-full max-w-md overflow-hidden animate-scale-in">
             <div className="px-6 py-4 border-b border-neutral-800">
               <h2 className="text-lg font-bold text-red-400">Cancelar Contrato</h2>
               <p className="text-sm text-neutral-400">Esta acción no se puede deshacer</p>

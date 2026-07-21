@@ -95,11 +95,23 @@ export default function CreatorProfilePage() {
     }
 
     try {
-      // Load creator profile
-      const profileRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/public_profiles?user_id=eq.${creatorId}&select=*`,
-        { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
-      )
+      const authHeaders = { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY }
+      const userStr = localStorage.getItem('sb-user')
+      const companyId = userStr ? JSON.parse(userStr).id : null
+
+      // Los 5 fetches son independientes entre sí (ninguno depende del
+      // resultado de otro) — se piden todos a la vez en vez de uno detrás
+      // de otro, así la pantalla de perfil abre en el tiempo del más lento
+      // en vez de la suma de los cinco.
+      const [profileRes, tiktokRes, portRes, revRes, appsRes] = await Promise.all([
+        fetch(`${SUPABASE_URL}/rest/v1/public_profiles?user_id=eq.${creatorId}&select=*`, { headers: authHeaders }),
+        fetch(`${SUPABASE_URL}/rest/v1/tiktok_data?user_id=eq.${creatorId}&select=*&order=created_at.desc&limit=1`, { headers: authHeaders }),
+        fetch(`${SUPABASE_URL}/rest/v1/content_deliveries?creator_id=eq.${creatorId}&status=in.(approved,completed)&select=id,title,video_url,approved_at&order=approved_at.desc&limit=12`, { headers: authHeaders }).catch(() => null),
+        fetch(`${SUPABASE_URL}/rest/v1/reviews?reviewee_id=eq.${creatorId}&select=rating`, { headers: authHeaders }).catch(() => null),
+        companyId
+          ? fetch(`${SUPABASE_URL}/rest/v1/applications?creator_id=eq.${creatorId}&company_id=eq.${companyId}&select=*,gig:gigs(title,budget)`, { headers: authHeaders })
+          : Promise.resolve(null)
+      ])
 
       if (profileRes.ok) {
         const profiles = await profileRes.json()
@@ -131,10 +143,6 @@ export default function CreatorProfilePage() {
           }
 
           // Check if any TikTok data in tiktok_data table
-          const tiktokRes = await fetch(
-            `${SUPABASE_URL}/rest/v1/tiktok_data?user_id=eq.${creatorId}&select=*&order=created_at.desc&limit=1`,
-            { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
-          )
           if (tiktokRes.ok) {
             const tiktokData = await tiktokRes.json()
             if (tiktokData.length > 0 && tiktokData[0].videos) {
@@ -146,20 +154,12 @@ export default function CreatorProfilePage() {
 
       // Portfolio: entregas aprobadas (trabajos completados de verdad)
       try {
-        const portRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/content_deliveries?creator_id=eq.${creatorId}&status=in.(approved,completed)&select=id,title,video_url,approved_at&order=approved_at.desc&limit=12`,
-          { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
-        )
-        if (portRes.ok) setPortfolio(await portRes.json())
+        if (portRes && portRes.ok) setPortfolio(await portRes.json())
       } catch (e) {}
 
       // Reviews: calificación promedio del creador
       try {
-        const revRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/reviews?reviewee_id=eq.${creatorId}&select=rating`,
-          { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
-        )
-        if (revRes.ok) {
+        if (revRes && revRes.ok) {
           const revs = await revRes.json()
           if (revs.length > 0) {
             setAvgRating({ avg: revs.reduce((s: number, r: any) => s + r.rating, 0) / revs.length, count: revs.length })
@@ -168,19 +168,11 @@ export default function CreatorProfilePage() {
       } catch (e) {}
 
       // Load applications from this creator
-      const userStr = localStorage.getItem('sb-user')
-      if (userStr) {
-        const user = JSON.parse(userStr)
-        const appsRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/applications?creator_id=eq.${creatorId}&company_id=eq.${user.id}&select=*,gig:gigs(title,budget)`,
-          { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
-        )
-        if (appsRes.ok) {
-          const apps = await appsRes.json()
-          setApplications(apps)
-          // Check if any application is bookmarked
-          setBookmarked(apps.some((a: Application) => a.bookmarked))
-        }
+      if (appsRes && appsRes.ok) {
+        const apps = await appsRes.json()
+        setApplications(apps)
+        // Check if any application is bookmarked
+        setBookmarked(apps.some((a: Application) => a.bookmarked))
       }
 
     } catch (err) {
@@ -197,9 +189,9 @@ export default function CreatorProfilePage() {
     const newBookmarked = !bookmarked
     setBookmarked(newBookmarked)
 
-    // Update all applications from this creator
-    for (const app of applications) {
-      await fetch(
+    // Update all applications from this creator (en paralelo, no una por una)
+    await Promise.all(applications.map(app =>
+      fetch(
         `${SUPABASE_URL}/rest/v1/applications?id=eq.${app.id}`,
         {
           method: 'PATCH',
@@ -211,7 +203,7 @@ export default function CreatorProfilePage() {
           body: JSON.stringify({ bookmarked: newBookmarked })
         }
       )
-    }
+    ))
   }
 
   const handleSendMessage = () => {
@@ -844,7 +836,7 @@ export default function CreatorProfilePage() {
 
             {payStep === 'confirm' && (
               <>
-                <h3 className="text-xl font-bold text-white">¿Confirmás el pago?</h3>
+                <h3 className="text-xl font-bold text-white">¿Confirmas el pago?</h3>
                 <div className="mt-4 rounded-2xl bg-neutral-800/70 p-5 text-center">
                   <p className="text-neutral-400">Le vas a pagar a</p>
                   <p className="text-lg font-bold text-white">{getCreatorName()}</p>

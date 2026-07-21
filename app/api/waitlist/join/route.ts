@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
 
     const role = body.role === "company" ? "company" : body.role === "creator" ? "creator" : "";
     const email = clean(body.email).toLowerCase();
-    if (!role) return NextResponse.json({ error: "Elegí creador o empresa" }, { status: 400 });
+    if (!role) return NextResponse.json({ error: "Elige creador o empresa" }, { status: 400 });
     if (!EMAIL_RX.test(email)) return NextResponse.json({ error: "Email inválido" }, { status: 400 });
 
     // si ya estaba anotado, devolvemos su mismo link (no duplicamos)

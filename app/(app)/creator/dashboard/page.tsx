@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import PendingContracts from '@/components/oct/PendingContracts'
 import { motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
@@ -14,6 +15,7 @@ import { Shield, Star, Flame, Crown, Trophy, Check, Target, Wallet, FileText, Se
 // chips arriba, "Tus ganancias" con monto gigante + meta + barra,
 // banner de ranking y checklist "Tus tareas de hoy".
 export default function CreatorHome() {
+  const router = useRouter()
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [wallet, setWallet] = useState<{ balance: number; pending_balance: number; total_earned: number } | null>(null)
@@ -49,17 +51,17 @@ export default function CreatorHome() {
     try {
       const token = localStorage.getItem('sb-access-token')
       const userStr = localStorage.getItem('sb-user')
-      if (!token || !userStr) { window.location.href = '/auth/login'; return }
+      if (!token || !userStr) { router.replace('/auth/login'); return }
       const userData = JSON.parse(userStr)
       const headers = { Authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY }
 
       const response = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=*`, { headers })
-      if (!response.ok) { window.location.href = '/auth/select-type'; return }
+      if (!response.ok) { router.replace('/auth/select-type'); return }
       const profiles = await response.json()
-      if (!profiles.length) { window.location.href = '/auth/select-type'; return }
+      if (!profiles.length) { router.replace('/auth/select-type'); return }
       const profileData = profiles[0]
       if (profileData.user_type !== 'creator') {
-        window.location.href = profileData.user_type === 'company' ? '/company/dashboard' : '/auth/select-type'
+        router.replace(profileData.user_type === 'company' ? '/company/dashboard' : '/auth/select-type')
         return
       }
       let finalProfile = profileData
@@ -67,7 +69,7 @@ export default function CreatorHome() {
       setProfile(finalProfile)
 
       const [walletRes, appsRes, delivRes] = await Promise.all([
-        fetch(`${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${userData.id}&select=*`, { headers }),
+        fetch(`${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${userData.id}&select=total_earned`, { headers }),
         fetch(`${SUPABASE_URL}/rest/v1/applications?creator_id=eq.${userData.id}&select=id,status`, { headers }),
         fetch(`${SUPABASE_URL}/rest/v1/content_deliveries?creator_id=eq.${userData.id}&status=in.(approved,completed)&select=id`, { headers }),
       ])
@@ -85,7 +87,7 @@ export default function CreatorHome() {
       }
       setLoading(false)
     } catch {
-      window.location.href = '/auth/select-type'
+      router.replace('/auth/select-type')
     }
   }
 

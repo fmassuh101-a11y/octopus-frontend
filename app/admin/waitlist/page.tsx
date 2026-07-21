@@ -22,6 +22,7 @@ export default function AdminWaitlist() {
   const [message, setMessage] = useState('')
   const [roleFilter, setRoleFilter] = useState<'all' | 'creator' | 'company'>('all')
   const [sending, setSending] = useState(false)
+  const [selected, setSelected] = useState<Row | null>(null)
 
   useEffect(() => {
     ;(async () => {
@@ -37,7 +38,7 @@ export default function AdminWaitlist() {
   }, [])
 
   const send = async () => {
-    if (!subject.trim() || !message.trim()) { toast('Completá asunto y mensaje', 'error'); return }
+    if (!subject.trim() || !message.trim()) { toast('Completa asunto y mensaje', 'error'); return }
     setSending(true)
     try {
       const token = localStorage.getItem('sb-access-token')
@@ -117,7 +118,11 @@ export default function AdminWaitlist() {
             </thead>
             <tbody>
               {visible.map((r) => (
-                <tr key={r.id} className="border-t border-neutral-800/70">
+                <tr
+                  key={r.id}
+                  onClick={() => setSelected(r)}
+                  className="cursor-pointer border-t border-neutral-800/70 transition-colors hover:bg-neutral-900"
+                >
                   <td className="px-4 py-3">
                     <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${r.role === 'creator' ? 'bg-cyan-500/15 text-cyan-300' : 'bg-emerald-500/15 text-emerald-300'}`}>
                       {r.role === 'creator' ? 'Creador' : 'Empresa'}
@@ -128,7 +133,7 @@ export default function AdminWaitlist() {
                   <td className="px-4 py-3 text-neutral-400">{r.email}</td>
                   <td className="px-4 py-3 text-neutral-500">{r.role === 'creator' ? (r.experience || '—') : `${r.niche || '—'} · mkt: ${r.marketing_experience || '—'}`}</td>
                   <td className="px-4 py-3 text-neutral-500">{r.source || '—'}</td>
-                  <td className="px-4 py-3 max-w-[220px] truncate text-neutral-500" title={r.message || ''}>{r.message || '—'}</td>
+                  <td className="px-4 py-3 max-w-[220px] truncate text-neutral-500">{r.message || '—'}</td>
                   <td className="px-4 py-3 tabular-nums">{r.referral_count}</td>
                   <td className="px-4 py-3 text-neutral-500">{new Date(r.created_at).toLocaleDateString('es-CL')}</td>
                 </tr>
@@ -140,6 +145,65 @@ export default function AdminWaitlist() {
           </table>
         </div>
       </div>
+
+      {/* Detalle completo de un inscripto — antes solo se veía con el
+          tooltip nativo del navegador al pasar el mouse (title=), difícil
+          de usar. Ahora se abre clickeando la fila. */}
+      {selected && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-fade-in"
+          onClick={() => setSelected(null)}
+        >
+          <div
+            className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-3xl border border-neutral-800 bg-neutral-900 p-6 animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${selected.role === 'creator' ? 'bg-cyan-500/15 text-cyan-300' : 'bg-emerald-500/15 text-emerald-300'}`}>
+                  {selected.role === 'creator' ? 'Creador' : 'Empresa'}
+                </span>
+                <h2 className="mt-2 text-xl font-extrabold">{selected.name || selected.company_name || '—'}</h2>
+                <p className="text-sm text-neutral-500">{selected.email}</p>
+              </div>
+              <button
+                onClick={() => setSelected(null)}
+                className="rounded-full border border-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-400 hover:text-white"
+              >
+                Cerrar
+              </button>
+            </div>
+
+            <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
+              <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-3">
+                <p className="text-xs text-neutral-500">País</p>
+                <p className="mt-0.5 font-semibold">{selected.country || '—'}</p>
+              </div>
+              <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-3">
+                <p className="text-xs text-neutral-500">Fuente</p>
+                <p className="mt-0.5 font-semibold">{selected.source || '—'}</p>
+              </div>
+              <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-3">
+                <p className="text-xs text-neutral-500">{selected.role === 'creator' ? 'Experiencia' : 'Nicho'}</p>
+                <p className="mt-0.5 font-semibold">{selected.role === 'creator' ? (selected.experience || '—') : (selected.niche || '—')}</p>
+              </div>
+              <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-3">
+                <p className="text-xs text-neutral-500">{selected.role === 'creator' ? 'Referidos' : 'Experiencia en marketing'}</p>
+                <p className="mt-0.5 font-semibold">{selected.role === 'creator' ? selected.referral_count : (selected.marketing_experience || '—')}</p>
+              </div>
+            </div>
+
+            <div className="mt-3">
+              <p className="text-xs text-neutral-500">Mensaje</p>
+              <p className="mt-1 whitespace-pre-wrap rounded-2xl border border-neutral-800 bg-neutral-950 p-4 text-sm leading-relaxed text-neutral-200">
+                {selected.message || 'No dejó mensaje.'}
+              </p>
+            </div>
+
+            <p className="mt-4 text-xs text-neutral-600">Se inscribió el {new Date(selected.created_at).toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

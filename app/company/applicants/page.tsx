@@ -71,6 +71,237 @@ interface Gig {
   category: string
 }
 
+// Helpers puros y componentes de fila movidos a scope de módulo: si quedan
+// definidos dentro de ApplicantsPage, React los trata como un tipo de
+// componente nuevo en cada render y remonta toda la grilla (parpadeo/jank)
+// con cualquier interacción (bookmark, cambio de tab, etc).
+const formatNumber = (num: number) => {
+  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
+  if (num >= 1000) return (num / 1000).toFixed(1) + 'K'
+  return num.toString()
+}
+
+const getTimeAgo = (date: string) => {
+  const now = new Date()
+  const created = new Date(date)
+  const diffMs = now.getTime() - created.getTime()
+  const diffMins = Math.floor(diffMs / 60000)
+  const diffHours = Math.floor(diffMins / 60)
+  const diffDays = Math.floor(diffHours / 24)
+
+  if (diffMins < 60) return `hace ${diffMins}m`
+  if (diffHours < 24) return `hace ${diffHours}h`
+  if (diffDays < 7) return `hace ${diffDays}d`
+  return created.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' })
+}
+
+const getCreatorName = (creator?: CreatorProfile) => {
+  if (!creator) return 'Creador'
+  if (creator.firstName && creator.lastName) return `${creator.firstName} ${creator.lastName}`
+  return creator.full_name || 'Creador'
+}
+
+const getTotalFollowers = (creator?: CreatorProfile) => {
+  if (!creator?.tiktokAccounts?.length) return 0
+  return creator.tiktokAccounts.reduce((sum, acc) => sum + (acc.followers || 0), 0)
+}
+
+const TabButton = ({ tab, label, count, activeTab, onSelect }: { tab: TabType, label: string, count: number, activeTab: TabType, onSelect: (tab: TabType) => void }) => (
+  <button
+    onClick={() => onSelect(tab)}
+    className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors relative ${
+      activeTab === tab
+        ? 'text-emerald-400 border-b-2 border-emerald-600'
+        : 'text-neutral-500 hover:text-neutral-200'
+    }`}
+  >
+    {label}
+    {count > 0 && (
+      <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${
+        activeTab === tab ? 'bg-emerald-500/15 text-emerald-400' : 'bg-neutral-800 text-neutral-400'
+      } text-white placeholder-neutral-500`}>
+        {count}
+      </span>
+    )}
+  </button>
+)
+
+const ApplicantCard = ({ app, updatingId, onViewProfile, onToggleBookmark, onSendMessage, onDecline, onCreateContract }: {
+  app: Application
+  updatingId: string | null
+  onViewProfile: (app: Application) => void
+  onToggleBookmark: (app: Application, e: React.MouseEvent) => void
+  onSendMessage: (app: Application, e?: React.MouseEvent) => void
+  onDecline: (app: Application, e?: React.MouseEvent) => void
+  onCreateContract: (app: Application) => void
+}) => {
+  const creator = app.creator
+  const tiktok = creator?.tiktokAccounts?.[0]
+  const isUpdating = updatingId === app.id
+
+  return (
+    <div className="bg-neutral-900 rounded-xl border border-neutral-800 p-4 hover:shadow-md transition-shadow text-white placeholder-neutral-500">
+      {/* Header Row */}
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-2 text-xs text-neutral-500">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Aplico {getTimeAgo(app.created_at)}
+        </div>
+        {/* Social Icons */}
+        <div className="flex items-center gap-2">
+          {creator?.instagram && (
+            <a href={`https://instagram.com/${(creator.instagram || '').replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer" className="text-neutral-500 hover:text-emerald-500">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+            </a>
+          )}
+          {tiktok && (
+            <a href={`https://tiktok.com/@${(tiktok.username || '').replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer" className="text-neutral-500 hover:text-white">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/></svg>
+            </a>
+          )}
+          {creator?.linkedin && (
+            <a href={creator.linkedin} target="_blank" rel="noopener noreferrer" className="text-neutral-500 hover:text-blue-600">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+            </a>
+          )}
+        </div>
+      </div>
+
+      {/* Profile Section - Clickable */}
+      <button onClick={() => onViewProfile(app)} className="w-full text-left mb-4">
+        <div className="flex items-center gap-3">
+          {tiktok?.avatarUrl || creator?.avatar_url ? (
+            <img
+              src={tiktok?.avatarUrl || creator?.avatar_url}
+              alt={getCreatorName(creator)}
+              className="w-12 h-12 rounded-full object-cover"
+            />
+          ) : (
+            <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-500 rounded-full flex items-center justify-center">
+              <span className="text-white font-bold text-lg">{getCreatorName(creator).charAt(0).toUpperCase()}</span>
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-white truncate">{getCreatorName(creator)}</h3>
+              {tiktok?.isVerified && (
+                <svg className="w-4 h-4 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              )}
+            </div>
+            <p className="text-sm text-neutral-500 truncate">
+              {creator?.city && creator?.country ? `${creator.city}, ${creator.country}` : tiktok ? `@${tiktok.username}` : ''}
+            </p>
+          </div>
+        </div>
+      </button>
+
+      {/* Bio/About */}
+      {creator?.about && (
+        <p className="text-sm text-neutral-400 mb-3 line-clamp-2">{creator.about}</p>
+      )}
+
+      {/* Tags */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        {creator?.niche && (
+          <span className="px-2 py-1 bg-emerald-500/15 text-emerald-400 rounded-full text-xs font-medium">{creator.niche}</span>
+        )}
+        {tiktok && (
+          <span className="px-2 py-1 bg-neutral-800 text-neutral-400 rounded-full text-xs">{formatNumber(getTotalFollowers(creator))} seguidores</span>
+        )}
+        {app.gig && (
+          <span className="px-2 py-1 bg-blue-500/15 text-blue-400 rounded-full text-xs">{app.gig.category}</span>
+        )}
+      </div>
+
+      {/* Action Buttons - Sideshift Style */}
+      <div className="flex items-center justify-between pt-3 border-t border-neutral-800">
+        <div className="flex items-center gap-2">
+          {/* Eye - View Profile */}
+          <button
+            onClick={() => onViewProfile(app)}
+            className="p-2 rounded-full border border-neutral-800 text-neutral-500 hover:bg-neutral-950 hover:text-neutral-200 transition-colors"
+            title="Ver perfil"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+          </button>
+          {/* Bookmark */}
+          <button
+            onClick={(e) => onToggleBookmark(app, e)}
+            disabled={isUpdating}
+            className={`p-2 rounded-full border transition-colors ${
+              app.bookmarked
+                ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-400'
+                : 'border-neutral-800 text-neutral-500 hover:bg-neutral-950 hover:text-neutral-200'
+            } placeholder-neutral-500`}
+            title={app.bookmarked ? 'Quitar bookmark' : 'Guardar'}
+          >
+            <svg className="w-5 h-5" fill={app.bookmarked ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Crear contrato (aplicante aceptado) */}
+          {app.status === 'accepted' && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onCreateContract(app) }}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition-colors text-sm font-semibold"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Crear contrato
+            </button>
+          )}
+          {/* Send Message / Accept */}
+          {app.status !== 'rejected' && (
+            <button
+              onClick={(e) => onSendMessage(app, e)}
+              disabled={isUpdating}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-neutral-800 text-neutral-200 hover:bg-neutral-950 transition-colors text-sm font-medium disabled:opacity-50"
+            >
+              <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              {app.status === 'accepted' ? 'Mensaje' : 'Aceptar'}
+            </button>
+          )}
+          {/* Decline */}
+          {app.status === 'pending' && (
+            <button
+              onClick={(e) => onDecline(app, e)}
+              disabled={isUpdating}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-neutral-800 text-neutral-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors text-sm font-medium disabled:opacity-50"
+            >
+              <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Rechazar
+            </button>
+          )}
+          {/* Already declined */}
+          {app.status === 'rejected' && (
+            <span className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-red-50 text-red-600 text-sm font-medium">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Rechazado
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function ApplicantsPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
@@ -391,238 +622,6 @@ export default function ApplicantsPage() {
   const counts = getCounts()
   const filteredApps = getFilteredApplications()
 
-  const formatNumber = (num: number) => {
-    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
-    if (num >= 1000) return (num / 1000).toFixed(1) + 'K'
-    return num.toString()
-  }
-
-  const getTimeAgo = (date: string) => {
-    const now = new Date()
-    const created = new Date(date)
-    const diffMs = now.getTime() - created.getTime()
-    const diffMins = Math.floor(diffMs / 60000)
-    const diffHours = Math.floor(diffMins / 60)
-    const diffDays = Math.floor(diffHours / 24)
-
-    if (diffMins < 60) return `hace ${diffMins}m`
-    if (diffHours < 24) return `hace ${diffHours}h`
-    if (diffDays < 7) return `hace ${diffDays}d`
-    return created.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' })
-  }
-
-  const getCreatorName = (creator?: CreatorProfile) => {
-    if (!creator) return 'Creador'
-    if (creator.firstName && creator.lastName) return `${creator.firstName} ${creator.lastName}`
-    return creator.full_name || 'Creador'
-  }
-
-  const getTotalFollowers = (creator?: CreatorProfile) => {
-    if (!creator?.tiktokAccounts?.length) return 0
-    return creator.tiktokAccounts.reduce((sum, acc) => sum + (acc.followers || 0), 0)
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-neutral-400">Cargando aplicantes...</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Tab Button Component
-  const TabButton = ({ tab, label, count }: { tab: TabType, label: string, count: number }) => (
-    <button
-      onClick={() => setActiveTab(tab)}
-      className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors relative ${
-        activeTab === tab
-          ? 'text-emerald-400 border-b-2 border-emerald-600'
-          : 'text-neutral-500 hover:text-neutral-200'
-      }`}
-    >
-      {label}
-      {count > 0 && (
-        <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${
-          activeTab === tab ? 'bg-emerald-500/15 text-emerald-400' : 'bg-neutral-800 text-neutral-400'
-        } text-white placeholder-neutral-500`}>
-          {count}
-        </span>
-      )}
-    </button>
-  )
-
-  // Applicant Card Component (Sideshift style)
-  const ApplicantCard = ({ app }: { app: Application }) => {
-    const creator = app.creator
-    const tiktok = creator?.tiktokAccounts?.[0]
-    const isUpdating = updatingId === app.id
-
-    return (
-      <div className="bg-neutral-900 rounded-xl border border-neutral-800 p-4 hover:shadow-md transition-shadow text-white placeholder-neutral-500">
-        {/* Header Row */}
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-2 text-xs text-neutral-500">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Aplico {getTimeAgo(app.created_at)}
-          </div>
-          {/* Social Icons */}
-          <div className="flex items-center gap-2">
-            {creator?.instagram && (
-              <a href={`https://instagram.com/${(creator.instagram || '').replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer" className="text-neutral-500 hover:text-emerald-500">
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-              </a>
-            )}
-            {tiktok && (
-              <a href={`https://tiktok.com/@${(tiktok.username || '').replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer" className="text-neutral-500 hover:text-white">
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/></svg>
-              </a>
-            )}
-            {creator?.linkedin && (
-              <a href={creator.linkedin} target="_blank" rel="noopener noreferrer" className="text-neutral-500 hover:text-blue-600">
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
-              </a>
-            )}
-          </div>
-        </div>
-
-        {/* Profile Section - Clickable */}
-        <button onClick={() => handleViewProfile(app)} className="w-full text-left mb-4">
-          <div className="flex items-center gap-3">
-            {tiktok?.avatarUrl || creator?.avatar_url ? (
-              <img
-                src={tiktok?.avatarUrl || creator?.avatar_url}
-                alt={getCreatorName(creator)}
-                className="w-12 h-12 rounded-full object-cover"
-              />
-            ) : (
-              <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-500 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-lg">{getCreatorName(creator).charAt(0).toUpperCase()}</span>
-              </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-white truncate">{getCreatorName(creator)}</h3>
-                {tiktok?.isVerified && (
-                  <svg className="w-4 h-4 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                )}
-              </div>
-              <p className="text-sm text-neutral-500 truncate">
-                {creator?.city && creator?.country ? `${creator.city}, ${creator.country}` : tiktok ? `@${tiktok.username}` : ''}
-              </p>
-            </div>
-          </div>
-        </button>
-
-        {/* Bio/About */}
-        {creator?.about && (
-          <p className="text-sm text-neutral-400 mb-3 line-clamp-2">{creator.about}</p>
-        )}
-
-        {/* Tags */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          {creator?.niche && (
-            <span className="px-2 py-1 bg-emerald-500/15 text-emerald-400 rounded-full text-xs font-medium">{creator.niche}</span>
-          )}
-          {tiktok && (
-            <span className="px-2 py-1 bg-neutral-800 text-neutral-400 rounded-full text-xs">{formatNumber(getTotalFollowers(creator))} seguidores</span>
-          )}
-          {app.gig && (
-            <span className="px-2 py-1 bg-blue-500/15 text-blue-400 rounded-full text-xs">{app.gig.category}</span>
-          )}
-        </div>
-
-        {/* Action Buttons - Sideshift Style */}
-        <div className="flex items-center justify-between pt-3 border-t border-neutral-800">
-          <div className="flex items-center gap-2">
-            {/* Eye - View Profile */}
-            <button
-              onClick={() => handleViewProfile(app)}
-              className="p-2 rounded-full border border-neutral-800 text-neutral-500 hover:bg-neutral-950 hover:text-neutral-200 transition-colors"
-              title="Ver perfil"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg>
-            </button>
-            {/* Bookmark */}
-            <button
-              onClick={(e) => handleToggleBookmark(app, e)}
-              disabled={isUpdating}
-              className={`p-2 rounded-full border transition-colors ${
-                app.bookmarked
-                  ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-400'
-                  : 'border-neutral-800 text-neutral-500 hover:bg-neutral-950 hover:text-neutral-200'
-              } placeholder-neutral-500`}
-              title={app.bookmarked ? 'Quitar bookmark' : 'Guardar'}
-            >
-              <svg className="w-5 h-5" fill={app.bookmarked ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-              </svg>
-            </button>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {/* Crear contrato (aplicante aceptado) */}
-            {app.status === 'accepted' && (
-              <button
-                onClick={(e) => { e.stopPropagation(); setContractFor(app) }}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition-colors text-sm font-semibold"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Crear contrato
-              </button>
-            )}
-            {/* Send Message / Accept */}
-            {app.status !== 'rejected' && (
-              <button
-                onClick={(e) => handleSendMessage(app, e)}
-                disabled={isUpdating}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-neutral-800 text-neutral-200 hover:bg-neutral-950 transition-colors text-sm font-medium disabled:opacity-50"
-              >
-                <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                {app.status === 'accepted' ? 'Mensaje' : 'Aceptar'}
-              </button>
-            )}
-            {/* Decline */}
-            {app.status === 'pending' && (
-              <button
-                onClick={(e) => handleDecline(app, e)}
-                disabled={isUpdating}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-neutral-800 text-neutral-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors text-sm font-medium disabled:opacity-50"
-              >
-                <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                Rechazar
-              </button>
-            )}
-            {/* Already declined */}
-            {app.status === 'rejected' && (
-              <span className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-red-50 text-red-600 text-sm font-medium">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                Rechazado
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="min-h-screen bg-neutral-950 pb-24">
       {/* Header */}
@@ -655,12 +654,12 @@ export default function ApplicantsPage() {
 
           {/* Tabs */}
           <div className="flex gap-1 overflow-x-auto border-b border-neutral-800 -mb-px">
-            <TabButton tab="new" label="Nuevos" count={counts.new} />
-            <TabButton tab="reviewed" label="Revisados" count={counts.reviewed} />
-            <TabButton tab="messaged" label="Contactados" count={counts.messaged} />
-            <TabButton tab="accepted" label="Aceptados" count={counts.accepted} />
-            <TabButton tab="declined" label="Rechazados" count={counts.declined} />
-            <TabButton tab="bookmarked" label="Guardados" count={counts.bookmarked} />
+            <TabButton tab="new" label="Nuevos" count={counts.new} activeTab={activeTab} onSelect={setActiveTab} />
+            <TabButton tab="reviewed" label="Revisados" count={counts.reviewed} activeTab={activeTab} onSelect={setActiveTab} />
+            <TabButton tab="messaged" label="Contactados" count={counts.messaged} activeTab={activeTab} onSelect={setActiveTab} />
+            <TabButton tab="accepted" label="Aceptados" count={counts.accepted} activeTab={activeTab} onSelect={setActiveTab} />
+            <TabButton tab="declined" label="Rechazados" count={counts.declined} activeTab={activeTab} onSelect={setActiveTab} />
+            <TabButton tab="bookmarked" label="Guardados" count={counts.bookmarked} activeTab={activeTab} onSelect={setActiveTab} />
           </div>
         </div>
       </div>
@@ -691,7 +690,16 @@ export default function ApplicantsPage() {
             </p>
             <div className="grid gap-4 md:grid-cols-2">
               {filteredApps.map(app => (
-                <ApplicantCard key={app.id} app={app} />
+                <ApplicantCard
+                  key={app.id}
+                  app={app}
+                  updatingId={updatingId}
+                  onViewProfile={handleViewProfile}
+                  onToggleBookmark={handleToggleBookmark}
+                  onSendMessage={handleSendMessage}
+                  onDecline={handleDecline}
+                  onCreateContract={setContractFor}
+                />
               ))}
             </div>
           </>
@@ -731,8 +739,8 @@ export default function ApplicantsPage() {
 
       {/* Creator Profile Modal */}
       {selectedCreator && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center">
-          <div className="bg-neutral-900 w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-2xl">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center animate-fade-in">
+          <div className="bg-neutral-900 w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-2xl animate-fade-in-up">
             {/* Modal Header */}
             <div className="sticky top-0 bg-neutral-900 border-b border-neutral-800 px-6 py-4 flex items-center justify-between z-10">
               <h2 className="text-lg font-bold text-white">Perfil del Creador</h2>

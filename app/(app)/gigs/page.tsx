@@ -62,6 +62,7 @@ export default function GigsPage() {
   const [appliedGigs, setAppliedGigs] = useState<Set<string>>(new Set())
   const [isVerified, setIsVerified] = useState(false)
   const [showVerificationModal, setShowVerificationModal] = useState(false)
+  const [ageConfirmGig, setAgeConfirmGig] = useState<Gig | null>(null)
   const [showFilters, setShowFilters] = useState(false)
   // redes conectadas del creador (para chequear requisitos al postular)
   const [mySocials, setMySocials] = useState<{ instagram?: string; tiktok?: string; youtube?: string; followers?: number }>({})
@@ -164,19 +165,25 @@ export default function GigsPage() {
 
     // REQUISITOS de la campaña — bloquean con motivo exacto
     if (gig.require_instagram && !mySocials.instagram) {
-      toast('Este trabajo requiere Instagram. Agregá tu cuenta en tu perfil antes de aplicar.', 'error'); return
+      toast('Este trabajo requiere Instagram. Agrega tu cuenta en tu perfil antes de aplicar.', 'error'); return
     }
     if (gig.require_tiktok && !mySocials.tiktok) {
-      toast('Este trabajo requiere TikTok. Agregá tu cuenta en tu perfil antes de aplicar.', 'error'); return
+      toast('Este trabajo requiere TikTok. Agrega tu cuenta en tu perfil antes de aplicar.', 'error'); return
     }
     if (gig.min_followers && gig.min_followers > 0 && (mySocials.followers || 0) < gig.min_followers) {
       // el conteo real de seguidores se valida al conectar las redes (OAuth); si aún no hay datos, avisamos
-      toast(`Este trabajo requiere ${gig.min_followers.toLocaleString('es-CL')}+ seguidores. Conectá tus redes para validarlo.`, 'error'); return
+      toast(`Este trabajo requiere ${gig.min_followers.toLocaleString('es-CL')}+ seguidores. Conecta tus redes para validarlo.`, 'error'); return
     }
     if (gig.require_age_21) {
-      const ok = window.confirm('Este trabajo requiere tener 21 años o más. ¿Confirmas que tienes 21+?')
-      if (!ok) return
+      // antes era window.confirm() — corta cualquier animación en curso.
+      // Se reemplaza por un modal propio, consistente con el resto del flujo.
+      setAgeConfirmGig(gig)
+      return
     }
+    await submitApplication(gig)
+  }
+
+  const submitApplication = async (gig: Gig) => {
     setAppliedGigs(prev => new Set([...Array.from(prev), gig.id]))
     setSelectedGig(null)
     toast('Postulaste con éxito')
@@ -191,11 +198,11 @@ export default function GigsPage() {
         const err = await res.text()
         if (err.includes('duplicate')) return
         setAppliedGigs(prev => { const n = new Set(prev); n.delete(gig.id); return n })
-        toast('No se pudo postular. Intentá de nuevo.', 'error')
+        toast('No se pudo postular. Intenta de nuevo.', 'error')
       }
     } catch {
       setAppliedGigs(prev => { const n = new Set(prev); n.delete(gig.id); return n })
-      toast('No se pudo postular. Revisá tu conexión.', 'error')
+      toast('No se pudo postular. Revisa tu conexión.', 'error')
     }
   }
 
@@ -418,12 +425,37 @@ export default function GigsPage() {
 
       {/* Modal verificación */}
       {showVerificationModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-3xl bg-white p-6 text-center shadow-2xl">
-            <p className="text-lg font-bold">Conectá tus redes primero</p>
-            <p className="mt-1 text-neutral-500">Para postular necesitás verificar tu cuenta de TikTok o Instagram.</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-sm rounded-3xl bg-white p-6 text-center shadow-2xl animate-scale-in">
+            <p className="text-lg font-bold">Conecta tus redes primero</p>
+            <p className="mt-1 text-neutral-500">Para postular necesitas verificar tu cuenta de TikTok o Instagram.</p>
             <button onClick={() => setShowVerificationModal(false)}
               className="mt-5 w-full rounded-full bg-gradient-to-b from-[#22D3EE] to-[#0891B2] py-3.5 font-bold text-white">Entendido</button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal confirmación 21+ — reemplaza window.confirm() para no cortar
+          la animación del resto del flujo de postulación */}
+      {ageConfirmGig && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-sm rounded-3xl bg-white p-6 text-center shadow-2xl animate-scale-in">
+            <p className="text-lg font-bold">Este trabajo requiere 21 años o más</p>
+            <p className="mt-1 text-neutral-500">¿Confirmas que tienes 21 años o más?</p>
+            <div className="mt-5 flex gap-3">
+              <button
+                onClick={() => setAgeConfirmGig(null)}
+                className="flex-1 rounded-full border border-neutral-200 py-3.5 font-bold text-neutral-700"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => { const gig = ageConfirmGig; setAgeConfirmGig(null); if (gig) submitApplication(gig) }}
+                className="flex-1 rounded-full bg-gradient-to-b from-[#22D3EE] to-[#0891B2] py-3.5 font-bold text-white"
+              >
+                Sí, confirmo
+              </button>
+            </div>
           </div>
         </div>
       )}

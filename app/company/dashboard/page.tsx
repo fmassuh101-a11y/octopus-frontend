@@ -91,12 +91,26 @@ export default function CompanyDashboard() {
       const userStr = localStorage.getItem('sb-user')
 
       if (!token || !userStr) {
-        window.location.href = '/auth/login'
+        router.replace('/auth/login')
         return
       }
 
       const userData = JSON.parse(userStr)
       setUser(userData)
+
+      // Perfil y wallet no dependen entre sí: se piden a la vez en vez de
+      // esperar el perfil completo antes de recién ahí pedir la wallet.
+      fetch(`${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${userData.id}&select=balance,pending_balance`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY }
+      }).then(async walletRes => {
+        if (walletRes.ok) {
+          const wallets = await walletRes.json()
+          if (wallets.length > 0) {
+            setWallet(wallets[0])
+            writeCache('company-home', { ...(readCache<any>('company-home') || {}), wallet: wallets[0] })
+          }
+        }
+      }).catch(() => {})
 
       // Fetch profile
       const response = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=*`, {
@@ -114,7 +128,7 @@ export default function CompanyDashboard() {
           // Check if user is a company (salvo que esté trabajando en un espacio de equipo)
           if (profileData.user_type !== 'company' && !getActiveCompany()) {
             if (profileData.user_type === 'creator') {
-              window.location.href = '/creator/dashboard'
+              router.replace('/creator/dashboard')
               return
             }
           }
@@ -142,25 +156,12 @@ export default function CompanyDashboard() {
           setProfile(finalProfile)
           writeCache('company-home', { ...(readCache<any>('company-home') || {}), profile: finalProfile })
 
-          // PARALLEL: Fetch wallet while profile is already loaded
-          fetch(`${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${userData.id}&select=balance,pending_balance`, {
-            headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY }
-          }).then(async walletRes => {
-            if (walletRes.ok) {
-              const wallets = await walletRes.json()
-              if (wallets.length > 0) {
-                setWallet(wallets[0])
-                writeCache('company-home', { ...(readCache<any>('company-home') || {}), wallet: wallets[0] })
-              }
-            }
-          }).catch(() => {})
-
         } else {
-          window.location.href = '/auth/select-type'
+          router.replace('/auth/select-type')
           return
         }
       } else {
-        window.location.href = '/auth/select-type'
+        router.replace('/auth/select-type')
         return
       }
 
@@ -168,7 +169,7 @@ export default function CompanyDashboard() {
     } catch (err) {
       console.error('Auth check error:', err)
       // On error, go to select-type instead of login to avoid redirect loop
-      window.location.href = '/auth/select-type'
+      router.replace('/auth/select-type')
     }
   }
 
@@ -223,15 +224,15 @@ export default function CompanyDashboard() {
   return (
     <div className="min-h-screen bg-neutral-950 flex">
       <GuidedTour storageKey="octopus-tour-company" steps={[
-        { title: 'Bienvenido a Octopus', body: 'Acá conseguís creadores para promocionar tu marca. Te muestro en 4 pasos cómo funciona.' },
-        { title: 'Creá una campaña', body: 'Elegí el tipo de contenido que necesitás (UGC, Clipping, Faceless y más) y publicá tu campaña. El formulario se adapta al tipo.' },
-        { title: 'Revisá aplicantes', body: 'Los creadores aplican a tu campaña. Aceptá a los que te gusten y mandales un contrato con los términos.' },
-        { title: 'Aprobá y pagá', body: 'Cuando el creador entrega, revisás el contenido. Al aprobarlo, se libera el pago. Mejorá tu plan para bajar la comisión.' },
+        { title: 'Bienvenido a Octopus', body: 'Acá consigues creadores para promocionar tu marca. Te muestro en 4 pasos cómo funciona.' },
+        { title: 'Crea una campaña', body: 'Elige el tipo de contenido que necesitas (UGC, Clipping, Faceless y más) y publica tu campaña. El formulario se adapta al tipo.' },
+        { title: 'Revisa aplicantes', body: 'Los creadores aplican a tu campaña. Acepta a los que te gusten y mándales un contrato con los términos.' },
+        { title: 'Aprueba y paga', body: 'Cuando el creador entrega, revisas el contenido. Al aprobarlo, se libera el pago. Mejora tu plan para bajar la comisión.' },
       ]} />
       {/* Notificación grande: te regalaron un plan / descuento */}
       {giftModal && (
-        <div className="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center px-4">
-          <div className="bg-neutral-900 border border-emerald-500/30 rounded-3xl p-8 max-w-md w-full text-center shadow-2xl shadow-emerald-500/10">
+        <div className="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center px-4 animate-fade-in">
+          <div className="bg-neutral-900 border border-emerald-500/30 rounded-3xl p-8 max-w-md w-full text-center shadow-2xl shadow-emerald-500/10 animate-scale-in">
             <div className="w-16 h-16 rounded-2xl bg-emerald-500/15 flex items-center justify-center mx-auto mb-5">
               <GiftIcon className="w-8 h-8 text-emerald-400" strokeWidth={2} />
             </div>

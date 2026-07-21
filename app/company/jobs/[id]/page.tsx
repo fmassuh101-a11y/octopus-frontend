@@ -59,16 +59,27 @@ export default function JobDetailPage() {
         return
       }
 
-      // Load job details
-      const jobRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/gigs?id=eq.${jobId}&select=*`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'apikey': SUPABASE_ANON_KEY
+      // Job y aplicaciones no dependen entre sí: se piden a la vez.
+      const [jobRes, appsRes] = await Promise.all([
+        fetch(
+          `${SUPABASE_URL}/rest/v1/gigs?id=eq.${jobId}&select=*`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'apikey': SUPABASE_ANON_KEY
+            }
           }
-        }
-      )
+        ),
+        fetch(
+          `${SUPABASE_URL}/rest/v1/applications?gig_id=eq.${jobId}&select=*&order=created_at.desc`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'apikey': SUPABASE_ANON_KEY
+            }
+          }
+        )
+      ])
 
       if (jobRes.ok) {
         const jobs = await jobRes.json()
@@ -76,17 +87,6 @@ export default function JobDetailPage() {
           setJob(jobs[0])
         }
       }
-
-      // Load applications
-      const appsRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/applications?gig_id=eq.${jobId}&select=*&order=created_at.desc`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'apikey': SUPABASE_ANON_KEY
-          }
-        }
-      )
 
       if (appsRes.ok) {
         const appsData = await appsRes.json()

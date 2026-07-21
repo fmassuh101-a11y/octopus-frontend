@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { readCache, writeCache } from '@/lib/useCachedFetch'
 import { BarChart3, Briefcase, Inbox, MessageCircle, Users, Wallet } from 'lucide-react'
 
 interface Wallet {
@@ -39,6 +40,13 @@ export default function CompanyWallet() {
   }
 
   useEffect(() => {
+    // FLUIDEZ: pinta al instante lo último visto; lo fresco llega por detrás
+    const cached = readCache<{ wallet: Wallet, transactions: Transaction[] }>('company-wallet')
+    if (cached) {
+      setWallet(cached.wallet)
+      setTransactions(cached.transactions)
+      setLoading(false)
+    }
     loadWalletData()
   }, [])
 
@@ -46,23 +54,17 @@ export default function CompanyWallet() {
     const token = getToken()
     const userId = getUserId()
 
-    console.log('[CompanyWallet] Loading data...', { hasToken: !!token, userId })
-
     if (!token || !userId) {
-      console.log('[CompanyWallet] No token or user, redirecting')
-      window.location.href = '/auth/login'
+      router.push('/auth/login')
       return
     }
 
     try {
       // Load wallet
-      console.log('[CompanyWallet] Fetching wallet...')
       const walletRes = await fetch(
         `${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${userId}&select=*`,
         { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
       )
-
-      console.log('[CompanyWallet] Wallet response:', walletRes.status)
 
       if (!walletRes.ok) {
         console.error('[CompanyWallet] Wallet fetch failed:', walletRes.status)
@@ -71,23 +73,20 @@ export default function CompanyWallet() {
       }
 
       const wallets = await walletRes.json()
-      console.log('[CompanyWallet] Wallets found:', wallets.length)
 
       if (wallets.length > 0) {
         setWallet(wallets[0])
 
         // Load transactions
-        console.log('[CompanyWallet] Fetching transactions...')
         const txRes = await fetch(
           `${SUPABASE_URL}/rest/v1/transactions?wallet_id=eq.${wallets[0].id}&select=*&order=created_at.desc&limit=20`,
           { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
         )
         const txs = txRes.ok ? await txRes.json() : []
-        console.log('[CompanyWallet] Transactions found:', txs.length)
         setTransactions(txs)
+        writeCache('company-wallet', { wallet: wallets[0], transactions: txs })
       } else {
         // No wallet exists - create one
-        console.log('[CompanyWallet] No wallet found, creating one...')
         const createRes = await fetch(
           `${SUPABASE_URL}/rest/v1/wallets`,
           {
@@ -110,7 +109,6 @@ export default function CompanyWallet() {
 
         if (createRes.ok) {
           const newWallets = await createRes.json()
-          console.log('[CompanyWallet] Wallet created:', newWallets)
           if (newWallets.length > 0) {
             setWallet(newWallets[0])
           }

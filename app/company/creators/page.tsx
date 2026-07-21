@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { ClipboardList, Home, MessageCircle, Smartphone, Users, Wallet } from 'lucide-react'
+import { readCache, writeCache } from '@/lib/useCachedFetch'
 
 interface Creator {
   id: string
@@ -45,6 +46,12 @@ export default function CreatorsPage() {
   const [searchTerm, setSearchTerm] = useState('')
 
   useEffect(() => {
+    // FLUIDEZ: pinta al instante lo último visto; lo fresco llega por detrás
+    const cached = readCache<Creator[]>('company-creators')
+    if (cached) {
+      setCreators(cached)
+      setLoading(false)
+    }
     loadCreators()
   }, [])
 
@@ -58,7 +65,7 @@ export default function CreatorsPage() {
     try {
       // Get accepted applications
       const appsRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/applications?select=*,gigs(*)&company_id=eq.${user.id}&status=eq.accepted`,
+        `${SUPABASE_URL}/rest/v1/applications?select=creator_id,gigs(budget)&company_id=eq.${user.id}&status=eq.accepted`,
         { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
       )
 
@@ -80,7 +87,7 @@ export default function CreatorsPage() {
       // Get profiles + entregas reales (para el conteo real de posts — antes era Math.random())
       const [profilesRes, deliveriesRes] = await Promise.all([
         fetch(
-          `${SUPABASE_URL}/rest/v1/public_profiles?user_id=in.(${creatorIds.join(',')})&select=*`,
+          `${SUPABASE_URL}/rest/v1/public_profiles?user_id=in.(${creatorIds.join(',')})&select=user_id,full_name,avatar_url,bio,tiktok_handle`,
           { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
         ),
         fetch(
@@ -112,6 +119,7 @@ export default function CreatorsPage() {
       })
 
       setCreators(creatorsData)
+      writeCache('company-creators', creatorsData)
       setLoading(false)
     } catch (err) {
       console.error('Error loading creators:', err)

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import { authHeaders } from '@/lib/auth/clientToken'
 import { readCache, writeCache } from '@/lib/useCachedFetch'
 import { ChatCircleDots } from '@phosphor-icons/react/dist/ssr'
@@ -103,9 +104,12 @@ export default function WhopChat({
   const [contractFor, setContractFor] = useState<Convo | null>(null)
   const myId = typeof window !== 'undefined' ? (JSON.parse(localStorage.getItem('sb-user') || '{}').id || '') : ''
 
-  // refresco periódico de la lista (visto/no-visto en vivo)
+  // refresco periódico de la lista (visto/no-visto en vivo) — se pausa
+  // si la pestaña está en segundo plano, para no gastar red de más.
   useEffect(() => {
-    const t = setInterval(() => { loadList() }, 30000)
+    const t = setInterval(() => {
+      if (document.visibilityState === 'visible') loadList()
+    }, 30000)
     return () => clearInterval(t)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -272,7 +276,7 @@ export default function WhopChat({
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-neutral-400">
             <ChatCircleDots weight="duotone" className="h-12 w-12 text-neutral-300" />
-            <p className="text-sm font-medium">Elegí una conversación</p>
+            <p className="text-sm font-medium">Elige una conversación</p>
           </div>
         )}
       </div>
@@ -314,9 +318,9 @@ export default function WhopChat({
               <a href={profileData.website} target="_blank" rel="noreferrer" className="mt-3 block truncate text-sm font-bold text-cyan-600">{profileData.website}</a>
             )}
             {role === 'company' && profileOf.type !== 'company' && (
-              <a href={`/company/creator/${profileOf.userId}`} className="mt-5 block w-full rounded-2xl bg-neutral-900 py-3.5 text-center text-sm font-bold text-white">
+              <Link href={`/company/creator/${profileOf.userId}`} className="mt-5 block w-full rounded-2xl bg-neutral-900 py-3.5 text-center text-sm font-bold text-white">
                 Ver perfil completo
-              </a>
+              </Link>
             )}
             <button onClick={() => setProfileOf(null)} className="mt-3 w-full rounded-2xl border border-neutral-200 py-3 text-sm font-bold text-neutral-500">Cerrar</button>
           </div>

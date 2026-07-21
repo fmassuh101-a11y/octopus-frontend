@@ -100,7 +100,7 @@ export default function CampaignDetailPage() {
 
         {formatos.length === 0 ? (
           <div className="border border-dashed border-neutral-800 rounded-2xl p-10 text-center">
-            <p className="text-neutral-400 mb-4">Aún no hay formatos. Agregá uno (UGC, Clipping, Faceless...) para empezar a recibir creadores.</p>
+            <p className="text-neutral-400 mb-4">Aún no hay formatos. Agrega uno (UGC, Clipping, Faceless...) para empezar a recibir creadores.</p>
             <Link
               href={`/company/jobs/new?campaign=${campaignId}`}
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 rounded-xl font-semibold text-sm transition-colors"

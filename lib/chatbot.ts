@@ -72,10 +72,10 @@ export function getBotResponse(message: string): { answer: string; escalate: boo
 
   // saludo
   if (GREETING.some(g => msg.includes(g)) && msg.length < 25) {
-    return { answer: '¡Hola! Soy el asistente de Octopus. Puedo ayudarte con pagos, contratos, cómo aplicar a trabajos, planes y más. ¿Qué necesitás?', escalate: false }
+    return { answer: '¡Hola! Soy el asistente de Octopus. Puedo ayudarte con pagos, contratos, cómo aplicar a trabajos, planes y más. ¿Qué necesitas?', escalate: false }
   }
   if (['gracias', 'genial', 'perfecto', 'listo'].some(g => msg.includes(g)) && msg.length < 20) {
-    return { answer: '¡De nada! Si necesitás algo más, escribime cuando quieras.', escalate: false }
+    return { answer: '¡De nada! Si necesitas algo más, escríbeme cuando quieras.', escalate: false }
   }
 
   // puntaje por intención
