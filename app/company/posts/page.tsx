@@ -82,20 +82,16 @@ export default function CompanyPostsPage() {
 
       const creatorIds = Array.from(new Set(applications.map((a: any) => a.creator_id))) as string[]
 
-      // FLUIDEZ: perfiles y datos de TikTok en paralelo (antes: dos viajes en fila)
-      const [profilesRes, tiktokRes] = await Promise.all([
-        fetch(
-          `${SUPABASE_URL}/rest/v1/public_profiles?user_id=in.(${creatorIds.join(',')})&select=user_id,full_name,bio,avatar_url`,
-          { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
-        ),
-        fetch(
-          `${SUPABASE_URL}/rest/v1/tiktok_data?user_id=in.(${creatorIds.join(',')})&select=user_id,videos&order=created_at.desc`,
-          { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
-        ),
-      ])
+      // los videos ya viven en profiles.bio.tiktokAccounts[].recentVideos (lo
+      // que de verdad llena la conexión OAuth) — la tabla tiktok_data nunca
+      // la escribe nadie, así que antes esta pantalla siempre salía vacía
+      // aunque el creador estuviera conectado de verdad.
+      const profilesRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/public_profiles?user_id=in.(${creatorIds.join(',')})&select=user_id,full_name,bio,avatar_url`,
+        { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+      )
 
       const profiles = profilesRes.ok ? await profilesRes.json() : []
-      const tiktokData = tiktokRes.ok ? await tiktokRes.json() : []
 
       // Build posts and creators list
       const allPosts: Post[] = []
@@ -104,6 +100,7 @@ export default function CompanyPostsPage() {
       for (const profile of profiles) {
         let name = profile.full_name || 'Creador'
         let avatar = profile.avatar_url
+        let recentVideos: any[] = []
 
         if (profile.bio) {
           try {
@@ -113,37 +110,34 @@ export default function CompanyPostsPage() {
             }
             if (bioData.tiktokAccounts && bioData.tiktokAccounts.length > 0) {
               avatar = avatar || bioData.tiktokAccounts[0].avatarUrl
+              recentVideos = bioData.tiktokAccounts[0].recentVideos || []
             }
           } catch (e) {}
         }
 
         creatorsMap.set(profile.user_id, { id: profile.user_id, name, avatar })
 
-        // Get videos for this creator
-        const creatorTiktok = tiktokData.find((t: any) => t.user_id === profile.user_id)
-        if (creatorTiktok?.videos && Array.isArray(creatorTiktok.videos)) {
-          for (const video of creatorTiktok.videos) {
-            const engagement = video.view_count > 0
-              ? ((video.like_count + video.comment_count + video.share_count) / video.view_count) * 100
-              : 0
+        for (const video of recentVideos) {
+          const engagement = video.views > 0
+            ? ((video.likes + video.comments + video.shares) / video.views) * 100
+            : 0
 
-            allPosts.push({
-              id: video.id,
-              creatorId: profile.user_id,
-              creatorName: name,
-              creatorAvatar: avatar,
-              title: video.title || 'Sin titulo',
-              description: video.description,
-              coverUrl: video.cover_url,
-              viewCount: video.view_count || 0,
-              likeCount: video.like_count || 0,
-              commentCount: video.comment_count || 0,
-              shareCount: video.share_count || 0,
-              createTime: new Date(video.create_time * 1000).toISOString(),
-              engagementRate: engagement,
-              platform: 'tiktok'
-            })
-          }
+          allPosts.push({
+            id: video.id,
+            creatorId: profile.user_id,
+            creatorName: name,
+            creatorAvatar: avatar,
+            title: video.title || 'Sin titulo',
+            description: video.title,
+            coverUrl: video.thumbnail,
+            viewCount: video.views || 0,
+            likeCount: video.likes || 0,
+            commentCount: video.comments || 0,
+            shareCount: video.shares || 0,
+            createTime: video.createdAt,
+            engagementRate: engagement,
+            platform: 'tiktok'
+          })
         }
       }
 

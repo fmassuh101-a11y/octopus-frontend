@@ -103,9 +103,8 @@ export default function CreatorProfilePage() {
       // resultado de otro) — se piden todos a la vez en vez de uno detrás
       // de otro, así la pantalla de perfil abre en el tiempo del más lento
       // en vez de la suma de los cinco.
-      const [profileRes, tiktokRes, portRes, revRes, appsRes] = await Promise.all([
+      const [profileRes, portRes, revRes, appsRes] = await Promise.all([
         fetch(`${SUPABASE_URL}/rest/v1/public_profiles?user_id=eq.${creatorId}&select=*`, { headers: authHeaders }),
-        fetch(`${SUPABASE_URL}/rest/v1/tiktok_data?user_id=eq.${creatorId}&select=*&order=created_at.desc&limit=1`, { headers: authHeaders }),
         fetch(`${SUPABASE_URL}/rest/v1/content_deliveries?creator_id=eq.${creatorId}&status=in.(approved,completed)&select=id,title,video_url,approved_at&order=approved_at.desc&limit=12`, { headers: authHeaders }).catch(() => null),
         fetch(`${SUPABASE_URL}/rest/v1/reviews?reviewee_id=eq.${creatorId}&select=rating`, { headers: authHeaders }).catch(() => null),
         companyId
@@ -127,26 +126,27 @@ export default function CreatorProfilePage() {
           }
           setCreator(profile)
 
-          // Extract TikTok account from bio
+          // Extract TikTok account from bio — estos son los nombres REALES que
+          // guarda el callback de OAuth (app/auth/tiktok/callback/page.tsx),
+          // antes acá se leían nombres distintos (followerCount en vez de
+          // followers, etc.) y por eso una cuenta conectada de verdad
+          // igual se veía con todo en 0 del lado de la empresa.
           if (profile.bio?.tiktokAccounts && profile.bio.tiktokAccounts.length > 0) {
             const tiktok = profile.bio.tiktokAccounts[0]
             setTiktokAccount({
-              username: tiktok.username || tiktok.handle,
-              followerCount: tiktok.followerCount || tiktok.metrics?.followerCount,
-              followingCount: tiktok.followingCount || tiktok.metrics?.followingCount,
-              likesCount: tiktok.likesCount || tiktok.metrics?.likesCount,
-              videoCount: tiktok.videoCount || tiktok.metrics?.videoCount,
+              username: tiktok.username,
+              followerCount: tiktok.followers,
+              followingCount: tiktok.following,
+              likesCount: tiktok.likes,
+              videoCount: tiktok.videoCount,
               bio: tiktok.bio || tiktok.displayName,
-              avatarUrl: tiktok.avatarUrl || tiktok.avatar,
-              verified: tiktok.verified
+              avatarUrl: tiktok.avatarUrl,
+              verified: tiktok.isVerified
             })
-          }
-
-          // Check if any TikTok data in tiktok_data table
-          if (tiktokRes.ok) {
-            const tiktokData = await tiktokRes.json()
-            if (tiktokData.length > 0 && tiktokData[0].videos) {
-              setTiktokVideos(tiktokData[0].videos.slice(0, 6))
+            // los últimos videos ya vienen en el mismo bio, no hace falta
+            // la tabla tiktok_data (que nadie escribe, siempre está vacía)
+            if (Array.isArray(tiktok.recentVideos) && tiktok.recentVideos.length > 0) {
+              setTiktokVideos(tiktok.recentVideos.slice(0, 6))
             }
           }
         }

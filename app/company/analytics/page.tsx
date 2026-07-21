@@ -122,15 +122,11 @@ export default function CompanyAnalyticsPage() {
 
       const profiles = profilesRes.ok ? await profilesRes.json() : []
 
-      // Get TikTok data for each creator
-      const tiktokRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/tiktok_data?user_id=in.(${creatorIds.join(',')})&select=user_id,videos,metrics,created_at&order=created_at.desc`,
-        { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
-      )
-
-      const tiktokData = tiktokRes.ok ? await tiktokRes.json() : []
-
-      // Build creator data with aggregated metrics
+      // Build creator data with aggregated metrics — sale de
+      // profiles.bio.tiktokAccounts[], que es lo que llena de verdad la
+      // conexión OAuth (la tabla tiktok_data nunca la escribe nadie, por
+      // eso esta pantalla siempre mostraba todo en 0). Ojo: el callback
+      // solo guarda los últimos 6 videos, no el historial completo.
       const creatorsMap = new Map<string, Creator>()
       const allPosts: Post[] = []
 
@@ -138,6 +134,8 @@ export default function CompanyAnalyticsPage() {
         let name = profile.full_name || 'Creador'
         let tiktokUsername = ''
         let avatar = profile.avatar_url
+        let recentVideos: any[] = []
+        let followerCount = 0
 
         // Parse bio
         if (profile.bio) {
@@ -147,61 +145,49 @@ export default function CompanyAnalyticsPage() {
               name = `${bioData.firstName} ${bioData.lastName}`
             }
             if (bioData.tiktokAccounts && bioData.tiktokAccounts.length > 0) {
-              tiktokUsername = bioData.tiktokAccounts[0].username
-              avatar = avatar || bioData.tiktokAccounts[0].avatarUrl
+              const tiktok = bioData.tiktokAccounts[0]
+              tiktokUsername = tiktok.username
+              avatar = avatar || tiktok.avatarUrl
+              followerCount = tiktok.followers || 0
+              recentVideos = tiktok.recentVideos || []
             }
           } catch (e) {}
         }
 
-        // Get TikTok metrics for this creator
-        const creatorTiktok = tiktokData.find((t: any) => t.user_id === profile.user_id)
         let totalViews = 0
         let totalLikes = 0
         let totalComments = 0
         let totalShares = 0
         let videoCount = 0
-        let followerCount = 0
 
-        if (creatorTiktok) {
-          if (creatorTiktok.metrics) {
-            followerCount = creatorTiktok.metrics.followerCount || 0
-          }
+        // Filter by time period
+        const cutoffDate = getTimeCutoff(timePeriod)
+        const filteredVideos = recentVideos.filter((v: any) => new Date(v.createdAt) >= cutoffDate)
 
-          if (creatorTiktok.videos && Array.isArray(creatorTiktok.videos)) {
-            // Filter by time period
-            const cutoffDate = getTimeCutoff(timePeriod)
-            const filteredVideos = creatorTiktok.videos.filter((v: any) => {
-              const videoDate = new Date(v.create_time * 1000)
-              return videoDate >= cutoffDate
-            })
+        for (const video of filteredVideos) {
+          totalViews += video.views || 0
+          totalLikes += video.likes || 0
+          totalComments += video.comments || 0
+          totalShares += video.shares || 0
+          videoCount++
 
-            for (const video of filteredVideos) {
-              totalViews += video.view_count || 0
-              totalLikes += video.like_count || 0
-              totalComments += video.comment_count || 0
-              totalShares += video.share_count || 0
-              videoCount++
+          const engagement = video.views > 0
+            ? ((video.likes + video.comments + video.shares) / video.views) * 100
+            : 0
 
-              // Add to posts list
-              const engagement = video.view_count > 0
-                ? ((video.like_count + video.comment_count + video.share_count) / video.view_count) * 100
-                : 0
-
-              allPosts.push({
-                id: video.id,
-                creatorId: profile.user_id,
-                creatorName: name,
-                title: video.title || 'Sin titulo',
-                coverUrl: video.cover_url,
-                viewCount: video.view_count || 0,
-                likeCount: video.like_count || 0,
-                commentCount: video.comment_count || 0,
-                shareCount: video.share_count || 0,
-                createTime: new Date(video.create_time * 1000).toISOString(),
-                engagementRate: engagement
-              })
-            }
-          }
+          allPosts.push({
+            id: video.id,
+            creatorId: profile.user_id,
+            creatorName: name,
+            title: video.title || 'Sin titulo',
+            coverUrl: video.thumbnail,
+            viewCount: video.views || 0,
+            likeCount: video.likes || 0,
+            commentCount: video.comments || 0,
+            shareCount: video.shares || 0,
+            createTime: video.createdAt,
+            engagementRate: engagement
+          })
         }
 
         const engagementRate = totalViews > 0
