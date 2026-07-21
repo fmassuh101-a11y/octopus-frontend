@@ -100,10 +100,15 @@ export async function sendResendBatch(emails: Array<{ to: string; subject: strin
   return { ok: false, error: lastError };
 }
 
+// El texto que se VE es corto (solo el dominio) aunque el link de verdad
+// (href) lleve el código de referido — así no se ve un link larguísimo con
+// un UUID colgando, pero el clic sigue yendo al lugar correcto y sigue
+// sumando el referido.
 function referralLine(refLink: string, label: string): string {
+  const displayText = SITE_URL.replace(/^https?:\/\//, "").replace(/\/$/, "");
   return `
     <p style="margin: 0 0 8px;">${label}</p>
-    <p style="font-size: 14px; margin: 0 0 20px;"><a href="${refLink}" style="color: #0891B2;">${refLink}</a></p>`;
+    <p style="font-size: 14px; margin: 0 0 20px;"><a href="${refLink}" style="color: #0891B2;">${displayText}</a></p>`;
 }
 
 // ---------- Bienvenida a CREADOR ----------
