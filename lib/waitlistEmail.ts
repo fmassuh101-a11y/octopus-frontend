@@ -34,19 +34,19 @@ function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+// A propósito con muy poco estilo (sin cajas de fondo de color, sin botones
+// grandes): a Gmail/Outlook les alcanzan esas señales para clasificar un
+// email como "Promociones" en vez de bandeja principal. Un email que se ve
+// como un mensaje personal (texto simple, un par de links de línea) tiene
+// mucha más chance de caer en la bandeja de verdad.
 function emailShell(bodyHtml: string): string {
   return `
-    <div style="font-family: -apple-system, Segoe UI, Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px;">
-      <p style="font-size: 20px; font-weight: 800; color: #0891B2; margin: 0 0 20px;">Octapi</p>
+    <div style="font-family: -apple-system, Segoe UI, Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #1f2937;">
       ${bodyHtml}
-      <p style="margin-top: 28px; font-size: 12px; color: #9ca3af;">
-        Síguenos en
-        <a href="https://www.tiktok.com/@app_desde_zero" style="color: #0891B2; text-decoration: none; font-weight: 600;">TikTok</a>
-        e
-        <a href="https://instagram.com/octapi.app" style="color: #0891B2; text-decoration: none; font-weight: 600;">Instagram</a>
-        para enterarte de todas las novedades.
+      <p style="margin-top: 24px; font-size: 13px; color: #6b7280;">
+        Síguenos en <a href="https://www.tiktok.com/@app_desde_zero" style="color: #0891B2;">TikTok</a> e <a href="https://instagram.com/octapi.app" style="color: #0891B2;">Instagram</a>.
       </p>
-      <p style="margin-top: 10px; font-size: 12px; color: #9ca3af;">Estás recibiendo este email porque te anotaste en la lista de espera de Octapi.</p>
+      <p style="margin-top: 8px; font-size: 12px; color: #9ca3af;">Estás recibiendo este email porque te anotaste en la lista de espera de Octapi.</p>
     </div>`;
 }
 
@@ -100,29 +100,26 @@ export async function sendResendBatch(emails: Array<{ to: string; subject: strin
   return { ok: false, error: lastError };
 }
 
-function referralBox(refLink: string, label: string): string {
+function referralLine(refLink: string, label: string): string {
   return `
-    <div style="background: #f0fdff; border: 1px solid #a5f3fc; border-radius: 14px; padding: 18px 20px; margin: 0 0 20px;">
-      <p style="font-size: 14px; font-weight: 700; color: #0e7490; margin: 0 0 8px;">Invita a quien creas que le puede servir</p>
-      <p style="font-size: 14px; line-height: 1.5; color: #164e63; margin: 0 0 12px;">${label}</p>
-      <a href="${refLink}" style="display: inline-block; font-size: 13px; font-family: monospace; color: #0891B2; word-break: break-all;">${refLink}</a>
-    </div>`;
+    <p style="font-size: 15px; line-height: 1.6; color: #1f2937; margin: 0 0 8px;">${label}</p>
+    <p style="font-size: 14px; margin: 0 0 20px;"><a href="${refLink}" style="color: #0891B2;">${refLink}</a></p>`;
 }
 
 // ---------- Bienvenida a CREADOR ----------
 function creatorWelcomeHtml(name: string, refLink: string): string {
   const safeName = escapeHtml(name || "creador");
   return emailShell(`
-    <p style="font-size: 17px; font-weight: 700; color: #111827; margin: 0 0 12px;">¡Hola, ${safeName}!</p>
-    <p style="font-size: 15px; line-height: 1.6; color: #1f2937; margin: 0 0 16px;">
+    <p style="font-size: 15px; line-height: 1.6; margin: 0 0 16px;">¡Hola, ${safeName}!</p>
+    <p style="font-size: 15px; line-height: 1.6; margin: 0 0 16px;">
       Ya estás en la lista de espera de Octapi. Te avisamos por email apenas abramos las puertas.
     </p>
-    <p style="font-size: 15px; line-height: 1.6; color: #1f2937; margin: 0 0 20px;">
+    <p style="font-size: 15px; line-height: 1.6; margin: 0 0 20px;">
       Cuando abramos, vas a poder aplicar a campañas reales de empresas de toda Latinoamérica que sí pagan por contenido — con contrato claro y pago seguro, sin tener que perseguir a nadie para que te pague.
     </p>
-    ${referralBox(refLink, "Si conoces a otros creadores, o a alguien con una empresa a la que le pueda interesar sumarse, comparte tu link con ellos — cada persona que se anote te sube en la fila.")}
-    <p style="font-size: 14px; line-height: 1.6; color: #6b7280; margin: 0;">Gracias por sumarte desde el día uno.</p>
-    <p style="font-size: 14px; line-height: 1.6; color: #6b7280; margin: 8px 0 0;">— El equipo de Octapi</p>
+    ${referralLine(refLink, "Si conoces a otros creadores, o a alguien con una empresa a la que le pueda interesar sumarse, comparte tu link con ellos — cada persona que se anote te sube en la fila:")}
+    <p style="font-size: 15px; line-height: 1.6; margin: 0;">Gracias por sumarte desde el día uno.</p>
+    <p style="font-size: 15px; line-height: 1.6; margin: 8px 0 0;">— El equipo de Octapi</p>
   `);
 }
 
@@ -131,29 +128,22 @@ function companyWelcomeHtml(name: string, refLink: string): string {
   const safeName = escapeHtml(name || "tu empresa");
   const callBlock = COMPANY_CONTACT_PHONE
     ? `
-    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 18px 20px; margin: 0 0 20px;">
-      <p style="font-size: 14px; font-weight: 700; color: #0f172a; margin: 0 0 8px;">¿Quieres conversar antes de que abramos?</p>
-      <p style="font-size: 14px; line-height: 1.5; color: #334155; margin: 0 0 14px;">
-        Podemos agendar una llamada breve para contarte cómo funciona y responder tus dudas.
-      </p>
-      <a href="https://wa.me/${COMPANY_CONTACT_PHONE.replace(/\D/g, "")}" style="display: inline-block; background: #0891B2; color: #ffffff; font-size: 14px; font-weight: 700; text-decoration: none; padding: 12px 22px; border-radius: 10px;">
-        Agendar por WhatsApp
-      </a>
-    </div>`
+    <p style="font-size: 15px; line-height: 1.6; margin: 0 0 6px;">¿Quieres conversar antes de que abramos? Podemos agendar una llamada breve para contarte cómo funciona y responder tus dudas — escribime por WhatsApp:</p>
+    <p style="font-size: 14px; margin: 0 0 20px;"><a href="https://wa.me/${COMPANY_CONTACT_PHONE.replace(/\D/g, "")}" style="color: #0891B2;">wa.me/${COMPANY_CONTACT_PHONE.replace(/\D/g, "")}</a></p>`
     : "";
 
   return emailShell(`
-    <p style="font-size: 17px; font-weight: 700; color: #111827; margin: 0 0 12px;">Hola, equipo de ${safeName}</p>
-    <p style="font-size: 15px; line-height: 1.6; color: #1f2937; margin: 0 0 16px;">
-      Gracias por sumar a <strong>${safeName}</strong> a la lista de espera de Octapi. Les avisamos apenas abramos las puertas.
+    <p style="font-size: 15px; line-height: 1.6; margin: 0 0 16px;">Hola, equipo de ${safeName}</p>
+    <p style="font-size: 15px; line-height: 1.6; margin: 0 0 16px;">
+      Gracias por sumar a ${safeName} a la lista de espera de Octapi. Les avisamos apenas abramos las puertas.
     </p>
-    <p style="font-size: 15px; line-height: 1.6; color: #1f2937; margin: 0 0 20px;">
+    <p style="font-size: 15px; line-height: 1.6; margin: 0 0 20px;">
       Octapi conecta a su empresa con creadores verificados de toda Latinoamérica, listos para producir contenido que realmente convierte — sin agencias de por medio, con contrato claro y pago seguro de punta a punta.
     </p>
     ${callBlock}
-    ${referralBox(refLink, "Si conocen a otras empresas o marcas, o a algún creador con el que ya hayan trabajado antes, compártanle su link — cada persona o empresa que se anote las sube en la fila.")}
-    <p style="font-size: 14px; line-height: 1.6; color: #6b7280; margin: 0;">Gracias por confiar en Octapi desde esta etapa temprana.</p>
-    <p style="font-size: 14px; line-height: 1.6; color: #6b7280; margin: 8px 0 0;">— Felipe, fundador de Octapi</p>
+    ${referralLine(refLink, "Si conocen a otras empresas o marcas, o a algún creador con el que ya hayan trabajado antes, compártanle su link — cada persona o empresa que se anote las sube en la fila:")}
+    <p style="font-size: 15px; line-height: 1.6; margin: 0;">Gracias por confiar en Octapi desde esta etapa temprana.</p>
+    <p style="font-size: 15px; line-height: 1.6; margin: 8px 0 0;">— Felipe, fundador de Octapi</p>
   `);
 }
 
@@ -185,10 +175,7 @@ export async function sendWelcomeEmail(opts: {
 export function buildBroadcastHtml(message: string, waitlistId: string): string {
   const refLink = `${SITE_URL}/waitlist?ref=${waitlistId}`;
   return emailShell(`
-    <div style="font-size: 15px; line-height: 1.6; color: #1f2937; white-space: pre-line; margin: 0 0 20px;">${escapeHtml(message)}</div>
-    <div style="background: #f0fdff; border: 1px solid #a5f3fc; border-radius: 14px; padding: 16px 20px;">
-      <p style="font-size: 13px; font-weight: 700; color: #0e7490; margin: 0 0 6px;">Tu link para invitar gente</p>
-      <a href="${refLink}" style="display: inline-block; font-size: 13px; font-family: monospace; color: #0891B2; word-break: break-all;">${refLink}</a>
-    </div>
+    <div style="font-size: 15px; line-height: 1.6; white-space: pre-line; margin: 0 0 20px;">${escapeHtml(message)}</div>
+    ${referralLine(refLink, "Tu link para invitar gente:")}
   `);
 }
