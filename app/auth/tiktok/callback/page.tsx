@@ -225,6 +225,15 @@ export default function TikTokCallbackPage() {
         throw new Error('No se pudo guardar la conexión')
       }
 
+      // Si esta cuenta era justo la que un contrato estaba esperando (la
+      // empresa ya había aprobado los handles), se verifica sola acá mismo
+      // — sin que el creador tenga que apretar nada más después de conectar.
+      fetch('/api/handle-requests/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({}),
+      }).catch(() => {})
+
       setProgress(100)
       setStatus('¡Cuenta conectada exitosamente!')
 

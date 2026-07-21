@@ -254,6 +254,17 @@ export default function CompanyContractsPage() {
         body: JSON.stringify({ company_approved_at: new Date().toISOString(), company_approved_by: user.id }),
       })
       if (res.ok) {
+        // avisa al creador por el mismo chat que ya se usa para el resto de
+        // los avisos del contrato — para que le salga en sus mensajes
+        fetch('/api/whop/dm/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({
+            userId: contract.creator_id,
+            content: `${companyName || 'La empresa'} aceptó tus handles para "${contract.title}". Ya puedes verificar tus cuentas para este contrato.`,
+          }),
+        }).catch(() => {})
+
         const updated = { ...contract.handle_request, company_approved_at: new Date().toISOString() }
         setContracts(prev => prev.map(c => c.id === contract.id ? { ...c, handle_request: updated } : c))
         setSelectedContract(prev => prev && prev.id === contract.id ? { ...prev, handle_request: updated } : prev)
