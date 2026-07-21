@@ -132,6 +132,7 @@ function WaitlistInner() {
   const pct = Math.min(100, Math.round(((count || 0) / goal) * 100))
 
   const scrollToForm = () => document.getElementById('anotarse')?.scrollIntoView({ behavior: 'smooth' })
+  const scrollToCompanies = () => document.getElementById('para-empresas')?.scrollIntoView({ behavior: 'smooth' })
 
   return (
     <div className="min-h-[100dvh] bg-[#03141f] font-sans text-white">
@@ -196,6 +197,13 @@ function WaitlistInner() {
             >
               Unirme a la lista <ArrowDown size={18} />
             </button>
+
+            <button
+              onClick={scrollToCompanies}
+              className="mx-auto mt-4 flex items-center gap-1.5 text-sm font-medium text-white/70 [animation:fadeSlideUp_0.8s_ease_1s_both] hover:text-white"
+            >
+              <Building2 className="h-4 w-4" /> ¿Eres una marca? Más info aquí
+            </button>
           </div>
         </div>
       </section>
@@ -203,7 +211,7 @@ function WaitlistInner() {
       {/* ═══ PARA EMPRESAS — invitación explícita y formal (antes la página
           se leía como "solo para creadores"; las marcas quedaban como una
           opción escondida dentro del formulario) ═══ */}
-      <section className="relative overflow-hidden border-y border-white/5 bg-[#04182a] px-5 py-20">
+      <section id="para-empresas" className="relative overflow-hidden border-y border-white/5 bg-[#04182a] px-5 py-20">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(50%_100%_at_50%_0%,rgba(16,185,129,0.14),transparent)]" />
         <div className="relative mx-auto w-full max-w-3xl text-center">
           <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-emerald-300">
@@ -240,9 +248,6 @@ function WaitlistInner() {
           >
             Postula tu empresa <ArrowDown size={18} />
           </button>
-          {!!stats?.companies && (
-            <p className="mt-4 text-xs text-white/40">{stats.companies} empresas ya están en la lista de espera.</p>
-          )}
         </div>
       </section>
 
