@@ -31,7 +31,14 @@ function emailShell(bodyHtml: string): string {
     <div style="font-family: -apple-system, Segoe UI, Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px;">
       <p style="font-size: 20px; font-weight: 800; color: #0891B2; margin: 0 0 20px;">Octapi</p>
       ${bodyHtml}
-      <p style="margin-top: 28px; font-size: 12px; color: #9ca3af;">Estás recibiendo este email porque te anotaste en la lista de espera de Octapi.</p>
+      <p style="margin-top: 28px; font-size: 12px; color: #9ca3af;">
+        Síguenos en
+        <a href="https://www.tiktok.com/@app_desde_zero" style="color: #0891B2; text-decoration: none; font-weight: 600;">TikTok</a>
+        e
+        <a href="https://instagram.com/octapi.app" style="color: #0891B2; text-decoration: none; font-weight: 600;">Instagram</a>
+        para enterarte de todas las novedades.
+      </p>
+      <p style="margin-top: 10px; font-size: 12px; color: #9ca3af;">Estás recibiendo este email porque te anotaste en la lista de espera de Octapi.</p>
     </div>`;
 }
 
@@ -47,8 +54,11 @@ async function sendResendEmail(to: string, subject: string, html: string): Promi
         body: JSON.stringify({ from: FROM, to: [to], subject, html }),
       });
       if (res.ok) return true;
-    } catch {
-      // sigue con la próxima key
+      // se loguea el motivo real (Vercel → proyecto → Logs) en vez de fallar
+      // en silencio — así la próxima vez que no llegue un email se ve por qué
+      console.error("[ResendEmail] fallo:", res.status, (await res.text()).slice(0, 300));
+    } catch (e: any) {
+      console.error("[ResendEmail] excepción:", e?.message || e);
     }
   }
   return false;

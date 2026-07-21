@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { toast } from '@/components/oct/toast'
-import { Loader2, Send, Users, Building2 } from 'lucide-react'
+import { Loader2, Send, Users, Building2, Check } from 'lucide-react'
 
 // Panel ADMIN de la lista de espera: ver inscriptos + enviarles email (Resend).
 // Solo accesible para el email admin (validado en el server).
@@ -12,6 +12,7 @@ interface Row {
   niche?: string; experience?: string; marketing_experience?: string; country?: string
   source?: string; message?: string
   referral_count: number; created_at: string
+  welcome_sent_at?: string | null; last_broadcast_sent_at?: string | null
 }
 
 export default function AdminWaitlist() {
@@ -237,6 +238,7 @@ export default function AdminWaitlist() {
                 <th className="px-4 py-3">Mensaje</th>
                 <th className="px-4 py-3">Referidos</th>
                 <th className="px-4 py-3">Fecha</th>
+                <th className="px-4 py-3">Email</th>
               </tr>
             </thead>
             <tbody>
@@ -259,10 +261,25 @@ export default function AdminWaitlist() {
                   <td className="px-4 py-3 max-w-[220px] truncate text-neutral-500">{r.message || '—'}</td>
                   <td className="px-4 py-3 tabular-nums">{r.referral_count}</td>
                   <td className="px-4 py-3 text-neutral-500">{new Date(r.created_at).toLocaleDateString('es-CL')}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-col gap-1">
+                      {r.welcome_sent_at && (
+                        <span className="inline-flex w-fit items-center gap-1 rounded-full bg-cyan-500/15 px-2 py-0.5 text-[10px] font-bold text-cyan-300">
+                          <Check className="h-3 w-3" /> Bienvenida
+                        </span>
+                      )}
+                      {r.last_broadcast_sent_at && (
+                        <span className="inline-flex w-fit items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-300">
+                          <Check className="h-3 w-3" /> {new Date(r.last_broadcast_sent_at).toLocaleDateString('es-CL')}
+                        </span>
+                      )}
+                      {!r.welcome_sent_at && !r.last_broadcast_sent_at && <span className="text-neutral-600">—</span>}
+                    </div>
+                  </td>
                 </tr>
               ))}
               {visible.length === 0 && (
-                <tr><td colSpan={9} className="px-4 py-8 text-center text-neutral-500">Sin inscriptos todavía</td></tr>
+                <tr><td colSpan={10} className="px-4 py-8 text-center text-neutral-500">Sin inscriptos todavía</td></tr>
               )}
             </tbody>
           </table>

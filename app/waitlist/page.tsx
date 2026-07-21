@@ -76,6 +76,12 @@ function WaitlistInner() {
       const r = await fetch(`/api/waitlist/join?id=${id}`)
       const d = await r.json()
       if (d.ok) setReferrals(d.referrals || 0)
+      else if (d.notFound) {
+        // el admin lo borró (ej. cuenta de prueba) — se limpia el
+        // localStorage para poder anotarse de nuevo en este navegador
+        localStorage.removeItem('oct-waitlist-id')
+        setJoinedId('')
+      }
     } catch {}
   }
 

@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
   }
 
   const H = { Authorization: `Bearer ${SERVICE_KEY}`, apikey: SERVICE_KEY };
-  const FULL = "id,role,email,name,company_name,niche,experience,marketing_experience,country,source,message,referral_count,created_at";
+  const FULL = "id,role,email,name,company_name,niche,experience,marketing_experience,country,source,message,referral_count,created_at,welcome_sent_at,last_broadcast_sent_at";
   const BASE = "id,role,email,name,company_name,niche,experience,marketing_experience,referral_count,created_at";
 
   let res = await fetch(`${SUPABASE_URL}/rest/v1/waitlist?select=${FULL}&order=created_at.desc&limit=1000`, { headers: H });

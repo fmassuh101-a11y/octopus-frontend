@@ -45,14 +45,26 @@ export async function POST(request: NextRequest) {
   let sent = 0;
   const errors: string[] = [];
   for (let i = 0; i < recipients.length; i += 100) {
-    const batch = recipients.slice(i, i + 100).map((r) => ({
+    const chunk = recipients.slice(i, i + 100);
+    const batch = chunk.map((r) => ({
       to: r.email,
       subject,
       html: buildBroadcastHtml(message, r.id),
     }));
     const result = await sendResendBatch(batch);
-    if (result.ok) sent += batch.length;
-    else if (result.error) errors.push(result.error);
+    if (result.ok) {
+      sent += chunk.length;
+      // marca a quién le llegó ESTE envío — así el panel puede mostrar
+      // un check de "enviado" en vez de dejar la duda de a quién le llegó
+      const ids = chunk.map((r) => r.id).join(",");
+      await fetch(`${SUPABASE_URL}/rest/v1/waitlist?id=in.(${ids})`, {
+        method: "PATCH",
+        headers: { ...H, "Content-Type": "application/json" },
+        body: JSON.stringify({ last_broadcast_sent_at: new Date().toISOString() }),
+      }).catch(() => {});
+    } else if (result.error) {
+      errors.push(result.error);
+    }
   }
 
   return NextResponse.json({ ok: sent > 0, sent, total: recipients.length, errors: errors.slice(0, 3) });

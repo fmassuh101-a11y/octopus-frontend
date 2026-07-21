@@ -136,11 +136,16 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET ?id=<uuid> → cuántos invitados lleva (para refrescar el contador)
+// GET ?id=<uuid> → cuántos invitados lleva (para refrescar el contador).
+// notFound:true cuando el id ya no existe (p. ej. un admin lo borró desde
+// el panel) — el frontend usa esto para limpiar el localStorage y dejar
+// que esa persona pueda anotarse de nuevo en el mismo navegador.
 export async function GET(request: NextRequest) {
   const id = request.nextUrl.searchParams.get("id") || "";
   if (!UUID_RX.test(id)) return NextResponse.json({ error: "id inválido" }, { status: 400 });
   const res = await sb(`waitlist?id=eq.${id}&select=referral_count&limit=1`);
   const rows = res.ok ? await res.json() : [];
-  return NextResponse.json({ ok: true, referrals: rows?.[0]?.referral_count || 0 });
+  const row = Array.isArray(rows) ? rows[0] : null;
+  if (!row) return NextResponse.json({ ok: false, notFound: true }, { status: 404 });
+  return NextResponse.json({ ok: true, referrals: row.referral_count || 0 });
 }
