@@ -24,6 +24,13 @@ const EXPERIENCIA_EMPRESA = [
   { v: 'no', t: 'No' },
 ]
 
+// misma regla que valida el servidor en /api/waitlist/join — acepta
+// cualquier dominio real (no solo gmail.com) pero rechaza cosas como
+// "algo@.com" que no tienen forma de email de verdad. Mostrarlo en el
+// momento, no recién al mandar el formulario, para que se sienta tan
+// pulido como cualquier otra app.
+const EMAIL_RX = /^[^\s@]+@(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/
+
 function WaitlistInner() {
   const params = useSearchParams()
   const refId = params.get('ref') || ''
@@ -129,9 +136,10 @@ function WaitlistInner() {
     setPassBusy(false)
   }
 
+  const emailValid = EMAIL_RX.test(email.trim())
   const canJoin = role === 'creator'
-    ? name.trim() && email.trim() && experience && country && source.trim() && message.trim()
-    : companyName.trim() && email.trim() && mkt && country && source.trim() && message.trim()
+    ? name.trim() && emailValid && experience && country && source.trim() && message.trim()
+    : companyName.trim() && emailValid && mkt && country && source.trim() && message.trim()
 
   const count = role === 'creator' ? stats?.creators : stats?.companies
   const goal = role === 'creator' ? stats?.goalCreators || 250 : stats?.goalCompanies || 50
@@ -316,8 +324,11 @@ function WaitlistInner() {
                   <>
                     <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Tu nombre"
                       className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3.5 text-sm text-white placeholder-white/35 outline-none focus:border-cyan-400/60" />
-                    <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Tu email" type="email" inputMode="email" autoCapitalize="none"
-                      className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3.5 text-sm text-white placeholder-white/35 outline-none focus:border-cyan-400/60" />
+                    <div>
+                      <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Tu email" type="email" inputMode="email" autoCapitalize="none"
+                        className={`w-full rounded-2xl border bg-black/30 px-4 py-3.5 text-sm text-white placeholder-white/35 outline-none ${email && !emailValid ? 'border-red-400/60 focus:border-red-400/60' : 'border-white/10 focus:border-cyan-400/60'}`} />
+                      {email && !emailValid && <p className="mt-1.5 px-1 text-xs font-semibold text-red-400">Ese email no parece válido — revisa que esté bien escrito.</p>}
+                    </div>
                     <select value={country} onChange={(e) => setCountry(e.target.value)}
                       className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3.5 text-sm text-white outline-none focus:border-cyan-400/60 [&>option]:bg-[#062a3f]" style={{ color: country ? '#fff' : 'rgba(255,255,255,0.35)' }}>
                       <option value="" disabled>¿De qué país eres?</option>
@@ -339,8 +350,11 @@ function WaitlistInner() {
                   <>
                     <input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Nombre de tu empresa"
                       className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3.5 text-sm text-white placeholder-white/35 outline-none focus:border-cyan-400/60" />
-                    <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email de contacto" type="email" inputMode="email" autoCapitalize="none"
-                      className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3.5 text-sm text-white placeholder-white/35 outline-none focus:border-cyan-400/60" />
+                    <div>
+                      <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email de contacto" type="email" inputMode="email" autoCapitalize="none"
+                        className={`w-full rounded-2xl border bg-black/30 px-4 py-3.5 text-sm text-white placeholder-white/35 outline-none ${email && !emailValid ? 'border-red-400/60 focus:border-red-400/60' : 'border-white/10 focus:border-cyan-400/60'}`} />
+                      {email && !emailValid && <p className="mt-1.5 px-1 text-xs font-semibold text-red-400">Ese email no parece válido — revisa que esté bien escrito.</p>}
+                    </div>
                     <input value={niche} onChange={(e) => setNiche(e.target.value)} placeholder="Nicho (apps, ecommerce, educación...)"
                       className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3.5 text-sm text-white placeholder-white/35 outline-none focus:border-cyan-400/60" />
                     <select value={country} onChange={(e) => setCountry(e.target.value)}

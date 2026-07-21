@@ -18,7 +18,12 @@ const sb = (path: string, init: RequestInit = {}) =>
     },
   });
 
-const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+// Antes esto dejaba pasar cosas como "algo@.com" o "algo@dominio..com" — se
+// exige que cada parte del dominio sea una etiqueta real (sin empezar/terminar
+// en guión, sin puntos vacíos) y que termine en una extensión de letras. Sigue
+// aceptando cualquier dominio real (no solo gmail.com), solo rechaza los que
+// no tienen forma de email de verdad.
+const EMAIL_RX = /^[^\s@]+@(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
 const UUID_RX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const clean = (v: unknown, max = 120) => String(v ?? "").trim().slice(0, max);
 
