@@ -66,7 +66,14 @@ export default function AdminWaitlist() {
         headers: { Authorization: `Bearer ${token}` },
       })
       const data = await res.json()
-      if (data.ok) toast(`Bienvenida enviada a ${data.sent} de ${data.total} inscriptos`)
+      if (data.message) toast(data.message)
+      else if (data.ok) {
+        toast(
+          data.pending > 0
+            ? `Enviado a ${data.sent}. Quedan ${data.pending} pendientes (tope diario) — apretá de nuevo mañana.`
+            : `Bienvenida enviada a los ${data.sent} inscriptos. Ninguno quedó pendiente.`
+        )
+      }
       else toast(data.error || 'No se pudo enviar', 'error')
     } catch { toast('No se pudo enviar', 'error') }
     setBackfilling(false)
@@ -103,7 +110,7 @@ export default function AdminWaitlist() {
         <div className="mt-8 rounded-3xl border border-cyan-800/40 bg-cyan-950/20 p-5">
           <p className="font-bold">Mandar bienvenida a los que ya estaban anotados</p>
           <p className="mt-1 text-sm text-neutral-400">
-            Los nuevos registros ya reciben el email de bienvenida automático. Esto manda ese mismo email (creador o empresa, según corresponda) a los {rows.length} que se anotaron antes de activarlo. Se manda una sola vez — no hay forma de deshacerlo.
+            Los nuevos registros ya reciben el email de bienvenida automático. Esto manda ese mismo email (creador o empresa, según corresponda) a quien todavía no lo haya recibido. Resend gratis tiene tope de 100/día — si quedan pendientes por eso, apretá el mismo botón mañana: se acuerda a quién ya le mandó y no repite.
           </p>
           {!confirmBackfill ? (
             <button onClick={sendWelcomeBackfill}

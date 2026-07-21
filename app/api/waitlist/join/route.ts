@@ -107,6 +107,16 @@ export async function POST(request: NextRequest) {
         name: role === "creator" ? String(row.name || "") : String(row.company_name || ""),
         role,
         waitlistId: created.id,
+      }).then((ok) => {
+        // marca welcome_sent_at para que el botón de bienvenida retroactiva
+        // no le vuelva a mandar a esta misma persona (columna opcional: si
+        // no existe todavía, el catch de abajo lo ignora sin romper nada)
+        if (ok) {
+          sb(`waitlist?id=eq.${created.id}`, {
+            method: "PATCH",
+            body: JSON.stringify({ welcome_sent_at: new Date().toISOString() }),
+          }).catch(() => {});
+        }
       }).catch(() => {});
     }
 
