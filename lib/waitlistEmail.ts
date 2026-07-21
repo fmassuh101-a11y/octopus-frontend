@@ -45,7 +45,7 @@ async function sendResendEmail(to: string, subject: string, html: string): Promi
 function referralBox(refLink: string, label: string): string {
   return `
     <div style="background: #f0fdff; border: 1px solid #a5f3fc; border-radius: 14px; padding: 18px 20px; margin: 0 0 20px;">
-      <p style="font-size: 14px; font-weight: 700; color: #0e7490; margin: 0 0 8px;">Entra antes invitando gente</p>
+      <p style="font-size: 14px; font-weight: 700; color: #0e7490; margin: 0 0 8px;">Invita a quien creas que le puede servir</p>
       <p style="font-size: 14px; line-height: 1.5; color: #164e63; margin: 0 0 12px;">${label}</p>
       <a href="${refLink}" style="display: inline-block; font-size: 13px; font-family: monospace; color: #0891B2; word-break: break-all;">${refLink}</a>
     </div>`;
@@ -60,9 +60,9 @@ function creatorWelcomeHtml(name: string, refLink: string): string {
       Ya estás en la lista de espera de Octapi. Te avisamos por email apenas abramos las puertas.
     </p>
     <p style="font-size: 15px; line-height: 1.6; color: #1f2937; margin: 0 0 20px;">
-      Octapi conecta creadores de contenido con empresas reales de toda Latinoamérica que pagan por clips y contenido. Contratos claros, pagos seguros, sin vueltas.
+      Cuando abramos, vas a poder aplicar a campañas reales de empresas de toda Latinoamérica que sí pagan por contenido — con contrato claro y pago seguro, sin tener que perseguir a nadie para que te pague.
     </p>
-    ${referralBox(refLink, "Si conoces a otros creadores a los que les pueda interesar, compárteles tu link — cada persona que se anote con él te sube en la fila.")}
+    ${referralBox(refLink, "Si conoces a otros creadores, o a alguien con una empresa a la que le pueda interesar sumarse, comparte tu link con ellos — cada persona que se anote te sube en la fila.")}
     <p style="font-size: 14px; line-height: 1.6; color: #6b7280; margin: 0;">Gracias por sumarte desde el día uno.</p>
     <p style="font-size: 14px; line-height: 1.6; color: #6b7280; margin: 8px 0 0;">— El equipo de Octapi</p>
   `);
@@ -90,10 +90,10 @@ function companyWelcomeHtml(name: string, refLink: string): string {
       Gracias por sumar a <strong>${safeName}</strong> a la lista de espera de Octapi. Les avisamos apenas abramos las puertas.
     </p>
     <p style="font-size: 15px; line-height: 1.6; color: #1f2937; margin: 0 0 20px;">
-      Octapi conecta a su empresa con creadores verificados de toda Latinoamérica, listos para producir contenido auténtico que convierte. Contratos claros y pagos seguros, sin intermediarios innecesarios.
+      Octapi conecta a su empresa con creadores verificados de toda Latinoamérica, listos para producir contenido que realmente convierte — sin agencias de por medio, con contrato claro y pago seguro de punta a punta.
     </p>
     ${callBlock}
-    ${referralBox(refLink, "Si conocen a otras empresas o marcas a las que les pueda interesar, compártanles su link — cada empresa que se anote con él las sube en la fila.")}
+    ${referralBox(refLink, "Si conocen a otras empresas o marcas, o a algún creador con el que ya hayan trabajado antes, compártanle su link — cada persona o empresa que se anote las sube en la fila.")}
     <p style="font-size: 14px; line-height: 1.6; color: #6b7280; margin: 0;">Gracias por confiar en Octapi desde esta etapa temprana.</p>
     <p style="font-size: 14px; line-height: 1.6; color: #6b7280; margin: 8px 0 0;">— Felipe, fundador de Octapi</p>
   `);
