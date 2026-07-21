@@ -94,30 +94,39 @@ export async function POST(request: NextRequest) {
     }
     const created = (await ins.json())?.[0];
 
-    // sumarle el referido a quien invitó (atómico, no bloquea la respuesta)
+    // sumarle el referido a quien invitó — se espera por el mismo motivo
+    // que el email de bienvenida (ver comentario de abajo): sin await,
+    // Vercel puede cortar la ejecución antes de que termine.
     if (row.referred_by) {
-      sb("rpc/oct_waitlist_ref", { method: "POST", body: JSON.stringify({ p_ref: row.referred_by }) }).catch(() => {});
+      await sb("rpc/oct_waitlist_ref", { method: "POST", body: JSON.stringify({ p_ref: row.referred_by }) }).catch(() => {});
     }
 
-    // email de bienvenida automático (no bloquea la respuesta; si falla
-    // — ej. falta RESEND_API_KEY en Vercel — el registro igual se guardó)
+    // email de bienvenida automático — SE ESPERA (await) a propósito: en
+    // Vercel serverless, una promesa "fire-and-forget" lanzada justo antes
+    // de terminar la función puede quedar cortada a mitad de camino, porque
+    // el runtime puede cerrar la ejecución apenas se manda la respuesta. Por
+    // eso el registro real no mandaba nada aunque la prueba manual sí (esa
+    // ruta sí esperaba). Si el email falla, el registro igual se guardó.
     if (created?.id) {
-      sendWelcomeEmail({
-        email,
-        name: role === "creator" ? String(row.name || "") : String(row.company_name || ""),
-        role,
-        waitlistId: created.id,
-      }).then((ok) => {
+      try {
+        const ok = await sendWelcomeEmail({
+          email,
+          name: role === "creator" ? String(row.name || "") : String(row.company_name || ""),
+          role,
+          waitlistId: created.id,
+        });
         // marca welcome_sent_at para que el botón de bienvenida retroactiva
         // no le vuelva a mandar a esta misma persona (columna opcional: si
         // no existe todavía, el catch de abajo lo ignora sin romper nada)
         if (ok) {
-          sb(`waitlist?id=eq.${created.id}`, {
+          await sb(`waitlist?id=eq.${created.id}`, {
             method: "PATCH",
             body: JSON.stringify({ welcome_sent_at: new Date().toISOString() }),
           }).catch(() => {});
         }
-      }).catch(() => {});
+      } catch {
+        // no rompe el registro si el email falla
+      }
     }
 
     return NextResponse.json({ ok: true, id: created?.id, referrals: 0 });
