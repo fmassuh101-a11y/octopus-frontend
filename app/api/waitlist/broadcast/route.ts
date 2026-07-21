@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth/apiAuth";
 import { shieldAsync } from "@/lib/shield";
 import { SUPABASE_URL } from "@/lib/config/supabase";
+import { buildBroadcastHtml } from "@/lib/waitlistEmail";
 
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 const RESEND_KEY = process.env.RESEND_API_KEY || "";
 const ADMIN_EMAILS = ["fmassuh133@gmail.com"];
 // Sin dominio propio verificado, Resend permite enviar desde onboarding@resend.dev
-const FROM = process.env.RESEND_FROM || "Octopus <onboarding@resend.dev>";
+const FROM = process.env.RESEND_FROM || "Octapi <onboarding@resend.dev>";
 
 /**
  * POST /api/waitlist/broadcast { subject, message, role? } — envía un email a
@@ -35,24 +36,28 @@ export async function POST(request: NextRequest) {
   const H = { Authorization: `Bearer ${SERVICE_KEY}`, apikey: SERVICE_KEY };
   const q = roleFilter ? `&role=eq.${roleFilter}` : "";
   const rows: any[] = await (
-    await fetch(`${SUPABASE_URL}/rest/v1/waitlist?select=email,name${q}&limit=2000`, { headers: H })
+    await fetch(`${SUPABASE_URL}/rest/v1/waitlist?select=id,email${q}&limit=2000`, { headers: H })
   ).json();
-  const emails = Array.from(new Set((rows || []).map((r) => String(r.email || "").toLowerCase()).filter((e) => e.includes("@"))));
-  if (!emails.length) return NextResponse.json({ error: "No hay inscriptos para enviar" }, { status: 400 });
+  // dedupe por email (por si acaso) manteniendo el primer id de cada uno
+  const seen = new Set<string>();
+  const recipients = (rows || [])
+    .map((r) => ({ id: String(r.id || ""), email: String(r.email || "").toLowerCase() }))
+    .filter((r) => r.id && r.email.includes("@") && !seen.has(r.email) && seen.add(r.email));
+  if (!recipients.length) return NextResponse.json({ error: "No hay inscriptos para enviar" }, { status: 400 });
 
-  const html = `
-    <div style="font-family: -apple-system, Segoe UI, Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px;">
-      <p style="font-size: 20px; font-weight: 800; color: #0891B2; margin: 0 0 16px;">Octopus</p>
-      <div style="font-size: 15px; line-height: 1.6; color: #1f2937; white-space: pre-line;">${message
-        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
-      <p style="margin-top: 28px; font-size: 12px; color: #9ca3af;">Estás recibiendo este email porque te anotaste en la lista de espera de Octopus.</p>
-    </div>`;
+  // Cada persona recibe SU PROPIO link de invitación insertado en el email
+  // (antes era el mismo mensaje genérico para todos, sin link personalizado).
 
   // Resend batch: hasta 100 por request
   let sent = 0;
   const errors: string[] = [];
-  for (let i = 0; i < emails.length; i += 100) {
-    const batch = emails.slice(i, i + 100).map((to) => ({ from: FROM, to: [to], subject, html }));
+  for (let i = 0; i < recipients.length; i += 100) {
+    const batch = recipients.slice(i, i + 100).map((r) => ({
+      from: FROM,
+      to: [r.email],
+      subject,
+      html: buildBroadcastHtml(message, r.id),
+    }));
     try {
       const res = await fetch("https://api.resend.com/emails/batch", {
         method: "POST",
@@ -64,5 +69,5 @@ export async function POST(request: NextRequest) {
     } catch (e: any) { errors.push(e?.message?.slice(0, 80)); }
   }
 
-  return NextResponse.json({ ok: sent > 0, sent, total: emails.length, errors: errors.slice(0, 3) });
+  return NextResponse.json({ ok: sent > 0, sent, total: recipients.length, errors: errors.slice(0, 3) });
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SUPABASE_URL } from "@/lib/config/supabase";
 import { shieldAsync } from "@/lib/shield";
+import { sendWelcomeEmail } from "@/lib/waitlistEmail";
 
 // LISTA DE ESPERA — anotarse (público, sin sesión). Escribe con la service key
 // desde el server; la tabla tiene RLS cerrado así que nadie puede leerla del cliente.
@@ -98,10 +99,21 @@ export async function POST(request: NextRequest) {
       sb("rpc/oct_waitlist_ref", { method: "POST", body: JSON.stringify({ p_ref: row.referred_by }) }).catch(() => {});
     }
 
+    // email de bienvenida automático (no bloquea la respuesta; si falla
+    // — ej. falta RESEND_API_KEY en Vercel — el registro igual se guardó)
+    if (created?.id) {
+      sendWelcomeEmail({
+        email,
+        name: role === "creator" ? String(row.name || "") : String(row.company_name || ""),
+        role,
+        waitlistId: created.id,
+      }).catch(() => {});
+    }
+
     return NextResponse.json({ ok: true, id: created?.id, referrals: 0 });
   } catch (e: any) {
     console.error("[Waitlist] error:", e?.message || e);
-    return NextResponse.json({ error: "No se pudo guardar. Probá de nuevo." }, { status: 500 });
+    return NextResponse.json({ error: "No se pudo guardar. Prueba de nuevo." }, { status: 500 });
   }
 }
 
