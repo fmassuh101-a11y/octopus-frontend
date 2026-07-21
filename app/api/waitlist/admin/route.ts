@@ -30,3 +30,26 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({ ok: true, rows: Array.isArray(rows) ? rows : [] });
 }
+
+const UUID_RX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// DELETE /api/waitlist/admin?id=<uuid> — borra un inscripto (solo admin,
+// para sacar registros de prueba antes de mandar un envío masivo real)
+export async function DELETE(request: NextRequest) {
+  const blocked = await shieldAsync(request as unknown as Request, { limit: 20 });
+  if (blocked) return blocked;
+
+  const user = await getAuthenticatedUser(request);
+  if (!user || !ADMIN_EMAILS.includes((user.email || "").toLowerCase())) {
+    return NextResponse.json({ error: "Solo admin" }, { status: 403 });
+  }
+
+  const id = request.nextUrl.searchParams.get("id") || "";
+  if (!UUID_RX.test(id)) return NextResponse.json({ error: "id inválido" }, { status: 400 });
+
+  const H = { Authorization: `Bearer ${SERVICE_KEY}`, apikey: SERVICE_KEY };
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/waitlist?id=eq.${id}`, { method: "DELETE", headers: H });
+  if (!res.ok) return NextResponse.json({ error: "No se pudo borrar" }, { status: 500 });
+
+  return NextResponse.json({ ok: true });
+}

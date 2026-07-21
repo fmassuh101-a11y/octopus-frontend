@@ -25,6 +25,11 @@ export default function AdminWaitlist() {
   const [selected, setSelected] = useState<Row | null>(null)
   const [backfilling, setBackfilling] = useState(false)
   const [confirmBackfill, setConfirmBackfill] = useState(false)
+  const [testEmail, setTestEmail] = useState('')
+  const [testRole, setTestRole] = useState<'creator' | 'company'>('creator')
+  const [sendingTest, setSendingTest] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   useEffect(() => {
     ;(async () => {
@@ -80,6 +85,44 @@ export default function AdminWaitlist() {
     setConfirmBackfill(false)
   }
 
+  const sendTest = async () => {
+    if (!testEmail.trim().includes('@')) { toast('Escribe un email válido', 'error'); return }
+    setSendingTest(true)
+    try {
+      const token = localStorage.getItem('sb-access-token')
+      const res = await fetch('/api/waitlist/send-test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ email: testEmail.trim(), role: testRole }),
+      })
+      const data = await res.json()
+      if (data.ok) toast(`Prueba enviada a ${testEmail.trim()} — revisa tu bandeja`)
+      else toast(data.error || 'No se pudo enviar', 'error')
+    } catch { toast('No se pudo enviar', 'error') }
+    setSendingTest(false)
+  }
+
+  const deleteSelected = async () => {
+    if (!selected) return
+    if (!confirmDelete) { setConfirmDelete(true); return }
+    setDeletingId(selected.id)
+    try {
+      const token = localStorage.getItem('sb-access-token')
+      const res = await fetch(`/api/waitlist/admin?id=${selected.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const data = await res.json()
+      if (data.ok) {
+        setRows((prev) => prev.filter((r) => r.id !== selected.id))
+        toast('Inscripto eliminado')
+        setSelected(null)
+      } else toast(data.error || 'No se pudo borrar', 'error')
+    } catch { toast('No se pudo borrar', 'error') }
+    setDeletingId(null)
+    setConfirmDelete(false)
+  }
+
   const creators = rows.filter((r) => r.role === 'creator')
   const companies = rows.filter((r) => r.role === 'company')
   const visible = roleFilter === 'all' ? rows : rows.filter((r) => r.role === roleFilter)
@@ -101,6 +144,31 @@ export default function AdminWaitlist() {
             <Building2 className="h-5 w-5 text-emerald-400" />
             <p className="mt-1 text-2xl font-extrabold tabular-nums">{companies.length}</p>
             <p className="text-xs text-neutral-500">Empresas</p>
+          </div>
+        </div>
+
+        {/* mandar un email de prueba a una dirección cualquiera, sin tocar
+            la tabla de la waitlist — para ver cómo llega de verdad antes
+            de mandarle a la gente real */}
+        <div className="mt-8 rounded-3xl border border-neutral-800 bg-neutral-900 p-5">
+          <p className="font-bold">Mandarme un email de prueba</p>
+          <p className="mt-1 text-sm text-neutral-400">Manda la bienvenida (creador o empresa) a la dirección que pongas, sin anotarla en la lista de espera. Así ves exactamente cómo llega.</p>
+          <div className="mt-3 flex gap-2">
+            {(['creator', 'company'] as const).map((r) => (
+              <button key={r} onClick={() => setTestRole(r)}
+                className={`rounded-xl px-4 py-2 text-xs font-bold transition ${testRole === r ? 'bg-white text-black' : 'bg-neutral-800 text-neutral-400'}`}>
+                {r === 'creator' ? 'Versión creador' : 'Versión empresa'}
+              </button>
+            ))}
+          </div>
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+            <input value={testEmail} onChange={(e) => setTestEmail(e.target.value)} placeholder="tu-email@ejemplo.com" type="email"
+              className="flex-1 rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm outline-none focus:border-cyan-500" />
+            <button onClick={sendTest} disabled={sendingTest}
+              className="flex items-center justify-center gap-2 rounded-2xl bg-cyan-600 px-5 py-3 text-sm font-bold text-white disabled:opacity-50">
+              {sendingTest ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              Mandar prueba
+            </button>
           </div>
         </div>
 
@@ -207,7 +275,7 @@ export default function AdminWaitlist() {
       {selected && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-fade-in"
-          onClick={() => setSelected(null)}
+          onClick={() => { setSelected(null); setConfirmDelete(false) }}
         >
           <div
             className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-3xl border border-neutral-800 bg-neutral-900 p-6 animate-scale-in"
@@ -256,6 +324,27 @@ export default function AdminWaitlist() {
             </div>
 
             <p className="mt-4 text-xs text-neutral-600">Se inscribió el {new Date(selected.created_at).toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+
+            <div className="mt-5 border-t border-neutral-800 pt-4">
+              {!confirmDelete ? (
+                <button onClick={deleteSelected}
+                  className="text-xs font-bold text-red-400 hover:text-red-300">
+                  Eliminar este inscripto (ej. registros de prueba)
+                </button>
+              ) : (
+                <div className="flex flex-wrap items-center gap-3">
+                  <p className="text-xs font-semibold text-amber-400">¿Seguro? No se puede deshacer.</p>
+                  <button onClick={deleteSelected} disabled={deletingId === selected.id}
+                    className="flex items-center gap-1.5 rounded-xl bg-red-600 px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50">
+                    {deletingId === selected.id ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                    Sí, eliminar
+                  </button>
+                  <button onClick={() => setConfirmDelete(false)} className="text-xs font-bold text-neutral-400">
+                    Cancelar
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
