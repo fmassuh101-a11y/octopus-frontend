@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import dns from "node:dns/promises";
 import { SUPABASE_URL } from "@/lib/config/supabase";
 import { shieldAsync } from "@/lib/shield";
 import { sendWelcomeEmail } from "@/lib/waitlistEmail";
@@ -33,6 +34,30 @@ const EMAIL_RX = /^[^\s@]+@(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-
 const UUID_RX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const clean = (v: unknown, max = 120) => String(v ?? "").trim().slice(0, max);
 
+// La regex solo revisa la FORMA del email — "algo@perkin.cll" tiene forma
+// válida pero ".cll" no existe. Esto revisa que el DOMINIO exista de verdad
+// preguntándole a DNS si tiene registros MX (servidor de correo configurado).
+// Es lo mismo que hacen la mayoría de las apps antes de un email de
+// confirmación real — gratis, sin depender de ningún servicio externo pago.
+// Si el dominio no tiene MX pero sí tiene un registro A (algunos dominios
+// chicos usan eso en vez de MX), igual lo dejamos pasar.
+async function domainCanReceiveEmail(domain: string): Promise<boolean> {
+  const withTimeout = <T,>(p: Promise<T>, ms: number) =>
+    Promise.race([p, new Promise<never>((_, rej) => setTimeout(() => rej(new Error("dns timeout")), ms))]);
+  try {
+    const mx = await withTimeout(dns.resolveMx(domain), 3000);
+    if (mx.length > 0) return true;
+  } catch {
+    // sin MX (o dominio inexistente) — probamos el fallback abajo
+  }
+  try {
+    const a = await withTimeout(dns.resolve4(domain), 3000);
+    return a.length > 0;
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(request: NextRequest) {
   const blocked = await shieldAsync(request as unknown as Request, { limit: 15 });
   if (blocked) return blocked;
@@ -45,6 +70,10 @@ export async function POST(request: NextRequest) {
     const email = clean(body.email).toLowerCase();
     if (!role) return NextResponse.json({ error: "Elige creador o empresa" }, { status: 400 });
     if (!EMAIL_RX.test(email)) return NextResponse.json({ error: "Email inválido" }, { status: 400 });
+    const emailDomain = email.split("@")[1] || "";
+    if (!(await domainCanReceiveEmail(emailDomain))) {
+      return NextResponse.json({ error: "Ese dominio de email no existe o no puede recibir correos. Revisa que esté bien escrito." }, { status: 400 });
+    }
 
     // si ya estaba anotado, devolvemos su mismo link (no duplicamos)
     const dupRes = await sb(`waitlist?email=eq.${encodeURIComponent(email)}&select=id,referral_count&limit=1`);
