@@ -553,7 +553,9 @@ export default function CompanyContractsPage() {
 
                   <div className="space-y-3">
                     {selectedContract.creator_handles.map((h: any, i: number) => {
-                      const verifiedEntry = selectedContract.handle_request?.handles?.find((x: any) => x.platform === h.platform)
+                      const verifiedEntry = Array.isArray(selectedContract.handle_request?.handles)
+                        ? selectedContract.handle_request!.handles.find((x: any) => x.platform === h.platform)
+                        : undefined
                       const isVerified = verifiedEntry?.verified === true
                       const isMismatch = verifiedEntry && verifiedEntry.connected_username && !verifiedEntry.verified
                       return (

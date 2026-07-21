@@ -561,7 +561,7 @@ export default function CreatorContractsPage() {
                     solo botón: lo apretás y va directo a la pantalla de
                     TikTok pidiendo permiso — se verifica sola al volver. */}
                 {contract.status === 'accepted' && contract.handle_request?.company_approved_at && (
-                  contract.handle_request!.handles.length > 0 && contract.handle_request!.handles.every(h => h.verified) ? (
+                  Array.isArray(contract.handle_request.handles) && contract.handle_request.handles.length > 0 && contract.handle_request.handles.every(h => h.verified) ? (
                     <div className="mt-3 flex items-center gap-2 text-emerald-600 bg-emerald-500/10 border border-emerald-500/30 rounded-xl px-3 py-2">
                       <span className="text-sm font-medium">✓ Tus cuentas están verificadas para este contrato</span>
                     </div>
