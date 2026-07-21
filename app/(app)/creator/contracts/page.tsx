@@ -217,17 +217,19 @@ export default function CreatorContractsPage() {
       }
 
       // handle_requests dice si la empresa ya aprobó los handles — recién
-      // ahí este creador puede verificar sus cuentas conectadas.
-      const appIds = Array.from(new Set(contractsData.map((c: any) => c.application_id).filter(Boolean)))
+      // ahí este creador puede verificar sus cuentas conectadas. Se busca
+      // por contract_id (todo contrato lo tiene) no por application_id (los
+      // contratos por mensaje directo no tienen application_id).
+      const contractIds = contractsData.map((c: any) => c.id).filter(Boolean)
       let handleRequestsMap = new Map<string, any>()
-      if (appIds.length > 0) {
+      if (contractIds.length > 0) {
         const hrRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/handle_requests?application_id=in.(${appIds.join(',')})&select=*`,
+          `${SUPABASE_URL}/rest/v1/handle_requests?contract_id=in.(${contractIds.join(',')})&select=*`,
           { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
         )
         if (hrRes.ok) {
           const rows = await hrRes.json()
-          rows.forEach((r: any) => handleRequestsMap.set(r.application_id, r))
+          rows.forEach((r: any) => handleRequestsMap.set(r.contract_id, r))
         }
       }
 
@@ -238,7 +240,7 @@ export default function CreatorContractsPage() {
         usage_rights: typeof c.usage_rights === 'string' ? JSON.parse(c.usage_rights) : c.usage_rights,
         creator_handles: typeof c.creator_handles === 'string' ? JSON.parse(c.creator_handles) : c.creator_handles,
         exclusivity_competitors: typeof c.exclusivity_competitors === 'string' ? JSON.parse(c.exclusivity_competitors) : c.exclusivity_competitors,
-        handle_request: handleRequestsMap.get(c.application_id) || null,
+        handle_request: handleRequestsMap.get(c.id) || null,
         company_name: companiesMap.get(c.company_id) || 'Empresa',
         gig_title: gigsMap.get(c.gig_id) || c.title
       }))
@@ -316,33 +318,39 @@ export default function CreatorContractsPage() {
       // Deja el registro en handle_requests (tabla que ya existía, ahora
       // conectada de verdad) para que la empresa pueda aprobar los handles
       // y, recién después, este mismo creador pueda verificar sus cuentas
-      // conectadas contra lo que acaba de escribir acá.
-      if (selectedContract.application_id) {
-        try {
-          const handlesForRequest = creatorHandles
-            .filter(h => h.platform !== 'ugc')
-            .map(h => ({ platform: h.platform, handle: h.handle, verified: false, verified_at: null, connected_username: null }))
-          if (handlesForRequest.length > 0) {
-            const existing = await fetch(
-              `${SUPABASE_URL}/rest/v1/handle_requests?application_id=eq.${selectedContract.application_id}&select=id`,
-              { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
-            ).then(r => r.ok ? r.json() : [])
-            const body = JSON.stringify({ handles: handlesForRequest, status: 'submitted', submitted_at: new Date().toISOString() })
-            if (existing?.[0]?.id) {
-              await fetch(`${SUPABASE_URL}/rest/v1/handle_requests?id=eq.${existing[0].id}`, {
+      // conectadas contra lo que acaba de escribir acá. Usa contract_id (NO
+      // application_id): los contratos mandados por mensaje directo, sin
+      // pasar por una "aplicación" formal, no tienen application_id.
+      try {
+        const handlesForRequest = creatorHandles
+          .filter(h => h.platform !== 'ugc')
+          .map(h => ({ platform: h.platform, handle: h.handle, verified: false, verified_at: null, connected_username: null }))
+        if (handlesForRequest.length > 0) {
+          const existingRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/handle_requests?contract_id=eq.${selectedContract.id}&select=id`,
+            { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+          )
+          const existing = existingRes.ok ? await existingRes.json() : []
+          const body = JSON.stringify({ handles: handlesForRequest, status: 'submitted', submitted_at: new Date().toISOString() })
+          const hrRes = existing?.[0]?.id
+            ? await fetch(`${SUPABASE_URL}/rest/v1/handle_requests?id=eq.${existing[0].id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY },
                 body,
               })
-            } else {
-              await fetch(`${SUPABASE_URL}/rest/v1/handle_requests`, {
+            : await fetch(`${SUPABASE_URL}/rest/v1/handle_requests`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY },
-                body: JSON.stringify({ application_id: selectedContract.application_id, ...JSON.parse(body) }),
+                body: JSON.stringify({ contract_id: selectedContract.id, application_id: selectedContract.application_id || null, ...JSON.parse(body) }),
               })
-            }
+          if (!hrRes.ok) {
+            console.error('[handle_requests] no se pudo guardar:', hrRes.status, await hrRes.text())
           }
-        } catch { /* no bloquea la aceptación del contrato si esto falla */ }
+        }
+      } catch (e) {
+        console.error('[handle_requests] error:', e)
+        // no bloquea la aceptación del contrato si esto falla — el contrato
+        // ya quedó aceptado igual, solo no se podrá aprobar/verificar handles
       }
 
       // Send notification message to company

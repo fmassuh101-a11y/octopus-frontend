@@ -214,7 +214,16 @@ export default function CreateContractModal({
           body: JSON.stringify({
             userId: creatorId,
             gigId: gigId || undefined,
-            content: `Te envié un contrato: "${title}" (${pagoTxt}). Revísalo y acéptalo aquí: ${window.location.origin}/k/${contract?.id || ""}`,
+            // Un link fijo (no window.location.origin) — este mensaje lo
+            // lee la otra persona después, en OTRA sesión/dispositivo, así
+            // que no puede depender de en qué dominio estaba el que lo
+            // mandó. Usa NEXT_PUBLIC_APP_URL — la misma variable que ya usan
+            // /api/whop/dm/send, /c/[id] y /k/[id] — para que el link que se
+            // arma acá y la página que lo recibe sean siempre el mismo
+            // dominio (antes, con window.location.origin, a veces quedaba
+            // en un dominio distinto al que la otra persona tenía abierto y
+            // Safari lo trataba como "salir de la app").
+            content: `Te envié un contrato: "${title}" (${pagoTxt}). Revísalo y acéptalo aquí: ${process.env.NEXT_PUBLIC_APP_URL || 'https://octopus-frontend-tau.vercel.app'}/k/${contract?.id || ""}`,
           })
         })
         const dmData = await dmRes.json().catch(() => ({}))

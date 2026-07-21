@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import LegalContractDocument from '@/components/contracts/LegalContractDocument'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { ClipboardList, FileText, Home, MessageCircle, Users } from 'lucide-react'
+import { toast } from '@/components/oct/toast'
 
 interface Contract {
   id: string
@@ -198,17 +199,19 @@ export default function CompanyContractsPage() {
 
       // handle_requests trae el estado REAL de verificación (aprobado por
       // la empresa + verificado contra la cuenta conectada del creador) —
-      // sin esto, la insignia "Verificados" de abajo mentía siempre.
-      const appIds = Array.from(new Set(contractsData.map((c: any) => c.application_id).filter(Boolean)))
+      // sin esto, la insignia "Verificados" de abajo mentía siempre. Se
+      // busca por contract_id (todo contrato lo tiene) no por
+      // application_id (los contratos por mensaje directo no lo tienen).
+      const contractIds = contractsData.map((c: any) => c.id).filter(Boolean)
       let handleRequestsMap = new Map<string, any>()
-      if (appIds.length > 0) {
+      if (contractIds.length > 0) {
         const hrRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/handle_requests?application_id=in.(${appIds.join(',')})&select=*`,
+          `${SUPABASE_URL}/rest/v1/handle_requests?contract_id=in.(${contractIds.join(',')})&select=*`,
           { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
         )
         if (hrRes.ok) {
           const rows = await hrRes.json()
-          rows.forEach((r: any) => handleRequestsMap.set(r.application_id, r))
+          rows.forEach((r: any) => handleRequestsMap.set(r.contract_id, r))
         }
       }
 
@@ -219,7 +222,7 @@ export default function CompanyContractsPage() {
         creator_handles: typeof c.creator_handles === 'string' ? JSON.parse(c.creator_handles) : c.creator_handles,
         exclusivity_competitors: typeof c.exclusivity_competitors === 'string' ? JSON.parse(c.exclusivity_competitors) : c.exclusivity_competitors,
         creator_name: creatorsMap.get(c.creator_id) || 'Creador',
-        handle_request: handleRequestsMap.get(c.application_id) || null
+        handle_request: handleRequestsMap.get(c.id) || null
       }))
 
       setContracts(enrichedContracts)
@@ -242,18 +245,48 @@ export default function CompanyContractsPage() {
   const [approvingHandles, setApprovingHandles] = useState(false)
 
   // La empresa aprueba los handles que escribió el creador — recién ahí el
-  // creador puede verificarlos (conectar su cuenta y que coincida).
+  // creador puede verificarlos (conectar su cuenta y que coincida). Si por
+  // algún motivo nunca se creó el registro (ej. falló silenciosamente del
+  // lado del creador), se crea acá mismo con lo que ya tenemos guardado en
+  // el contrato — así este botón nunca queda trabado sin explicación.
   const approveHandles = async (contract: Contract) => {
-    if (!contract.handle_request?.id || !user?.id) return
+    if (!user?.id) return
     setApprovingHandles(true)
     try {
       const token = localStorage.getItem('sb-access-token')
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/handle_requests?id=eq.${contract.handle_request.id}`, {
+      const now = new Date().toISOString()
+      let handleRequestId = contract.handle_request?.id
+
+      if (!handleRequestId) {
+        const handles = (contract.creator_handles || [])
+          .filter((h: any) => h.platform !== 'ugc')
+          .map((h: any) => ({ platform: h.platform, handle: h.handle, verified: false, verified_at: null, connected_username: null }))
+        if (handles.length === 0) {
+          toast('Este contrato no tiene handles para aprobar', 'error')
+          setApprovingHandles(false)
+          return
+        }
+        const createRes = await fetch(`${SUPABASE_URL}/rest/v1/handle_requests`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY, Prefer: 'return=representation' },
+          body: JSON.stringify({ contract_id: contract.id, application_id: contract.application_id || null, handles, status: 'submitted', submitted_at: now }),
+        })
+        if (!createRes.ok) {
+          toast(`No se pudo crear el registro: ${(await createRes.text()).slice(0, 150)}`, 'error')
+          setApprovingHandles(false)
+          return
+        }
+        handleRequestId = (await createRes.json())?.[0]?.id
+      }
+
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/handle_requests?id=eq.${handleRequestId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY },
-        body: JSON.stringify({ company_approved_at: new Date().toISOString(), company_approved_by: user.id }),
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY, Prefer: 'return=representation' },
+        body: JSON.stringify({ company_approved_at: now, company_approved_by: user.id }),
       })
       if (res.ok) {
+        const updatedRow = (await res.json())?.[0]
+
         // avisa al creador por el mismo chat que ya se usa para el resto de
         // los avisos del contrato — para que le salga en sus mensajes
         fetch('/api/whop/dm/send', {
@@ -265,12 +298,16 @@ export default function CompanyContractsPage() {
           }),
         }).catch(() => {})
 
-        const updated = { ...contract.handle_request, company_approved_at: new Date().toISOString() }
+        const updated = updatedRow || { ...contract.handle_request, id: handleRequestId, company_approved_at: now }
         setContracts(prev => prev.map(c => c.id === contract.id ? { ...c, handle_request: updated } : c))
         setSelectedContract(prev => prev && prev.id === contract.id ? { ...prev, handle_request: updated } : prev)
+        toast('Handles aprobados — el creador ya puede verificar sus cuentas')
+      } else {
+        toast(`No se pudo aprobar: ${(await res.text()).slice(0, 150)}`, 'error')
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error approving handles:', err)
+      toast('No se pudo aprobar los handles', 'error')
     } finally {
       setApprovingHandles(false)
     }
@@ -537,7 +574,7 @@ export default function CompanyContractsPage() {
                       </p>
                       <button
                         onClick={() => approveHandles(selectedContract)}
-                        disabled={approvingHandles || !selectedContract.handle_request}
+                        disabled={approvingHandles}
                         className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
                       >
                         {approvingHandles ? 'Aprobando…' : 'Aprobar handles'}

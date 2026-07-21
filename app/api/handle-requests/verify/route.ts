@@ -25,11 +25,11 @@ function connectedUsernames(bio: any, platform: string): string[] {
 const H = { Authorization: `Bearer ${SERVICE_KEY}`, apikey: SERVICE_KEY, "Content-Type": "application/json" };
 
 /**
- * POST /api/handle-requests/verify { applicationId? }
+ * POST /api/handle-requests/verify { contractId? }
  * Solo procesa solicitudes que la empresa ya aprobó (company_approved_at).
- * Sin applicationId: verifica TODAS las solicitudes pendientes del creador
+ * Sin contractId: verifica TODAS las solicitudes pendientes del creador
  * autenticado (se usa apenas conecta una cuenta nueva, para que se verifique
- * sola sin un paso manual aparte). Con applicationId: solo esa una.
+ * sola sin un paso manual aparte). Con contractId: solo esa una.
  * Para cada plataforma que el creador escribió, revisa si ese handle está
  * entre TODAS sus cuentas conectadas: verified o not_connected (todavía no
  * conectó esa cuenta puntual — no implica que sea falsa).
@@ -42,34 +42,34 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   if (!SERVICE_KEY) return NextResponse.json({ error: "Config del servidor incompleta" }, { status: 500 });
 
-  const { applicationId } = await request.json().catch(() => ({}));
+  const { contractId } = await request.json().catch(() => ({}));
 
   // 1. Traer las solicitudes a procesar — todas las del creador con
-  // company_approved_at ya seteado, o solo una si vino applicationId.
-  const query = applicationId
-    ? `handle_requests?application_id=eq.${applicationId}&select=*`
+  // company_approved_at ya seteado, o solo una si vino contractId.
+  const query = contractId
+    ? `handle_requests?contract_id=eq.${contractId}&select=*`
     : `handle_requests?company_approved_at=not.is.null&status=neq.verified&select=*`;
   const hrRes = await fetch(`${SUPABASE_URL}/rest/v1/${query}`, { headers: H });
   let handleRequests = hrRes.ok ? await hrRes.json() : [];
-  if (applicationId && handleRequests.length === 0) {
+  if (contractId && handleRequests.length === 0) {
     return NextResponse.json({ error: "No hay handles enviados para este contrato" }, { status: 404 });
   }
 
-  // 2. Cruzar con applications para quedarnos solo con las del creador
-  // autenticado (nadie puede verificar handles ajenos) y saber a qué
-  // empresa avisarle si se verifica.
-  const appIds = Array.from(new Set(handleRequests.map((h: any) => h.application_id)));
-  const appsRes = appIds.length
-    ? await fetch(`${SUPABASE_URL}/rest/v1/applications?id=in.(${appIds.join(",")})&select=id,creator_id,company_id,gig_id`, { headers: H })
+  // 2. Cruzar con contracts (creator_id/company_id están ahí directo) para
+  // quedarnos solo con las del creador autenticado — nadie puede verificar
+  // handles ajenos — y saber a qué empresa avisarle si se verifica.
+  const contractIds = Array.from(new Set(handleRequests.map((h: any) => h.contract_id).filter(Boolean)));
+  const contractsRes = contractIds.length
+    ? await fetch(`${SUPABASE_URL}/rest/v1/contracts?id=in.(${contractIds.join(",")})&select=id,creator_id,company_id,title`, { headers: H })
     : null;
-  const apps = appsRes?.ok ? await appsRes.json() : [];
-  const appById = new Map<string, any>(apps.map((a: any) => [a.id, a]));
+  const contracts = contractsRes?.ok ? await contractsRes.json() : [];
+  const contractById = new Map<string, any>(contracts.map((c: any) => [c.id, c]));
 
-  handleRequests = handleRequests.filter((hr: any) => appById.get(hr.application_id)?.creator_id === user.id);
-  if (applicationId && handleRequests.length === 0) {
+  handleRequests = handleRequests.filter((hr: any) => contractById.get(hr.contract_id)?.creator_id === user.id);
+  if (contractId && handleRequests.length === 0) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
-  if (applicationId && !handleRequests[0].company_approved_at) {
+  if (contractId && !handleRequests[0].company_approved_at) {
     return NextResponse.json({ error: "La empresa todavía no aprobó estos handles" }, { status: 409 });
   }
 
@@ -80,14 +80,14 @@ export async function POST(request: NextRequest) {
   if (typeof bio === "string") { try { bio = JSON.parse(bio); } catch { bio = {}; } }
 
   const now = new Date().toISOString();
-  const allResults: Array<{ applicationId: string; platform: string; handle: string; result: "verified" | "not_connected" }> = [];
-  const newlyVerifiedApps: string[] = [];
+  const allResults: Array<{ contractId: string; platform: string; handle: string; result: "verified" | "not_connected" }> = [];
+  const newlyVerifiedContracts: string[] = [];
 
   for (const hr of handleRequests) {
     const updatedHandles = (Array.isArray(hr.handles) ? hr.handles : []).map((h: any) => {
       const usernames = connectedUsernames(bio, h.platform);
       const match = usernames.find((u) => norm(u) === norm(h.handle));
-      allResults.push({ applicationId: hr.application_id, platform: h.platform, handle: h.handle, result: match ? "verified" : "not_connected" });
+      allResults.push({ contractId: hr.contract_id, platform: h.platform, handle: h.handle, result: match ? "verified" : "not_connected" });
       return match
         ? { ...h, verified: true, verified_at: now, connected_username: match }
         : { ...h, verified: false, connected_username: null };
@@ -106,20 +106,20 @@ export async function POST(request: NextRequest) {
       }),
     });
 
-    if (allVerified && !wasVerified) newlyVerifiedApps.push(hr.application_id);
+    if (allVerified && !wasVerified) newlyVerifiedContracts.push(hr.contract_id);
   }
 
   // 4. Avisar por chat a cada empresa cuyo contrato recién quedó verificado.
   const authHeader = request.headers.get("authorization") || "";
-  for (const appId of newlyVerifiedApps) {
-    const app = appById.get(appId);
-    if (!app) continue;
+  for (const cId of newlyVerifiedContracts) {
+    const contract = contractById.get(cId);
+    if (!contract) continue;
     fetch(`${request.nextUrl.origin}/api/whop/dm/send`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: authHeader },
-      body: JSON.stringify({ userId: app.company_id, content: "El creador ya verificó sus cuentas para este contrato." }),
+      body: JSON.stringify({ userId: contract.company_id, content: `El creador ya verificó sus cuentas para "${contract.title}".` }),
     }).catch(() => {});
   }
 
-  return NextResponse.json({ ok: true, results: allResults, newlyVerifiedApps });
+  return NextResponse.json({ ok: true, results: allResults, newlyVerifiedContracts });
 }

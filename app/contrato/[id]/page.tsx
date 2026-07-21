@@ -19,6 +19,21 @@ const PLATFORM_LABEL: Record<string, string> = {
   tiktok: 'TikTok', instagram: 'Instagram', youtube: 'YouTube', ugc: 'UGC (sin publicar)',
 }
 
+const TIKTOK_CLIENT_KEY = process.env.NEXT_PUBLIC_TIKTOK_CLIENT_KEY || 'aw5n2omdzbjx4xf8'
+
+// Un solo toque: del botón "verifica tus cuentas" directo a la pantalla de
+// TikTok pidiendo permiso — nada de mandar a la persona a buscar un botón
+// en otra pantalla. Al volver, se auto-verifica sola contra cualquier
+// contrato pendiente (ver app/auth/tiktok/callback/page.tsx).
+function connectTikTokAndVerify() {
+  const state = Math.random().toString(36).substring(2, 15)
+  localStorage.setItem('tiktok_csrf_state', state)
+  localStorage.setItem('tiktok_oauth_state', state)
+  const redirectUri = encodeURIComponent('https://octopus-frontend-tau.vercel.app/')
+  const scope = encodeURIComponent('user.info.basic,user.info.profile,user.info.stats,video.list')
+  window.location.href = `https://www.tiktok.com/v2/auth/authorize/?client_key=${TIKTOK_CLIENT_KEY}&response_type=code&scope=${scope}&redirect_uri=${redirectUri}&state=${state}&disable_auto_auth=1`
+}
+
 export default function ContratoDocumento() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
@@ -31,9 +46,11 @@ export default function ContratoDocumento() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   // PROCESO DE FIRMA (estilo SideShift): al aceptar, el creador ingresa sus
-  // handles de las plataformas del contrato; la empresa luego los aprueba.
+  // handles de las plataformas del contrato; la empresa luego los aprueba;
+  // recién ahí el creador puede verificarlos (conectar OAuth).
   const [showHandles, setShowHandles] = useState(false)
   const [handles, setHandles] = useState<Record<string, string>>({})
+  const [handleRequest, setHandleRequest] = useState<any>(null)
 
   useEffect(() => {
     ;(async () => {
@@ -56,6 +73,10 @@ export default function ContratoDocumento() {
           if (p.user_id === c.company_id) setCompanyName(p.company_name || p.full_name || 'La Empresa')
           if (p.user_id === c.creator_id) { setCreatorName(p.full_name || 'El Creador'); setCreatorEmail(p.email || '') }
         }
+        const hrRows = await (
+          await fetch(`${SUPABASE_URL}/rest/v1/handle_requests?contract_id=eq.${id}&select=*`, { headers: H })
+        ).json().catch(() => [])
+        setHandleRequest(hrRows?.[0] || null)
       } catch { setError('No se pudo cargar el contrato') }
       setLoading(false)
     })()
@@ -112,6 +133,25 @@ export default function ContratoDocumento() {
         }),
       })
       if (!res.ok) throw new Error()
+
+      // deja el registro real en handle_requests — sin esto la empresa no
+      // tiene nada que aprobar y el creador nunca puede verificar sus
+      // cuentas conectadas contra lo que acaba de escribir acá.
+      try {
+        const handlesForRequest = creatorHandles
+          .filter((h) => h.platform !== 'ugc')
+          .map((h) => ({ platform: h.platform, handle: h.handle, verified: false, verified_at: null, connected_username: null }))
+        if (handlesForRequest.length > 0) {
+          const hrCreate = await fetch(`${SUPABASE_URL}/rest/v1/handle_requests`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY, Prefer: 'return=representation' },
+            body: JSON.stringify({ contract_id: id, application_id: contract.application_id || null, handles: handlesForRequest, status: 'submitted', submitted_at: new Date().toISOString() }),
+          })
+          if (hrCreate.ok) setHandleRequest((await hrCreate.json())?.[0] || null)
+          else console.error('[handle_requests] no se pudo crear:', hrCreate.status, await hrCreate.text())
+        }
+      } catch (e) { console.error('[handle_requests] error:', e) }
+
       // avisar a la empresa por el chat de Whop
       const handlesText = creatorHandles.map((h) => `${h.platform}: ${h.handle}`).join(', ')
       fetch('/api/whop/dm/send', {
@@ -129,11 +169,41 @@ export default function ContratoDocumento() {
     setBusy(false)
   }
 
-  // Aprobación de handles por la EMPRESA (cierra el proceso)
+  // Aprobación de handles por la EMPRESA (cierra el proceso de firma Y
+  // aprueba de verdad el registro que usa el creador para verificar sus
+  // cuentas — antes esto solo cambiaba el estado del contrato, sin tocar
+  // handle_requests, por eso nunca se podía verificar nada).
   const approveHandles = async () => {
     setBusy(true)
     try {
       const token = localStorage.getItem('sb-access-token')
+      const now = new Date().toISOString()
+
+      let hrId = handleRequest?.id
+      if (!hrId) {
+        // blindaje: si por algo no se creó al firmar, se crea acá mismo
+        const handles = signedHandles
+          .filter((h: any) => h.platform !== 'ugc')
+          .map((h: any) => ({ platform: h.platform, handle: h.handle, verified: false, verified_at: null, connected_username: null }))
+        if (handles.length > 0) {
+          const createRes = await fetch(`${SUPABASE_URL}/rest/v1/handle_requests`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY, Prefer: 'return=representation' },
+            body: JSON.stringify({ contract_id: id, application_id: contract.application_id || null, handles, status: 'submitted', submitted_at: now }),
+          })
+          if (createRes.ok) hrId = (await createRes.json())?.[0]?.id
+        }
+      }
+      if (hrId) {
+        const hrRes = await fetch(`${SUPABASE_URL}/rest/v1/handle_requests?id=eq.${hrId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY, Prefer: 'return=representation' },
+          body: JSON.stringify({ company_approved_at: now, company_approved_by: me.id }),
+        })
+        if (hrRes.ok) setHandleRequest((await hrRes.json())?.[0] || null)
+        else toast(`No se pudieron aprobar los handles: ${(await hrRes.text()).slice(0, 120)}`, 'error')
+      }
+
       const res = await fetch(`${SUPABASE_URL}/rest/v1/contracts?id=eq.${id}`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
@@ -145,7 +215,7 @@ export default function ContratoDocumento() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           userId: contract.creator_id,
-          content: `Aprobamos tus handles para "${contract.title}". El contrato está EN MARCHA — ya puedes crear el contenido.`,
+          content: `Aprobamos tus handles para "${contract.title}". Ya puedes verificar tus cuentas conectando TikTok/Instagram/YouTube — el contrato está EN MARCHA.`,
         }),
       }).catch(() => {})
       toast('Handles aprobados — contrato en marcha')
@@ -165,7 +235,17 @@ export default function ContratoDocumento() {
     <div className="min-h-[100dvh] bg-neutral-200/70 pb-28 text-neutral-900 print:bg-white print:pb-0">
       {/* barra superior (no se imprime) */}
       <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-neutral-200 bg-white/90 px-4 py-3 backdrop-blur print:hidden">
-        <button onClick={() => router.back()} className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-100" aria-label="Volver">
+        <button
+          onClick={() => {
+            // router.back() no sirve si esta página se abrió directo desde
+            // un link de mensaje (sin historial dentro de la app) — en ese
+            // caso no hacía NADA y la persona quedaba sin forma de salir.
+            if (typeof window !== 'undefined' && window.history.length > 1) router.back()
+            else router.push(isCompany ? '/company/messages' : '/creator/messages')
+          }}
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-100"
+          aria-label="Volver"
+        >
           <ChevronLeft className="h-5 w-5" />
         </button>
         <div className="min-w-0">
@@ -389,6 +469,31 @@ export default function ContratoDocumento() {
         </div>
       )}
 
+      {/* CREADOR: verificar cuentas — solo aparece una vez que la empresa
+          aprobó los handles. Un solo botón: directo a TikTok pidiendo
+          permiso, se verifica sola al volver (ver app/auth/tiktok/callback). */}
+      {isCreator && contract.status !== 'rejected' && handleRequest?.company_approved_at && (
+        Array.isArray(handleRequest.handles) && handleRequest.handles.length > 0 && handleRequest.handles.every((h: any) => h.verified) ? (
+          <div className="fixed inset-x-0 bottom-0 border-t border-neutral-200 bg-white/95 p-4 backdrop-blur print:hidden">
+            <p className="mx-auto flex w-full max-w-3xl items-center justify-center gap-2 font-bold text-emerald-600">
+              <Check className="h-4 w-4" /> Tus cuentas están verificadas para este contrato
+            </p>
+          </div>
+        ) : (
+          <div className="fixed inset-x-0 bottom-0 border-t border-neutral-200 bg-white/95 p-4 backdrop-blur print:hidden">
+            <div className="mx-auto w-full max-w-3xl text-center">
+              <p className="mb-2 text-sm text-neutral-500">La empresa ya aprobó tus handles.</p>
+              <button
+                onClick={connectTikTokAndVerify}
+                className="mx-auto flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-[#22D3EE] to-[#0891B2] px-6 py-3.5 font-bold text-white shadow-lg shadow-cyan-200"
+              >
+                <Check className="h-4 w-4" /> Verifica tus cuentas
+              </button>
+            </div>
+          </div>
+        )
+      )}
+
       {/* EMPRESA: aprobar los handles del creador (cierra el proceso de firma) */}
       {isCompany && contract.status === 'accepted' && (
         <div className="fixed inset-x-0 bottom-0 border-t border-neutral-200 bg-white/95 p-4 backdrop-blur print:hidden">
@@ -413,9 +518,9 @@ export default function ContratoDocumento() {
       {showHandles && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 print:hidden sm:items-center" onClick={() => setShowHandles(false)}>
           <div className="w-full max-w-md rounded-t-[28px] bg-white p-6 sm:rounded-[28px]" onClick={(e) => e.stopPropagation()}>
-            <p className="text-lg font-extrabold">Firmá con tus cuentas</p>
+            <p className="text-lg font-extrabold">Firma con tus cuentas</p>
             <p className="mt-1 text-sm text-neutral-500">
-              Ingresá el handle de la cuenta desde la que vas a publicar. La empresa los verá y aprobará.
+              Escribe el handle de la cuenta desde la que vas a publicar. La empresa lo verá y lo aprobará.
             </p>
             <div className="mt-4 space-y-3">
               {(contractPlatforms.length ? contractPlatforms : ['tiktok']).map((p) => (
