@@ -2,13 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth/apiAuth";
 import { shieldAsync } from "@/lib/shield";
 import { SUPABASE_URL } from "@/lib/config/supabase";
-import { buildBroadcastHtml } from "@/lib/waitlistEmail";
+import { buildBroadcastHtml, sendResendBatch } from "@/lib/waitlistEmail";
 
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-const RESEND_KEY = process.env.RESEND_API_KEY || "";
 const ADMIN_EMAILS = ["fmassuh133@gmail.com"];
-// Sin dominio propio verificado, Resend permite enviar desde onboarding@resend.dev
-const FROM = process.env.RESEND_FROM || "Octapi <onboarding@resend.dev>";
 
 /**
  * POST /api/waitlist/broadcast { subject, message, role? } — envía un email a
@@ -23,10 +20,6 @@ export async function POST(request: NextRequest) {
   if (!user || !ADMIN_EMAILS.includes((user.email || "").toLowerCase())) {
     return NextResponse.json({ error: "Solo admin" }, { status: 403 });
   }
-  if (!RESEND_KEY) {
-    return NextResponse.json({ error: "Falta RESEND_API_KEY en Vercel (crea una cuenta gratis en resend.com y agrega la key)" }, { status: 500 });
-  }
-
   const body = await request.json().catch(() => ({}));
   const subject = String(body.subject || "").trim().slice(0, 150);
   const message = String(body.message || "").trim().slice(0, 5000);
@@ -53,20 +46,13 @@ export async function POST(request: NextRequest) {
   const errors: string[] = [];
   for (let i = 0; i < recipients.length; i += 100) {
     const batch = recipients.slice(i, i + 100).map((r) => ({
-      from: FROM,
-      to: [r.email],
+      to: r.email,
       subject,
       html: buildBroadcastHtml(message, r.id),
     }));
-    try {
-      const res = await fetch("https://api.resend.com/emails/batch", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify(batch),
-      });
-      if (res.ok) sent += batch.length;
-      else errors.push((await res.text()).slice(0, 120));
-    } catch (e: any) { errors.push(e?.message?.slice(0, 80)); }
+    const result = await sendResendBatch(batch);
+    if (result.ok) sent += batch.length;
+    else if (result.error) errors.push(result.error);
   }
 
   return NextResponse.json({ ok: sent > 0, sent, total: recipients.length, errors: errors.slice(0, 3) });

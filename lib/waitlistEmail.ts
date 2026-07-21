@@ -3,7 +3,14 @@
 // Archivo separado de lib/waitlist.ts a propósito: ese lo importa el
 // middleware (edge runtime) y este solo lo usan rutas API (Node runtime).
 
-const RESEND_KEY = process.env.RESEND_API_KEY || "";
+// Dos keys posibles: RESEND_API_KEY (principal) y RESEND_API_KEY_2 (cuenta
+// de respaldo, opcional). El plan gratis de Resend tope 100 emails/día — el
+// email de bienvenida es automático y corre TODOS LOS DÍAS mientras la
+// waitlist esté activa, así que si algún día se pasa de 100 registros
+// reales, la segunda key entra sola sin que nadie tenga que hacer nada.
+// Sin RESEND_API_KEY_2 configurada, esto se comporta exactamente igual que
+// antes (una sola key).
+const RESEND_KEYS = [process.env.RESEND_API_KEY, process.env.RESEND_API_KEY_2].filter(Boolean) as string[];
 // Sin dominio propio verificado, Resend permite enviar desde onboarding@resend.dev
 const FROM = process.env.RESEND_FROM || "Octapi <onboarding@resend.dev>";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://octopus-frontend-tau.vercel.app";
@@ -28,18 +35,46 @@ function emailShell(bodyHtml: string): string {
     </div>`;
 }
 
+// Intenta cada key en orden — si la primera se quedó sin cuota diaria (o
+// cualquier otro error), reintenta automáticamente con la siguiente. Un
+// 429 (rate limit) es la señal típica de "se acabó el límite del día".
 async function sendResendEmail(to: string, subject: string, html: string): Promise<boolean> {
-  if (!RESEND_KEY) return false;
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: FROM, to: [to], subject, html }),
-    });
-    return res.ok;
-  } catch {
-    return false;
+  for (const key of RESEND_KEYS) {
+    try {
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ from: FROM, to: [to], subject, html }),
+      });
+      if (res.ok) return true;
+    } catch {
+      // sigue con la próxima key
+    }
   }
+  return false;
+}
+
+// Igual que sendResendEmail pero para el endpoint de batch (hasta 100 por
+// request) que usan el broadcast y la bienvenida retroactiva. Si la
+// primera key falla, reintenta el batch completo con la siguiente.
+export async function sendResendBatch(emails: Array<{ to: string; subject: string; html: string }>): Promise<{ ok: boolean; error?: string }> {
+  if (!emails.length) return { ok: true };
+  const payload = emails.map((e) => ({ from: FROM, to: [e.to], subject: e.subject, html: e.html }));
+  let lastError = "Falta RESEND_API_KEY en Vercel";
+  for (const key of RESEND_KEYS) {
+    try {
+      const res = await fetch("https://api.resend.com/emails/batch", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) return { ok: true };
+      lastError = (await res.text()).slice(0, 120);
+    } catch (e: any) {
+      lastError = e?.message?.slice(0, 80) || "error desconocido";
+    }
+  }
+  return { ok: false, error: lastError };
 }
 
 function referralBox(refLink: string, label: string): string {
@@ -108,8 +143,10 @@ export function welcomeSubject(role: "creator" | "company"): string {
   return role === "creator" ? "Ya estás en la lista de espera de Octapi" : "Tu empresa ya está en la lista de espera de Octapi";
 }
 
-// Bienvenida automática — se manda una sola vez, apenas alguien se anota
-// (no bloquea la respuesta del signup, se llama fire-and-forget).
+// Bienvenida automática — se manda una sola vez, apenas alguien se anota.
+// Quien llama a esto DEBE esperar (await) el resultado: en Vercel
+// serverless, si no se espera, la función puede cortarse antes de que el
+// envío termine (ver join/route.ts para el caso real que pasó).
 export async function sendWelcomeEmail(opts: {
   email: string;
   name: string;

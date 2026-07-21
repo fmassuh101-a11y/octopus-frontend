@@ -2,12 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth/apiAuth";
 import { shieldAsync } from "@/lib/shield";
 import { SUPABASE_URL } from "@/lib/config/supabase";
-import { buildWelcomeHtml, welcomeSubject } from "@/lib/waitlistEmail";
+import { buildWelcomeHtml, welcomeSubject, sendResendBatch } from "@/lib/waitlistEmail";
 
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-const RESEND_KEY = process.env.RESEND_API_KEY || "";
 const ADMIN_EMAILS = ["fmassuh133@gmail.com"];
-const FROM = process.env.RESEND_FROM || "Octapi <onboarding@resend.dev>";
 
 const H = { Authorization: `Bearer ${SERVICE_KEY}`, apikey: SERVICE_KEY, "Content-Type": "application/json" };
 
@@ -27,10 +25,6 @@ export async function POST(request: NextRequest) {
   if (!user || !ADMIN_EMAILS.includes((user.email || "").toLowerCase())) {
     return NextResponse.json({ error: "Solo admin" }, { status: 403 });
   }
-  if (!RESEND_KEY) {
-    return NextResponse.json({ error: "Falta RESEND_API_KEY en Vercel" }, { status: 500 });
-  }
-
   // filtra por welcome_sent_at=is.null; si la columna todavía no existe
   // (falta pegar el SQL), cae a traer todos sin filtrar en vez de romper.
   let rowsRes = await fetch(
@@ -65,32 +59,25 @@ export async function POST(request: NextRequest) {
   for (let i = 0; i < recipients.length; i += 100) {
     const chunk = recipients.slice(i, i + 100);
     const batch = chunk.map((r) => ({
-      from: FROM,
-      to: [r.email],
+      to: r.email,
       subject: welcomeSubject(r.role as "creator" | "company"),
       html: buildWelcomeHtml(r.name, r.role as "creator" | "company", r.id),
     }));
-    try {
-      const res = await fetch("https://api.resend.com/emails/batch", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify(batch),
-      });
-      if (res.ok) {
-        sent += chunk.length;
-        // marca a este lote como enviado para que no se repita la próxima vez
-        if (!missingColumn) {
-          const ids = chunk.map((r) => r.id).join(",");
-          fetch(`${SUPABASE_URL}/rest/v1/waitlist?id=in.(${ids})`, {
-            method: "PATCH",
-            headers: H,
-            body: JSON.stringify({ welcome_sent_at: new Date().toISOString() }),
-          }).catch(() => {});
-        }
-      } else {
-        errors.push((await res.text()).slice(0, 120));
+    const result = await sendResendBatch(batch);
+    if (result.ok) {
+      sent += chunk.length;
+      // marca a este lote como enviado para que no se repita la próxima vez
+      if (!missingColumn) {
+        const ids = chunk.map((r) => r.id).join(",");
+        await fetch(`${SUPABASE_URL}/rest/v1/waitlist?id=in.(${ids})`, {
+          method: "PATCH",
+          headers: H,
+          body: JSON.stringify({ welcome_sent_at: new Date().toISOString() }),
+        }).catch(() => {});
       }
-    } catch (e: any) { errors.push(e?.message?.slice(0, 80)); }
+    } else if (result.error) {
+      errors.push(result.error);
+    }
   }
 
   const pending = recipients.length - sent;
