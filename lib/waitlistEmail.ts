@@ -41,7 +41,7 @@ function escapeHtml(s: string): string {
 // mucha más chance de caer en la bandeja de verdad.
 function emailShell(bodyHtml: string): string {
   return `
-    <div style="font-family: -apple-system, Segoe UI, Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #1f2937;">
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #1f2937; font-size: 16px; line-height: 1.65; letter-spacing: 0.1px;">
       ${bodyHtml}
       <p style="margin-top: 24px; font-size: 13px; color: #6b7280;">
         Síguenos en <a href="https://www.tiktok.com/@app_desde_zero" style="color: #0891B2;">TikTok</a> e <a href="https://instagram.com/octapi.app" style="color: #0891B2;">Instagram</a>.
@@ -102,7 +102,7 @@ export async function sendResendBatch(emails: Array<{ to: string; subject: strin
 
 function referralLine(refLink: string, label: string): string {
   return `
-    <p style="font-size: 15px; line-height: 1.6; color: #1f2937; margin: 0 0 8px;">${label}</p>
+    <p style="margin: 0 0 8px;">${label}</p>
     <p style="font-size: 14px; margin: 0 0 20px;"><a href="${refLink}" style="color: #0891B2;">${refLink}</a></p>`;
 }
 
@@ -110,16 +110,16 @@ function referralLine(refLink: string, label: string): string {
 function creatorWelcomeHtml(name: string, refLink: string): string {
   const safeName = escapeHtml(name || "creador");
   return emailShell(`
-    <p style="font-size: 15px; line-height: 1.6; margin: 0 0 16px;">¡Hola, ${safeName}!</p>
-    <p style="font-size: 15px; line-height: 1.6; margin: 0 0 16px;">
+    <p style="margin: 0 0 16px;">¡Hola, ${safeName}!</p>
+    <p style="margin: 0 0 16px;">
       Ya estás en la lista de espera de Octapi. Te avisamos por email apenas abramos las puertas.
     </p>
-    <p style="font-size: 15px; line-height: 1.6; margin: 0 0 20px;">
+    <p style="margin: 0 0 20px;">
       Cuando abramos, vas a poder aplicar a campañas reales de empresas de toda Latinoamérica que sí pagan por contenido — con contrato claro y pago seguro, sin tener que perseguir a nadie para que te pague.
     </p>
     ${referralLine(refLink, "Si conoces a otros creadores, o a alguien con una empresa a la que le pueda interesar sumarse, comparte tu link con ellos — cada persona que se anote te sube en la fila:")}
-    <p style="font-size: 15px; line-height: 1.6; margin: 0;">Gracias por sumarte desde el día uno.</p>
-    <p style="font-size: 15px; line-height: 1.6; margin: 8px 0 0;">— El equipo de Octapi</p>
+    <p style="margin: 0;">Gracias por sumarte desde el día uno.</p>
+    <p style="margin: 8px 0 0;">— El equipo de Octapi</p>
   `);
 }
 
@@ -128,22 +128,22 @@ function companyWelcomeHtml(name: string, refLink: string): string {
   const safeName = escapeHtml(name || "tu empresa");
   const callBlock = COMPANY_CONTACT_PHONE
     ? `
-    <p style="font-size: 15px; line-height: 1.6; margin: 0 0 6px;">¿Quieres conversar antes de que abramos? Podemos agendar una llamada breve para contarte cómo funciona y responder tus dudas — escribime por WhatsApp:</p>
+    <p style="margin: 0 0 6px;">¿Quieres conversar antes de que abramos? Podemos agendar una llamada breve para contarte cómo funciona y responder tus dudas — escribime por WhatsApp:</p>
     <p style="font-size: 14px; margin: 0 0 20px;"><a href="https://wa.me/${COMPANY_CONTACT_PHONE.replace(/\D/g, "")}" style="color: #0891B2;">wa.me/${COMPANY_CONTACT_PHONE.replace(/\D/g, "")}</a></p>`
     : "";
 
   return emailShell(`
-    <p style="font-size: 15px; line-height: 1.6; margin: 0 0 16px;">Hola, equipo de ${safeName}</p>
-    <p style="font-size: 15px; line-height: 1.6; margin: 0 0 16px;">
+    <p style="margin: 0 0 16px;">Hola, equipo de ${safeName}</p>
+    <p style="margin: 0 0 16px;">
       Gracias por sumar a ${safeName} a la lista de espera de Octapi. Les avisamos apenas abramos las puertas.
     </p>
-    <p style="font-size: 15px; line-height: 1.6; margin: 0 0 20px;">
+    <p style="margin: 0 0 20px;">
       Octapi conecta a su empresa con creadores verificados de toda Latinoamérica, listos para producir contenido que realmente convierte — sin agencias de por medio, con contrato claro y pago seguro de punta a punta.
     </p>
     ${callBlock}
     ${referralLine(refLink, "Si conocen a otras empresas o marcas, o a algún creador con el que ya hayan trabajado antes, compártanle su link — cada persona o empresa que se anote las sube en la fila:")}
-    <p style="font-size: 15px; line-height: 1.6; margin: 0;">Gracias por confiar en Octapi desde esta etapa temprana.</p>
-    <p style="font-size: 15px; line-height: 1.6; margin: 8px 0 0;">— Felipe, fundador de Octapi</p>
+    <p style="margin: 0;">Gracias por confiar en Octapi desde esta etapa temprana.</p>
+    <p style="margin: 8px 0 0;">— Felipe, fundador de Octapi</p>
   `);
 }
 
