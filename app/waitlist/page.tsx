@@ -146,15 +146,24 @@ function WaitlistInner() {
         <DeepOcean />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-[#03141f]" />
 
-        {/* nav */}
+        {/* nav — "Empresas" visible de entrada, arriba de todo (antes era
+            un link chico al final del hero, muy escondido) */}
         <div className="relative z-10 flex items-center justify-between px-6 py-5 md:px-12">
           <p className="text-lg font-semibold tracking-tight sm:text-xl">Octapi</p>
-          <button
-            onClick={() => setShowPass(true)}
-            className="rounded-lg bg-white/10 px-4 py-2 text-sm font-medium text-white/90 backdrop-blur transition hover:bg-white/20"
-          >
-            Acceso
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={scrollToCompanies}
+              className="rounded-lg px-4 py-2 text-sm font-medium text-white/90 backdrop-blur transition hover:bg-white/10"
+            >
+              Empresas
+            </button>
+            <button
+              onClick={() => setShowPass(true)}
+              className="rounded-lg bg-white/10 px-4 py-2 text-sm font-medium text-white/90 backdrop-blur transition hover:bg-white/20"
+            >
+              Acceso
+            </button>
+          </div>
         </div>
 
         {/* hero content — texto arriba, grande y visible; CTA centrado */}
@@ -196,13 +205,6 @@ function WaitlistInner() {
               className="inline-flex items-center gap-2 rounded-xl bg-white px-8 py-4 text-base font-semibold text-black shadow-2xl transition-transform [animation:fadeSlideUp_0.8s_ease_0.9s_both] hover:scale-105"
             >
               Unirme a la lista <ArrowDown size={18} />
-            </button>
-
-            <button
-              onClick={scrollToCompanies}
-              className="mx-auto mt-4 flex items-center gap-1.5 text-sm font-medium text-white/70 [animation:fadeSlideUp_0.8s_ease_1s_both] hover:text-white"
-            >
-              <Building2 className="h-4 w-4" /> ¿Eres una marca? Más info aquí
             </button>
           </div>
         </div>
