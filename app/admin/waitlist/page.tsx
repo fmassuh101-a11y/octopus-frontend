@@ -23,6 +23,8 @@ export default function AdminWaitlist() {
   const [roleFilter, setRoleFilter] = useState<'all' | 'creator' | 'company'>('all')
   const [sending, setSending] = useState(false)
   const [selected, setSelected] = useState<Row | null>(null)
+  const [backfilling, setBackfilling] = useState(false)
+  const [confirmBackfill, setConfirmBackfill] = useState(false)
 
   useEffect(() => {
     ;(async () => {
@@ -54,6 +56,23 @@ export default function AdminWaitlist() {
     setSending(false)
   }
 
+  const sendWelcomeBackfill = async () => {
+    if (!confirmBackfill) { setConfirmBackfill(true); return }
+    setBackfilling(true)
+    try {
+      const token = localStorage.getItem('sb-access-token')
+      const res = await fetch('/api/waitlist/welcome-backfill', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const data = await res.json()
+      if (data.ok) toast(`Bienvenida enviada a ${data.sent} de ${data.total} inscriptos`)
+      else toast(data.error || 'No se pudo enviar', 'error')
+    } catch { toast('No se pudo enviar', 'error') }
+    setBackfilling(false)
+    setConfirmBackfill(false)
+  }
+
   const creators = rows.filter((r) => r.role === 'creator')
   const companies = rows.filter((r) => r.role === 'company')
   const visible = roleFilter === 'all' ? rows : rows.filter((r) => r.role === roleFilter)
@@ -76,6 +95,35 @@ export default function AdminWaitlist() {
             <p className="mt-1 text-2xl font-extrabold tabular-nums">{companies.length}</p>
             <p className="text-xs text-neutral-500">Empresas</p>
           </div>
+        </div>
+
+        {/* bienvenida retroactiva — a los que se anotaron ANTES de activar
+            los emails automáticos, para que reciban la misma bienvenida
+            que ahora reciben los nuevos registros */}
+        <div className="mt-8 rounded-3xl border border-cyan-800/40 bg-cyan-950/20 p-5">
+          <p className="font-bold">Mandar bienvenida a los que ya estaban anotados</p>
+          <p className="mt-1 text-sm text-neutral-400">
+            Los nuevos registros ya reciben el email de bienvenida automático. Esto manda ese mismo email (creador o empresa, según corresponda) a los {rows.length} que se anotaron antes de activarlo. Se manda una sola vez — no hay forma de deshacerlo.
+          </p>
+          {!confirmBackfill ? (
+            <button onClick={sendWelcomeBackfill}
+              className="mt-3 flex items-center gap-2 rounded-2xl bg-cyan-600 px-5 py-3 text-sm font-bold text-white">
+              <Send className="h-4 w-4" /> Mandar bienvenida a los {rows.length} inscriptos
+            </button>
+          ) : (
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <p className="text-sm font-semibold text-amber-400">¿Seguro? Se manda ahora mismo a los {rows.length}.</p>
+              <button onClick={sendWelcomeBackfill} disabled={backfilling}
+                className="flex items-center gap-2 rounded-2xl bg-amber-500 px-4 py-2 text-sm font-bold text-black disabled:opacity-50">
+                {backfilling ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                Sí, mandar ahora
+              </button>
+              <button onClick={() => setConfirmBackfill(false)} disabled={backfilling}
+                className="rounded-2xl border border-neutral-700 px-4 py-2 text-sm font-bold text-neutral-300">
+                Cancelar
+              </button>
+            </div>
+          )}
         </div>
 
         {/* composer */}
