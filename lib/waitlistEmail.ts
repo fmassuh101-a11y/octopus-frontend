@@ -45,7 +45,12 @@ function emailShell(bodyHtml: string): string {
 // Intenta cada key en orden — si la primera se quedó sin cuota diaria (o
 // cualquier otro error), reintenta automáticamente con la siguiente. Un
 // 429 (rate limit) es la señal típica de "se acabó el límite del día".
-async function sendResendEmail(to: string, subject: string, html: string): Promise<boolean> {
+// Devuelve el error real de Resend (no solo true/false) para poder mostrarlo
+// en el panel admin — antes quedaba solo en los logs de Vercel, que Felipe
+// no puede revisar.
+async function sendResendEmail(to: string, subject: string, html: string): Promise<{ ok: boolean; error?: string }> {
+  if (!RESEND_KEYS.length) return { ok: false, error: "Falta RESEND_API_KEY en Vercel" };
+  let lastError = "";
   for (const key of RESEND_KEYS) {
     try {
       const res = await fetch("https://api.resend.com/emails", {
@@ -53,15 +58,15 @@ async function sendResendEmail(to: string, subject: string, html: string): Promi
         headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
         body: JSON.stringify({ from: FROM, to: [to], subject, html }),
       });
-      if (res.ok) return true;
-      // se loguea el motivo real (Vercel → proyecto → Logs) en vez de fallar
-      // en silencio — así la próxima vez que no llegue un email se ve por qué
-      console.error("[ResendEmail] fallo:", res.status, (await res.text()).slice(0, 300));
+      if (res.ok) return { ok: true };
+      lastError = (await res.text()).slice(0, 300);
+      console.error("[ResendEmail] fallo:", res.status, lastError);
     } catch (e: any) {
-      console.error("[ResendEmail] excepción:", e?.message || e);
+      lastError = e?.message?.slice(0, 200) || "error desconocido";
+      console.error("[ResendEmail] excepción:", lastError);
     }
   }
-  return false;
+  return { ok: false, error: lastError };
 }
 
 // Igual que sendResendEmail pero para el endpoint de batch (hasta 100 por
@@ -162,7 +167,7 @@ export async function sendWelcomeEmail(opts: {
   name: string;
   role: "creator" | "company";
   waitlistId: string;
-}): Promise<boolean> {
+}): Promise<{ ok: boolean; error?: string }> {
   const { email, name, role, waitlistId } = opts;
   return sendResendEmail(email, welcomeSubject(role), buildWelcomeHtml(name, role, waitlistId));
 }
@@ -178,8 +183,4 @@ export function buildBroadcastHtml(message: string, waitlistId: string): string 
       <a href="${refLink}" style="display: inline-block; font-size: 13px; font-family: monospace; color: #0891B2; word-break: break-all;">${refLink}</a>
     </div>
   `);
-}
-
-export async function sendBroadcastEmail(to: string, subject: string, message: string, waitlistId: string): Promise<boolean> {
-  return sendResendEmail(to, subject, buildBroadcastHtml(message, waitlistId));
 }

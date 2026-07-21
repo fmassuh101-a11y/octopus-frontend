@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
     // ruta sí esperaba). Si el email falla, el registro igual se guardó.
     if (created?.id) {
       try {
-        const ok = await sendWelcomeEmail({
+        const result = await sendWelcomeEmail({
           email,
           name: role === "creator" ? String(row.name || "") : String(row.company_name || ""),
           role,
@@ -118,11 +118,13 @@ export async function POST(request: NextRequest) {
         // marca welcome_sent_at para que el botón de bienvenida retroactiva
         // no le vuelva a mandar a esta misma persona (columna opcional: si
         // no existe todavía, el catch de abajo lo ignora sin romper nada)
-        if (ok) {
+        if (result.ok) {
           await sb(`waitlist?id=eq.${created.id}`, {
             method: "PATCH",
             body: JSON.stringify({ welcome_sent_at: new Date().toISOString() }),
           }).catch(() => {});
+        } else {
+          console.error("[Waitlist] email de bienvenida no se pudo mandar:", result.error);
         }
       } catch {
         // no rompe el registro si el email falla

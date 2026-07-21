@@ -26,8 +26,8 @@ export async function POST(request: NextRequest) {
   const name = String(body.name || (role === "creator" ? "Felipe" : "Empresa de Prueba")).trim();
   if (!email.includes("@")) return NextResponse.json({ error: "Email inválido" }, { status: 400 });
 
-  const ok = await sendWelcomeEmail({ email, name, role, waitlistId: "00000000-0000-0000-0000-000000000000" });
-  if (!ok) return NextResponse.json({ error: "No se pudo mandar — revisa que RESEND_API_KEY esté en Vercel y que hayas hecho redeploy" }, { status: 500 });
+  const result = await sendWelcomeEmail({ email, name, role, waitlistId: "00000000-0000-0000-0000-000000000000" });
+  if (!result.ok) return NextResponse.json({ error: `No se pudo mandar: ${result.error || "error desconocido"}` }, { status: 500 });
 
   return NextResponse.json({ ok: true });
 }
