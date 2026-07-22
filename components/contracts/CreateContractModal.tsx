@@ -214,16 +214,12 @@ export default function CreateContractModal({
           body: JSON.stringify({
             userId: creatorId,
             gigId: gigId || undefined,
-            // Un link fijo (no window.location.origin) — este mensaje lo
-            // lee la otra persona después, en OTRA sesión/dispositivo, así
-            // que no puede depender de en qué dominio estaba el que lo
-            // mandó. Usa NEXT_PUBLIC_APP_URL — la misma variable que ya usan
-            // /api/whop/dm/send, /c/[id] y /k/[id] — para que el link que se
-            // arma acá y la página que lo recibe sean siempre el mismo
-            // dominio (antes, con window.location.origin, a veces quedaba
-            // en un dominio distinto al que la otra persona tenía abierto y
-            // Safari lo trataba como "salir de la app").
-            content: `Te envié un contrato: "${title}" (${pagoTxt}). Revísalo y acéptalo aquí: ${process.env.NEXT_PUBLIC_APP_URL || 'https://octapiapp.com'}/k/${contract?.id || ""}`,
+            // SIN link a otra página: el aviso "Tienes un contrato para
+            // firmar" ya aparece solo arriba de la conversación (WhopChat.tsx
+            // detecta el contrato con status sent/viewed) y se firma ahí
+            // mismo con ContractActionModal — un link acá tentaría a salir
+            // de Mensajes, justo lo que no debe pasar nunca.
+            content: `Te envié un contrato: "${title}" (${pagoTxt}). Ya lo puedes revisar y aceptar arriba de esta conversación.`,
           })
         })
         const dmData = await dmRes.json().catch(() => ({}))

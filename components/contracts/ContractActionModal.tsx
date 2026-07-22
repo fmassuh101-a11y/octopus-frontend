@@ -96,10 +96,9 @@ export default function ContractActionModal({ contractId, onClose }: { contractI
         }).catch(() => {})
       }
       const handlesText = creatorHandles.map((h) => `${h.platform}: ${h.handle}`).join(', ')
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://octapiapp.com'
       fetch('/api/whop/dm/send', {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
-        body: JSON.stringify({ userId: contract.company_id, content: `Firmé el contrato "${contract.title}".${handlesText ? `\nMis handles: ${handlesText}` : ''}\nApruébalos acá: ${appUrl}/contrato/${contractId}` }),
+        body: JSON.stringify({ userId: contract.company_id, content: `Firmé el contrato "${contract.title}".${handlesText ? `\nMis handles: ${handlesText}` : ''}\nYa puedes aprobarlos arriba de esta conversación.` }),
       }).catch(() => {})
       toast('Contrato firmado')
       await load()
@@ -132,10 +131,9 @@ export default function ContractActionModal({ contractId, onClose }: { contractI
         method: 'PATCH', headers: { Authorization: `Bearer ${t}`, apikey: SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'in_progress' }),
       })
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://octapiapp.com'
       fetch('/api/whop/dm/send', {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
-        body: JSON.stringify({ userId: contract.creator_id, content: `Aprobamos tus handles para "${contract.title}" — el contrato está EN MARCHA. Abre este mismo link y vas a ver el botón "Verifica tus cuentas": ${appUrl}/contrato/${contractId}` }),
+        body: JSON.stringify({ userId: contract.creator_id, content: `Aprobamos tus handles para "${contract.title}" — el contrato está EN MARCHA. Vas a ver el botón "Verifica tus cuentas" arriba de esta conversación.` }),
       }).catch(() => {})
       toast('Handles aprobados — contrato en marcha')
       await load()

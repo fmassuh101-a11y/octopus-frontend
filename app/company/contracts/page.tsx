@@ -288,13 +288,15 @@ export default function CompanyContractsPage() {
         const updatedRow = (await res.json())?.[0]
 
         // avisa al creador por el mismo chat que ya se usa para el resto de
-        // los avisos del contrato — para que le salga en sus mensajes
+        // los avisos del contrato — SIN link a otra página: el aviso
+        // "Puedes verificar tus cuentas" ya aparece solo arriba de la
+        // conversación (WhopChat.tsx).
         fetch('/api/whop/dm/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({
             userId: contract.creator_id,
-            content: `${companyName || 'La empresa'} aceptó tus handles para "${contract.title}". Abre este mismo link y vas a ver el botón "Verifica tus cuentas": ${process.env.NEXT_PUBLIC_APP_URL || 'https://octapiapp.com'}/contrato/${contract.id}`,
+            content: `${companyName || 'La empresa'} aceptó tus handles para "${contract.title}". Vas a ver el botón "Verifica tus cuentas" arriba de esta conversación.`,
           }),
         }).catch(() => {})
 

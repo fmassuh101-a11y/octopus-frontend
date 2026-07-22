@@ -138,17 +138,17 @@ export default function ContratoDocumento() {
         }
       } catch (e) { console.error('[handle_requests] error:', e) }
 
-      // avisar a la empresa por el chat de Whop, CON link directo a este
-      // mismo contrato — un toque desde el mensaje y ya está en la pantalla
-      // de "Aprobar handles", sin tener que ir a buscarlo a otro lado.
+      // avisar a la empresa por el chat de Whop — SIN link a otra página:
+      // el aviso "Handles por aprobar" ya aparece solo arriba de la
+      // conversación (WhopChat.tsx), un link acá tentaría a salir de
+      // Mensajes justo lo que no debe pasar nunca.
       const handlesText = creatorHandles.map((h) => `${h.platform}: ${h.handle}`).join(', ')
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://octapiapp.com'
       fetch('/api/whop/dm/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           userId: contract.company_id,
-          content: `Firmé el contrato "${contract.title}".${handlesText ? `\nMis handles: ${handlesText}` : ''}\nApruébalos acá: ${appUrl}/contrato/${id}`,
+          content: `Firmé el contrato "${contract.title}".${handlesText ? `\nMis handles: ${handlesText}` : ''}\nYa puedes aprobarlos arriba de esta conversación.`,
         }),
       }).catch(() => {})
       toast('Contrato firmado')
@@ -199,13 +199,12 @@ export default function ContratoDocumento() {
         body: JSON.stringify({ status: 'in_progress' }),
       })
       if (!res.ok) throw new Error()
-      const appUrl2 = process.env.NEXT_PUBLIC_APP_URL || 'https://octapiapp.com'
       fetch('/api/whop/dm/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           userId: contract.creator_id,
-          content: `Aprobamos tus handles para "${contract.title}" — el contrato está EN MARCHA. Abre este mismo link y vas a ver el botón "Verifica tus cuentas": ${appUrl2}/contrato/${id}`,
+          content: `Aprobamos tus handles para "${contract.title}" — el contrato está EN MARCHA. Vas a ver el botón "Verifica tus cuentas" arriba de esta conversación.`,
         }),
       }).catch(() => {})
       toast('Handles aprobados — contrato en marcha')
