@@ -44,6 +44,11 @@ export default function CreatorsPage() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all')
   const [searchTerm, setSearchTerm] = useState('')
+  // Diagnóstico visible SOLO cuando la lista sale vacía — para dejar de
+  // adivinar por qué y ver el dato real (con qué user_id se buscó, cuántas
+  // aplicaciones/contratos encontró cada consulta) en vez de prometer un
+  // arreglo sin evidencia.
+  const [debugInfo, setDebugInfo] = useState<string>('')
 
   useEffect(() => {
     // FLUIDEZ: pinta al instante lo último visto; lo fresco llega por detrás
@@ -83,6 +88,10 @@ export default function CreatorsPage() {
       const applications = appsRes.ok ? await appsRes.json() : []
       const contracts = contractsRes.ok ? await contractsRes.json() : []
 
+      setDebugInfo(
+        `user_id buscado: ${user.id} | applications: ${appsRes.status}${appsRes.ok ? '' : ' (falló)'}, ${applications.length} filas | contracts: ${contractsRes.status}${contractsRes.ok ? '' : ' (falló)'}, ${contracts.length} filas`
+      )
+
       if (applications.length === 0 && contracts.length === 0) {
         setLoading(false)
         return
@@ -108,6 +117,10 @@ export default function CreatorsPage() {
 
       const profiles = profilesRes.ok ? await profilesRes.json() : []
       const deliveries = deliveriesRes.ok ? await deliveriesRes.json() : []
+
+      setDebugInfo(
+        (prev) => `${prev} | creator_ids: ${creatorIds.join(', ') || '(ninguno)'} | public_profiles: ${profilesRes.status}${profilesRes.ok ? '' : ' (falló)'}, ${profiles.length} filas`
+      )
 
       // Build creator data — combinando ambas fuentes
       const creatorsData: Creator[] = profiles.map((p: any) => {
@@ -259,6 +272,13 @@ export default function CreatorsPage() {
                   Buscar Creadores
                 </Link>
               </div>
+            )}
+            {/* Diagnóstico visible — para mandar screenshot en vez de
+                "sigue sin funcionar" sin más info */}
+            {debugInfo && (
+              <p className="mt-8 text-xs text-neutral-600 font-mono break-words max-w-lg mx-auto">
+                {debugInfo}
+              </p>
             )}
           </div>
         ) : (
