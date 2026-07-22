@@ -1,6 +1,28 @@
 import { createClient } from '@supabase/supabase-js'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config/supabase'
 
+// TikTok tiene registrado "/" (la raíz) como su redirect_uri fijo — vuelve
+// ahí con ?code=&state=. El cliente de Supabase de abajo tiene
+// detectSessionInUrl activo (hace falta para el login con Google, que sí
+// usa su PROPIO ?code= en /auth/callback) — pero ese detector mira
+// CUALQUIER ?code= en CUALQUIER página, sin importar de dónde vino. Al
+// encontrar el code de TikTok, Supabase intentaba usarlo como si fuera un
+// login suyo, fallaba (no es un code de Supabase), y en ese intento
+// fallido limpiaba la sesión activa — la persona quedaba deslogueada de la
+// nada apenas volvía de TikTok. Se saca el code/state de la URL ACÁ,
+// ANTES de crear el cliente (así el detector nunca llega a verlo), y se
+// guarda aparte para que app/page.tsx (el único que maneja el regreso de
+// TikTok) lo pueda seguir leyendo.
+if (typeof window !== 'undefined' && window.location.pathname === '/') {
+  const params = new URLSearchParams(window.location.search)
+  if (params.has('code') || params.has('error')) {
+    try { sessionStorage.setItem('oct_tiktok_raw_search', window.location.search) } catch {}
+    const clean = new URL(window.location.href)
+    clean.search = ''
+    window.history.replaceState(null, '', clean.toString())
+  }
+}
+
 // Supabase client with OAuth callback detection enabled
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {

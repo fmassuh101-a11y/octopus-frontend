@@ -36,34 +36,43 @@ function HomeInner() {
   }
 
   useEffect(() => {
+    // lib/supabase.ts ya sacó el ?code=/?error= de TikTok de la URL de
+    // verdad (para que el detector de OAuth de Supabase no lo confunda con
+    // su propio login y desloguee a la persona) y lo dejó guardado acá —
+    // por eso se lee de sessionStorage y NO de searchParams/la URL.
+    let rawSearch = ''
+    try { rawSearch = sessionStorage.getItem('oct_tiktok_raw_search') || '' } catch {}
+    const tiktokParams = rawSearch ? new URLSearchParams(rawSearch) : searchParams
+
     // TikTok tiene registrado el dominio viejo de Vercel como redirect_uri
     // — no se puede cambiar sin pedirle a TikTok que lo revise de nuevo.
     // Pero la sesión real de la persona vive en octapiapp.com, que es un
     // "casillero" de localStorage totalmente distinto en el navegador. Sin
     // este puente, quien conecta TikTok termina en una página donde su
     // sesión no existe y parece que "lo echó" — acá se lo manda de una al
-    // dominio correcto ANTES de intentar leer nada de localStorage. Si es
-    // una popup, esto solo mueve la popup — la ventana principal no se entera.
+    // dominio correcto ANTES de intentar leer nada de localStorage.
     if (typeof window !== 'undefined' && window.location.hostname !== 'octapiapp.com' && window.location.hostname.includes('vercel.app')) {
-      const hasOAuthParams = searchParams.get('code') || searchParams.get('error')
+      const hasOAuthParams = tiktokParams.get('code') || tiktokParams.get('error')
       if (hasOAuthParams) {
-        window.location.href = `https://octapiapp.com/${window.location.search}`
+        window.location.href = `https://octapiapp.com/${rawSearch || window.location.search}`
         return
       }
     }
 
     // Check for TikTok OAuth error (user cancelled) BEFORE mounting
-    const error = searchParams.get('error')
+    const error = tiktokParams.get('error')
     if (error) {
       console.log('[TikTok] User cancelled or error:', error)
+      try { sessionStorage.removeItem('oct_tiktok_raw_search') } catch {}
       finishTikTok(false, { error })
       return // Don't mount, just redirect
     }
 
     // Check for TikTok OAuth callback BEFORE mounting
-    const code = searchParams.get('code')
-    const state = searchParams.get('state')
+    const code = tiktokParams.get('code')
+    const state = tiktokParams.get('state')
     if (code && state) {
+      try { sessionStorage.removeItem('oct_tiktok_raw_search') } catch {}
       setTiktokProcessing(true)
       handleTikTokCallback(code, state)
       return // Don't mount normal page

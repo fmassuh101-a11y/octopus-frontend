@@ -137,7 +137,12 @@ export default function WhopChat({
         const H = { Authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY }
         const other = selected.userId
         const filter = role === 'company' ? `company_id=eq.${myId}&creator_id=eq.${other}` : `creator_id=eq.${myId}&company_id=eq.${other}`
-        const cRes = await fetch(`${SUPABASE_URL}/rest/v1/contracts?${filter}&status=in.(sent,viewed,accepted)&select=id,title,status&order=created_at.desc&limit=1`, { headers: H })
+        // in_progress incluido a propósito: es el estado que queda DESPUÉS
+        // de aprobar los handles (ContractActionModal.approve() lo pone
+        // así) — sin incluirlo acá, el aviso "Puedes verificar tus cuentas"
+        // nunca podía aparecer, porque el contrato ya no aparecía en esta
+        // consulta para cuando llegaba a ese paso.
+        const cRes = await fetch(`${SUPABASE_URL}/rest/v1/contracts?${filter}&status=in.(sent,viewed,accepted,in_progress)&select=id,title,status&order=created_at.desc&limit=1`, { headers: H })
         const [c] = cRes.ok ? await cRes.json() : []
         if (!alive || !c) return
         if (role === 'creator' && (c.status === 'sent' || c.status === 'viewed')) {
