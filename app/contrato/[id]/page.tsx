@@ -102,28 +102,6 @@ export default function ContratoDocumento() {
   const pending = contract?.status === 'pending' || contract?.status === 'sent'
   const fecha = (d?: string) => (d ? new Date(d).toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' }) : '—')
 
-  // Se elige al firmar, pero se puede cambiar después (ver components/
-  // contracts/ContractActionModal.tsx, misma API).
-  const currentAccountType: 'new' | 'personal' = handleRequest?.handles?.[0]?.accountType === 'personal' ? 'personal' : 'new'
-  const [changingType, setChangingType] = useState(false)
-  const changeAccountType = async (type: 'new' | 'personal') => {
-    if (type === currentAccountType || changingType) return
-    setChangingType(true)
-    try {
-      const token = localStorage.getItem('sb-access-token')
-      const res = await fetch('/api/handle-requests/set-account-type', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ contractId: id, accountType: type }),
-      })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) { toast(data.error || 'No se pudo cambiar el tipo de cuenta', 'error'); setChangingType(false); return }
-      toast(type === 'personal' ? 'Cuenta marcada como personal' : 'Cuenta marcada como nueva/dedicada')
-      setHandleRequest(data.handleRequest)
-    } catch { toast('No se pudo cambiar el tipo de cuenta', 'error') }
-    setChangingType(false)
-  }
-
   const reject = async () => {
     setBusy(true)
     try {
@@ -470,37 +448,6 @@ export default function ContratoDocumento() {
             </div>
           </div>
         </div>
-
-        {isCreator && handleRequest?.handles?.length > 0 && (
-          <div className="mt-8 rounded-2xl border border-neutral-200 p-4 print:hidden">
-            <p className="text-sm font-bold">Tipo de cuenta</p>
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                disabled={changingType}
-                onClick={() => changeAccountType('new')}
-                className={`rounded-2xl border px-3 py-3 text-left text-xs font-bold transition disabled:opacity-50 ${currentAccountType === 'new' ? 'border-cyan-400 bg-cyan-50 text-cyan-700' : 'border-neutral-200 text-neutral-500'}`}
-              >
-                Nueva
-                <span className="mt-0.5 block font-semibold text-[11px] normal-case text-neutral-400">Dedicada para {companyName || 'esta empresa'}</span>
-              </button>
-              <button
-                type="button"
-                disabled={changingType}
-                onClick={() => changeAccountType('personal')}
-                className={`rounded-2xl border px-3 py-3 text-left text-xs font-bold transition disabled:opacity-50 ${currentAccountType === 'personal' ? 'border-cyan-400 bg-cyan-50 text-cyan-700' : 'border-neutral-200 text-neutral-500'}`}
-              >
-                Personal
-                <span className="mt-0.5 block font-semibold text-[11px] normal-case text-neutral-400">Ya la usas para todo</span>
-              </button>
-            </div>
-            <p className="mt-2 text-[11px] font-semibold text-neutral-400">
-              {currentAccountType === 'personal'
-                ? `${companyName || 'La empresa'} solo ve los videos puntuales que compartas para este contrato.`
-                : `${companyName || 'La empresa'} ve toda la analítica de la cuenta conectada.`}
-            </p>
-          </div>
-        )}
 
         <p className="mt-8 text-center text-[11px] leading-relaxed text-neutral-400">
           La aceptación o firma electrónica capturada a través de la plataforma Octopus se considera equivalente a una firma manuscrita para todos los efectos legales.
