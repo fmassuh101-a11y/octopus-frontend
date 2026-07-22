@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { supabase, getStoredSession, restoreSession } from '@/lib/supabase'
+import { getStoredSession, restoreSession } from '@/lib/supabase'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { Clapperboard, Users, Scissors, Smartphone } from 'lucide-react'
 import { popTikTokReturnTo } from '@/lib/tiktokConnect'
@@ -91,11 +91,22 @@ function HomeInner() {
   }, [searchParams])
 
   // Handle TikTok OAuth callback
+  //
+  // BLINDAJE (encontrado por reporte real: se quedaba pegado para siempre
+  // en "Conectando con TikTok…", pantalla negra, sin volver a ningún lado):
+  // varios pasos de acá abajo (setSession, leer/guardar el perfil, la
+  // verificación automática) NO tenían NINGÚN límite de tiempo — a
+  // diferencia del pedido a TikTok, que sí tenía uno. Si cualquiera de esos
+  // pasos se demoraba (mal wifi, algo lento del lado del servidor), la
+  // persona quedaba esperando literalmente para siempre, sin error, sin
+  // aviso, sin poder hacer nada. Ahora TODO el proceso completo tiene un
+  // límite duro de 20 segundos — pase lo que pase adentro, a los 20
+  // segundos como mucho la persona ve un resultado (éxito o error) y puede
+  // volver a intentar, nunca se queda mirando una pantalla congelada.
   const handleTikTokCallback = async (code: string, state: string) => {
     setTiktokProcessing(true)
     const finish = finishTikTok
 
-    // Verify state matches (check both possible keys)
     const savedState = localStorage.getItem('tiktok_oauth_state') || localStorage.getItem('tiktok_csrf_state')
     if (state !== savedState) {
       console.error('[TikTok] State mismatch:', state, 'vs', savedState)
@@ -103,77 +114,55 @@ function HomeInner() {
       return
     }
 
+    const storedSession = getStoredSession()
+    if (!storedSession?.access_token || !storedSession?.user?.id) {
+      console.error('[TikTok Callback] No session in localStorage')
+      finish(false, { error: 'no_session' })
+      return
+    }
+    const accessToken = storedSession.access_token
+    const refreshToken = storedSession.refresh_token || ''
+    const userId = storedSession.user.id
+
+    let finished = false
+    const finishOnce = (ok: boolean, extra?: { error?: string }) => {
+      if (finished) return
+      finished = true
+      finish(ok, extra)
+    }
+
+    const watchdog = setTimeout(() => {
+      console.error('[TikTok Callback] Watchdog: no terminó en 20s, se fuerza a terminar igual')
+      finishOnce(false, { error: 'timeout' })
+    }, 20000)
+
     try {
-      console.log('[TikTok Callback] Processing TikTok authorization...')
-
-      // Step 1: Get session from localStorage and restore to Supabase client
-      const storedSession = getStoredSession()
-
-      console.log('[TikTok Callback] Stored session found:', !!storedSession)
-
-      if (!storedSession) {
-        console.error('[TikTok Callback] No session in localStorage')
-        alert('No hay sesión activa. Por favor inicia sesión.')
-        window.location.href = '/auth/login'
-        return
-      }
-
-      // Create a session-like object for use below (do this BEFORE restoreSession to avoid blocking)
-      const session = {
-        user: storedSession.user,
-        access_token: storedSession.access_token
-      }
-
-      // Restore session to Supabase client (in background, don't block)
-      console.log('[TikTok Callback] Restoring session to Supabase...')
+      // No se espera (fire-and-forget): solo sincroniza el cliente de
+      // Supabase para otras pantallas, no es indispensable para esta.
       restoreSession().catch(err => console.error('[TikTok Callback] restoreSession error:', err))
-      console.log('[TikTok Callback] Session restore initiated')
 
-      // Step 2: Exchange code for TikTok token (with 30 second timeout)
-      console.log('[TikTok Callback] Calling /api/tiktok/callback...')
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => {
-        console.log('[TikTok Callback] Request timeout after 30 seconds')
-        controller.abort()
-      }, 30000)
-
-      let response
+      const abortTimer = setTimeout(() => controller.abort(), 15000)
+      let response: Response
       try {
         response = await fetch('/api/tiktok/callback', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            code,
-            redirect_uri: 'https://octopus-frontend-tau.vercel.app/'
-          }),
-          signal: controller.signal
+          body: JSON.stringify({ code, redirect_uri: 'https://octopus-frontend-tau.vercel.app/' }),
+          signal: controller.signal,
         })
-        clearTimeout(timeoutId)
-      } catch (fetchError: any) {
-        clearTimeout(timeoutId)
-        if (fetchError.name === 'AbortError') {
-          console.error('[TikTok Callback] Request timed out')
-          alert('La conexión con TikTok tardó demasiado. Por favor intenta de nuevo.')
-          finish(false, { error: 'timeout' })
-          return
-        }
-        throw fetchError
+      } finally {
+        clearTimeout(abortTimer)
       }
 
-      console.log('[TikTok Callback] Response status:', response.status)
       const data = await response.json()
-      console.log('[TikTok Callback] Response data:', data)
-
       if (!data.success || !data.data) {
         console.error('[TikTok] API error:', data.error)
-        finish(false, { error: data.error || 'unknown' })
+        finishOnce(false, { error: data.error || 'unknown' })
         return
       }
 
       const tiktokData = data.data
-      console.log('[TikTok Callback] Got TikTok data for:', tiktokData.username || tiktokData.displayName)
-
-      // Step 3: Build account data
       const accountData = {
         id: `tiktok_${tiktokData.openId}`,
         openId: tiktokData.openId,
@@ -195,114 +184,49 @@ function HomeInner() {
         lastUpdated: new Date().toISOString(),
       }
 
-      // Step 4: Save to Supabase
-      console.log('[TikTok Callback] Preparing to save to Supabase...')
+      // Guardar el perfil por REST directo (no por el cliente de Supabase:
+      // depende de que setSession() haya terminado a tiempo, un punto de
+      // falla de más que no hace falta acá).
+      const H = { Authorization: `Bearer ${accessToken}`, apikey: SUPABASE_ANON_KEY, 'Content-Type': 'application/json' }
+      const profRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userId}&select=bio`, { headers: H })
+      const profiles = profRes.ok ? await profRes.json() : []
 
-      // Validate tokens before using
-      const accessToken = storedSession.access_token
-      const refreshToken = storedSession.refresh_token || ''
-      const userId = storedSession.user?.id
-
-      console.log('[TikTok Callback] Token length:', accessToken?.length)
-      console.log('[TikTok Callback] User ID:', userId)
-
-      if (!accessToken || !userId) {
-        throw new Error('Invalid session data')
-      }
-
-      // Set session in Supabase client
-      try {
-        const { error: sessionError } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken
-        })
-        if (sessionError) {
-          console.error('[TikTok Callback] Session error:', sessionError)
-        } else {
-          console.log('[TikTok Callback] Supabase session set successfully')
-        }
-      } catch (sessionErr) {
-        console.error('[TikTok Callback] Error setting session:', sessionErr)
-      }
-
-      // Now fetch profile using Supabase client
-      console.log('[TikTok Callback] Fetching profile for user:', userId)
-      const { data: profiles, error: fetchError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', userId)
-
-      if (fetchError) {
-        console.error('[TikTok Callback] Profile fetch error:', fetchError)
-        throw new Error('Error al obtener perfil: ' + fetchError.message)
-      }
-
-      console.log('[TikTok Callback] Got profiles:', profiles?.length || 0)
-
-      if (profiles && profiles.length > 0) {
-        const profile = profiles[0]
+      if (profiles?.length > 0) {
         let bioData: any = {}
+        try { bioData = profiles[0].bio ? JSON.parse(profiles[0].bio) : {} } catch { bioData = {} }
 
-        try {
-          bioData = profile.bio ? JSON.parse(profile.bio) : {}
-        } catch (e) {
-          bioData = {}
-        }
-
-        // Add TikTok account
         const tiktokAccounts = bioData.tiktokAccounts || []
-        const existingIndex = tiktokAccounts.findIndex((a: any) =>
-          a.openId === accountData.openId || a.username === accountData.username
-        )
-
-        if (existingIndex >= 0) {
-          tiktokAccounts[existingIndex] = accountData
-        } else {
-          tiktokAccounts.push(accountData)
-        }
-
+        const existingIndex = tiktokAccounts.findIndex((a: any) => a.openId === accountData.openId || a.username === accountData.username)
+        if (existingIndex >= 0) tiktokAccounts[existingIndex] = accountData
+        else tiktokAccounts.push(accountData)
         bioData.tiktokAccounts = tiktokAccounts
         bioData.tiktokConnected = true
 
-        // Save to Supabase using client
-        console.log('[TikTok Callback] Saving TikTok data to Supabase...')
-        const { error: saveError } = await supabase
-          .from('profiles')
-          .update({
-            bio: JSON.stringify(bioData),
-            updated_at: new Date().toISOString()
-          })
-          .eq('user_id', userId)
-
-        if (saveError) {
-          console.error('[TikTok Callback] Save error:', saveError)
-          throw new Error('Error al guardar: ' + saveError.message)
-        }
-
-        console.log('[TikTok Callback] TikTok account saved successfully!')
+        const saveRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userId}`, {
+          method: 'PATCH',
+          headers: H,
+          body: JSON.stringify({ bio: JSON.stringify(bioData), updated_at: new Date().toISOString() }),
+        })
+        if (!saveRes.ok) console.error('[TikTok Callback] Save error:', await saveRes.text().catch(() => ''))
       }
 
-      // Cleanup
       localStorage.removeItem('tiktok_oauth_state')
       localStorage.removeItem('tiktok_csrf_state')
 
       // Si justo esta cuenta era la que un contrato estaba esperando (la
-      // empresa ya había aprobado los handles), se verifica sola acá mismo
-      // — sin que la persona tenga que apretar nada más después de conectar.
-      // SE ESPERA (await): si esto no termina antes de cerrar la ventanita
-      // (isPopup) o de navegar, se puede cortar a mitad de camino.
+      // empresa ya había aprobado los handles), se verifica sola acá mismo.
       await fetch('/api/handle-requests/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
         body: JSON.stringify({}),
       }).catch(() => {})
 
-      finish(true)
-
+      finishOnce(true)
     } catch (error: any) {
       console.error('[TikTok] Callback error:', error)
-      alert('Error: ' + (error?.message || String(error)))
-      finish(false, { error: 'callback_failed' })
+      finishOnce(false, { error: 'callback_failed' })
+    } finally {
+      clearTimeout(watchdog)
     }
   }
 
