@@ -116,9 +116,12 @@ export default function CompanyAnalyticsPage() {
       // Get unique creator IDs
       const creatorIds = allCreatorIds as string[]
 
-      // Get creator profiles
+      // Get creator profiles — de public_profiles, NO de profiles: la tabla
+      // real está bloqueada por RLS del lado de la empresa (probado con
+      // cuentas nuevas de verdad: devuelve vacío incluso con un contrato
+      // real de por medio), por eso esta pestaña nunca traía nada.
       const profilesRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?user_id=in.(${creatorIds.join(',')})&select=user_id,full_name,bio,avatar_url`,
+        `${SUPABASE_URL}/rest/v1/public_profiles?user_id=in.(${creatorIds.join(',')})&select=user_id,full_name,bio,avatar_url`,
         { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
       )
 

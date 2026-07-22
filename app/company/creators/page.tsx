@@ -104,9 +104,20 @@ export default function CreatorsPage() {
       ])) as string[]
 
       // Get profiles + entregas reales (para el conteo real de posts — antes era Math.random())
+      //
+      // OJO ACÁ, causa real encontrada probando con cuentas nuevas de
+      // verdad: esta consulta pedía la columna "tiktok_handle", que NO
+      // EXISTE en public_profiles (la columna real se llama "tiktok", y el
+      // handle de la cuenta conectada de verdad vive en bio.tiktokAccounts,
+      // no en una columna aparte) — PostgREST devolvía 400, el código lo
+      // trataba como "sin resultados" en silencio, y la lista de creadores
+      // quedaba en 0 SIEMPRE, sin importar cuántos contratos hubiera.
+      // Además: "profiles" (la tabla real, sin "public_") NO se puede leer
+      // desde el lado de la empresa por RLS, ni con un contrato de por
+      // medio — por eso todo esto tiene que pasar por public_profiles.
       const [profilesRes, deliveriesRes] = await Promise.all([
         fetch(
-          `${SUPABASE_URL}/rest/v1/public_profiles?user_id=in.(${creatorIds.join(',')})&select=user_id,full_name,avatar_url,bio,tiktok_handle`,
+          `${SUPABASE_URL}/rest/v1/public_profiles?user_id=in.(${creatorIds.join(',')})&select=user_id,full_name,avatar_url,bio,tiktok`,
           { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
         ),
         fetch(
@@ -129,13 +140,21 @@ export default function CreatorsPage() {
         const realPosts = deliveries.filter((d: any) => d.creator_id === p.user_id).length
         const spentFromApps = creatorApps.reduce((sum: number, a: any) => sum + (a.gigs?.budget || 0), 0)
         const spentFromContracts = creatorContracts.reduce((sum: number, c: any) => sum + (Number(c.payment_amount) || 0), 0)
+        // El handle real de la cuenta conectada por OAuth vive en
+        // bio.tiktokAccounts[0] — la columna "tiktok" plana es un
+        // respaldo si no hay conexión OAuth todavía.
+        let tiktokHandle = ''
+        try {
+          const bioData = typeof p.bio === 'string' ? JSON.parse(p.bio) : p.bio
+          tiktokHandle = bioData?.tiktokAccounts?.[0]?.username || p.tiktok || ''
+        } catch { tiktokHandle = p.tiktok || '' }
         return {
           id: p.user_id,
           user_id: p.user_id,
           full_name: p.full_name || 'Sin nombre',
           avatar_url: p.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.full_name || 'U')}&background=6366f1&color=fff`,
           bio: p.bio || '',
-          tiktok_handle: p.tiktok_handle || '',
+          tiktok_handle: tiktokHandle,
           status: 'active',
           total_spent: spentFromApps + spentFromContracts,
           total_posts: realPosts,
