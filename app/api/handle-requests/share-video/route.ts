@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
   }
 
   // El contrato tiene que ser del creador que pide esto.
-  const cRes = await fetch(`${SUPABASE_URL}/rest/v1/contracts?id=eq.${contractId}&select=id,creator_id,company_id,title`, { headers: H });
+  const cRes = await fetch(`${SUPABASE_URL}/rest/v1/contracts?id=eq.${contractId}&select=id,creator_id,company_id,title,application_id,gig_id,payment_amount`, { headers: H });
   const [contract] = cRes.ok ? await cRes.json() : [];
   if (!contract || contract.creator_id !== user.id) {
     return NextResponse.json({ error: "No autorizado para este contrato" }, { status: 403 });
@@ -144,6 +144,35 @@ export async function POST(request: NextRequest) {
     console.error("[share-video] insert error:", insertRes.status, errText);
     return NextResponse.json({ error: "No se pudo guardar el video compartido" }, { status: 500 });
   }
+
+  // Compartir el video ES la entrega del trabajo del contrato — se crea
+  // también en content_deliveries (mismo esquema que components/deliveries/
+  // CreateDeliveryModal.tsx) para que aparezca en "Mis Entregas" del creador
+  // y entre al flujo de revisión/pago de la empresa, en vez de vivir solo
+  // como un dato de analítica aislado.
+  fetch(`${SUPABASE_URL}/rest/v1/content_deliveries`, {
+    method: "POST",
+    headers: H,
+    body: JSON.stringify({
+      application_id: contract.application_id || null,
+      contract_id: contractId,
+      creator_id: user.id,
+      company_id: contract.company_id,
+      gig_id: contract.gig_id || null,
+      title: videoData.title || contract.title,
+      description: null,
+      video_url: videoUrl,
+      thumbnail_url: videoData.cover_image_url || null,
+      status: "submitted",
+      submitted_at: new Date().toISOString(),
+      payment_amount: contract.payment_amount || 0,
+      platform: "tiktok",
+      content_type: "video",
+      revision_count: 0,
+      max_revisions: 3,
+      feedback_history: [],
+    }),
+  }).catch((e) => console.error("[share-video] content_deliveries insert error:", e?.message));
 
   // Avisar a la empresa por chat — sin link a otra página, mismo criterio
   // que el resto de los avisos de contrato.

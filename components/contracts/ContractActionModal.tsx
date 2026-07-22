@@ -29,6 +29,7 @@ export default function ContractActionModal({ contractId, onClose }: { contractI
   const [sharedVideos, setSharedVideos] = useState<any[]>([])
   const [videoUrl, setVideoUrl] = useState('')
   const [sharing, setSharing] = useState(false)
+  const [changingType, setChangingType] = useState(false)
 
   // Al volver de TikTok, WhopChat.tsx reabre este modal con ?tiktok=...
   // en la URL (ver lib/tiktokConnect.ts) — acá se muestra el resultado.
@@ -198,6 +199,27 @@ export default function ContractActionModal({ contractId, onClose }: { contractI
     setSharing(false)
   }
 
+  // Se elige al firmar, pero se puede cambiar después — por ejemplo si el
+  // creador firmó antes de que existiera esta opción, o se equivocó.
+  const currentAccountType: 'new' | 'personal' = handleRequest?.handles?.[0]?.accountType === 'personal' ? 'personal' : 'new'
+  const changeAccountType = async (type: 'new' | 'personal') => {
+    if (type === currentAccountType || changingType) return
+    setChangingType(true)
+    try {
+      const t = token()
+      const res = await fetch('/api/handle-requests/set-account-type', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
+        body: JSON.stringify({ contractId, accountType: type }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) { toast(data.error || 'No se pudo cambiar el tipo de cuenta', 'error'); setChangingType(false); return }
+      toast(type === 'personal' ? 'Cuenta marcada como personal' : 'Cuenta marcada como nueva/dedicada')
+      await load()
+    } catch { toast('No se pudo cambiar el tipo de cuenta', 'error') }
+    setChangingType(false)
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center" onClick={onClose}>
       <div className="max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-t-[28px] bg-white p-6 sm:rounded-[28px]" onClick={(e) => e.stopPropagation()}>
@@ -284,6 +306,39 @@ export default function ContractActionModal({ contractId, onClose }: { contractI
                 <Check className="h-4 w-4" /> Verifica tus cuentas
               </button>
             )}
+          </div>
+        )}
+
+        {/* CREADOR: tipo de cuenta — editable después de firmar, no solo al
+            momento de firmar. */}
+        {isCreator && handleRequest?.handles?.length > 0 && (
+          <div className="mt-5">
+            <p className="text-sm font-bold">Tipo de cuenta</p>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                disabled={changingType}
+                onClick={() => changeAccountType('new')}
+                className={`rounded-2xl border px-3 py-3 text-left text-xs font-bold transition disabled:opacity-50 ${currentAccountType === 'new' ? 'border-cyan-400 bg-cyan-50 text-cyan-700' : 'border-neutral-200 text-neutral-500'}`}
+              >
+                Nueva
+                <span className="mt-0.5 block font-semibold text-[11px] normal-case text-neutral-400">Dedicada para {companyName || 'esta empresa'}</span>
+              </button>
+              <button
+                type="button"
+                disabled={changingType}
+                onClick={() => changeAccountType('personal')}
+                className={`rounded-2xl border px-3 py-3 text-left text-xs font-bold transition disabled:opacity-50 ${currentAccountType === 'personal' ? 'border-cyan-400 bg-cyan-50 text-cyan-700' : 'border-neutral-200 text-neutral-500'}`}
+              >
+                Personal
+                <span className="mt-0.5 block font-semibold text-[11px] normal-case text-neutral-400">Ya la usas para todo</span>
+              </button>
+            </div>
+            <p className="mt-2 text-[11px] font-semibold text-neutral-400">
+              {currentAccountType === 'personal'
+                ? `${companyName || 'La empresa'} solo ve los videos puntuales que compartas para este contrato.`
+                : `${companyName || 'La empresa'} ve toda la analítica de la cuenta conectada.`}
+            </p>
           </div>
         )}
 

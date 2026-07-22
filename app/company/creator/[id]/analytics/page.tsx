@@ -115,10 +115,16 @@ export default function CompanyCreatorAnalyticsPage() {
 
   // Cuenta personal → SOLO los videos que el creador compartió a propósito
   // para este contrato, nunca la cuenta completa. Cuenta nueva/dedicada →
-  // todo, como hasta ahora.
+  // todo lo de la cuenta, MÁS lo compartido explícitamente (un video
+  // compartido puede ser más viejo que el snapshot de "últimos 20" que
+  // trae la cuenta, así que sin esto podía quedar invisible igual).
   const allVideos: TikTokVideo[] = isPersonalAccount
     ? sharedVideos
-    : accounts.flatMap(a => a.recentVideos || [])
+    : (() => {
+        const fromAccount = accounts.flatMap(a => a.recentVideos || [])
+        const seen = new Set(fromAccount.map(v => v.id))
+        return [...fromAccount, ...sharedVideos.filter(v => !seen.has(v.id))]
+      })()
 
   const stats = isPersonalAccount
     ? (allVideos.length > 0 ? {
