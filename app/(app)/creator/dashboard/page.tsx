@@ -190,7 +190,7 @@ export default function CreatorHome() {
             </div>
             <Link href="/leaderboard" prefetch className="min-w-0 flex-1 active:opacity-70">
               <p className="font-bold">Ranking</p>
-              <p className="truncate text-sm text-neutral-500">Mirá tu liga y competí con otros creadores</p>
+              <p className="truncate text-sm text-neutral-500">Mira tu liga y compite con otros creadores</p>
             </Link>
             <button
               onClick={() => { setShowRankBanner(false); try { localStorage.setItem('oct-rank-banner', '0') } catch {} }}

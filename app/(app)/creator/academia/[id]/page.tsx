@@ -95,7 +95,7 @@ export default function LessonPage() {
           {alreadyDone ? <><Check className="h-5 w-5" /> Ya completada</>
             : canComplete ? <><Check className="h-5 w-5" /> Completar lección</>
             : !hasVideo ? <><Lock className="h-5 w-5" /> Video en preparación</>
-            : <><Lock className="h-5 w-5" /> Mirá el 80% para continuar</>}
+            : <><Lock className="h-5 w-5" /> Mira el 80% para continuar</>}
         </button>
       </div>
     </div>

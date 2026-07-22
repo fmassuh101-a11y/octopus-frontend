@@ -34,7 +34,7 @@ const INTENTS: Intent[] = [
   },
   {
     keywords: ['plan', 'precio', 'suscripcion', 'cuanto cuesta', 'starter', 'pro', 'scale', 'enterprise', 'planes'],
-    answer: 'Para empresas hay 4 planes: Starter (gratis, comisión 7%), Pro ($99/mes, 4.7%), Scale ($499/mes, 2.3%) y Enterprise ("Hablemos", a medida). Los planes pagos bajan la comisión y suman campañas, asientos de equipo y analíticas. Mirá los detalles en la sección de Planes.',
+    answer: 'Para empresas hay 4 planes: Starter (gratis, comisión 7%), Pro ($99/mes, 4.7%), Scale ($499/mes, 2.3%) y Enterprise ("Hablemos", a medida). Los planes pagos bajan la comisión y suman campañas, asientos de equipo y analíticas. Mira los detalles en la sección de Planes.',
   },
   {
     keywords: ['equipo', 'invitar', 'team', 'agregar personas', 'miembros', 'roles'],
