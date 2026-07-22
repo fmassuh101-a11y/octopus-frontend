@@ -138,7 +138,15 @@ export default function CreatorsPage() {
         const creatorApps = applications.filter((a: any) => a.creator_id === p.user_id)
         const creatorContracts = contracts.filter((c: any) => c.creator_id === p.user_id)
         const realPosts = deliveries.filter((d: any) => d.creator_id === p.user_id).length
-        const spentFromApps = creatorApps.reduce((sum: number, a: any) => sum + (a.gigs?.budget || 0), 0)
+        // gigs.budget es texto libre ("$10-$100/hora", etc.), no un número
+        // — sumarlo directo con "+" hacía concatenación de texto en vez de
+        // suma (por eso salía "$00$10$100/hora..."). Se saca el primer
+        // número que aparezca en el texto; si no hay ninguno, no suma nada
+        // en vez de romper el total.
+        const spentFromApps = creatorApps.reduce((sum: number, a: any) => {
+          const n = parseFloat(String(a.gigs?.budget || '').replace(/[^0-9.]/g, ''))
+          return sum + (Number.isFinite(n) ? n : 0)
+        }, 0)
         const spentFromContracts = creatorContracts.reduce((sum: number, c: any) => sum + (Number(c.payment_amount) || 0), 0)
         // El handle real de la cuenta conectada por OAuth vive en
         // bio.tiktokAccounts[0] — la columna "tiktok" plana es un
@@ -305,7 +313,7 @@ export default function CreatorsPage() {
             {filteredCreators.map((creator) => (
               <Link
                 key={creator.id}
-                href={`/company/creator/${creator.id}`}
+                href={`/company/creator/${creator.id}/analytics`}
                 className="block bg-neutral-900 rounded-xl p-4 border border-neutral-800 hover:border-neutral-700 transition-all hover:bg-neutral-800/50 text-white placeholder-neutral-500"
               >
                 <div className="flex items-center gap-4">

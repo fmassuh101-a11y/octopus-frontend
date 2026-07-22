@@ -555,7 +555,7 @@ export default function CompanyAnalyticsPage() {
               creators.map((creator, index) => (
                 <Link
                   key={creator.id}
-                  href={`/company/creator/${creator.id}`}
+                  href={`/company/creator/${creator.id}/analytics`}
                   className="block bg-neutral-900 rounded-2xl p-4 border border-neutral-800 hover:border-neutral-700 transition text-white placeholder-neutral-500"
                 >
                   <div className="flex items-center gap-3">
