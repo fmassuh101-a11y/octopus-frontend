@@ -23,6 +23,20 @@ const BAD_UA = /(sqlmap|nikto|nmap|masscan|acunetix|nessus|havij|dirbuster|wpsca
 
 export function middleware(req: NextRequest) {
   const url = req.nextUrl
+
+  // "www.octapiapp.com" y "octapiapp.com" se estaban sirviendo como DOS
+  // SITIOS DISTINTOS para el navegador (ninguno redirigía al otro) — el
+  // login, localStorage y todo lo demás quedan atados a UN solo dominio a
+  // la vez, así que quien terminaba en "www" por cualquier motivo (un
+  // link, autocompletar del navegador) veía todo vacío/deslogueado en
+  // silencio, sin ningún error, aunque su sesión real existiera del otro
+  // lado. Se manda siempre al dominio canónico, sin excepción.
+  if (url.hostname.startsWith('www.')) {
+    const canonical = url.clone()
+    canonical.hostname = url.hostname.replace(/^www\./, '')
+    return NextResponse.redirect(canonical, 308)
+  }
+
   const target = decodeURIComponent(url.pathname + url.search)
 
   // 1) sondas de ataque en la URL → 400
