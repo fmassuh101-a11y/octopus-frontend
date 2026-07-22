@@ -156,6 +156,10 @@ export default function WhopChat({
           setPendingContract({ id: c.id, label: `Handles por aprobar en "${c.title}"` })
         } else if (role === 'creator' && hr?.company_approved_at && !(hr.handles?.length > 0 && hr.handles.every((h: any) => h.verified))) {
           setPendingContract({ id: c.id, label: `Puedes verificar tus cuentas para "${c.title}"` })
+        } else if (role === 'creator' && hr?.handles?.length > 0 && hr.handles.every((h: any) => h.verified)) {
+          // Se queda como aviso permanente (no una sola vez): el creador
+          // puede compartir más de un video mientras dure el contrato.
+          setPendingContract({ id: c.id, label: `Envía el link de tu video para "${c.title}"` })
         }
       } catch {}
     })()

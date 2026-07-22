@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { toast } from '@/components/oct/toast'
 import { connectTikTok } from '@/lib/tiktokConnect'
-import { Loader2, X, Check } from 'lucide-react'
+import { Loader2, X, Check, Link2, Eye, Heart } from 'lucide-react'
 
 // Ventana de acción rápida para un contrato — se abre ENCIMA de donde estés
 // (mensajes, donde sea), nunca navega a otra página. Para el documento legal
@@ -26,6 +26,9 @@ export default function ContractActionModal({ contractId, onClose }: { contractI
   // los videos puntuales que el creador comparta más adelante, nunca la
   // cuenta entera. Pedido explícito de Felipe, para proteger info personal.
   const [accountType, setAccountType] = useState<'new' | 'personal'>('new')
+  const [sharedVideos, setSharedVideos] = useState<any[]>([])
+  const [videoUrl, setVideoUrl] = useState('')
+  const [sharing, setSharing] = useState(false)
 
   // Al volver de TikTok, WhopChat.tsx reabre este modal con ?tiktok=...
   // en la URL (ver lib/tiktokConnect.ts) — acá se muestra el resultado.
@@ -49,13 +52,16 @@ export default function ContractActionModal({ contractId, onClose }: { contractI
     const user = JSON.parse(userStr)
     setMe(user)
     const H = { Authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY }
-    const [cRows, hrRows] = await Promise.all([
+    const [cRows, hrRows, shareRows] = await Promise.all([
       fetch(`${SUPABASE_URL}/rest/v1/contracts?id=eq.${contractId}&select=*`, { headers: H }).then(r => r.ok ? r.json() : []),
       fetch(`${SUPABASE_URL}/rest/v1/handle_requests?contract_id=eq.${contractId}&select=*`, { headers: H }).then(r => r.ok ? r.json() : []),
+      // puede no existir todavía si el SQL no se corrió — se trata como "sin videos", no como error
+      fetch(`${SUPABASE_URL}/rest/v1/contract_video_shares?contract_id=eq.${contractId}&select=*&order=submitted_at.desc`, { headers: H }).then(r => r.ok ? r.json() : []),
     ])
     const c = cRows?.[0]
     setContract(c || null)
     setHandleRequest(hrRows?.[0] || null)
+    setSharedVideos(shareRows || [])
     if (c) {
       const profRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${c.company_id}&select=company_name,full_name`, { headers: H })
       const [prof] = profRes.ok ? await profRes.json() : []
@@ -170,6 +176,28 @@ export default function ContractActionModal({ contractId, onClose }: { contractI
     connectTikTok({ path: window.location.pathname, contractId })
   }
 
+  // Manda el link a TikTok mismo (con el token de la cuenta ya conectada)
+  // para confirmar que el video es de verdad tuyo antes de guardarlo — la
+  // empresa nunca ve un link que no haya pasado por acá.
+  const shareVideo = async () => {
+    if (!videoUrl.trim()) return
+    setSharing(true)
+    try {
+      const t = token()
+      const res = await fetch('/api/handle-requests/share-video', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
+        body: JSON.stringify({ contractId, videoUrl: videoUrl.trim() }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) { toast(data.error || 'No se pudo compartir el video', 'error'); setSharing(false); return }
+      toast('Video compartido con la empresa')
+      setVideoUrl('')
+      await load()
+    } catch { toast('No se pudo compartir el video', 'error') }
+    setSharing(false)
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center" onClick={onClose}>
       <div className="max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-t-[28px] bg-white p-6 sm:rounded-[28px]" onClick={(e) => e.stopPropagation()}>
@@ -255,6 +283,52 @@ export default function ContractActionModal({ contractId, onClose }: { contractI
               <button onClick={verify} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-[#22D3EE] to-[#0891B2] py-3.5 font-bold text-white">
                 <Check className="h-4 w-4" /> Verifica tus cuentas
               </button>
+            )}
+          </div>
+        )}
+
+        {/* CREADOR: compartir videos — recién disponible una vez verificado.
+            La empresa SOLO ve lo que aparece acá (ver contract_video_shares). */}
+        {isCreator && allVerified && (
+          <div className="mt-5">
+            <p className="text-sm font-bold">Comparte tu video</p>
+            <p className="mt-1 text-xs text-neutral-400">
+              {companyName || 'La empresa'} solo va a ver los videos que compartas acá — pegá el link completo de TikTok.
+            </p>
+            <div className="mt-2 flex gap-2">
+              <input
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+                placeholder="https://www.tiktok.com/@tucuenta/video/..."
+                className="min-w-0 flex-1 rounded-2xl border border-neutral-200 px-4 py-3 text-sm font-semibold outline-none focus:border-cyan-400"
+              />
+              <button
+                onClick={shareVideo}
+                disabled={sharing || !videoUrl.trim()}
+                className="flex shrink-0 items-center gap-1.5 rounded-2xl bg-gradient-to-b from-[#22D3EE] to-[#0891B2] px-4 py-3 text-sm font-bold text-white disabled:opacity-50"
+              >
+                {sharing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />} Enviar
+              </button>
+            </div>
+
+            {sharedVideos.length > 0 && (
+              <div className="mt-3 space-y-2">
+                {sharedVideos.map((v: any) => (
+                  <div key={v.id} className="flex items-center gap-3 rounded-2xl bg-neutral-50 px-4 py-3">
+                    {v.stats?.thumbnail && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={v.stats.thumbnail} alt="" className="h-10 w-10 shrink-0 rounded-xl object-cover" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs font-bold">{v.stats?.title || 'Video'}</p>
+                      <div className="mt-0.5 flex items-center gap-3 text-[11px] text-neutral-500">
+                        <span className="flex items-center gap-1"><Eye className="h-3 w-3" /> {v.stats?.views || 0}</span>
+                        <span className="flex items-center gap-1"><Heart className="h-3 w-3" /> {v.stats?.likes || 0}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         )}

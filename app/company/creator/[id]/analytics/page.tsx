@@ -161,53 +161,60 @@ export default function CompanyCreatorAnalyticsPage() {
     )
   }
 
+  const generatedAt = new Date().toLocaleString('es', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+
   return (
-    <div className="min-h-[100dvh] bg-[#F7FAFD] pb-24">
-      <div className="bg-white border-b border-neutral-100 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-4">
-          <Link href={`/company/creator/${creatorId}`} className="p-2 hover:bg-neutral-100 rounded-lg transition">
-            <ChevronLeft className="w-6 h-6 text-neutral-400" />
+    <div className="min-h-[100dvh] bg-neutral-950 text-white pb-24">
+      <div className="border-b border-neutral-800 bg-neutral-950/95 sticky top-0 z-10 backdrop-blur">
+        <div className="max-w-6xl mx-auto px-6 py-5 flex items-center gap-4">
+          <Link href={`/company/creator/${creatorId}`} className="p-2 hover:bg-neutral-900 rounded-lg transition text-neutral-400">
+            <ChevronLeft className="w-6 h-6" />
           </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-neutral-900">Analítica de {creatorName}</h1>
-            <p className="text-sm text-neutral-500">Datos reales de su cuenta conectada</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-emerald-500">Reporte de rendimiento</p>
+            <h1 className="text-2xl font-bold truncate">{creatorName}</h1>
+          </div>
+          <div className="hidden sm:block text-right">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Generado</p>
+            <p className="text-xs text-neutral-400">{generatedAt}</p>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="max-w-6xl mx-auto px-6 py-8">
         {isPersonalAccount && (
-          <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
-            Esta es una cuenta personal del creador — solo ves los videos puntuales que compartió para este contrato, no el resto de su cuenta.
+          <div className="mb-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm font-semibold text-amber-400">
+            Cuenta personal del creador — este reporte solo incluye los videos puntuales que compartió para este contrato, no el resto de su cuenta.
           </div>
         )}
         {error ? (
-          <div className="bg-white border border-neutral-100 rounded-2xl p-8 text-center text-neutral-500">{error}</div>
+          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-8 text-center text-neutral-500">{error}</div>
         ) : !stats ? (
-          <div className="bg-white border border-dashed border-neutral-200 rounded-2xl p-8 text-center text-neutral-500">
+          <div className="bg-neutral-900 border border-dashed border-neutral-800 rounded-2xl p-8 text-center text-neutral-500">
             {isPersonalAccount
               ? 'Este creador todavía no compartió ningún video para este contrato.'
               : 'Este creador todavía no conectó ninguna cuenta de TikTok.'}
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <div className="bg-white border border-neutral-100 rounded-2xl p-5">
-                <p className="text-3xl font-bold text-neutral-900">{formatNumber(stats.followers)}</p>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-3">Resumen</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+              <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5">
+                <p className="text-3xl font-bold tabular-nums">{formatNumber(stats.followers)}</p>
                 <p className="text-sm text-neutral-500 mt-1">Seguidores</p>
               </div>
-              <div className="bg-white border border-neutral-100 rounded-2xl p-5">
-                <p className="text-3xl font-bold text-neutral-900">{formatNumber(stats.likes)}</p>
+              <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5">
+                <p className="text-3xl font-bold tabular-nums">{formatNumber(stats.likes)}</p>
                 <p className="text-sm text-neutral-500 mt-1">Likes Totales</p>
               </div>
-              <div className="bg-white border border-neutral-100 rounded-2xl p-5">
-                <p className="text-3xl font-bold text-neutral-900">{formatNumber(stats.videoCount)}</p>
+              <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5">
+                <p className="text-3xl font-bold tabular-nums">{formatNumber(stats.videoCount)}</p>
                 <p className="text-sm text-neutral-500 mt-1">Videos</p>
               </div>
-              <div className="bg-white border border-neutral-100 rounded-2xl p-5">
+              <div className="bg-neutral-900 border border-emerald-500/30 rounded-2xl p-5">
                 <div className="flex items-center justify-between mb-1">
-                  <p className="text-3xl font-bold text-neutral-900">{stats.engagementRate}%</p>
-                  <span className={`text-xs font-medium px-2 py-1 rounded-full ${getEngagementColor(stats.engagementRate)}`}>
+                  <p className="text-3xl font-bold tabular-nums text-emerald-400">{stats.engagementRate}%</p>
+                  <span className={`text-xs font-medium px-2 py-1 rounded-full bg-neutral-950 ${getEngagementColor(stats.engagementRate)}`}>
                     {getEngagementLabel(stats.engagementRate)}
                   </span>
                 </div>
@@ -215,47 +222,53 @@ export default function CompanyCreatorAnalyticsPage() {
               </div>
             </div>
 
-            {allVideos.length > 0 && (
-              <div className="mb-6">
-                <CampaignAnalyzer videos={allVideos} onVideoClick={setSelectedVideo} />
-              </div>
-            )}
-
-            {allVideos.length > 0 && (
-              <div className="bg-white border border-neutral-100 rounded-2xl p-4 mb-6">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-neutral-900">Filtrar por Periodo</h3>
-                  <TimePeriodFilter selected={selectedPeriod} onChange={setSelectedPeriod} />
+            {/* Análisis detallado — panel claro, formato de reporte, distinto
+                a propósito del tema oscuro del resto de la página (pedido
+                de Felipe: que se vea formal y distinto al panel del creador). */}
+            <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-3">Análisis detallado</p>
+            <div className="rounded-3xl bg-white p-5 sm:p-8 text-neutral-900 shadow-2xl shadow-black/40">
+              {allVideos.length > 0 && (
+                <div className="mb-6">
+                  <CampaignAnalyzer videos={allVideos} onVideoClick={setSelectedVideo} />
                 </div>
-                <p className="text-sm text-neutral-500 mt-2">
-                  Mostrando {filteredVideos.length} de {allVideos.length} videos
-                </p>
-              </div>
-            )}
+              )}
 
-            {filteredVideos.length > 0 && (
-              <div className="mb-6">
-                <PerformanceChart videos={filteredVideos} />
-              </div>
-            )}
+              {allVideos.length > 0 && (
+                <div className="bg-neutral-50 border border-neutral-100 rounded-2xl p-4 mb-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-neutral-900">Filtrar por Periodo</h3>
+                    <TimePeriodFilter selected={selectedPeriod} onChange={setSelectedPeriod} />
+                  </div>
+                  <p className="text-sm text-neutral-500 mt-2">
+                    Mostrando {filteredVideos.length} de {allVideos.length} videos
+                  </p>
+                </div>
+              )}
 
-            {filteredVideos.length > 0 && (
-              <div className="mb-6">
-                <VideoRankingSection videos={filteredVideos} onVideoClick={setSelectedVideo} />
-              </div>
-            )}
+              {filteredVideos.length > 0 && (
+                <div className="mb-6">
+                  <PerformanceChart videos={filteredVideos} />
+                </div>
+              )}
 
-            {allVideos.length > 0 && (
-              <div className="mb-6">
-                <PublishingInsights videos={allVideos} />
-              </div>
-            )}
+              {filteredVideos.length > 0 && (
+                <div className="mb-6">
+                  <VideoRankingSection videos={filteredVideos} onVideoClick={setSelectedVideo} />
+                </div>
+              )}
 
-            {allVideos.length > 0 && (
-              <div className="mb-6">
-                <AIContentTips videos={allVideos} />
-              </div>
-            )}
+              {allVideos.length > 0 && (
+                <div className="mb-6">
+                  <PublishingInsights videos={allVideos} />
+                </div>
+              )}
+
+              {allVideos.length > 0 && (
+                <div>
+                  <AIContentTips videos={allVideos} />
+                </div>
+              )}
+            </div>
           </>
         )}
       </div>
