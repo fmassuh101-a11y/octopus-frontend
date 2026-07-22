@@ -44,6 +44,12 @@ export function middleware(req: NextRequest) {
   //    valida su propia auth).
   if (waitlistEnabled()) {
     const path = url.pathname
+    // TikTok tiene registrado "/" (la raíz) como redirect_uri de OAuth — la
+    // ventanita de conectar TikTok es un contexto de navegador que puede no
+    // tener la cookie de la lista de espera guardada ahí (ej. otro dominio),
+    // y sin esta excepción el muro la rebotaba a /waitlist ANTES de que el
+    // puente entre dominios (app/page.tsx) pudiera procesar el login.
+    const isTikTokCallback = path === '/' && (url.searchParams.has('code') || url.searchParams.has('error'))
     const isAllowed =
       path === '/waitlist' ||
       path.startsWith('/waitlist/') ||
@@ -53,7 +59,8 @@ export function middleware(req: NextRequest) {
       path.startsWith('/_next') ||
       path === '/favicon.ico' ||
       path === '/robots.txt' ||
-      path === '/sitemap.xml'
+      path === '/sitemap.xml' ||
+      isTikTokCallback
     const hasPass = req.cookies.get(WAITLIST_COOKIE)?.value === waitlistSecret()
     if (!isAllowed && !hasPass) {
       const dest = url.clone()

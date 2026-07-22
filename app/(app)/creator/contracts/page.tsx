@@ -8,31 +8,8 @@ import CreateDeliveryModal from '@/components/deliveries/CreateDeliveryModal'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { readCache, writeCache } from '@/lib/useCachedFetch'
 import { Music2, Instagram, Youtube, Clapperboard, Smartphone, BarChart3, ClipboardList, Package, MessageCircle, User, type LucideIcon } from 'lucide-react'
-
-const TIKTOK_CLIENT_KEY = process.env.NEXT_PUBLIC_TIKTOK_CLIENT_KEY || 'aw5n2omdzbjx4xf8'
-
-// Ventanita chica, no navega la pantalla principal a ningún lado — TikTok
-// sí te pide iniciar sesión ahí (eso no lo evita nadie), pero esta pantalla
-// se queda quieta y solo escucha cuándo termina. Al volver, la conexión se
-// auto-verifica sola (ver app/page.tsx) contra cualquier contrato pendiente.
-function connectTikTokNow(onDone?: (ok: boolean) => void) {
-  const state = Math.random().toString(36).substring(2, 15)
-  localStorage.setItem('tiktok_csrf_state', state)
-  localStorage.setItem('tiktok_oauth_state', state)
-  const redirectUri = encodeURIComponent('https://octopus-frontend-tau.vercel.app/')
-  const scope = encodeURIComponent('user.info.basic,user.info.profile,user.info.stats,video.list')
-  const url = `https://www.tiktok.com/v2/auth/authorize/?client_key=${TIKTOK_CLIENT_KEY}&response_type=code&scope=${scope}&redirect_uri=${redirectUri}&state=${state}&disable_auto_auth=1`
-  const popup = window.open(url, 'tiktok_oauth', 'width=500,height=720')
-  const onMessage = (e: MessageEvent) => {
-    if (e.data?.type !== 'tiktok-oauth-result') return
-    window.removeEventListener('message', onMessage)
-    onDone?.(!!e.data.ok)
-  }
-  window.addEventListener('message', onMessage)
-  const checkClosed = setInterval(() => {
-    if (popup?.closed) { clearInterval(checkClosed); window.removeEventListener('message', onMessage) }
-  }, 800)
-}
+import { connectTikTok } from '@/lib/tiktokConnect'
+import { toast } from '@/components/oct/toast'
 
 interface Contract {
   id: string
@@ -589,7 +566,10 @@ export default function CreatorContractsPage() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
-                          connectTikTokNow(() => {
+                          connectTikTok((ok, error) => {
+                            if (ok) toast('Cuenta conectada — verificando…')
+                            else if (error === 'closed') toast('Cerraste la ventana antes de terminar', 'error')
+                            else toast('No se pudo conectar la cuenta', 'error')
                             const token = localStorage.getItem('sb-access-token')
                             if (token && user?.id) loadContracts(user.id, token)
                           })

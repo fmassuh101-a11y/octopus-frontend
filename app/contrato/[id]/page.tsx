@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { toast } from '@/components/oct/toast'
+import { connectTikTok } from '@/lib/tiktokConnect'
 import { Loader2, ChevronLeft, Check, X, Printer } from 'lucide-react'
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -17,31 +18,6 @@ import { Loader2, ChevronLeft, Check, X, Printer } from 'lucide-react'
 
 const PLATFORM_LABEL: Record<string, string> = {
   tiktok: 'TikTok', instagram: 'Instagram', youtube: 'YouTube', ugc: 'UGC (sin publicar)',
-}
-
-const TIKTOK_CLIENT_KEY = process.env.NEXT_PUBLIC_TIKTOK_CLIENT_KEY || 'aw5n2omdzbjx4xf8'
-
-// Ventanita chica, no navega la pantalla principal a ningún lado — TikTok sí
-// te pide iniciar sesión ahí (eso no lo evita nadie), pero esta pantalla se
-// queda quieta y solo escucha cuándo termina. Al volver, se auto-verifica
-// sola contra cualquier contrato pendiente (ver app/page.tsx).
-function connectTikTokAndVerify(onDone?: (ok: boolean) => void) {
-  const state = Math.random().toString(36).substring(2, 15)
-  localStorage.setItem('tiktok_csrf_state', state)
-  localStorage.setItem('tiktok_oauth_state', state)
-  const redirectUri = encodeURIComponent('https://octopus-frontend-tau.vercel.app/')
-  const scope = encodeURIComponent('user.info.basic,user.info.profile,user.info.stats,video.list')
-  const url = `https://www.tiktok.com/v2/auth/authorize/?client_key=${TIKTOK_CLIENT_KEY}&response_type=code&scope=${scope}&redirect_uri=${redirectUri}&state=${state}&disable_auto_auth=1`
-  const popup = window.open(url, 'tiktok_oauth', 'width=500,height=720')
-  const onMessage = (e: MessageEvent) => {
-    if (e.data?.type !== 'tiktok-oauth-result') return
-    window.removeEventListener('message', onMessage)
-    onDone?.(!!e.data.ok)
-  }
-  window.addEventListener('message', onMessage)
-  const checkClosed = setInterval(() => {
-    if (popup?.closed) { clearInterval(checkClosed); window.removeEventListener('message', onMessage) }
-  }, 800)
 }
 
 export default function ContratoDocumento() {
@@ -498,8 +474,12 @@ export default function ContratoDocumento() {
             <div className="mx-auto w-full max-w-3xl text-center">
               <p className="mb-2 text-sm text-neutral-500">La empresa ya aprobó tus handles.</p>
               <button
-                onClick={() => connectTikTokAndVerify(async (ok) => {
-                  if (!ok) { toast('No se pudo conectar la cuenta', 'error'); return }
+                onClick={() => connectTikTok(async (ok, error) => {
+                  if (!ok) {
+                    toast(error === 'closed' ? 'Cerraste la ventana antes de terminar' : 'No se pudo conectar la cuenta', 'error')
+                    return
+                  }
+                  toast('Cuenta conectada — verificando…')
                   const token = localStorage.getItem('sb-access-token')
                   const H = { Authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY }
                   const rows = await (await fetch(`${SUPABASE_URL}/rest/v1/handle_requests?contract_id=eq.${id}&select=*`, { headers: H })).json().catch(() => [])

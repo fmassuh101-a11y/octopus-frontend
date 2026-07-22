@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { toast } from '@/components/oct/toast'
+import { connectTikTok } from '@/lib/tiktokConnect'
 import { Loader2, X, Check } from 'lucide-react'
 
 // Ventana de acción rápida para un contrato — se abre ENCIMA de donde estés
@@ -11,31 +12,6 @@ import { Loader2, X, Check } from 'lucide-react'
 // aprobar handles, verificar cuentas) esto alcanza y es instantáneo.
 
 const PLATFORM_LABEL: Record<string, string> = { tiktok: 'TikTok', instagram: 'Instagram', youtube: 'YouTube', ugc: 'UGC (sin publicar)' }
-const TIKTOK_CLIENT_KEY = process.env.NEXT_PUBLIC_TIKTOK_CLIENT_KEY || 'aw5n2omdzbjx4xf8'
-
-// TikTok sí te saca — es lo único que ninguna app puede evitar (hace falta
-// que TikTok mismo te pida el permiso). Se abre en una ventanita chica en
-// vez de mover toda la pantalla, y esta pantalla nunca navega — solo
-// escucha cuando la ventanita termina y actualiza sola.
-function openTikTokPopup(onDone: (ok: boolean) => void) {
-  const state = Math.random().toString(36).substring(2, 15)
-  localStorage.setItem('tiktok_csrf_state', state)
-  localStorage.setItem('tiktok_oauth_state', state)
-  const redirectUri = encodeURIComponent('https://octopus-frontend-tau.vercel.app/')
-  const scope = encodeURIComponent('user.info.basic,user.info.profile,user.info.stats,video.list')
-  const url = `https://www.tiktok.com/v2/auth/authorize/?client_key=${TIKTOK_CLIENT_KEY}&response_type=code&scope=${scope}&redirect_uri=${redirectUri}&state=${state}&disable_auto_auth=1`
-  const popup = window.open(url, 'tiktok_oauth', 'width=500,height=720')
-  const onMessage = (e: MessageEvent) => {
-    if (e.data?.type !== 'tiktok-oauth-result') return
-    window.removeEventListener('message', onMessage)
-    onDone(!!e.data.ok)
-  }
-  window.addEventListener('message', onMessage)
-  // si cierran la ventanita a mano sin terminar, no dejamos el botón colgado
-  const checkClosed = setInterval(() => {
-    if (popup?.closed) { clearInterval(checkClosed); window.removeEventListener('message', onMessage) }
-  }, 800)
-}
 
 export default function ContractActionModal({ contractId, onClose }: { contractId: string; onClose: () => void }) {
   const [me, setMe] = useState<any>(null)
@@ -169,8 +145,10 @@ export default function ContractActionModal({ contractId, onClose }: { contractI
 
   const verify = () => {
     setVerifying(true)
-    openTikTokPopup(async (ok) => {
+    connectTikTok(async (ok, error) => {
       if (ok) toast('Cuenta conectada — verificando…')
+      else if (error === 'closed') toast('Cerraste la ventana antes de terminar', 'error')
+      else if (error === 'popup_blocked') toast('El navegador bloqueó la ventanita — revisa el bloqueador de popups', 'error')
       else toast('No se pudo conectar la cuenta', 'error')
       await load()
       setVerifying(false)
