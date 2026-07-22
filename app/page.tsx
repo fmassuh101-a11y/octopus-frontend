@@ -131,10 +131,16 @@ function HomeInner() {
       finish(ok, extra)
     }
 
+    // El límite de acá tiene que ser MÁS GRANDE que el de /api/tiktok/callback
+    // más abajo — si no, este se dispara primero y corta el pedido a mitad
+    // de camino antes de que ese tenga la chance de terminar solo y avisar
+    // bien qué pasó. /api/tiktok/callback le pide a TikTok 2 cosas seguidas
+    // (token y datos del usuario), 15s cada una como mucho = 30s en el peor
+    // de los casos — por eso 35s acá, con margen real, no ajustado al límite.
     const watchdog = setTimeout(() => {
-      console.error('[TikTok Callback] Watchdog: no terminó en 20s, se fuerza a terminar igual')
+      console.error('[TikTok Callback] Watchdog: no terminó en 35s, se fuerza a terminar igual')
       finishOnce(false, { error: 'timeout' })
-    }, 20000)
+    }, 35000)
 
     try {
       // No se espera (fire-and-forget): solo sincroniza el cliente de
@@ -142,7 +148,7 @@ function HomeInner() {
       restoreSession().catch(err => console.error('[TikTok Callback] restoreSession error:', err))
 
       const controller = new AbortController()
-      const abortTimer = setTimeout(() => controller.abort(), 15000)
+      const abortTimer = setTimeout(() => controller.abort(), 28000)
       let response: Response
       try {
         response = await fetch('/api/tiktok/callback', {

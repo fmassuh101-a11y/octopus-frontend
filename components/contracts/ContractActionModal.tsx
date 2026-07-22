@@ -29,7 +29,7 @@ export default function ContractActionModal({ contractId, onClose }: { contractI
     const result = params.get('tiktok')
     if (!result) return
     if (result === 'connected') toast('Cuenta conectada — verificando…')
-    else toast('No se pudo conectar la cuenta', 'error')
+    else toast(`No se pudo conectar la cuenta (${params.get('tiktokError') || 'error desconocido'})`, 'error')
     params.delete('tiktok')
     params.delete('tiktokError')
     params.delete('openContract')

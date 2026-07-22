@@ -96,7 +96,7 @@ export default function CreatorContractsPage() {
     const result = params.get('tiktok')
     if (!result) return
     if (result === 'connected') toast('Cuenta conectada — verificando…')
-    else toast('No se pudo conectar la cuenta', 'error')
+    else toast(`No se pudo conectar la cuenta (${params.get('tiktokError') || 'error desconocido'})`, 'error')
     window.history.replaceState(null, '', window.location.pathname)
     const token = localStorage.getItem('sb-access-token')
     const userStr = localStorage.getItem('sb-user')
