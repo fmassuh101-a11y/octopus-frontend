@@ -111,15 +111,24 @@ export async function POST(request: NextRequest) {
     if (allVerified && !wasVerified) newlyVerifiedContracts.push(hr.contract_id);
   }
 
-  // 4. Avisar por chat a cada empresa cuyo contrato recién quedó verificado.
+  // 4. Avisar por chat a cada empresa cuyo contrato recién quedó verificado
+  // — CON link al perfil del creador (ahí ve su rendimiento real). A
+  // diferencia de los avisos de contrato, acá SÍ tiene sentido un link: no
+  // hay un equivalente dentro de Mensajes para ver el perfil/analítica de
+  // un creador, es una navegación normal y esperada, no una que tiente a
+  // salir de una acción que ya se puede hacer sin moverse.
   const authHeader = request.headers.get("authorization") || "";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://octapiapp.com";
   for (const cId of newlyVerifiedContracts) {
     const contract = contractById.get(cId);
     if (!contract) continue;
     fetch(`${request.nextUrl.origin}/api/whop/dm/send`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: authHeader },
-      body: JSON.stringify({ userId: contract.company_id, content: `El creador ya verificó sus cuentas para "${contract.title}".` }),
+      body: JSON.stringify({
+        userId: contract.company_id,
+        content: `El creador ya verificó sus cuentas para "${contract.title}". Ya puedes ver su rendimiento acá: ${appUrl}/company/creator/${contract.creator_id}`,
+      }),
     }).catch(() => {});
   }
 

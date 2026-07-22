@@ -363,8 +363,34 @@ export default function CreatorAnalyticsPage() {
           </div>
         )}
 
+        {/* Analytics Pro — conectar la cuenta es gratis (hace falta para
+            verificar contratos), pero VER los números/recomendaciones es
+            solo para creadores Pro. */}
+        {tiktokAccounts.length > 0 && !profile?.is_pro && (
+          <div className="bg-gradient-to-br from-black via-gray-900 to-gray-800 rounded-3xl p-10 mb-6 text-center relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-emerald-500/20 to-transparent rounded-full blur-3xl"></div>
+            <div className="relative">
+              <div className="w-24 h-24 bg-white/10 rounded-3xl flex items-center justify-center mx-auto mb-6 backdrop-blur-sm">
+                <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-3">Tu cuenta ya está conectada</h3>
+              <p className="text-white/70 mb-8 max-w-md mx-auto">
+                Los números, recomendaciones y análisis de tu contenido son parte de Octapi Pro. Tu cuenta sigue conectada y verificada para tus contratos igual.
+              </p>
+              <Link
+                href="/creator/pro"
+                className="inline-block px-8 py-4 bg-white text-neutral-900 rounded-2xl font-semibold hover:bg-neutral-100 transition"
+              >
+                Conocer Octapi Pro
+              </Link>
+            </div>
+          </div>
+        )}
+
         {/* Stats Dashboard */}
-        {tiktokAccounts.length > 0 && (
+        {tiktokAccounts.length > 0 && profile?.is_pro && (
           <>
             {/* Main Stats Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">

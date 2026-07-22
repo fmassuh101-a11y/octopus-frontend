@@ -51,7 +51,9 @@ type ViewMode = 'overview' | 'creators' | 'posts'
 export default function CompanyAnalyticsPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
-  const [viewMode, setViewMode] = useState<ViewMode>('overview')
+  // Arranca en "Creadores" (no "Overview"): es la vista organizada que
+  // pidió Felipe — cada creador contratado, apretás y ves su rendimiento.
+  const [viewMode, setViewMode] = useState<ViewMode>('creators')
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('30d')
   const [creators, setCreators] = useState<Creator[]>([])
   const [posts, setPosts] = useState<Post[]>([])

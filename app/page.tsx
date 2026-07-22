@@ -14,6 +14,19 @@ function HomeInner() {
   const [userType, setUserType] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [tiktokProcessing, setTiktokProcessing] = useState(false)
+  const [tiktokProgress, setTiktokProgress] = useState(0)
+
+  // Barra de progreso de 0 a 100 mientras se conecta TikTok — no sabemos el
+  // tiempo exacto que va a tardar, así que sube rápido al principio y se va
+  // frenando (nunca llega sola a 100, hasta que el proceso real termina y la
+  // pantalla cambia de una) — se siente viva en vez de una espera muda.
+  useEffect(() => {
+    if (!tiktokProcessing) { setTiktokProgress(0); return }
+    const t = setInterval(() => {
+      setTiktokProgress((p) => p + (94 - p) * 0.08)
+    }, 120)
+    return () => clearInterval(t)
+  }, [tiktokProcessing])
 
   // A dónde volver al terminar con TikTok — a la MISMA conversación/
   // contrato desde donde se apretó "Verifica tus cuentas" si ese dato
@@ -323,10 +336,24 @@ function HomeInner() {
         <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/20">
           <span className="text-3xl font-black text-white">O</span>
         </div>
-        <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin mb-4"></div>
-        <p className="text-white/60">
-          {tiktokProcessing ? 'Conectando con TikTok...' : 'Cargando...'}
-        </p>
+        {tiktokProcessing ? (
+          <>
+            <div className="w-56 h-1.5 rounded-full bg-white/10 overflow-hidden mb-3">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-[width] duration-150 ease-out"
+                style={{ width: `${Math.min(100, Math.round(tiktokProgress))}%` }}
+              />
+            </div>
+            <p className="text-white/60 text-sm tabular-nums">
+              Conectando con TikTok… {Math.min(100, Math.round(tiktokProgress))}%
+            </p>
+          </>
+        ) : (
+          <>
+            <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin mb-4"></div>
+            <p className="text-white/60">Cargando...</p>
+          </>
+        )}
       </div>
     )
   }

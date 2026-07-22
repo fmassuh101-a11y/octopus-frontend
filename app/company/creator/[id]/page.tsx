@@ -61,6 +61,10 @@ export default function CreatorProfilePage() {
   const [loading, setLoading] = useState(true)
   const [creator, setCreator] = useState<CreatorProfile | null>(null)
   const [tiktokAccount, setTiktokAccount] = useState<TikTokAccount | null>(null)
+  // Top 3 cuentas de TikTok por seguidores — para la sección "Redes
+  // Sociales", que muestra varias tarjetas en vez de solo una (un creador o
+  // una agencia puede tener más de una cuenta conectada).
+  const [tiktokAccountsTop3, setTiktokAccountsTop3] = useState<TikTokAccount[]>([])
   const [tiktokVideos, setTiktokVideos] = useState<TikTokVideo[]>([])
   const [applications, setApplications] = useState<Application[]>([])
   const [activeTab, setActiveTab] = useState<'overview' | 'content' | 'applications'>('overview')
@@ -132,17 +136,23 @@ export default function CreatorProfilePage() {
           // followers, etc.) y por eso una cuenta conectada de verdad
           // igual se veía con todo en 0 del lado de la empresa.
           if (profile.bio?.tiktokAccounts && profile.bio.tiktokAccounts.length > 0) {
-            const tiktok = profile.bio.tiktokAccounts[0]
-            setTiktokAccount({
-              username: tiktok.username,
-              followerCount: tiktok.followers,
-              followingCount: tiktok.following,
-              likesCount: tiktok.likes,
-              videoCount: tiktok.videoCount,
-              bio: tiktok.bio || tiktok.displayName,
-              avatarUrl: tiktok.avatarUrl,
-              verified: tiktok.isVerified
+            const toDisplay = (t: any): TikTokAccount => ({
+              username: t.username,
+              followerCount: t.followers,
+              followingCount: t.following,
+              likesCount: t.likes,
+              videoCount: t.videoCount,
+              bio: t.bio || t.displayName,
+              avatarUrl: t.avatarUrl,
+              verified: t.isVerified,
             })
+            // ordenadas por seguidores (de más a menos) — la más grande es
+            // "la" cuenta para todo lo que muestra una sola (avatar, badge
+            // verificado, engagement), y el top 3 completo va en Redes Sociales.
+            const sorted = [...profile.bio.tiktokAccounts].sort((a: any, b: any) => (b.followers || 0) - (a.followers || 0))
+            const tiktok = sorted[0]
+            setTiktokAccount(toDisplay(tiktok))
+            setTiktokAccountsTop3(sorted.slice(0, 3).map(toDisplay))
             // los últimos videos ya vienen en el mismo bio, no hace falta
             // la tabla tiktok_data (que nadie escribe, siempre está vacía)
             if (Array.isArray(tiktok.recentVideos) && tiktok.recentVideos.length > 0) {
@@ -508,10 +518,12 @@ export default function CreatorProfilePage() {
           </div>
         )}
         <div className="space-y-3">
-          {/* TikTok */}
-          {tiktokAccount && (
+          {/* TikTok — hasta 3 cuentas, la de más seguidores primero (un
+              creador o una agencia puede tener más de una conectada) */}
+          {tiktokAccountsTop3.map((acc, i) => (
             <a
-              href={`https://tiktok.com/@${(tiktokAccount.username || '').replace(/^@/, '')}`}
+              key={acc.username || i}
+              href={`https://tiktok.com/@${(acc.username || '').replace(/^@/, '')}`}
               target="_blank"
               rel="noopener noreferrer"
               className="block bg-neutral-900 rounded-2xl p-4 border border-neutral-800 hover:border-neutral-700 transition text-white placeholder-neutral-500"
@@ -524,14 +536,14 @@ export default function CreatorProfilePage() {
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold">TikTok</span>
-                    {tiktokAccount.verified && (
+                    <span className="font-semibold">TikTok{tiktokAccountsTop3.length > 1 ? ` #${i + 1}` : ''}</span>
+                    {acc.verified && (
                       <svg className="w-4 h-4 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                       </svg>
                     )}
                   </div>
-                  <p className="text-neutral-400 text-sm">@{tiktokAccount.username}</p>
+                  <p className="text-neutral-400 text-sm">@{acc.username}</p>
                 </div>
                 <svg className="w-5 h-5 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -541,24 +553,24 @@ export default function CreatorProfilePage() {
               {/* TikTok Stats */}
               <div className="grid grid-cols-4 gap-2 mt-4 pt-4 border-t border-neutral-800">
                 <div className="text-center">
-                  <p className="text-lg font-bold">{formatNumber(tiktokAccount.followerCount)}</p>
+                  <p className="text-lg font-bold">{formatNumber(acc.followerCount)}</p>
                   <p className="text-xs text-neutral-500">Seguidores</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-lg font-bold">{formatNumber(tiktokAccount.followingCount)}</p>
+                  <p className="text-lg font-bold">{formatNumber(acc.followingCount)}</p>
                   <p className="text-xs text-neutral-500">Siguiendo</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-lg font-bold">{formatNumber(tiktokAccount.likesCount)}</p>
+                  <p className="text-lg font-bold">{formatNumber(acc.likesCount)}</p>
                   <p className="text-xs text-neutral-500">Likes</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-lg font-bold">{formatNumber(tiktokAccount.videoCount)}</p>
+                  <p className="text-lg font-bold">{formatNumber(acc.videoCount)}</p>
                   <p className="text-xs text-neutral-500">Videos</p>
                 </div>
               </div>
             </a>
-          )}
+          ))}
 
           {/* Redes con LOGO OFICIAL (Simple Icons) — preciso, no dibujado a mano */}
           {!tiktokAccount && getSocial('tiktok') && <SocialRow net="tiktok" handle={getSocial('tiktok')} />}
