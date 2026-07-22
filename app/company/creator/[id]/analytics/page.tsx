@@ -4,14 +4,25 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
-import { formatNumber } from '@/lib/utils/videoAnalytics'
-import { ChevronLeft, Eye, Heart, MessageCircle, Repeat2, Video } from 'lucide-react'
+import { formatNumber, filterVideosByPeriod } from '@/lib/utils/videoAnalytics'
+import { TikTokVideo, TimePeriodValue } from '@/lib/types/analytics'
+import {
+  TimePeriodFilter,
+  VideoDetailModal,
+  VideoRankingSection,
+  PerformanceChart,
+  PublishingInsights,
+  CampaignAnalyzer,
+  AIContentTips,
+} from '@/app/(app)/creator/analytics/components'
+import { ChevronLeft } from 'lucide-react'
 
-// Analítica del creador vista por la EMPRESA — mismos números reales que ve
-// el creador en su propio panel Pro (/creator/analytics), no el perfil de
-// contacto (ese es /company/creator/[id], para redes/mensaje/pagar; este
-// es solo para números). Prioridad explícita de Felipe: la empresa tiene
-// que ver esto sí o sí.
+// Analítica del creador vista por la EMPRESA — MISMOS componentes y misma
+// profundidad que ve el creador en su propio panel Pro (/creator/analytics):
+// gráfico de rendimiento, ranking de videos, mejores horas para publicar,
+// analizador de campaña, tips con IA. No es un resumen aparte, es la
+// analítica real completa, mostrada del otro lado. No es el perfil de
+// contacto (ese es /company/creator/[id] — redes, mensaje, botón pagar).
 //
 // Sale de public_profiles (NO de profiles: esa tabla está bloqueada por
 // RLS del lado de la empresa, ver commit af7d122) — bio.tiktokAccounts[]
@@ -27,7 +38,7 @@ interface TikTokAccountData {
   avgLikes: number
   avgComments: number
   engagementRate: number
-  recentVideos: any[]
+  recentVideos: TikTokVideo[]
 }
 
 export default function CompanyCreatorAnalyticsPage() {
@@ -37,6 +48,8 @@ export default function CompanyCreatorAnalyticsPage() {
   const [creatorName, setCreatorName] = useState('')
   const [accounts, setAccounts] = useState<TikTokAccountData[]>([])
   const [error, setError] = useState('')
+  const [selectedPeriod, setSelectedPeriod] = useState<TimePeriodValue>('all')
+  const [selectedVideo, setSelectedVideo] = useState<TikTokVideo | null>(null)
 
   useEffect(() => {
     ;(async () => {
@@ -63,102 +76,136 @@ export default function CompanyCreatorAnalyticsPage() {
 
   const stats = accounts.length > 0 ? {
     followers: accounts.reduce((s, a) => s + (a.followers || 0), 0),
+    following: accounts.reduce((s, a) => s + (a.following || 0), 0),
     likes: accounts.reduce((s, a) => s + (a.likes || 0), 0),
     videoCount: accounts.reduce((s, a) => s + (a.videoCount || 0), 0),
     avgViews: Math.round(accounts.reduce((s, a) => s + (a.avgViews || 0), 0) / accounts.length),
+    avgLikes: Math.round(accounts.reduce((s, a) => s + (a.avgLikes || 0), 0) / accounts.length),
+    avgComments: Math.round(accounts.reduce((s, a) => s + (a.avgComments || 0), 0) / accounts.length),
     engagementRate: parseFloat((accounts.reduce((s, a) => s + (a.engagementRate || 0), 0) / accounts.length).toFixed(2)),
   } : null
 
-  const allVideos = accounts
-    .flatMap(a => a.recentVideos || [])
-    .sort((a, b) => (b.views || 0) - (a.views || 0))
-    .slice(0, 12)
+  const allVideos: TikTokVideo[] = accounts.flatMap(a => a.recentVideos || [])
+  const filteredVideos = filterVideosByPeriod(allVideos, selectedPeriod)
+
+  const getEngagementColor = (rate: number) => {
+    if (rate >= 6) return 'text-emerald-600'
+    if (rate >= 3) return 'text-blue-600'
+    return 'text-neutral-500'
+  }
+  const getEngagementLabel = (rate: number) => {
+    if (rate >= 6) return 'Excelente'
+    if (rate >= 3) return 'Bueno'
+    return 'Bajo'
+  }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
+      <div className="min-h-[100dvh] bg-[#F7FAFD] flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-white pb-24">
-      <div className="bg-neutral-900 border-b border-neutral-800 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center gap-4">
-          <Link href={`/company/creator/${creatorId}`} className="text-neutral-400 hover:text-white">
-            <ChevronLeft className="w-6 h-6" />
+    <div className="min-h-[100dvh] bg-[#F7FAFD] pb-24">
+      <div className="bg-white border-b border-neutral-100 sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-4">
+          <Link href={`/company/creator/${creatorId}`} className="p-2 hover:bg-neutral-100 rounded-lg transition">
+            <ChevronLeft className="w-6 h-6 text-neutral-400" />
           </Link>
           <div>
-            <h1 className="text-xl font-bold">Analítica de {creatorName}</h1>
-            <p className="text-sm text-neutral-400">Datos reales de su cuenta conectada</p>
+            <h1 className="text-2xl font-bold text-neutral-900">Analítica de {creatorName}</h1>
+            <p className="text-sm text-neutral-500">Datos reales de su cuenta conectada</p>
           </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-6 py-6">
+      <div className="max-w-7xl mx-auto px-4 py-6">
         {error ? (
-          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-8 text-center text-neutral-400">
-            {error}
-          </div>
+          <div className="bg-white border border-neutral-100 rounded-2xl p-8 text-center text-neutral-500">{error}</div>
         ) : !stats ? (
-          <div className="bg-neutral-900 border border-dashed border-neutral-800 rounded-2xl p-8 text-center text-neutral-400">
+          <div className="bg-white border border-dashed border-neutral-200 rounded-2xl p-8 text-center text-neutral-500">
             Este creador todavía no conectó ninguna cuenta de TikTok.
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-              <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5">
-                <p className="text-3xl font-bold">{formatNumber(stats.followers)}</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-white border border-neutral-100 rounded-2xl p-5">
+                <p className="text-3xl font-bold text-neutral-900">{formatNumber(stats.followers)}</p>
                 <p className="text-sm text-neutral-500 mt-1">Seguidores</p>
               </div>
-              <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5">
-                <p className="text-3xl font-bold">{formatNumber(stats.likes)}</p>
+              <div className="bg-white border border-neutral-100 rounded-2xl p-5">
+                <p className="text-3xl font-bold text-neutral-900">{formatNumber(stats.likes)}</p>
                 <p className="text-sm text-neutral-500 mt-1">Likes Totales</p>
               </div>
-              <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5">
-                <p className="text-3xl font-bold">{formatNumber(stats.videoCount)}</p>
+              <div className="bg-white border border-neutral-100 rounded-2xl p-5">
+                <p className="text-3xl font-bold text-neutral-900">{formatNumber(stats.videoCount)}</p>
                 <p className="text-sm text-neutral-500 mt-1">Videos</p>
               </div>
-              <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5">
-                <p className="text-3xl font-bold">{stats.engagementRate}%</p>
-                <p className="text-sm text-neutral-500 mt-1">Engagement</p>
+              <div className="bg-white border border-neutral-100 rounded-2xl p-5">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-3xl font-bold text-neutral-900">{stats.engagementRate}%</p>
+                  <span className={`text-xs font-medium px-2 py-1 rounded-full ${getEngagementColor(stats.engagementRate)}`}>
+                    {getEngagementLabel(stats.engagementRate)}
+                  </span>
+                </div>
+                <p className="text-sm text-neutral-500 mt-1">Engagement Rate</p>
               </div>
             </div>
 
-            <h2 className="text-lg font-semibold mb-3">Videos con mejor rendimiento</h2>
-            {allVideos.length === 0 ? (
-              <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-8 text-center text-neutral-500">
-                Todavía no hay videos recientes de esta cuenta.
+            {allVideos.length > 0 && (
+              <div className="mb-6">
+                <CampaignAnalyzer videos={allVideos} onVideoClick={setSelectedVideo} />
               </div>
-            ) : (
-              <div className="space-y-3">
-                {allVideos.map((v, i) => (
-                  <div key={v.id || i} className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 flex items-center gap-4">
-                    {v.thumbnail ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={v.thumbnail} alt="" className="w-14 h-14 rounded-xl object-cover shrink-0" />
-                    ) : (
-                      <div className="w-14 h-14 rounded-xl bg-neutral-800 flex items-center justify-center shrink-0">
-                        <Video className="w-6 h-6 text-neutral-600" />
-                      </div>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold truncate">{v.title || 'Video'}</p>
-                      <div className="flex items-center gap-4 mt-1 text-sm text-neutral-400">
-                        <span className="flex items-center gap-1"><Eye className="w-3.5 h-3.5" /> {formatNumber(v.views)}</span>
-                        <span className="flex items-center gap-1"><Heart className="w-3.5 h-3.5" /> {formatNumber(v.likes)}</span>
-                        <span className="flex items-center gap-1"><MessageCircle className="w-3.5 h-3.5" /> {formatNumber(v.comments)}</span>
-                        <span className="flex items-center gap-1"><Repeat2 className="w-3.5 h-3.5" /> {formatNumber(v.shares)}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+            )}
+
+            {allVideos.length > 0 && (
+              <div className="bg-white border border-neutral-100 rounded-2xl p-4 mb-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-neutral-900">Filtrar por Periodo</h3>
+                  <TimePeriodFilter selected={selectedPeriod} onChange={setSelectedPeriod} />
+                </div>
+                <p className="text-sm text-neutral-500 mt-2">
+                  Mostrando {filteredVideos.length} de {allVideos.length} videos
+                </p>
+              </div>
+            )}
+
+            {filteredVideos.length > 0 && (
+              <div className="mb-6">
+                <PerformanceChart videos={filteredVideos} />
+              </div>
+            )}
+
+            {filteredVideos.length > 0 && (
+              <div className="mb-6">
+                <VideoRankingSection videos={filteredVideos} onVideoClick={setSelectedVideo} />
+              </div>
+            )}
+
+            {allVideos.length > 0 && (
+              <div className="mb-6">
+                <PublishingInsights videos={allVideos} />
+              </div>
+            )}
+
+            {allVideos.length > 0 && (
+              <div className="mb-6">
+                <AIContentTips videos={allVideos} />
               </div>
             )}
           </>
         )}
       </div>
+
+      {selectedVideo && (
+        <VideoDetailModal
+          video={selectedVideo}
+          allVideos={allVideos}
+          onClose={() => setSelectedVideo(null)}
+        />
+      )}
     </div>
   )
 }
