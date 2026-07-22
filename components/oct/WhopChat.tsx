@@ -105,7 +105,23 @@ export default function WhopChat({
   const [profileData, setProfileData] = useState<any>(null)
   const [contractFor, setContractFor] = useState<Convo | null>(null)
   const [pendingContract, setPendingContract] = useState<{ id: string; label: string } | null>(null)
-  const [openContractId, setOpenContractId] = useState<string | null>(null)
+  // Si se vuelve de conectar TikTok (lib/tiktokConnect.ts navega derecho a
+  // TikTok, sin ventanita, y guarda a dónde volver), esta página aterriza
+  // con ?openContract=<id> en la URL — reabre el modal de ese contrato solo,
+  // sin que la persona tenga que buscarlo de nuevo.
+  const [openContractId, setOpenContractId] = useState<string | null>(() =>
+    typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('openContract') : null
+  )
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    if (!params.has('openContract') && !params.has('tiktok')) return
+    params.delete('openContract')
+    // ?tiktok=... se deja: ContractActionModal lo lee para mostrar el toast
+    // del resultado y lo limpia él mismo al montar.
+    const qs = params.toString()
+    window.history.replaceState(null, '', window.location.pathname + (qs ? `?${qs}` : ''))
+  }, [])
   const myId = typeof window !== 'undefined' ? (JSON.parse(localStorage.getItem('sb-user') || '{}').id || '') : ''
 
   // Contrato pendiente de acción con esta persona (firmar / aprobar handles

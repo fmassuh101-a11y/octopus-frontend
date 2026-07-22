@@ -68,6 +68,23 @@ export default function ContratoDocumento() {
     })()
   }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Al volver de conectar TikTok (lib/tiktokConnect.ts navega derecho a
+  // TikTok, sin ventanita) aterriza acá mismo con ?tiktok=... en la URL.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const result = params.get('tiktok')
+    if (!result) return
+    if (result === 'connected') toast('Cuenta conectada — verificando…')
+    else toast('No se pudo conectar la cuenta', 'error')
+    window.history.replaceState(null, '', window.location.pathname)
+    ;(async () => {
+      const token = localStorage.getItem('sb-access-token')
+      const H = { Authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY }
+      const rows = await (await fetch(`${SUPABASE_URL}/rest/v1/handle_requests?contract_id=eq.${id}&select=*`, { headers: H })).json().catch(() => [])
+      setHandleRequest(rows?.[0] || null)
+    })()
+  }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const parse = (v: any) => { try { return typeof v === 'string' ? JSON.parse(v) : v } catch { return null } }
   const deliverables: any[] = parse(contract?.deliverables) || []
   const usageRights: any = parse(contract?.usage_rights) || {}
@@ -473,17 +490,7 @@ export default function ContratoDocumento() {
             <div className="mx-auto w-full max-w-3xl text-center">
               <p className="mb-2 text-sm text-neutral-500">La empresa ya aprobó tus handles.</p>
               <button
-                onClick={() => connectTikTok(async (ok, error) => {
-                  if (!ok) {
-                    toast(error === 'closed' ? 'Cerraste la ventana antes de terminar' : 'No se pudo conectar la cuenta', 'error')
-                    return
-                  }
-                  toast('Cuenta conectada — verificando…')
-                  const token = localStorage.getItem('sb-access-token')
-                  const H = { Authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY }
-                  const rows = await (await fetch(`${SUPABASE_URL}/rest/v1/handle_requests?contract_id=eq.${id}&select=*`, { headers: H })).json().catch(() => [])
-                  setHandleRequest(rows?.[0] || null)
-                })}
+                onClick={() => connectTikTok({ path: `/contrato/${id}` })}
                 className="mx-auto flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-[#22D3EE] to-[#0891B2] px-6 py-3.5 font-bold text-white shadow-lg shadow-cyan-200"
               >
                 <Check className="h-4 w-4" /> Verifica tus cuentas

@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { supabase, getStoredSession, restoreSession } from '@/lib/supabase'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { Clapperboard, Users, Scissors, Smartphone } from 'lucide-react'
-import { reportTikTokConnectResult } from '@/lib/tiktokConnect'
+import { popTikTokReturnTo } from '@/lib/tiktokConnect'
 
 function HomeInner() {
   const searchParams = useSearchParams()
@@ -15,20 +15,27 @@ function HomeInner() {
   const [isLoading, setIsLoading] = useState(false)
   const [tiktokProcessing, setTiktokProcessing] = useState(false)
 
-  useEffect(() => {
-    // Si esta página se abrió en una VENTANA CHICA (popup) desde el botón de
-    // "Conectar TikTok" — que es la forma normal ahora — la pantalla
-    // principal del usuario NUNCA navega a ningún lado; nada más esta
-    // ventanita hace el ida-y-vuelta con TikTok, y al terminar avisa por
-    // localStorage y se cierra sola (ver lib/tiktokConnect.ts).
-    //
-    // OJO: acá se usa window.name, NO window.opener — window.opener se
-    // puede cortar cuando esta ventanita navega entre dominios distintos
-    // (TikTok -> Vercel -> nuestro dominio), varios navegadores lo bloquean
-    // por seguridad en saltos cross-origin. window.name SÍ sobrevive esos
-    // saltos, por eso es la señal confiable de "esto es la ventanita".
-    const isPopup = typeof window !== 'undefined' && window.name === 'tiktok_oauth'
+  // A dónde volver al terminar con TikTok — a la MISMA conversación/
+  // contrato desde donde se apretó "Verifica tus cuentas" si ese dato
+  // quedó guardado (lib/tiktokConnect.ts), o al lugar de siempre si no
+  // (ej. se conectó desde el perfil, no desde un contrato).
+  const finishTikTok = (ok: boolean, extra?: { error?: string }) => {
+    const returnTo = popTikTokReturnTo()
+    if (returnTo) {
+      const qs = new URLSearchParams()
+      qs.set('tiktok', ok ? 'connected' : 'error')
+      if (!ok && extra?.error) qs.set('tiktokError', extra.error)
+      if (returnTo.contractId) qs.set('openContract', returnTo.contractId)
+      const sep = returnTo.path.includes('?') ? '&' : '?'
+      window.location.href = `${returnTo.path}${sep}${qs.toString()}`
+      return
+    }
+    window.location.href = ok
+      ? 'https://octapiapp.com/creator/analytics?tiktok=connected'
+      : `/creator/profile?section=verification${extra?.error ? `&error=${encodeURIComponent(extra.error)}` : ''}`
+  }
 
+  useEffect(() => {
     // TikTok tiene registrado el dominio viejo de Vercel como redirect_uri
     // — no se puede cambiar sin pedirle a TikTok que lo revise de nuevo.
     // Pero la sesión real de la persona vive en octapiapp.com, que es un
@@ -49,11 +56,7 @@ function HomeInner() {
     const error = searchParams.get('error')
     if (error) {
       console.log('[TikTok] User cancelled or error:', error)
-      if (isPopup) {
-        reportTikTokConnectResult(false, error)
-        return
-      }
-      window.location.href = '/creator/profile?section=verification'
+      finishTikTok(false, { error })
       return // Don't mount, just redirect
     }
 
@@ -62,7 +65,7 @@ function HomeInner() {
     const state = searchParams.get('state')
     if (code && state) {
       setTiktokProcessing(true)
-      handleTikTokCallback(code, state, isPopup)
+      handleTikTokCallback(code, state)
       return // Don't mount normal page
     }
 
@@ -79,20 +82,9 @@ function HomeInner() {
   }, [searchParams])
 
   // Handle TikTok OAuth callback
-  const handleTikTokCallback = async (code: string, state: string, isPopup: boolean = false) => {
+  const handleTikTokCallback = async (code: string, state: string) => {
     setTiktokProcessing(true)
-
-    // Si es una ventanita (popup), nunca navega — le avisa a la ventana
-    // principal por postMessage y se cierra sola. Si es la ventana
-    // completa (código viejo / alguien la abrió directo), cae al
-    // comportamiento de siempre.
-    const finish = (ok: boolean, extra?: { error?: string; redirectPath?: string }) => {
-      if (isPopup) {
-        reportTikTokConnectResult(ok, extra?.error)
-        return
-      }
-      window.location.href = extra?.redirectPath || (ok ? 'https://octapiapp.com/creator/analytics?tiktok=connected' : `/creator/profile?section=verification${extra?.error ? `&error=${encodeURIComponent(extra.error)}` : ''}`)
-    }
+    const finish = finishTikTok
 
     // Verify state matches (check both possible keys)
     const savedState = localStorage.getItem('tiktok_oauth_state') || localStorage.getItem('tiktok_csrf_state')
@@ -112,12 +104,8 @@ function HomeInner() {
 
       if (!storedSession) {
         console.error('[TikTok Callback] No session in localStorage')
-        if (isPopup) {
-          finish(false, { error: 'no_session' })
-        } else {
-          alert('No hay sesión activa. Por favor inicia sesión.')
-          window.location.href = '/auth/login'
-        }
+        alert('No hay sesión activa. Por favor inicia sesión.')
+        window.location.href = '/auth/login'
         return
       }
 
@@ -156,7 +144,7 @@ function HomeInner() {
         clearTimeout(timeoutId)
         if (fetchError.name === 'AbortError') {
           console.error('[TikTok Callback] Request timed out')
-          if (!isPopup) alert('La conexión con TikTok tardó demasiado. Por favor intenta de nuevo.')
+          alert('La conexión con TikTok tardó demasiado. Por favor intenta de nuevo.')
           finish(false, { error: 'timeout' })
           return
         }
@@ -304,7 +292,7 @@ function HomeInner() {
 
     } catch (error: any) {
       console.error('[TikTok] Callback error:', error)
-      if (!isPopup) alert('Error: ' + (error?.message || String(error)))
+      alert('Error: ' + (error?.message || String(error)))
       finish(false, { error: 'callback_failed' })
     }
   }

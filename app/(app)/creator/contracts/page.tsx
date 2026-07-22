@@ -89,6 +89,20 @@ export default function CreatorContractsPage() {
     checkAuth()
   }, [])
 
+  // Al volver de conectar TikTok (lib/tiktokConnect.ts navega derecho a
+  // TikTok, sin ventanita) aterriza acá mismo con ?tiktok=... en la URL.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const result = params.get('tiktok')
+    if (!result) return
+    if (result === 'connected') toast('Cuenta conectada — verificando…')
+    else toast('No se pudo conectar la cuenta', 'error')
+    window.history.replaceState(null, '', window.location.pathname)
+    const token = localStorage.getItem('sb-access-token')
+    const userStr = localStorage.getItem('sb-user')
+    if (token && userStr) loadContracts(JSON.parse(userStr).id, token)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   const checkAuth = async () => {
     const token = localStorage.getItem('sb-access-token')
     const userStr = localStorage.getItem('sb-user')
@@ -566,13 +580,7 @@ export default function CreatorContractsPage() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
-                          connectTikTok((ok, error) => {
-                            if (ok) toast('Cuenta conectada — verificando…')
-                            else if (error === 'closed') toast('Cerraste la ventana antes de terminar', 'error')
-                            else toast('No se pudo conectar la cuenta', 'error')
-                            const token = localStorage.getItem('sb-access-token')
-                            if (token && user?.id) loadContracts(user.id, token)
-                          })
+                          connectTikTok({ path: '/creator/contracts', contractId: contract.id })
                         }}
                         className="px-3 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-white rounded-lg text-xs font-medium transition-colors"
                       >

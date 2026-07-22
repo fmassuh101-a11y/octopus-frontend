@@ -1,23 +1,24 @@
 'use client'
 
-// Conectar TikTok en una ventanita chica, SIN mover la pantalla principal.
+// Conectar TikTok — navegación directa, SIN ventanita.
 //
-// Por qué NO se usa window.opener + postMessage: la ventanita salta de
-// dominio en dominio (nuestro sitio -> tiktok.com -> el dominio viejo de
-// Vercel, registrado como redirect_uri de TikTok -> octapiapp.com) — varios
-// navegadores modernos CORTAN la referencia window.opener en navegaciones
-// cross-origin como esas (Cross-Origin-Opener-Policy y similares), así que
-// postMessage podía fallar en silencio después de ese salto y la ventana
-// principal se quedaba esperando para siempre.
+// Por qué se sacó la ventanita (window.open): en el celular, la mayoría de
+// los navegadores NO abren una ventana chica de verdad como en el
+// computador — muchas veces navegan la PROPIA pestaña/app a TikTok igual,
+// así que la "ventanita" terminaba siendo toda la app. Al querer cerrarse
+// sola con window.close(), Safari en iPhone lo bloquea y muestra "saliste
+// de la página" — y como nunca fue una ventana de verdad, no había forma
+// de avisarle a nada que había terminado: quedaba trabado ahí, sin guardar
+// nada. Esto se confirmó probando en el celular real.
 //
-// En cambio, se usa localStorage: es compartido entre TODAS las pestañas/
-// ventanas del MISMO origen (no depende de ninguna referencia entre
-// ventanas), así que apenas la ventanita aterriza de vuelta en nuestro
-// dominio y termina, escribe el resultado ahí — la ventana principal lo
-// detecta sondeando esa clave.
+// Ahora se navega derecho a TikTok en la misma pantalla — la única
+// excepción a "nunca salir de Mensajes" que ya se aceptó, porque TikTok
+// funciona así para todo el mundo (Google, Stripe, etc. son iguales). Lo
+// que sí se controla: ANTES de salir, se guarda a dónde volver (la misma
+// conversación, el mismo contrato) — así cuando TikTok termina y vuelve,
+// aterriza exactamente en el mismo lugar, no en un dashboard genérico.
 
-const RESULT_KEY = 'oct_tiktok_connect_result'
-const TIMEOUT_MS = 120_000 // 2 min — de sobra para loguearse en TikTok
+const RETURN_KEY = 'oct_tiktok_return_to'
 
 export function tiktokAuthUrl(): { url: string; state: string } {
   const clientKey = process.env.NEXT_PUBLIC_TIKTOK_CLIENT_KEY || 'aw5n2omdzbjx4xf8'
@@ -30,59 +31,32 @@ export function tiktokAuthUrl(): { url: string; state: string } {
   }
 }
 
-// Llamado por el popup (app/page.tsx) cuando termina, sea éxito o error.
-export function reportTikTokConnectResult(ok: boolean, error?: string) {
+export type TikTokReturnTo = { path: string; contractId?: string }
+
+// Llamado por los botones "Verifica tus cuentas" — guarda a dónde volver y
+// navega derecho a TikTok.
+export function connectTikTok(returnTo: TikTokReturnTo) {
   try {
-    localStorage.setItem(RESULT_KEY, JSON.stringify({ ok, error: error || null, ts: Date.now() }))
+    localStorage.setItem(RETURN_KEY, JSON.stringify(returnTo))
   } catch {}
-  // si la ventana la abrimos nosotros, se puede cerrar sola; si por algo
-  // falla (ventana no abierta como popup real), no rompe nada.
-  try { window.close() } catch {}
+  const { url, state } = tiktokAuthUrl()
+  try {
+    localStorage.setItem('tiktok_csrf_state', state)
+    localStorage.setItem('tiktok_oauth_state', state)
+  } catch {}
+  window.location.href = url
 }
 
-// Llamado por quien abre el popup (los 3 botones "Verifica tus cuentas").
-export function connectTikTok(onDone: (ok: boolean, error?: string) => void) {
-  const startedAt = Date.now()
-  const { url, state } = tiktokAuthUrl()
-  localStorage.setItem('tiktok_csrf_state', state)
-  localStorage.setItem('tiktok_oauth_state', state)
-  try { localStorage.removeItem(RESULT_KEY) } catch {}
-
-  const popup = window.open(url, 'tiktok_oauth', 'width=500,height=720')
-  if (!popup) {
-    onDone(false, 'popup_blocked')
-    return
+// Llamado UNA vez por app/page.tsx (el callback real) al terminar, para
+// saber a dónde mandar de vuelta a la persona. Se borra al leerlo — solo
+// sirve para ese viaje de ida y vuelta puntual.
+export function popTikTokReturnTo(): TikTokReturnTo | null {
+  try {
+    const raw = localStorage.getItem(RETURN_KEY)
+    if (!raw) return null
+    localStorage.removeItem(RETURN_KEY)
+    return JSON.parse(raw)
+  } catch {
+    return null
   }
-
-  let done = false
-  const finish = (ok: boolean, error?: string) => {
-    if (done) return
-    done = true
-    clearInterval(poll)
-    onDone(ok, error)
-  }
-
-  // sondeo simple — más confiable acá que el evento "storage" del navegador,
-  // que NO se dispara en la misma pestaña que escribe el valor y puede tener
-  // comportamientos raros entre popup y opener según el navegador.
-  const poll = setInterval(() => {
-    if (Date.now() - startedAt > TIMEOUT_MS) { finish(false, 'timeout'); return }
-
-    let raw: string | null = null
-    try { raw = localStorage.getItem(RESULT_KEY) } catch {}
-    if (raw) {
-      try {
-        const data = JSON.parse(raw)
-        if (data?.ts >= startedAt) {
-          localStorage.removeItem(RESULT_KEY)
-          finish(!!data.ok, data.error)
-          return
-        }
-      } catch {}
-    }
-
-    // si la persona cerró la ventanita a mano sin terminar, no la dejamos
-    // esperando para siempre — se cuenta como cancelado, no como error real.
-    if (popup.closed) { finish(false, 'closed') }
-  }, 600)
 }

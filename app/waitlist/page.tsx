@@ -9,7 +9,7 @@ import { countries } from '@/lib/data/countries'
 const COUNTRY_NAMES = Array.from(new Set(countries.map((c) => c.name))).sort((a, b) => a.localeCompare(b, 'es'))
 
 // LISTA DE ESPERA v2 — inmersiva (océano profundo con canvas propio), contador
-// con meta EN VIVO ("Creadores X/250"), formulario por rol y referral link
+// con meta EN VIVO ("Creadores X/500"), formulario por rol y referral link
 // viral. Toda la app vive detrás de este muro (middleware). Sin emojis.
 
 const EXPERIENCIA_CREADOR = [
@@ -149,7 +149,7 @@ function WaitlistInner() {
     : companyName.trim() && emailValid && mkt && country && source.trim() && message.trim()
 
   const count = role === 'creator' ? stats?.creators : stats?.companies
-  const goal = role === 'creator' ? stats?.goalCreators || 250 : stats?.goalCompanies || 50
+  const goal = role === 'creator' ? stats?.goalCreators || 500 : stats?.goalCompanies || 50
   const pct = Math.min(100, Math.round(((count || 0) / goal) * 100))
 
   const scrollToForm = () => document.getElementById('anotarse')?.scrollIntoView({ behavior: 'smooth' })
@@ -209,13 +209,13 @@ function WaitlistInner() {
               <div className="flex items-end justify-between">
                 <p className="text-sm font-semibold uppercase tracking-widest text-white/80 drop-shadow">Creadores</p>
                 <p className="text-3xl font-bold tabular-nums drop-shadow">
-                  {stats?.creators ?? '—'}<span className="text-white/50">/{stats?.goalCreators || 250}</span>
+                  {stats?.creators ?? '—'}<span className="text-white/50">/{stats?.goalCreators || 500}</span>
                 </p>
               </div>
               <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-white/20">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-cyan-500 shadow-[0_0_12px_rgba(34,211,238,0.8)] transition-all duration-1000"
-                  style={{ width: `${Math.min(100, Math.round(((stats?.creators || 0) / (stats?.goalCreators || 250)) * 100))}%` }}
+                  style={{ width: `${Math.min(100, Math.round(((stats?.creators || 0) / (stats?.goalCreators || 500)) * 100))}%` }}
                 />
               </div>
               <p className="mt-2 text-xs text-white/60">Cuando lleguemos a la meta, abrimos las puertas.</p>

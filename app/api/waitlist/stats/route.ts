@@ -18,8 +18,8 @@ export async function GET() {
       return parseInt(range.split("/")[1] || "0") || 0;
     };
     const [creators, companies] = await Promise.all([count("creator"), count("company")]);
-    return NextResponse.json({ ok: true, creators, companies, goalCreators: 250, goalCompanies: 50 });
+    return NextResponse.json({ ok: true, creators, companies, goalCreators: 500, goalCompanies: 50 });
   } catch {
-    return NextResponse.json({ ok: true, creators: 0, companies: 0, goalCreators: 250, goalCompanies: 50 });
+    return NextResponse.json({ ok: true, creators: 0, companies: 0, goalCreators: 500, goalCompanies: 50 });
   }
 }

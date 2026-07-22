@@ -21,7 +21,21 @@ export default function ContractActionModal({ contractId, onClose }: { contractI
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [handles, setHandles] = useState<Record<string, string>>({})
-  const [verifying, setVerifying] = useState(false)
+
+  // Al volver de TikTok, WhopChat.tsx reabre este modal con ?tiktok=...
+  // en la URL (ver lib/tiktokConnect.ts) — acá se muestra el resultado.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const result = params.get('tiktok')
+    if (!result) return
+    if (result === 'connected') toast('Cuenta conectada — verificando…')
+    else toast('No se pudo conectar la cuenta', 'error')
+    params.delete('tiktok')
+    params.delete('tiktokError')
+    params.delete('openContract')
+    const qs = params.toString()
+    window.history.replaceState(null, '', window.location.pathname + (qs ? `?${qs}` : ''))
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const load = async () => {
     const token = localStorage.getItem('sb-access-token')
@@ -69,6 +83,9 @@ export default function ContractActionModal({ contractId, onClose }: { contractI
 
   const isCompany = me.id === contract.company_id
   const isCreator = me.id === contract.creator_id
+  const usageRights = (() => { try { return typeof contract.usage_rights === 'string' ? JSON.parse(contract.usage_rights) : contract.usage_rights } catch { return {} } })() || {}
+  const isCpm = usageRights?.payment_mode === 'cpm'
+  const cpmRate = Number(usageRights?.cpm_rate || 0)
   const deliverables = (() => { try { return typeof contract.deliverables === 'string' ? JSON.parse(contract.deliverables) : contract.deliverables } catch { return [] } })() || []
   const platforms: string[] = Array.from(new Set(deliverables.map((d: any) => d.platform).filter((p: string) => p && p !== 'ugc')))
   const signedHandles = (() => { try { return typeof contract.creator_handles === 'string' ? JSON.parse(contract.creator_handles) : contract.creator_handles } catch { return [] } })() || []
@@ -141,16 +158,11 @@ export default function ContractActionModal({ contractId, onClose }: { contractI
     setBusy(false)
   }
 
+  // Navega derecho a TikTok (sin ventanita — no era confiable en celular) y
+  // vuelve a este MISMO contrato apenas termine (ver lib/tiktokConnect.ts +
+  // el useEffect de abajo que lee ?openContract=/&tiktok= al volver).
   const verify = () => {
-    setVerifying(true)
-    connectTikTok(async (ok, error) => {
-      if (ok) toast('Cuenta conectada — verificando…')
-      else if (error === 'closed') toast('Cerraste la ventana antes de terminar', 'error')
-      else if (error === 'popup_blocked') toast('El navegador bloqueó la ventanita — revisa el bloqueador de popups', 'error')
-      else toast('No se pudo conectar la cuenta', 'error')
-      await load()
-      setVerifying(false)
-    })
+    connectTikTok({ path: window.location.pathname, contractId })
   }
 
   return (
@@ -166,7 +178,11 @@ export default function ContractActionModal({ contractId, onClose }: { contractI
 
         <div className="mt-4 rounded-2xl bg-neutral-50 p-4">
           <p className="text-xs font-bold uppercase text-neutral-400">Pago</p>
-          <p className="mt-1 text-xl font-extrabold">${Number(contract.payment_amount || 0)} {contract.payment_currency || 'USD'}</p>
+          {isCpm ? (
+            <p className="mt-1 text-xl font-extrabold">${cpmRate} <span className="text-sm font-bold text-neutral-500">por cada 1.000 visitas</span></p>
+          ) : (
+            <p className="mt-1 text-xl font-extrabold">${Number(contract.payment_amount || 0)} {contract.payment_currency || 'USD'}</p>
+          )}
         </div>
 
         {/* CREADOR: firmar */}
@@ -207,8 +223,8 @@ export default function ContractActionModal({ contractId, onClose }: { contractI
             {allVerified ? (
               <p className="flex items-center justify-center gap-2 rounded-2xl bg-emerald-50 py-3.5 font-bold text-emerald-600"><Check className="h-4 w-4" /> Tus cuentas están verificadas</p>
             ) : (
-              <button onClick={verify} disabled={verifying} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-[#22D3EE] to-[#0891B2] py-3.5 font-bold text-white disabled:opacity-50">
-                {verifying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Verifica tus cuentas
+              <button onClick={verify} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-[#22D3EE] to-[#0891B2] py-3.5 font-bold text-white">
+                <Check className="h-4 w-4" /> Verifica tus cuentas
               </button>
             )}
           </div>
