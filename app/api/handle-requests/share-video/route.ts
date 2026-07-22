@@ -19,9 +19,30 @@ const H = { Authorization: `Bearer ${SERVICE_KEY}`, apikey: SERVICE_KEY, "Conten
 // rechaza el pedido — no hace falta ninguna verificación propia más
 // complicada.
 
-function extractVideoId(url: string): string | null {
-  const m = String(url || "").match(/\/video\/(\d+)/);
+function findVideoId(url: string): string | null {
+  // TikTok también tiene posts de fotos/carrusel — usan /photo/ en vez de
+  // /video/ en el link, mismo formato de ID atrás. Encontrado probando con
+  // un link real de Felipe que resolvía justo a un post de fotos.
+  const m = String(url || "").match(/\/(?:video|photo)\/(\d+)/);
   return m ? m[1] : null;
+}
+
+// TikTok tiene DOS formatos de link: el largo (tiktok.com/@usuario/video/123)
+// que sí trae el número del video en la URL, y el corto que da el botón
+// "Compartir" de la app (vt.tiktok.com/xxxx o tiktok.com/t/xxxx) — ese NO
+// trae el número, hay que abrirlo primero para ver a qué video real
+// termina apuntando. Es el que la mayoría de la gente copia sin darse
+// cuenta, así que hay que aceptarlo igual, no solo el largo.
+async function resolveVideoId(url: string): Promise<string | null> {
+  const direct = findVideoId(url);
+  if (direct) return direct;
+  if (!/tiktok\.com/i.test(url)) return null;
+  try {
+    const res = await fetch(url, { method: "GET", redirect: "follow" });
+    return findVideoId(res.url);
+  } catch {
+    return null;
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -37,9 +58,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Falta el contrato o el link" }, { status: 400 });
   }
 
-  const videoId = extractVideoId(videoUrl);
+  const videoId = await resolveVideoId(videoUrl);
   if (!videoId) {
-    return NextResponse.json({ error: "Ese link no parece un video de TikTok. Copia el link completo desde la app (con /video/... en la URL), no uno acortado." }, { status: 400 });
+    return NextResponse.json({ error: "Ese link no parece un video de TikTok. Copia el link desde el botón Compartir de la app." }, { status: 400 });
   }
 
   // El contrato tiene que ser del creador que pide esto.
@@ -81,14 +102,18 @@ export async function POST(request: NextRequest) {
         matchedUsername = acc.username;
         break;
       }
-    } catch {
-      // se sigue probando con la próxima cuenta
+      // Se deja registrado el motivo real (sin exponerlo al creador) — para
+      // no tener que adivinar si vuelve a fallar: puede ser que el video no
+      // sea de esa cuenta, o un problema real de la API (permiso, formato).
+      console.error("[share-video] TikTok no devolvió el video para", acc.username, "videoId:", videoId, JSON.stringify(tikData)?.slice(0, 300));
+    } catch (e: any) {
+      console.error("[share-video] error consultando TikTok:", e?.message);
     }
   }
 
   if (!videoData) {
     return NextResponse.json({
-      error: "Ese video no pertenece a ninguna de tus cuentas de TikTok conectadas. Solo puedes compartir videos de tus propias cuentas verificadas.",
+      error: "No pudimos confirmar ese video contra tus cuentas conectadas. Si es un video normal (no una foto/carrusel), prueba con otro. Si el problema sigue, avísale al equipo.",
     }, { status: 403 });
   }
 
