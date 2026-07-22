@@ -213,12 +213,13 @@ export default function ContratoDocumento() {
         body: JSON.stringify({ status: 'in_progress' }),
       })
       if (!res.ok) throw new Error()
+      const appUrl2 = process.env.NEXT_PUBLIC_APP_URL || 'https://octapiapp.com'
       fetch('/api/whop/dm/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           userId: contract.creator_id,
-          content: `Aprobamos tus handles para "${contract.title}". Ya puedes verificar tus cuentas conectando TikTok/Instagram/YouTube — el contrato está EN MARCHA.`,
+          content: `Aprobamos tus handles para "${contract.title}" — el contrato está EN MARCHA. Abre este mismo link y vas a ver el botón "Verifica tus cuentas": ${appUrl2}/contrato/${id}`,
         }),
       }).catch(() => {})
       toast('Handles aprobados — contrato en marcha')

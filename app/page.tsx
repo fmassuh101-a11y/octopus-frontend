@@ -15,6 +15,21 @@ function HomeInner() {
   const [tiktokProcessing, setTiktokProcessing] = useState(false)
 
   useEffect(() => {
+    // TikTok tiene registrado el dominio viejo de Vercel como redirect_uri
+    // — no se puede cambiar sin pedirle a TikTok que lo revise de nuevo.
+    // Pero la sesión real de la persona vive en octapiapp.com, que es un
+    // "casillero" de localStorage totalmente distinto en el navegador. Sin
+    // este puente, quien conecta TikTok termina en una página donde su
+    // sesión no existe y parece que "lo echó" — acá se lo manda de una al
+    // dominio correcto ANTES de intentar leer nada de localStorage.
+    if (typeof window !== 'undefined' && window.location.hostname !== 'octapiapp.com' && window.location.hostname.includes('vercel.app')) {
+      const hasOAuthParams = searchParams.get('code') || searchParams.get('error')
+      if (hasOAuthParams) {
+        window.location.href = `https://octapiapp.com/${window.location.search}`
+        return
+      }
+    }
+
     // Check for TikTok OAuth error (user cancelled) BEFORE mounting
     const error = searchParams.get('error')
     if (error) {
@@ -239,8 +254,18 @@ function HomeInner() {
       localStorage.removeItem('tiktok_oauth_state')
       localStorage.removeItem('tiktok_csrf_state')
 
-      // Redirect to analytics
-      window.location.href = '/creator/analytics?tiktok=connected'
+      // Si justo esta cuenta era la que un contrato estaba esperando (la
+      // empresa ya había aprobado los handles), se verifica sola acá mismo
+      // — sin que la persona tenga que apretar nada más después de conectar.
+      fetch('/api/handle-requests/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({}),
+      }).catch(() => {})
+
+      // Redirect a analytics — SIEMPRE en octapiapp.com, sea cual sea el
+      // dominio donde terminó corriendo este callback (ver el puente arriba).
+      window.location.href = 'https://octapiapp.com/creator/analytics?tiktok=connected'
 
     } catch (error: any) {
       console.error('[TikTok] Callback error:', error)

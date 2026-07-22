@@ -294,7 +294,7 @@ export default function CompanyContractsPage() {
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({
             userId: contract.creator_id,
-            content: `${companyName || 'La empresa'} aceptó tus handles para "${contract.title}". Ya puedes verificar tus cuentas para este contrato.`,
+            content: `${companyName || 'La empresa'} aceptó tus handles para "${contract.title}". Abre este mismo link y vas a ver el botón "Verifica tus cuentas": ${process.env.NEXT_PUBLIC_APP_URL || 'https://octapiapp.com'}/contrato/${contract.id}`,
           }),
         }).catch(() => {})
 
