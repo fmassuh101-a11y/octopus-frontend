@@ -21,6 +21,11 @@ export default function ContractActionModal({ contractId, onClose }: { contractI
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [handles, setHandles] = useState<Record<string, string>>({})
+  // Nueva/dedicada vs personal — determina cuánto ve la empresa después:
+  // cuenta nueva = analítica completa (como hasta ahora); personal = SOLO
+  // los videos puntuales que el creador comparta más adelante, nunca la
+  // cuenta entera. Pedido explícito de Felipe, para proteger info personal.
+  const [accountType, setAccountType] = useState<'new' | 'personal'>('new')
 
   // Al volver de TikTok, WhopChat.tsx reabre este modal con ?tiktok=...
   // en la URL (ver lib/tiktokConnect.ts) — acá se muestra el resultado.
@@ -109,7 +114,7 @@ export default function ContractActionModal({ contractId, onClose }: { contractI
         await fetch(`${SUPABASE_URL}/rest/v1/handle_requests`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}`, apikey: SUPABASE_ANON_KEY, Prefer: 'return=representation' },
-          body: JSON.stringify({ contract_id: contractId, application_id: contract.application_id || null, handles: creatorHandles.map(h => ({ ...h, verified: false, verified_at: null, connected_username: null })), status: 'submitted', submitted_at: new Date().toISOString() }),
+          body: JSON.stringify({ contract_id: contractId, application_id: contract.application_id || null, handles: creatorHandles.map(h => ({ ...h, accountType, verified: false, verified_at: null, connected_username: null })), status: 'submitted', submitted_at: new Date().toISOString() }),
         }).catch(() => {})
       }
       const handlesText = creatorHandles.map((h) => `${h.platform}: ${h.handle}`).join(', ')
@@ -188,7 +193,31 @@ export default function ContractActionModal({ contractId, onClose }: { contractI
         {/* CREADOR: firmar */}
         {isCreator && (contract.status === 'pending' || contract.status === 'sent') && (
           <div className="mt-5">
-            <p className="text-sm font-bold">Tus cuentas</p>
+            <p className="text-sm font-bold">¿Qué tipo de cuenta vas a usar?</p>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setAccountType('new')}
+                className={`rounded-2xl border px-3 py-3 text-left text-xs font-bold transition ${accountType === 'new' ? 'border-cyan-400 bg-cyan-50 text-cyan-700' : 'border-neutral-200 text-neutral-500'}`}
+              >
+                Nueva
+                <span className="mt-0.5 block font-semibold text-[11px] normal-case text-neutral-400">Dedicada para {companyName || 'esta empresa'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAccountType('personal')}
+                className={`rounded-2xl border px-3 py-3 text-left text-xs font-bold transition ${accountType === 'personal' ? 'border-cyan-400 bg-cyan-50 text-cyan-700' : 'border-neutral-200 text-neutral-500'}`}
+              >
+                Personal
+                <span className="mt-0.5 block font-semibold text-[11px] normal-case text-neutral-400">Ya la usas para todo</span>
+              </button>
+            </div>
+            {accountType === 'personal' && (
+              <p className="mt-2 text-[11px] font-semibold text-neutral-400">
+                {companyName || 'La empresa'} solo va a ver los videos puntuales que compartas para este contrato, nunca el resto de tu cuenta.
+              </p>
+            )}
+            <p className="mt-4 text-sm font-bold">Tus cuentas</p>
             <div className="mt-2 space-y-2">
               {(platforms.length ? platforms : ['tiktok']).map((p) => (
                 <input key={p} value={handles[p] || ''} onChange={(e) => setHandles((h) => ({ ...h, [p]: e.target.value }))}

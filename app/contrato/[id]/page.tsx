@@ -36,6 +36,7 @@ export default function ContratoDocumento() {
   // recién ahí el creador puede verificarlos (conectar OAuth).
   const [showHandles, setShowHandles] = useState(false)
   const [handles, setHandles] = useState<Record<string, string>>({})
+  const [accountType, setAccountType] = useState<'new' | 'personal'>('new')
   const [handleRequest, setHandleRequest] = useState<any>(null)
 
   useEffect(() => {
@@ -143,7 +144,7 @@ export default function ContratoDocumento() {
       try {
         const handlesForRequest = creatorHandles
           .filter((h) => h.platform !== 'ugc')
-          .map((h) => ({ platform: h.platform, handle: h.handle, verified: false, verified_at: null, connected_username: null }))
+          .map((h) => ({ platform: h.platform, handle: h.handle, accountType, verified: false, verified_at: null, connected_username: null }))
         if (handlesForRequest.length > 0) {
           const hrCreate = await fetch(`${SUPABASE_URL}/rest/v1/handle_requests`, {
             method: 'POST',
@@ -528,6 +529,32 @@ export default function ContratoDocumento() {
             <p className="mt-1 text-sm text-neutral-500">
               Escribe el handle de la cuenta desde la que vas a publicar. La empresa lo verá y lo aprobará.
             </p>
+
+            <p className="mt-4 text-xs font-bold uppercase tracking-wide text-neutral-400">¿Qué tipo de cuenta vas a usar?</p>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setAccountType('new')}
+                className={`rounded-2xl border px-3 py-3 text-left text-xs font-bold transition ${accountType === 'new' ? 'border-cyan-400 bg-cyan-50 text-cyan-700' : 'border-neutral-200 text-neutral-500'}`}
+              >
+                Nueva
+                <span className="mt-0.5 block font-semibold text-[11px] normal-case text-neutral-400">Dedicada para {companyName || 'esta empresa'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAccountType('personal')}
+                className={`rounded-2xl border px-3 py-3 text-left text-xs font-bold transition ${accountType === 'personal' ? 'border-cyan-400 bg-cyan-50 text-cyan-700' : 'border-neutral-200 text-neutral-500'}`}
+              >
+                Personal
+                <span className="mt-0.5 block font-semibold text-[11px] normal-case text-neutral-400">Ya la usas para todo</span>
+              </button>
+            </div>
+            {accountType === 'personal' && (
+              <p className="mt-2 text-[11px] font-semibold text-neutral-400">
+                {companyName || 'La empresa'} solo va a ver los videos puntuales que compartas para este contrato, nunca el resto de tu cuenta.
+              </p>
+            )}
+
             <div className="mt-4 space-y-3">
               {(contractPlatforms.length ? contractPlatforms : ['tiktok']).map((p) => (
                 <div key={p}>

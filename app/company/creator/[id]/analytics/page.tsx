@@ -50,15 +50,24 @@ export default function CompanyCreatorAnalyticsPage() {
   const [error, setError] = useState('')
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriodValue>('all')
   const [selectedVideo, setSelectedVideo] = useState<TikTokVideo | null>(null)
+  // Si CUALQUIER cuenta que este creador declaró para el contrato con
+  // ESTA empresa es "personal", no se muestra la cuenta completa — solo
+  // los videos puntuales que comparta (contract_video_shares). Pedido
+  // explícito de Felipe para proteger contenido personal del creador.
+  const [isPersonalAccount, setIsPersonalAccount] = useState(false)
+  const [sharedVideos, setSharedVideos] = useState<TikTokVideo[]>([])
 
   useEffect(() => {
     ;(async () => {
       const token = localStorage.getItem('sb-access-token')
-      if (!token) { setError('Sesión no encontrada'); setLoading(false); return }
+      const userStr = localStorage.getItem('sb-user')
+      if (!token || !userStr) { setError('Sesión no encontrada'); setLoading(false); return }
+      const myId = JSON.parse(userStr).id
+      const H = { Authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY }
       try {
         const res = await fetch(
           `${SUPABASE_URL}/rest/v1/public_profiles?user_id=eq.${creatorId}&select=full_name,bio`,
-          { headers: { Authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY } }
+          { headers: H }
         )
         const rows = res.ok ? await res.json() : []
         const profile = rows?.[0]
@@ -67,6 +76,36 @@ export default function CompanyCreatorAnalyticsPage() {
         let bio: any = {}
         try { bio = typeof profile.bio === 'string' ? JSON.parse(profile.bio) : profile.bio || {} } catch { bio = {} }
         setAccounts(Array.isArray(bio.tiktokAccounts) ? bio.tiktokAccounts : [])
+
+        // Contrato más reciente entre esta empresa y este creador — de ahí
+        // sale si la cuenta es personal, y los videos que sí compartió.
+        const cRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/contracts?creator_id=eq.${creatorId}&company_id=eq.${myId}&select=id&order=created_at.desc&limit=1`,
+          { headers: H }
+        )
+        const [c] = cRes.ok ? await cRes.json() : []
+        if (c) {
+          const [hrRes, sharesRes] = await Promise.all([
+            fetch(`${SUPABASE_URL}/rest/v1/handle_requests?contract_id=eq.${c.id}&select=handles`, { headers: H }),
+            // Puede no existir todavía si la migración SQL no se corrió —
+            // se trata como "sin videos compartidos", no como error fatal.
+            fetch(`${SUPABASE_URL}/rest/v1/contract_video_shares?contract_id=eq.${c.id}&select=*`, { headers: H }),
+          ])
+          const [hr] = hrRes.ok ? await hrRes.json() : []
+          const personal = Array.isArray(hr?.handles) && hr.handles.some((h: any) => h.accountType === 'personal')
+          setIsPersonalAccount(personal)
+          const shares = sharesRes.ok ? await sharesRes.json() : []
+          setSharedVideos(shares.map((s: any) => ({
+            id: s.video_id || s.id,
+            title: s.video_url,
+            thumbnail: s.stats?.thumbnail || '',
+            views: s.stats?.views || 0,
+            likes: s.stats?.likes || 0,
+            comments: s.stats?.comments || 0,
+            shares: s.stats?.shares || 0,
+            createdAt: s.submitted_at,
+          })))
+        }
       } catch {
         setError('No se pudo cargar la analítica')
       }
@@ -74,18 +113,33 @@ export default function CompanyCreatorAnalyticsPage() {
     })()
   }, [creatorId])
 
-  const stats = accounts.length > 0 ? {
-    followers: accounts.reduce((s, a) => s + (a.followers || 0), 0),
-    following: accounts.reduce((s, a) => s + (a.following || 0), 0),
-    likes: accounts.reduce((s, a) => s + (a.likes || 0), 0),
-    videoCount: accounts.reduce((s, a) => s + (a.videoCount || 0), 0),
-    avgViews: Math.round(accounts.reduce((s, a) => s + (a.avgViews || 0), 0) / accounts.length),
-    avgLikes: Math.round(accounts.reduce((s, a) => s + (a.avgLikes || 0), 0) / accounts.length),
-    avgComments: Math.round(accounts.reduce((s, a) => s + (a.avgComments || 0), 0) / accounts.length),
-    engagementRate: parseFloat((accounts.reduce((s, a) => s + (a.engagementRate || 0), 0) / accounts.length).toFixed(2)),
-  } : null
+  // Cuenta personal → SOLO los videos que el creador compartió a propósito
+  // para este contrato, nunca la cuenta completa. Cuenta nueva/dedicada →
+  // todo, como hasta ahora.
+  const allVideos: TikTokVideo[] = isPersonalAccount
+    ? sharedVideos
+    : accounts.flatMap(a => a.recentVideos || [])
 
-  const allVideos: TikTokVideo[] = accounts.flatMap(a => a.recentVideos || [])
+  const stats = isPersonalAccount
+    ? (allVideos.length > 0 ? {
+        followers: 0, following: 0,
+        likes: allVideos.reduce((s, v) => s + (v.likes || 0), 0),
+        videoCount: allVideos.length,
+        avgViews: Math.round(allVideos.reduce((s, v) => s + (v.views || 0), 0) / allVideos.length),
+        avgLikes: Math.round(allVideos.reduce((s, v) => s + (v.likes || 0), 0) / allVideos.length),
+        avgComments: Math.round(allVideos.reduce((s, v) => s + (v.comments || 0), 0) / allVideos.length),
+        engagementRate: 0,
+      } : null)
+    : (accounts.length > 0 ? {
+        followers: accounts.reduce((s, a) => s + (a.followers || 0), 0),
+        following: accounts.reduce((s, a) => s + (a.following || 0), 0),
+        likes: accounts.reduce((s, a) => s + (a.likes || 0), 0),
+        videoCount: accounts.reduce((s, a) => s + (a.videoCount || 0), 0),
+        avgViews: Math.round(accounts.reduce((s, a) => s + (a.avgViews || 0), 0) / accounts.length),
+        avgLikes: Math.round(accounts.reduce((s, a) => s + (a.avgLikes || 0), 0) / accounts.length),
+        avgComments: Math.round(accounts.reduce((s, a) => s + (a.avgComments || 0), 0) / accounts.length),
+        engagementRate: parseFloat((accounts.reduce((s, a) => s + (a.engagementRate || 0), 0) / accounts.length).toFixed(2)),
+      } : null)
   const filteredVideos = filterVideosByPeriod(allVideos, selectedPeriod)
 
   const getEngagementColor = (rate: number) => {
@@ -122,11 +176,18 @@ export default function CompanyCreatorAnalyticsPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-6">
+        {isPersonalAccount && (
+          <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
+            Esta es una cuenta personal del creador — solo ves los videos puntuales que compartió para este contrato, no el resto de su cuenta.
+          </div>
+        )}
         {error ? (
           <div className="bg-white border border-neutral-100 rounded-2xl p-8 text-center text-neutral-500">{error}</div>
         ) : !stats ? (
           <div className="bg-white border border-dashed border-neutral-200 rounded-2xl p-8 text-center text-neutral-500">
-            Este creador todavía no conectó ninguna cuenta de TikTok.
+            {isPersonalAccount
+              ? 'Este creador todavía no compartió ningún video para este contrato.'
+              : 'Este creador todavía no conectó ninguna cuenta de TikTok.'}
           </div>
         ) : (
           <>
