@@ -63,26 +63,36 @@ export default function CreatorsPage() {
     const user = JSON.parse(userStr)
 
     try {
-      // Get accepted applications
-      const appsRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/applications?select=creator_id,gigs(budget)&company_id=eq.${user.id}&status=eq.accepted`,
-        { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
-      )
+      // Dos fuentes de creadores "contratados": aplicaciones aceptadas
+      // (flujo viejo, con gig de por medio) Y contratos directos (los que
+      // se mandan desde el chat, CreateContractModal — sin gig ni
+      // application_id). Antes esta página solo miraba applications, así
+      // que un contrato mandado directo por mensaje (como el que probó
+      // Felipe) nunca aparecía acá, aunque sí existía y estaba verificado.
+      const [appsRes, contractsRes] = await Promise.all([
+        fetch(
+          `${SUPABASE_URL}/rest/v1/applications?select=creator_id,gigs(budget)&company_id=eq.${user.id}&status=eq.accepted`,
+          { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+        ),
+        fetch(
+          `${SUPABASE_URL}/rest/v1/contracts?select=creator_id,payment_amount&company_id=eq.${user.id}&status=in.(accepted,in_progress,completed)`,
+          { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY } }
+        ),
+      ])
 
-      if (!appsRes.ok) {
+      const applications = appsRes.ok ? await appsRes.json() : []
+      const contracts = contractsRes.ok ? await contractsRes.json() : []
+
+      if (applications.length === 0 && contracts.length === 0) {
         setLoading(false)
         return
       }
 
-      const applications = await appsRes.json()
-
-      if (applications.length === 0) {
-        setLoading(false)
-        return
-      }
-
-      // Get unique creator IDs
-      const creatorIds = Array.from(new Set(applications.map((a: any) => a.creator_id))) as string[]
+      // Get unique creator IDs de ambas fuentes
+      const creatorIds = Array.from(new Set([
+        ...applications.map((a: any) => a.creator_id),
+        ...contracts.map((c: any) => c.creator_id),
+      ])) as string[]
 
       // Get profiles + entregas reales (para el conteo real de posts — antes era Math.random())
       const [profilesRes, deliveriesRes] = await Promise.all([
@@ -99,10 +109,13 @@ export default function CreatorsPage() {
       const profiles = profilesRes.ok ? await profilesRes.json() : []
       const deliveries = deliveriesRes.ok ? await deliveriesRes.json() : []
 
-      // Build creator data
+      // Build creator data — combinando ambas fuentes
       const creatorsData: Creator[] = profiles.map((p: any) => {
         const creatorApps = applications.filter((a: any) => a.creator_id === p.user_id)
+        const creatorContracts = contracts.filter((c: any) => c.creator_id === p.user_id)
         const realPosts = deliveries.filter((d: any) => d.creator_id === p.user_id).length
+        const spentFromApps = creatorApps.reduce((sum: number, a: any) => sum + (a.gigs?.budget || 0), 0)
+        const spentFromContracts = creatorContracts.reduce((sum: number, c: any) => sum + (Number(c.payment_amount) || 0), 0)
         return {
           id: p.user_id,
           user_id: p.user_id,
@@ -111,9 +124,9 @@ export default function CreatorsPage() {
           bio: p.bio || '',
           tiktok_handle: p.tiktok_handle || '',
           status: 'active',
-          total_spent: creatorApps.reduce((sum: number, a: any) => sum + (a.gigs?.budget || 0), 0),
+          total_spent: spentFromApps + spentFromContracts,
           total_posts: realPosts,
-          campaigns: creatorApps.length,
+          campaigns: creatorApps.length + creatorContracts.length,
           last_active: new Date().toISOString()
         }
       })
