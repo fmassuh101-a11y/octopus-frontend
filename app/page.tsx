@@ -15,13 +15,21 @@ function HomeInner() {
   const [tiktokProcessing, setTiktokProcessing] = useState(false)
 
   useEffect(() => {
+    // Si esta página se abrió en una VENTANA CHICA (popup) desde el botón de
+    // "Conectar TikTok" — que es la forma normal ahora — la pantalla
+    // principal del usuario NUNCA navega a ningún lado; nada más esta
+    // ventanita hace el ida-y-vuelta con TikTok, y al terminar se cierra
+    // sola. Ver conectarTikTok() en lib/tiktokConnect.ts.
+    const isPopup = typeof window !== 'undefined' && !!window.opener && window.opener !== window
+
     // TikTok tiene registrado el dominio viejo de Vercel como redirect_uri
     // — no se puede cambiar sin pedirle a TikTok que lo revise de nuevo.
     // Pero la sesión real de la persona vive en octapiapp.com, que es un
     // "casillero" de localStorage totalmente distinto en el navegador. Sin
     // este puente, quien conecta TikTok termina en una página donde su
     // sesión no existe y parece que "lo echó" — acá se lo manda de una al
-    // dominio correcto ANTES de intentar leer nada de localStorage.
+    // dominio correcto ANTES de intentar leer nada de localStorage. Si es
+    // una popup, esto solo mueve la popup — la ventana principal no se entera.
     if (typeof window !== 'undefined' && window.location.hostname !== 'octapiapp.com' && window.location.hostname.includes('vercel.app')) {
       const hasOAuthParams = searchParams.get('code') || searchParams.get('error')
       if (hasOAuthParams) {
@@ -34,6 +42,11 @@ function HomeInner() {
     const error = searchParams.get('error')
     if (error) {
       console.log('[TikTok] User cancelled or error:', error)
+      if (isPopup) {
+        window.opener.postMessage({ type: 'tiktok-oauth-result', ok: false, error }, '*')
+        window.close()
+        return
+      }
       window.location.href = '/creator/profile?section=verification'
       return // Don't mount, just redirect
     }
@@ -43,7 +56,7 @@ function HomeInner() {
     const state = searchParams.get('state')
     if (code && state) {
       setTiktokProcessing(true)
-      handleTikTokCallback(code, state)
+      handleTikTokCallback(code, state, isPopup)
       return // Don't mount normal page
     }
 
@@ -60,14 +73,27 @@ function HomeInner() {
   }, [searchParams])
 
   // Handle TikTok OAuth callback
-  const handleTikTokCallback = async (code: string, state: string) => {
+  const handleTikTokCallback = async (code: string, state: string, isPopup: boolean = false) => {
     setTiktokProcessing(true)
+
+    // Si es una ventanita (popup), nunca navega — le avisa a la ventana
+    // principal por postMessage y se cierra sola. Si es la ventana
+    // completa (código viejo / alguien la abrió directo), cae al
+    // comportamiento de siempre.
+    const finish = (ok: boolean, extra?: { error?: string; redirectPath?: string }) => {
+      if (isPopup && window.opener) {
+        window.opener.postMessage({ type: 'tiktok-oauth-result', ok, error: extra?.error }, '*')
+        window.close()
+        return
+      }
+      window.location.href = extra?.redirectPath || (ok ? 'https://octapiapp.com/creator/analytics?tiktok=connected' : `/creator/profile?section=verification${extra?.error ? `&error=${encodeURIComponent(extra.error)}` : ''}`)
+    }
 
     // Verify state matches (check both possible keys)
     const savedState = localStorage.getItem('tiktok_oauth_state') || localStorage.getItem('tiktok_csrf_state')
     if (state !== savedState) {
       console.error('[TikTok] State mismatch:', state, 'vs', savedState)
-      window.location.href = '/creator/profile?section=verification&error=state_mismatch'
+      finish(false, { error: 'state_mismatch' })
       return
     }
 
@@ -81,8 +107,12 @@ function HomeInner() {
 
       if (!storedSession) {
         console.error('[TikTok Callback] No session in localStorage')
-        alert('No hay sesión activa. Por favor inicia sesión.')
-        window.location.href = '/auth/login'
+        if (isPopup) {
+          finish(false, { error: 'no_session' })
+        } else {
+          alert('No hay sesión activa. Por favor inicia sesión.')
+          window.location.href = '/auth/login'
+        }
         return
       }
 
@@ -121,8 +151,8 @@ function HomeInner() {
         clearTimeout(timeoutId)
         if (fetchError.name === 'AbortError') {
           console.error('[TikTok Callback] Request timed out')
-          alert('La conexión con TikTok tardó demasiado. Por favor intenta de nuevo.')
-          window.location.href = '/creator/analytics'
+          if (!isPopup) alert('La conexión con TikTok tardó demasiado. Por favor intenta de nuevo.')
+          finish(false, { error: 'timeout' })
           return
         }
         throw fetchError
@@ -134,7 +164,7 @@ function HomeInner() {
 
       if (!data.success || !data.data) {
         console.error('[TikTok] API error:', data.error)
-        window.location.href = `/creator/profile?section=verification&error=${encodeURIComponent(data.error || 'unknown')}`
+        finish(false, { error: data.error || 'unknown' })
         return
       }
 

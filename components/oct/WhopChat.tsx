@@ -5,8 +5,10 @@ import Link from 'next/link'
 import { authHeaders } from '@/lib/auth/clientToken'
 import { readCache, writeCache } from '@/lib/useCachedFetch'
 import { ChatCircleDots } from '@phosphor-icons/react/dist/ssr'
-import { Loader2, FileText } from 'lucide-react'
+import { Loader2, FileText, ClipboardCheck } from 'lucide-react'
 import CreateContractModal from '@/components/contracts/CreateContractModal'
+import ContractActionModal from '@/components/contracts/ContractActionModal'
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 
 // Chat empresa↔creador DENTRO de Octopus (verificado E2E):
 // - Los MENSAJES viven en Whop (support channels) y se muestran con su
@@ -102,7 +104,42 @@ export default function WhopChat({
   const [profileOf, setProfileOf] = useState<Convo | null>(null)
   const [profileData, setProfileData] = useState<any>(null)
   const [contractFor, setContractFor] = useState<Convo | null>(null)
+  const [pendingContract, setPendingContract] = useState<{ id: string; label: string } | null>(null)
+  const [openContractId, setOpenContractId] = useState<string | null>(null)
   const myId = typeof window !== 'undefined' ? (JSON.parse(localStorage.getItem('sb-user') || '{}').id || '') : ''
+
+  // Contrato pendiente de acción con esta persona (firmar / aprobar handles
+  // / verificar cuentas) — se muestra como aviso ARRIBA de la conversación,
+  // así nunca hace falta salir de mensajes para actuar.
+  useEffect(() => {
+    setPendingContract(null)
+    if (!selected || !myId) return
+    let alive = true
+    ;(async () => {
+      try {
+        const token = localStorage.getItem('sb-access-token')
+        const H = { Authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY }
+        const other = selected.userId
+        const filter = role === 'company' ? `company_id=eq.${myId}&creator_id=eq.${other}` : `creator_id=eq.${myId}&company_id=eq.${other}`
+        const cRes = await fetch(`${SUPABASE_URL}/rest/v1/contracts?${filter}&status=in.(sent,viewed,accepted)&select=id,title,status&order=created_at.desc&limit=1`, { headers: H })
+        const [c] = cRes.ok ? await cRes.json() : []
+        if (!alive || !c) return
+        if (role === 'creator' && (c.status === 'sent' || c.status === 'viewed')) {
+          setPendingContract({ id: c.id, label: `Tienes un contrato para firmar: "${c.title}"` })
+          return
+        }
+        const hrRes = await fetch(`${SUPABASE_URL}/rest/v1/handle_requests?contract_id=eq.${c.id}&select=*`, { headers: H })
+        const [hr] = hrRes.ok ? await hrRes.json() : []
+        if (!alive) return
+        if (role === 'company' && c.status === 'accepted' && hr && !hr.company_approved_at) {
+          setPendingContract({ id: c.id, label: `Handles por aprobar en "${c.title}"` })
+        } else if (role === 'creator' && hr?.company_approved_at && !(hr.handles?.length > 0 && hr.handles.every((h: any) => h.verified))) {
+          setPendingContract({ id: c.id, label: `Puedes verificar tus cuentas para "${c.title}"` })
+        }
+      } catch {}
+    })()
+    return () => { alive = false }
+  }, [selected, myId, role])
 
   // refresco periódico de la lista (visto/no-visto en vivo) — se pausa
   // si la pestaña está en segundo plano, para no gastar red de más.
@@ -269,6 +306,18 @@ export default function WhopChat({
                 </button>
               )}
             </div>
+            {/* Aviso de contrato pendiente — se abre acá mismo, arriba de
+                los mensajes, nunca navega a otra página */}
+            {pendingContract && (
+              <button
+                onClick={() => setOpenContractId(pendingContract.id)}
+                className="flex shrink-0 items-center gap-2 border-b border-cyan-100 bg-cyan-50 px-4 py-2.5 text-left text-xs font-bold text-cyan-700"
+              >
+                <ClipboardCheck className="h-4 w-4 shrink-0" />
+                <span className="flex-1">{pendingContract.label}</span>
+                <span className="shrink-0 underline">Abrir</span>
+              </button>
+            )}
             <div className="min-h-0 flex-1">
               <Conversation key={selected.channelId} channelId={selected.channelId} />
             </div>
@@ -290,6 +339,19 @@ export default function WhopChat({
           companyId={myId}
           creatorId={contractFor.userId}
           creatorName={contractFor.name}
+        />
+      )}
+
+      {/* Firmar / aprobar handles / verificar cuentas — TODO desde acá
+          mismo, sin salir nunca de mensajes */}
+      {openContractId && (
+        <ContractActionModal
+          contractId={openContractId}
+          onClose={() => {
+            setOpenContractId(null)
+            // refresca el aviso por si la acción recién hecha lo cambia
+            setSelected((s) => (s ? { ...s } : s))
+          }}
         />
       )}
 

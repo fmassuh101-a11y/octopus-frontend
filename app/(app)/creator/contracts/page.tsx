@@ -11,17 +11,27 @@ import { Music2, Instagram, Youtube, Clapperboard, Smartphone, BarChart3, Clipbo
 
 const TIKTOK_CLIENT_KEY = process.env.NEXT_PUBLIC_TIKTOK_CLIENT_KEY || 'aw5n2omdzbjx4xf8'
 
-// Un solo toque: del mensaje "verifica tus cuentas" directo a la pantalla de
-// TikTok pidiendo permiso — nada de mandar a la persona a buscar un botón
-// en otra pantalla. Al volver, la conexión se auto-verifica sola (ver
-// app/auth/tiktok/callback/page.tsx) contra cualquier contrato pendiente.
-function connectTikTokNow() {
+// Ventanita chica, no navega la pantalla principal a ningún lado — TikTok
+// sí te pide iniciar sesión ahí (eso no lo evita nadie), pero esta pantalla
+// se queda quieta y solo escucha cuándo termina. Al volver, la conexión se
+// auto-verifica sola (ver app/page.tsx) contra cualquier contrato pendiente.
+function connectTikTokNow(onDone?: (ok: boolean) => void) {
   const state = Math.random().toString(36).substring(2, 15)
   localStorage.setItem('tiktok_csrf_state', state)
   localStorage.setItem('tiktok_oauth_state', state)
   const redirectUri = encodeURIComponent('https://octopus-frontend-tau.vercel.app/')
   const scope = encodeURIComponent('user.info.basic,user.info.profile,user.info.stats,video.list')
-  window.location.href = `https://www.tiktok.com/v2/auth/authorize/?client_key=${TIKTOK_CLIENT_KEY}&response_type=code&scope=${scope}&redirect_uri=${redirectUri}&state=${state}&disable_auto_auth=1`
+  const url = `https://www.tiktok.com/v2/auth/authorize/?client_key=${TIKTOK_CLIENT_KEY}&response_type=code&scope=${scope}&redirect_uri=${redirectUri}&state=${state}&disable_auto_auth=1`
+  const popup = window.open(url, 'tiktok_oauth', 'width=500,height=720')
+  const onMessage = (e: MessageEvent) => {
+    if (e.data?.type !== 'tiktok-oauth-result') return
+    window.removeEventListener('message', onMessage)
+    onDone?.(!!e.data.ok)
+  }
+  window.addEventListener('message', onMessage)
+  const checkClosed = setInterval(() => {
+    if (popup?.closed) { clearInterval(checkClosed); window.removeEventListener('message', onMessage) }
+  }, 800)
 }
 
 interface Contract {
@@ -577,7 +587,13 @@ export default function CreatorContractsPage() {
                     <div className="mt-3 rounded-xl px-3 py-2.5 bg-cyan-500/10 border border-cyan-500/30">
                       <p className="text-sm text-cyan-700 mb-2">La empresa ya aprobó tus handles.</p>
                       <button
-                        onClick={(e) => { e.stopPropagation(); connectTikTokNow() }}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          connectTikTokNow(() => {
+                            const token = localStorage.getItem('sb-access-token')
+                            if (token && user?.id) loadContracts(user.id, token)
+                          })
+                        }}
                         className="px-3 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-white rounded-lg text-xs font-medium transition-colors"
                       >
                         Verifica tus cuentas
