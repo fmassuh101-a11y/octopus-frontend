@@ -11,11 +11,31 @@ import AlertBridge from '../components/oct/AlertBridge'
 
 const inter = Inter({ subsets: ['latin'], display: 'swap' })
 
+// metadataBase + Open Graph/Twitter: sin esto Google no tiene una URL
+// canónica clara para asociar al nombre "Octapi", y cualquier link
+// compartido (WhatsApp, Twitter, etc.) se veía como texto pelado sin
+// preview. También ayuda a que la marca "Octapi" quede asociada a este
+// dominio específico en vez de ambigua.
 export const metadata: Metadata = {
+  metadataBase: new URL('https://octapiapp.com'),
   title: 'Octapi - Marketplace Digital Global',
   description: 'Conecta creadores con marcas para tareas de UGC, servicios digitales y más',
-  keywords: 'UGC, marketplace, freelance, contenido digital, servicios digitales',
+  keywords: 'UGC, marketplace, freelance, contenido digital, servicios digitales, Octapi',
   appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: 'Octapi' },
+  openGraph: {
+    title: 'Octapi - Marketplace Digital Global',
+    description: 'Conecta creadores con marcas para tareas de UGC, servicios digitales y más',
+    url: 'https://octapiapp.com',
+    siteName: 'Octapi',
+    locale: 'es_CL',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Octapi - Marketplace Digital Global',
+    description: 'Conecta creadores con marcas para tareas de UGC, servicios digitales y más',
+  },
+  robots: { index: true, follow: true },
 }
 
 // Viewport nativo: cubre el notch (safe-area), evita el zoom al enfocar inputs
