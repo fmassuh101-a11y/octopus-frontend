@@ -2,12 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth/apiAuth";
 import { shieldAsync } from "@/lib/shield";
 import { SUPABASE_URL } from "@/lib/config/supabase";
-import { buildWelcomeHtml, welcomeSubject, sendResendBatch } from "@/lib/waitlistEmail";
+import { sendWelcomeEmail } from "@/lib/waitlistEmail";
 
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 const ADMIN_EMAILS = ["fmassuh133@gmail.com"];
 
 const H = { Authorization: `Bearer ${SERVICE_KEY}`, apikey: SERVICE_KEY, "Content-Type": "application/json" };
+
+// Vercel corta las funciones a los 10s por default — con hasta 100
+// destinatarios por tanda esto se pasa de sobra, así que se pide el máximo.
+export const maxDuration = 60;
 
 /**
  * POST /api/waitlist/welcome-backfill — manda el email de bienvenida
@@ -16,6 +20,13 @@ const H = { Authorization: `Bearer ${SERVICE_KEY}`, apikey: SERVICE_KEY, "Conten
  * empresa). Se puede apretar el botón varias veces sin duplicar: cada envío
  * exitoso marca welcome_sent_at, así que la próxima vez solo se manda a
  * quien falte — necesario porque el plan gratis de Resend tope 100/día.
+ *
+ * Uno por uno con /emails (NO con /emails/batch): se probó en vivo que el
+ * endpoint de batch devuelve "API key is invalid" con la MISMA key que sí
+ * manda bien uno por uno (confirmado: los emails automáticos de bienvenida
+ * llegan perfecto, todos con status "Delivered" en Resend) — así que se usa
+ * el camino que ya se demostró que funciona en vez de perder tiempo
+ * averiguando por qué el batch de Resend rechaza esta cuenta.
  */
 export async function POST(request: NextRequest) {
   const blocked = await shieldAsync(request as unknown as Request, { limit: 3 });
@@ -64,28 +75,38 @@ export async function POST(request: NextRequest) {
   const toSend = limit ? recipients.slice(0, limit) : recipients;
 
   let sent = 0;
+  let consecutiveFails = 0;
   const errors: string[] = [];
-  for (let i = 0; i < toSend.length; i += 100) {
-    const chunk = toSend.slice(i, i + 100);
-    const batch = chunk.map((r) => ({
-      to: r.email,
-      subject: welcomeSubject(r.role as "creator" | "company"),
-      html: buildWelcomeHtml(r.name, r.role as "creator" | "company", r.id),
-    }));
-    const result = await sendResendBatch(batch);
+  for (const r of toSend) {
+    const result = await sendWelcomeEmail({
+      email: r.email,
+      name: r.name,
+      role: r.role as "creator" | "company",
+      waitlistId: r.id,
+    });
     if (result.ok) {
-      sent += chunk.length;
-      // marca a este lote como enviado para que no se repita la próxima vez
+      consecutiveFails = 0;
+      sent += 1;
+      // marca a ESTA persona como enviada de una — si la función se corta a
+      // mitad de camino (timeout, tope diario) el progreso ya hecho queda
+      // guardado igual, no hay que repetir desde cero.
       if (!missingColumn) {
-        const ids = chunk.map((r) => r.id).join(",");
-        await fetch(`${SUPABASE_URL}/rest/v1/waitlist?id=in.(${ids})`, {
+        await fetch(`${SUPABASE_URL}/rest/v1/waitlist?id=eq.${r.id}`, {
           method: "PATCH",
           headers: H,
           body: JSON.stringify({ welcome_sent_at: new Date().toISOString() }),
         }).catch(() => {});
       }
     } else if (result.error) {
+      consecutiveFails += 1;
       errors.push(result.error);
+      // "rate limit"/"tope diario" = se acabó la cuota del día — cortar acá
+      // evita seguir gastando tiempo en pedidos que van a fallar todos
+      // igual hasta que se reinicie el tope mañana. 5 fallos seguidos por
+      // CUALQUIER otro motivo (ej. una key mal puesta) corta igual — no
+      // tiene sentido intentar los 100+ restantes si los primeros 5 ya
+      // fallaron todos por lo mismo.
+      if (/rate.?limit|limit.*reach|too many/i.test(result.error) || consecutiveFails >= 5) break;
     }
   }
 

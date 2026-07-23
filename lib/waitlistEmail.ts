@@ -70,7 +70,7 @@ async function fetchWithTimeout(url: string, init: RequestInit, ms = 8000): Prom
 // Devuelve el error real de Resend (no solo true/false) para poder mostrarlo
 // en el panel admin — antes quedaba solo en los logs de Vercel, que Felipe
 // no puede revisar.
-async function sendResendEmail(to: string, subject: string, html: string): Promise<{ ok: boolean; error?: string }> {
+export async function sendResendEmail(to: string, subject: string, html: string): Promise<{ ok: boolean; error?: string }> {
   if (!RESEND_ACCOUNTS.length) return { ok: false, error: "Falta RESEND_API_KEY en Vercel" };
   let lastError = "";
   for (const account of RESEND_ACCOUNTS) {
@@ -86,29 +86,6 @@ async function sendResendEmail(to: string, subject: string, html: string): Promi
     } catch (e: any) {
       lastError = e?.name === "AbortError" ? "Resend no respondió a tiempo (timeout)" : e?.message?.slice(0, 200) || "error desconocido";
       console.error("[ResendEmail] excepción:", lastError);
-    }
-  }
-  return { ok: false, error: lastError };
-}
-
-// Igual que sendResendEmail pero para el endpoint de batch (hasta 100 por
-// request) que usan el broadcast y la bienvenida retroactiva. Si la
-// primera cuenta falla, reintenta el batch completo con la siguiente.
-export async function sendResendBatch(emails: Array<{ to: string; subject: string; html: string }>): Promise<{ ok: boolean; error?: string }> {
-  if (!emails.length) return { ok: true };
-  let lastError = "Falta RESEND_API_KEY en Vercel";
-  for (const account of RESEND_ACCOUNTS) {
-    const payload = emails.map((e) => ({ from: account.from, to: [e.to], subject: e.subject, html: e.html }));
-    try {
-      const res = await fetchWithTimeout("https://api.resend.com/emails/batch", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${account.key}`, "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (res.ok) return { ok: true };
-      lastError = (await res.text()).slice(0, 120);
-    } catch (e: any) {
-      lastError = e?.message?.slice(0, 80) || "error desconocido";
     }
   }
   return { ok: false, error: lastError };

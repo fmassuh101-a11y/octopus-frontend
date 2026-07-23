@@ -2,10 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth/apiAuth";
 import { shieldAsync } from "@/lib/shield";
 import { SUPABASE_URL } from "@/lib/config/supabase";
-import { buildBroadcastHtml, sendResendBatch } from "@/lib/waitlistEmail";
+import { buildBroadcastHtml, sendResendEmail } from "@/lib/waitlistEmail";
 
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 const ADMIN_EMAILS = ["fmassuh133@gmail.com"];
+
+// Vercel corta las funciones a los 10s por default — con hasta 2000
+// destinatarios esto se pasa de sobra, así que se pide el máximo.
+export const maxDuration = 60;
 
 /**
  * POST /api/waitlist/broadcast { subject, message, role? } — envía un email a
@@ -41,29 +45,27 @@ export async function POST(request: NextRequest) {
   // Cada persona recibe SU PROPIO link de invitación insertado en el email
   // (antes era el mismo mensaje genérico para todos, sin link personalizado).
 
-  // Resend batch: hasta 100 por request
+  // Uno por uno (NO por /emails/batch): el batch de Resend devuelve "API
+  // key is invalid" con esta cuenta aunque la key sea la correcta — se
+  // confirmó en vivo que el envío individual (mismo que usa la bienvenida
+  // automática) sí funciona, así que se usa ese camino ya probado.
   let sent = 0;
+  let consecutiveFails = 0;
   const errors: string[] = [];
-  for (let i = 0; i < recipients.length; i += 100) {
-    const chunk = recipients.slice(i, i + 100);
-    const batch = chunk.map((r) => ({
-      to: r.email,
-      subject,
-      html: buildBroadcastHtml(message, r.id),
-    }));
-    const result = await sendResendBatch(batch);
+  for (const r of recipients) {
+    const result = await sendResendEmail(r.email, subject, buildBroadcastHtml(message, r.id));
     if (result.ok) {
-      sent += chunk.length;
-      // marca a quién le llegó ESTE envío — así el panel puede mostrar
-      // un check de "enviado" en vez de dejar la duda de a quién le llegó
-      const ids = chunk.map((r) => r.id).join(",");
-      await fetch(`${SUPABASE_URL}/rest/v1/waitlist?id=in.(${ids})`, {
+      consecutiveFails = 0;
+      sent += 1;
+      await fetch(`${SUPABASE_URL}/rest/v1/waitlist?id=eq.${r.id}`, {
         method: "PATCH",
         headers: { ...H, "Content-Type": "application/json" },
         body: JSON.stringify({ last_broadcast_sent_at: new Date().toISOString() }),
       }).catch(() => {});
     } else if (result.error) {
+      consecutiveFails += 1;
       errors.push(result.error);
+      if (/rate.?limit|limit.*reach|too many/i.test(result.error) || consecutiveFails >= 5) break;
     }
   }
 
