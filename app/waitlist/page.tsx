@@ -202,7 +202,7 @@ function WaitlistInner() {
               El marketplace que conecta creadores de contenido con marcas de toda Latinoamérica. Campañas pagas, contratos claros y cobros seguros.
             </p>
             <p className="mt-3 max-w-xl text-sm font-medium text-cyan-300/90 drop-shadow [animation:fadeSlideUp_0.8s_ease_0.65s_both] sm:text-base">
-              No hace falta ser influencer — es para cualquiera que quiera grabar contenido para marcas (UGC)
+              No hace falta ser influencer — es para cualquiera que quiera crear contenido para marcas (UGC)
             </p>
           </div>
 

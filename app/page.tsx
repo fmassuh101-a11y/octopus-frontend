@@ -425,7 +425,7 @@ function HomeInner() {
             clips y colaboraciones con las mejores marcas.
           </p>
           <p className="text-base text-cyan-300/90 mb-12 max-w-2xl mx-auto">
-            No hace falta ser influencer — es para cualquiera que quiera grabar contenido para marcas (UGC)
+            No hace falta ser influencer — es para cualquiera que quiera crear contenido para marcas (UGC)
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
