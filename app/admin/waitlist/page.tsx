@@ -95,7 +95,7 @@ export default function AdminWaitlist() {
             : `Bienvenida enviada a los ${data.sent} inscriptos. Ninguno quedó pendiente.`
         )
       }
-      else toast(data.error || `No se pudo enviar (status ${res.status})`, 'error')
+      else toast(data.error || `No se pudo enviar (status ${res.status}) — respuesta: ${bodyText.slice(0, 200)}`, 'error')
     } catch (e: any) { toast(`No se pudo enviar: ${e?.message || 'error de red'}`, 'error') }
     setBackfilling(false)
     setConfirmBackfill(false)
@@ -120,7 +120,7 @@ export default function AdminWaitlist() {
         return
       }
       if (data.ok) toast(`Prueba enviada a ${testEmail.trim()} — revisa tu bandeja`)
-      else toast(data.error || `No se pudo enviar (status ${res.status})`, 'error')
+      else toast(data.error || `No se pudo enviar (status ${res.status}) — respuesta: ${bodyText.slice(0, 200)}`, 'error')
     } catch (e: any) { toast(`No se pudo enviar: ${e?.message || 'error de red'}`, 'error') }
     setSendingTest(false)
   }
