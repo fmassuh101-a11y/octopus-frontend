@@ -77,7 +77,13 @@ export default function AdminWaitlist() {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(pendingLimit ? { limit: pendingLimit } : {}),
       })
-      const data = await res.json()
+      const bodyText = await res.text()
+      let data: any = {}
+      try { data = JSON.parse(bodyText) } catch {
+        toast(`No se pudo enviar — el servidor respondió algo raro (status ${res.status}): ${bodyText.slice(0, 150)}`, 'error')
+        setBackfilling(false); setConfirmBackfill(false); setPendingLimit(undefined)
+        return
+      }
       if (data.message) toast(data.message)
       else if (data.ok) {
         const wasLimited = !!pendingLimit && data.sent >= pendingLimit
@@ -89,8 +95,8 @@ export default function AdminWaitlist() {
             : `Bienvenida enviada a los ${data.sent} inscriptos. Ninguno quedó pendiente.`
         )
       }
-      else toast(data.error || 'No se pudo enviar', 'error')
-    } catch { toast('No se pudo enviar', 'error') }
+      else toast(data.error || `No se pudo enviar (status ${res.status})`, 'error')
+    } catch (e: any) { toast(`No se pudo enviar: ${e?.message || 'error de red'}`, 'error') }
     setBackfilling(false)
     setConfirmBackfill(false)
     setPendingLimit(undefined)
@@ -106,10 +112,16 @@ export default function AdminWaitlist() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ email: testEmail.trim(), role: testRole }),
       })
-      const data = await res.json()
+      const bodyText = await res.text()
+      let data: any = {}
+      try { data = JSON.parse(bodyText) } catch {
+        toast(`No se pudo enviar — el servidor respondió algo raro (status ${res.status}): ${bodyText.slice(0, 150)}`, 'error')
+        setSendingTest(false)
+        return
+      }
       if (data.ok) toast(`Prueba enviada a ${testEmail.trim()} — revisa tu bandeja`)
-      else toast(data.error || 'No se pudo enviar', 'error')
-    } catch { toast('No se pudo enviar', 'error') }
+      else toast(data.error || `No se pudo enviar (status ${res.status})`, 'error')
+    } catch (e: any) { toast(`No se pudo enviar: ${e?.message || 'error de red'}`, 'error') }
     setSendingTest(false)
   }
 
