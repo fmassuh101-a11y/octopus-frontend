@@ -26,6 +26,7 @@ export default function AdminWaitlist() {
   const [selected, setSelected] = useState<Row | null>(null)
   const [backfilling, setBackfilling] = useState(false)
   const [confirmBackfill, setConfirmBackfill] = useState(false)
+  const [pendingLimit, setPendingLimit] = useState<number | undefined>(undefined)
   const [testEmail, setTestEmail] = useState('')
   const [testRole, setTestRole] = useState<'creator' | 'company'>('creator')
   const [sendingTest, setSendingTest] = useState(false)
@@ -62,20 +63,28 @@ export default function AdminWaitlist() {
     setSending(false)
   }
 
+  const startBackfill = (limit?: number) => {
+    setPendingLimit(limit)
+    setConfirmBackfill(true)
+  }
+
   const sendWelcomeBackfill = async () => {
-    if (!confirmBackfill) { setConfirmBackfill(true); return }
     setBackfilling(true)
     try {
       const token = localStorage.getItem('sb-access-token')
       const res = await fetch('/api/waitlist/welcome-backfill', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(pendingLimit ? { limit: pendingLimit } : {}),
       })
       const data = await res.json()
       if (data.message) toast(data.message)
       else if (data.ok) {
+        const wasLimited = !!pendingLimit && data.sent >= pendingLimit
         toast(
-          data.pending > 0
+          wasLimited
+            ? `Enviado a ${data.sent} (prueba). Quedan ${data.pending} pendientes en total — apretá "Mandar a todos" cuando quieras seguir.`
+            : data.pending > 0
             ? `Enviado a ${data.sent}. Quedan ${data.pending} pendientes (tope diario) — apretá de nuevo mañana.`
             : `Bienvenida enviada a los ${data.sent} inscriptos. Ninguno quedó pendiente.`
         )
@@ -84,6 +93,7 @@ export default function AdminWaitlist() {
     } catch { toast('No se pudo enviar', 'error') }
     setBackfilling(false)
     setConfirmBackfill(false)
+    setPendingLimit(undefined)
   }
 
   const sendTest = async () => {
@@ -182,19 +192,27 @@ export default function AdminWaitlist() {
             Los nuevos registros ya reciben el email de bienvenida automático. Esto manda ese mismo email (creador o empresa, según corresponda) a quien todavía no lo haya recibido. Resend gratis tiene tope de 100/día — si quedan pendientes por eso, apretá el mismo botón mañana: se acuerda a quién ya le mandó y no repite.
           </p>
           {!confirmBackfill ? (
-            <button onClick={sendWelcomeBackfill}
-              className="mt-3 flex items-center gap-2 rounded-2xl bg-cyan-600 px-5 py-3 text-sm font-bold text-white">
-              <Send className="h-4 w-4" /> Mandar bienvenida a los {rows.length} inscriptos
-            </button>
+            <div className="mt-3 flex flex-wrap gap-3">
+              <button onClick={() => startBackfill(50)}
+                className="flex items-center gap-2 rounded-2xl border border-cyan-700 px-5 py-3 text-sm font-bold text-cyan-300">
+                <Send className="h-4 w-4" /> Probar con 50
+              </button>
+              <button onClick={() => startBackfill(undefined)}
+                className="flex items-center gap-2 rounded-2xl bg-cyan-600 px-5 py-3 text-sm font-bold text-white">
+                <Send className="h-4 w-4" /> Mandar bienvenida a todos los pendientes
+              </button>
+            </div>
           ) : (
             <div className="mt-3 flex flex-wrap items-center gap-3">
-              <p className="text-sm font-semibold text-amber-400">¿Seguro? Se manda ahora mismo a los {rows.length}.</p>
+              <p className="text-sm font-semibold text-amber-400">
+                ¿Seguro? Se manda ahora mismo {pendingLimit ? `a los primeros ${pendingLimit} pendientes` : 'a todos los pendientes'}.
+              </p>
               <button onClick={sendWelcomeBackfill} disabled={backfilling}
                 className="flex items-center gap-2 rounded-2xl bg-amber-500 px-4 py-2 text-sm font-bold text-black disabled:opacity-50">
                 {backfilling ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 Sí, mandar ahora
               </button>
-              <button onClick={() => setConfirmBackfill(false)} disabled={backfilling}
+              <button onClick={() => { setConfirmBackfill(false); setPendingLimit(undefined) }} disabled={backfilling}
                 className="rounded-2xl border border-neutral-700 px-4 py-2 text-sm font-bold text-neutral-300">
                 Cancelar
               </button>

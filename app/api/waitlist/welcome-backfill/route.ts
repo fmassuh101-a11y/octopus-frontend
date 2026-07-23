@@ -25,6 +25,12 @@ export async function POST(request: NextRequest) {
   if (!user || !ADMIN_EMAILS.includes((user.email || "").toLowerCase())) {
     return NextResponse.json({ error: "Solo admin" }, { status: 403 });
   }
+
+  // limit opcional — para probar con un lote chico (ej. 50) antes de
+  // mandarle a todos los pendientes de una.
+  const body = await request.json().catch(() => ({}));
+  const limit = Number(body?.limit) > 0 ? Math.floor(Number(body.limit)) : null;
+
   // filtra por welcome_sent_at=is.null; si la columna todavía no existe
   // (falta pegar el SQL), cae a traer todos sin filtrar en vez de romper.
   let rowsRes = await fetch(
@@ -54,10 +60,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true, sent: 0, pending: 0, message: "Ya se le mandó la bienvenida a todos." });
   }
 
+  const totalPending = recipients.length;
+  const toSend = limit ? recipients.slice(0, limit) : recipients;
+
   let sent = 0;
   const errors: string[] = [];
-  for (let i = 0; i < recipients.length; i += 100) {
-    const chunk = recipients.slice(i, i + 100);
+  for (let i = 0; i < toSend.length; i += 100) {
+    const chunk = toSend.slice(i, i + 100);
     const batch = chunk.map((r) => ({
       to: r.email,
       subject: welcomeSubject(r.role as "creator" | "company"),
@@ -80,12 +89,12 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const pending = recipients.length - sent;
+  const pending = totalPending - sent;
   return NextResponse.json({
     ok: sent > 0,
     sent,
     pending,
-    total: recipients.length,
+    total: totalPending,
     errors: errors.slice(0, 3),
     note: missingColumn
       ? "Falta pegar ADD_WELCOME_SENT_AT_2026-07-21.sql en Supabase — por ahora no se puede recordar a quién ya se le mandó, así que si volvés a apretar el botón se reenvía a todos."
