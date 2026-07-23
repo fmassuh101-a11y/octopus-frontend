@@ -1,7 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useEffect, useMemo, useState } from 'react'
 import DeepOcean from '@/components/oct/DeepOcean'
 import { Loader2, Check, Copy, Lock, ChevronRight, Users, ArrowDown, Building2, FileText, ShieldCheck } from 'lucide-react'
 import { countries } from '@/lib/data/countries'
@@ -32,8 +31,17 @@ const EXPERIENCIA_EMPRESA = [
 const EMAIL_RX = /^[^\s@]+@(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/
 
 function WaitlistInner() {
-  const params = useSearchParams()
-  const refId = params.get('ref') || ''
+  // useSearchParams() de next/navigation obliga a envolver la página en
+  // Suspense — y con eso Next.js manda SOLO el fallback en el HTML inicial
+  // (nada de contenido real, ni el texto "Octapi"), quedando invisible para
+  // cualquiera que no ejecute JS — como el rastreador de Google que verifica
+  // la marca de la app OAuth. Leer el query param así (directo del navegador,
+  // sin ese hook) evita el problema de raíz: la página entera sí queda
+  // pre-renderizada con contenido real.
+  const [refId, setRefId] = useState('')
+  useEffect(() => {
+    try { setRefId(new URLSearchParams(window.location.search).get('ref') || '') } catch {}
+  }, [])
 
   const [role, setRole] = useState<'creator' | 'company'>('creator')
   const [name, setName] = useState('')
@@ -432,10 +440,5 @@ function WaitlistInner() {
 }
 
 export default function WaitlistPage() {
-  // useSearchParams necesita Suspense en Next 14
-  return (
-    <Suspense fallback={<div className="min-h-[100dvh] bg-[#03141f]" />}>
-      <WaitlistInner />
-    </Suspense>
-  )
+  return <WaitlistInner />
 }
