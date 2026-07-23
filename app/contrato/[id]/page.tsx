@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { toast } from '@/components/oct/toast'
 import { connectTikTok } from '@/lib/tiktokConnect'
+import { connectYouTube } from '@/lib/youtubeConnect'
 import { Loader2, ChevronLeft, Check, X, Printer } from 'lucide-react'
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -69,14 +70,18 @@ export default function ContratoDocumento() {
     })()
   }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Al volver de conectar TikTok (lib/tiktokConnect.ts navega derecho a
-  // TikTok, sin ventanita) aterriza acá mismo con ?tiktok=... en la URL.
+  // Al volver de conectar TikTok o YouTube (lib/tiktokConnect.ts o
+  // lib/youtubeConnect.ts navegan derecho, sin ventanita) aterriza acá
+  // mismo con ?tiktok=... o ?youtube=... en la URL.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    const result = params.get('tiktok')
+    const tiktokResult = params.get('tiktok')
+    const youtubeResult = params.get('youtube')
+    const result = tiktokResult || youtubeResult
     if (!result) return
+    const platformLabel = tiktokResult ? 'TikTok' : 'YouTube'
     if (result === 'connected') toast('Cuenta conectada — verificando…')
-    else toast(`No se pudo conectar la cuenta (${params.get('tiktokError') || 'error desconocido'})`, 'error')
+    else toast(`No se pudo conectar ${platformLabel} (${params.get('tiktokError') || params.get('youtubeError') || 'error desconocido'})`, 'error')
     window.history.replaceState(null, '', window.location.pathname)
     ;(async () => {
       const token = localStorage.getItem('sb-access-token')
@@ -477,8 +482,10 @@ export default function ContratoDocumento() {
       )}
 
       {/* CREADOR: verificar cuentas — solo aparece una vez que la empresa
-          aprobó los handles. Un solo botón: directo a TikTok pidiendo
-          permiso, se verifica sola al volver (ver app/auth/tiktok/callback). */}
+          aprobó los handles. Un botón por cada plataforma pedida que
+          todavía no está verificada (antes solo mandaba a TikTok sin
+          importar qué plataforma faltaba — ver app/auth/youtube/page.tsx
+          para el equivalente de YouTube). */}
       {isCreator && contract.status !== 'rejected' && handleRequest?.company_approved_at && (
         Array.isArray(handleRequest.handles) && handleRequest.handles.length > 0 && handleRequest.handles.every((h: any) => h.verified) ? (
           <div className="fixed inset-x-0 bottom-0 border-t border-neutral-200 bg-white/95 p-4 backdrop-blur print:hidden">
@@ -490,12 +497,23 @@ export default function ContratoDocumento() {
           <div className="fixed inset-x-0 bottom-0 border-t border-neutral-200 bg-white/95 p-4 backdrop-blur print:hidden">
             <div className="mx-auto w-full max-w-3xl text-center">
               <p className="mb-2 text-sm text-neutral-500">La empresa ya aprobó tus handles.</p>
-              <button
-                onClick={() => connectTikTok({ path: `/contrato/${id}` })}
-                className="mx-auto flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-[#22D3EE] to-[#0891B2] px-6 py-3.5 font-bold text-white shadow-lg shadow-cyan-200"
-              >
-                <Check className="h-4 w-4" /> Verifica tus cuentas
-              </button>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                {Array.from(new Set((handleRequest.handles || []).filter((h: any) => !h.verified).map((h: any) => h.platform))).map((p: any) => (
+                  p === 'tiktok' || p === 'youtube' ? (
+                    <button
+                      key={p}
+                      onClick={() => p === 'tiktok' ? connectTikTok({ path: `/contrato/${id}` }) : connectYouTube({ path: `/contrato/${id}` })}
+                      className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-[#22D3EE] to-[#0891B2] px-6 py-3.5 font-bold text-white shadow-lg shadow-cyan-200"
+                    >
+                      <Check className="h-4 w-4" /> Verifica tu cuenta de {PLATFORM_LABEL[p] || p}
+                    </button>
+                  ) : (
+                    <p key={p} className="rounded-2xl bg-neutral-100 px-4 py-3 text-xs font-semibold text-neutral-400">
+                      {PLATFORM_LABEL[p] || p}: todavía no se puede verificar automáticamente
+                    </p>
+                  )
+                ))}
+              </div>
             </div>
           </div>
         )

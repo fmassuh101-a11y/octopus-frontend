@@ -115,10 +115,10 @@ export default function WhopChat({
   useEffect(() => {
     if (typeof window === 'undefined') return
     const params = new URLSearchParams(window.location.search)
-    if (!params.has('openContract') && !params.has('tiktok')) return
+    if (!params.has('openContract') && !params.has('tiktok') && !params.has('youtube')) return
     params.delete('openContract')
-    // ?tiktok=... se deja: ContractActionModal lo lee para mostrar el toast
-    // del resultado y lo limpia él mismo al montar.
+    // ?tiktok=.../?youtube=... se dejan: ContractActionModal los lee para
+    // mostrar el toast del resultado y los limpia él mismo al montar.
     const qs = params.toString()
     window.history.replaceState(null, '', window.location.pathname + (qs ? `?${qs}` : ''))
   }, [])

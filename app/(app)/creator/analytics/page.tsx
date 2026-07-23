@@ -15,6 +15,7 @@ import {
 } from './components'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { supabase } from '@/lib/supabase'
+import { connectYouTube } from '@/lib/youtubeConnect'
 
 const TIKTOK_CLIENT_KEY = process.env.NEXT_PUBLIC_TIKTOK_CLIENT_KEY || 'aw5n2omdzbjx4xf8'
 
@@ -22,7 +23,9 @@ export default function CreatorAnalyticsPage() {
   const [loading, setLoading] = useState(true)
   const [profile, setProfile] = useState<any>(null)
   const [tiktokAccounts, setTiktokAccounts] = useState<any[]>([])
+  const [youtubeAccounts, setYoutubeAccounts] = useState<any[]>([])
   const [selectedAccount, setSelectedAccount] = useState<string>('all')
+  const [selectedYoutubeAccount, setSelectedYoutubeAccount] = useState<string>('all')
   const [refreshing, setRefreshing] = useState(false)
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriodValue>('all')
   const [selectedVideo, setSelectedVideo] = useState<TikTokVideo | null>(null)
@@ -56,6 +59,7 @@ export default function CreatorAnalyticsPage() {
           const bio = profiles[0].bio ? JSON.parse(profiles[0].bio) : {}
           setProfile({ ...profiles[0], ...bio })
           setTiktokAccounts(bio.tiktokAccounts || [])
+          setYoutubeAccounts(bio.youtubeAccounts || [])
           setLastUpdated(new Date())
         }
       }
@@ -82,6 +86,55 @@ export default function CreatorAnalyticsPage() {
     } catch (error: any) {
       console.error('[TikTok] Error:', error)
       alert('Error: ' + (error?.message || String(error)))
+    }
+  }
+
+  const handleConnectYouTube = () => {
+    connectYouTube({ path: '/creator/analytics' })
+  }
+
+  const handleRemoveYoutubeAccount = async (accountId: string) => {
+    if (!confirm('Seguro que quieres desconectar este canal?')) return
+    try {
+      const token = localStorage.getItem('sb-access-token')
+      const userStr = localStorage.getItem('sb-user')
+      if (!token || !userStr) return
+
+      const user = JSON.parse(userStr)
+      const updatedAccounts = youtubeAccounts.filter(a => a.id !== accountId)
+
+      const bioData = { ...profile }
+      delete bioData.id
+      delete bioData.user_id
+      delete bioData.user_type
+      delete bioData.full_name
+      delete bioData.avatar_url
+      delete bioData.created_at
+      delete bioData.updated_at
+
+      bioData.youtubeAccounts = updatedAccounts
+      bioData.youtubeConnected = updatedAccounts.length > 0
+
+      await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'apikey': SUPABASE_ANON_KEY || '',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({
+          bio: JSON.stringify(bioData),
+          updated_at: new Date().toISOString()
+        })
+      })
+
+      setYoutubeAccounts(updatedAccounts)
+      if (selectedYoutubeAccount === accountId) {
+        setSelectedYoutubeAccount('all')
+      }
+    } catch (err) {
+      console.error('Error removing YouTube account:', err)
     }
   }
 
@@ -185,6 +238,45 @@ export default function CreatorAnalyticsPage() {
   const filteredVideos = getFilteredVideos()
   const allVideos = getAllVideos()
 
+  // Mismo patrón que TikTok, pero separado — el creador ve la analítica de
+  // cada red por separado (lo que da el API de cada una), no mezclada.
+  const getAllYoutubeVideos = (): TikTokVideo[] => {
+    if (selectedYoutubeAccount === 'all') {
+      return youtubeAccounts.flatMap(a => a.recentVideos || [])
+    }
+    const account = youtubeAccounts.find(a => a.id === selectedYoutubeAccount)
+    return account?.recentVideos || []
+  }
+  const getFilteredYoutubeVideos = (): TikTokVideo[] => filterVideosByPeriod(getAllYoutubeVideos(), selectedPeriod)
+  const getYoutubeStats = () => {
+    if (selectedYoutubeAccount === 'all') {
+      return {
+        followers: youtubeAccounts.reduce((sum, a) => sum + (a.followers || 0), 0),
+        videoCount: youtubeAccounts.reduce((sum, a) => sum + (a.videoCount || 0), 0),
+        avgViews: youtubeAccounts.length > 0
+          ? Math.round(youtubeAccounts.reduce((sum, a) => sum + (a.avgViews || 0), 0) / youtubeAccounts.length)
+          : 0,
+        avgLikes: youtubeAccounts.length > 0
+          ? Math.round(youtubeAccounts.reduce((sum, a) => sum + (a.avgLikes || 0), 0) / youtubeAccounts.length)
+          : 0,
+        avgComments: youtubeAccounts.length > 0
+          ? Math.round(youtubeAccounts.reduce((sum, a) => sum + (a.avgComments || 0), 0) / youtubeAccounts.length)
+          : 0,
+        engagementRate: youtubeAccounts.length > 0
+          ? parseFloat((youtubeAccounts.reduce((sum, a) => sum + (a.engagementRate || 0), 0) / youtubeAccounts.length).toFixed(2))
+          : 0,
+        shortsCount: youtubeAccounts.reduce((sum, a) => sum + (a.shortsCount || 0), 0),
+      }
+    }
+    const account = youtubeAccounts.find(a => a.id === selectedYoutubeAccount)
+    return account || { followers: 0, videoCount: 0, avgViews: 0, avgLikes: 0, avgComments: 0, engagementRate: 0, shortsCount: 0 }
+  }
+  const youtubeStats = getYoutubeStats()
+  const filteredYoutubeVideos = getFilteredYoutubeVideos()
+  const allYoutubeVideos = getAllYoutubeVideos()
+  const youtubeShorts = allYoutubeVideos.filter((v: any) => v.isShort)
+  const youtubeRegular = allYoutubeVideos.filter((v: any) => !v.isShort)
+
   const getEngagementColor = (rate: number) => {
     if (rate >= 6) return 'text-green-600 bg-green-100'
     if (rate >= 3) return 'text-yellow-600 bg-yellow-100'
@@ -257,6 +349,15 @@ export default function CreatorAnalyticsPage() {
                   <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/>
                 </svg>
                 {tiktokAccounts.length > 0 ? 'Agregar Cuenta' : 'Conectar TikTok'}
+              </button>
+              <button
+                onClick={handleConnectYouTube}
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M21.582 6.186a2.51 2.51 0 00-1.768-1.768C18.254 4 12 4 12 4s-6.254 0-7.814.418a2.51 2.51 0 00-1.768 1.768C2 7.746 2 12 2 12s0 4.254.418 5.814a2.51 2.51 0 001.768 1.768C5.746 20 12 20 12 20s6.254 0 7.814-.418a2.51 2.51 0 001.768-1.768C22 16.254 22 12 22 12s0-4.254-.418-5.814zM10 15.5v-7l6 3.5-6 3.5z" />
+                </svg>
+                {youtubeAccounts.length > 0 ? 'Agregar Canal' : 'Conectar YouTube'}
               </button>
             </div>
           </div>
@@ -665,6 +766,157 @@ export default function CreatorAnalyticsPage() {
                     </button>
                   ))}
                 </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ============ YOUTUBE — sección separada, misma lógica que TikTok
+            pero con sus propios datos (el creador ve cada red por separado) ============ */}
+        {youtubeAccounts.length > 0 && (
+          <div className="bg-white border border-neutral-100 rounded-2xl p-6 mb-6 text-neutral-900">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-neutral-900 flex items-center gap-2">
+                <svg className="w-5 h-5 text-red-600" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M21.582 6.186a2.51 2.51 0 00-1.768-1.768C18.254 4 12 4 12 4s-6.254 0-7.814.418a2.51 2.51 0 00-1.768 1.768C2 7.746 2 12 2 12s0 4.254.418 5.814a2.51 2.51 0 001.768 1.768C5.746 20 12 20 12 20s6.254 0 7.814-.418a2.51 2.51 0 001.768-1.768C22 16.254 22 12 22 12s0-4.254-.418-5.814zM10 15.5v-7l6 3.5-6 3.5z" />
+                </svg>
+                Canales de YouTube
+              </h3>
+              <select
+                value={selectedYoutubeAccount}
+                onChange={(e) => setSelectedYoutubeAccount(e.target.value)}
+                className="px-3 py-2 border border-neutral-100 rounded-lg text-sm focus:outline-none bg-white focus:ring-2 focus:ring-red-500"
+              >
+                <option value="all">Todos los canales ({youtubeAccounts.length})</option>
+                {youtubeAccounts.map((account) => (
+                  <option key={account.id} value={account.id}>{account.username}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              {youtubeAccounts.map((account) => (
+                <div
+                  key={account.id}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition cursor-pointer ${
+                    selectedYoutubeAccount === account.id || selectedYoutubeAccount === 'all'
+                      ? 'bg-[#F7FAFD] border-red-500'
+                      : 'bg-[#F7FAFD] border-neutral-100 hover:border-neutral-700'
+                  }`}
+                  onClick={() => setSelectedYoutubeAccount(account.id)}
+                >
+                  {account.avatarUrl ? (
+                    <img src={account.avatarUrl} alt={account.username} className="w-10 h-10 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                      {account.username?.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div>
+                    <p className="font-medium text-sm">{account.username}</p>
+                    <p className={`text-xs ${selectedYoutubeAccount === account.id || selectedYoutubeAccount === 'all' ? 'text-neutral-900/70' : 'text-neutral-500'}`}>
+                      {formatNumber(account.followers)} suscriptores
+                    </p>
+                  </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleRemoveYoutubeAccount(account.id); }}
+                    className="ml-2 p-1 rounded-full hover:bg-black/10 transition text-neutral-500"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {youtubeAccounts.length === 0 && (
+          <div className="bg-gradient-to-br from-red-950 via-red-900 to-neutral-900 rounded-3xl p-10 mb-6 text-white text-center relative overflow-hidden">
+            <div className="relative">
+              <div className="w-24 h-24 bg-white/10 rounded-3xl flex items-center justify-center mx-auto mb-6 backdrop-blur-sm">
+                <svg className="w-12 h-12" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M21.582 6.186a2.51 2.51 0 00-1.768-1.768C18.254 4 12 4 12 4s-6.254 0-7.814.418a2.51 2.51 0 00-1.768 1.768C2 7.746 2 12 2 12s0 4.254.418 5.814a2.51 2.51 0 001.768 1.768C5.746 20 12 20 12 20s6.254 0 7.814-.418a2.51 2.51 0 001.768-1.768C22 16.254 22 12 22 12s0-4.254-.418-5.814zM10 15.5v-7l6 3.5-6 3.5z" />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold mb-3">Conecta tu YouTube</h3>
+              <p className="text-white/70 mb-8 max-w-md mx-auto">
+                Videos normales y Shorts, con las mismas analíticas profesionales que tienes para TikTok.
+              </p>
+              <button
+                onClick={handleConnectYouTube}
+                className="px-8 py-4 bg-white text-neutral-900 rounded-2xl font-semibold hover:bg-neutral-100 transition inline-flex items-center gap-2"
+              >
+                <svg className="w-5 h-5 text-red-600" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M21.582 6.186a2.51 2.51 0 00-1.768-1.768C18.254 4 12 4 12 4s-6.254 0-7.814.418a2.51 2.51 0 00-1.768 1.768C2 7.746 2 12 2 12s0 4.254.418 5.814a2.51 2.51 0 001.768 1.768C5.746 20 12 20 12 20s6.254 0 7.814-.418a2.51 2.51 0 001.768-1.768C22 16.254 22 12 22 12s0-4.254-.418-5.814zM10 15.5v-7l6 3.5-6 3.5z" />
+                </svg>
+                Conectar YouTube
+              </button>
+            </div>
+          </div>
+        )}
+
+        {youtubeAccounts.length > 0 && !profile?.is_pro && (
+          <div className="bg-gradient-to-br from-black via-gray-900 to-gray-800 rounded-3xl p-10 mb-6 text-center relative overflow-hidden">
+            <div className="relative">
+              <div className="w-24 h-24 bg-white/10 rounded-3xl flex items-center justify-center mx-auto mb-6 backdrop-blur-sm">
+                <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-3">Tu canal ya está conectado</h3>
+              <p className="text-white/70 mb-8 max-w-md mx-auto">
+                Los números, videos y Shorts de tu canal son parte de Octapi Pro. Tu canal sigue conectado y verificado para tus contratos igual.
+              </p>
+              <Link
+                href="/creator/pro"
+                className="inline-block px-8 py-4 bg-white text-neutral-900 rounded-2xl font-semibold hover:bg-neutral-100 transition"
+              >
+                Conocer Octapi Pro
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {youtubeAccounts.length > 0 && profile?.is_pro && (
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-white border border-neutral-100 rounded-2xl p-5 text-neutral-900">
+                <p className="text-3xl font-bold text-neutral-900">{formatNumber(youtubeStats.followers)}</p>
+                <p className="text-sm text-neutral-500 mt-1">Suscriptores</p>
+              </div>
+              <div className="bg-white border border-neutral-100 rounded-2xl p-5 text-neutral-900">
+                <p className="text-3xl font-bold text-neutral-900">{formatNumber(youtubeRegular.length)}</p>
+                <p className="text-sm text-neutral-500 mt-1">Videos normales</p>
+              </div>
+              <div className="bg-white border border-neutral-100 rounded-2xl p-5 text-neutral-900">
+                <p className="text-3xl font-bold text-neutral-900">{formatNumber(youtubeShorts.length)}</p>
+                <p className="text-sm text-neutral-500 mt-1">Shorts</p>
+              </div>
+              <div className="bg-white border border-neutral-100 rounded-2xl p-5 text-neutral-900">
+                <p className="text-3xl font-bold text-neutral-900">{youtubeStats.engagementRate}%</p>
+                <p className="text-sm text-neutral-500 mt-1">Engagement Rate</p>
+              </div>
+            </div>
+
+            {allYoutubeVideos.length > 0 && (
+              <div className="mb-6">
+                <CampaignAnalyzer videos={allYoutubeVideos} onVideoClick={setSelectedVideo} />
+              </div>
+            )}
+            {filteredYoutubeVideos.length > 0 && (
+              <div className="mb-6">
+                <PerformanceChart videos={filteredYoutubeVideos} />
+              </div>
+            )}
+            {filteredYoutubeVideos.length > 0 && (
+              <div className="mb-6">
+                <VideoRankingSection videos={filteredYoutubeVideos} onVideoClick={setSelectedVideo} />
+              </div>
+            )}
+            {allYoutubeVideos.length > 0 && (
+              <div className="mb-6">
+                <PublishingInsights videos={allYoutubeVideos} />
               </div>
             )}
           </>

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { toast } from '@/components/oct/toast'
 import { connectTikTok } from '@/lib/tiktokConnect'
+import { connectYouTube } from '@/lib/youtubeConnect'
 import { Loader2, X, Check, Link2, Eye, Heart } from 'lucide-react'
 
 // Ventana de acción rápida para un contrato — se abre ENCIMA de donde estés
@@ -30,16 +31,22 @@ export default function ContractActionModal({ contractId, onClose }: { contractI
   const [videoUrl, setVideoUrl] = useState('')
   const [sharing, setSharing] = useState(false)
 
-  // Al volver de TikTok, WhopChat.tsx reabre este modal con ?tiktok=...
-  // en la URL (ver lib/tiktokConnect.ts) — acá se muestra el resultado.
+  // Al volver de TikTok o YouTube, WhopChat.tsx reabre este modal con
+  // ?tiktok=... o ?youtube=... en la URL (ver lib/tiktokConnect.ts y
+  // lib/youtubeConnect.ts) — acá se muestra el resultado.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    const result = params.get('tiktok')
+    const tiktokResult = params.get('tiktok')
+    const youtubeResult = params.get('youtube')
+    const result = tiktokResult || youtubeResult
     if (!result) return
+    const platformLabel = tiktokResult ? 'TikTok' : 'YouTube'
     if (result === 'connected') toast('Cuenta conectada — verificando…')
-    else toast(`No se pudo conectar la cuenta (${params.get('tiktokError') || 'error desconocido'})`, 'error')
+    else toast(`No se pudo conectar ${platformLabel} (${params.get('tiktokError') || params.get('youtubeError') || 'error desconocido'})`, 'error')
     params.delete('tiktok')
     params.delete('tiktokError')
+    params.delete('youtube')
+    params.delete('youtubeError')
     params.delete('openContract')
     const qs = params.toString()
     window.history.replaceState(null, '', window.location.pathname + (qs ? `?${qs}` : ''))
@@ -169,11 +176,16 @@ export default function ContractActionModal({ contractId, onClose }: { contractI
     setBusy(false)
   }
 
-  // Navega derecho a TikTok (sin ventanita — no era confiable en celular) y
-  // vuelve a este MISMO contrato apenas termine (ver lib/tiktokConnect.ts +
-  // el useEffect de abajo que lee ?openContract=/&tiktok= al volver).
-  const verify = () => {
-    connectTikTok({ path: window.location.pathname, contractId })
+  // Navega derecho a la plataforma que corresponda (sin ventanita — no era
+  // confiable en celular) y vuelve a este MISMO contrato apenas termine (ver
+  // lib/tiktokConnect.ts, lib/youtubeConnect.ts + el useEffect de abajo que
+  // lee ?openContract=/&tiktok=/&youtube= al volver). Un botón por cada
+  // plataforma que el contrato pide y todavía no está verificada — antes
+  // esto solo mandaba a TikTok sin importar qué plataforma faltaba.
+  const unverifiedPlatforms = Array.from(new Set((handleRequest?.handles || []).filter((h: any) => !h.verified).map((h: any) => h.platform))) as string[]
+  const verifyPlatform = (platform: string) => {
+    if (platform === 'tiktok') connectTikTok({ path: window.location.pathname, contractId })
+    else if (platform === 'youtube') connectYouTube({ path: window.location.pathname, contractId })
   }
 
   // Manda el link a TikTok mismo (con el token de la cuenta ya conectada)
@@ -280,9 +292,19 @@ export default function ContractActionModal({ contractId, onClose }: { contractI
             {allVerified ? (
               <p className="flex items-center justify-center gap-2 rounded-2xl bg-emerald-50 py-3.5 font-bold text-emerald-600"><Check className="h-4 w-4" /> Tus cuentas están verificadas</p>
             ) : (
-              <button onClick={verify} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-[#22D3EE] to-[#0891B2] py-3.5 font-bold text-white">
-                <Check className="h-4 w-4" /> Verifica tus cuentas
-              </button>
+              <div className="space-y-2">
+                {unverifiedPlatforms.map((p) => (
+                  p === 'tiktok' || p === 'youtube' ? (
+                    <button key={p} onClick={() => verifyPlatform(p)} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-[#22D3EE] to-[#0891B2] py-3.5 font-bold text-white">
+                      <Check className="h-4 w-4" /> Verifica tu cuenta de {PLATFORM_LABEL[p] || p}
+                    </button>
+                  ) : (
+                    <p key={p} className="rounded-2xl bg-neutral-50 py-3 text-center text-xs font-semibold text-neutral-400">
+                      {PLATFORM_LABEL[p] || p}: todavía no se puede verificar automáticamente
+                    </p>
+                  )
+                ))}
+              </div>
             )}
           </div>
         )}

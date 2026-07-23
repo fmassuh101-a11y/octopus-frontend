@@ -11,15 +11,23 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config/supabase'
 // fallido limpiaba la sesión activa — la persona quedaba deslogueada de la
 // nada apenas volvía de TikTok. Se saca el code/state de la URL ACÁ,
 // ANTES de crear el cliente (así el detector nunca llega a verlo), y se
-// guarda aparte para que app/page.tsx (el único que maneja el regreso de
-// TikTok) lo pueda seguir leyendo.
-if (typeof window !== 'undefined' && window.location.pathname === '/') {
-  const params = new URLSearchParams(window.location.search)
-  if (params.has('code') || params.has('error')) {
-    try { sessionStorage.setItem('oct_tiktok_raw_search', window.location.search) } catch {}
-    const clean = new URL(window.location.href)
-    clean.search = ''
-    window.history.replaceState(null, '', clean.toString())
+// guarda aparte para que quien maneja cada regreso lo pueda seguir
+// leyendo: app/page.tsx para TikTok (root), app/auth/youtube/page.tsx para
+// YouTube (ruta propia, para no compartir la raíz con TikTok ni con
+// /auth/callback que sí es el login real de Supabase).
+if (typeof window !== 'undefined') {
+  const path = window.location.pathname
+  const isTikTokReturn = path === '/'
+  const isYouTubeReturn = path === '/auth/youtube'
+  if (isTikTokReturn || isYouTubeReturn) {
+    const params = new URLSearchParams(window.location.search)
+    if (params.has('code') || params.has('error')) {
+      const key = isYouTubeReturn ? 'oct_youtube_raw_search' : 'oct_tiktok_raw_search'
+      try { sessionStorage.setItem(key, window.location.search) } catch {}
+      const clean = new URL(window.location.href)
+      clean.search = ''
+      window.history.replaceState(null, '', clean.toString())
+    }
   }
 }
 
