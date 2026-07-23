@@ -74,6 +74,8 @@ export function middleware(req: NextRequest) {
       path === '/favicon.ico' ||
       path === '/robots.txt' ||
       path === '/sitemap.xml' ||
+      path === '/privacy' || // Google/Meta la piden pública para verificar apps OAuth
+      path === '/terms' ||
       isTikTokCallback
     const hasPass = req.cookies.get(WAITLIST_COOKIE)?.value === waitlistSecret()
     if (!isAllowed && !hasPass) {
