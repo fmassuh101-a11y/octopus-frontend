@@ -146,6 +146,7 @@ export default function SelectTypePage() {
                 <div className="flex-1">
                   <h3 className="font-bold text-white">Soy Creador</h3>
                   <p className="text-sm text-white/60">Quiero crear contenido y trabajar con marcas</p>
+                  <p className="text-xs text-emerald-400/90 mt-1">No hace falta ser influencer — es para cualquiera que graba contenido (UGC)</p>
                 </div>
                 {selectedType === 'creator' && (
                   <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center">

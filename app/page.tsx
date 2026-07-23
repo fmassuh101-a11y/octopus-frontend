@@ -420,9 +420,12 @@ function HomeInner() {
             </span>
           </h1>
 
-          <p className="text-xl text-white/60 mb-12 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-xl text-white/60 mb-4 max-w-2xl mx-auto leading-relaxed">
             Unete a miles de creadores que ya estan ganando dinero creando contenido UGC,
             clips y colaboraciones con las mejores marcas.
+          </p>
+          <p className="inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-4 py-1.5 mb-12 text-sm font-semibold text-cyan-200">
+            No hace falta ser influencer — es para cualquiera que graba contenido real (UGC)
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
