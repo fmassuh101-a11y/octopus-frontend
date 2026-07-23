@@ -201,8 +201,8 @@ function WaitlistInner() {
             <p className="mt-5 max-w-xl text-base leading-relaxed text-white/80 drop-shadow [animation:fadeSlideUp_0.8s_ease_0.6s_both] sm:text-lg">
               El marketplace que conecta creadores de contenido con marcas de toda Latinoamérica. Campañas pagas, contratos claros y cobros seguros.
             </p>
-            <p className="mt-4 inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-4 py-1.5 text-xs font-semibold text-cyan-200 drop-shadow [animation:fadeSlideUp_0.8s_ease_0.65s_both] sm:text-sm">
-              No hace falta ser influencer — es para cualquiera que graba contenido real (UGC)
+            <p className="mt-3 max-w-xl text-sm font-medium text-cyan-300/90 drop-shadow [animation:fadeSlideUp_0.8s_ease_0.65s_both] sm:text-base">
+              No hace falta ser influencer — es para cualquiera que quiera grabar contenido para marcas (UGC)
             </p>
           </div>
 
