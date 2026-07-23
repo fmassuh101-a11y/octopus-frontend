@@ -44,8 +44,11 @@ export async function POST(request: NextRequest) {
 
   // filtra por welcome_sent_at=is.null; si la columna todavía no existe
   // (falta pegar el SQL), cae a traer todos sin filtrar en vez de romper.
+  // order=created_at.asc — sin esto Postgres devuelve en el orden que le
+  // pinta, no por antigüedad. Con "Probar con 50" hace falta que sea
+  // predecible: los que se anotaron primero, primero.
   let rowsRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/waitlist?welcome_sent_at=is.null&select=id,email,name,company_name,role`,
+    `${SUPABASE_URL}/rest/v1/waitlist?welcome_sent_at=is.null&select=id,email,name,company_name,role&order=created_at.asc`,
     { headers: H }
   );
   let missingColumn = false;
@@ -53,7 +56,7 @@ export async function POST(request: NextRequest) {
     const errText = await rowsRes.text();
     if (/column .* does not exist/i.test(errText) || /welcome_sent_at/.test(errText)) {
       missingColumn = true;
-      rowsRes = await fetch(`${SUPABASE_URL}/rest/v1/waitlist?select=id,email,name,company_name,role`, { headers: H });
+      rowsRes = await fetch(`${SUPABASE_URL}/rest/v1/waitlist?select=id,email,name,company_name,role&order=created_at.asc`, { headers: H });
     }
   }
   const rows: any[] = rowsRes.ok ? await rowsRes.json() : [];
