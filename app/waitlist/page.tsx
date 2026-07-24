@@ -178,7 +178,7 @@ function WaitlistInner() {
         {/* nav — "Empresas" visible de entrada, arriba de todo (antes era
             un link chico al final del hero, muy escondido) */}
         <div className="relative z-10 flex items-center justify-between px-6 py-5 md:px-12">
-          <p className="text-lg font-semibold tracking-tight sm:text-xl">Octapi</p>
+          <p className="text-xl font-black tracking-tight sm:text-2xl">Octapi</p>
           <div className="flex items-center gap-2">
             <button
               onClick={scrollToCompanies}
@@ -199,7 +199,7 @@ function WaitlistInner() {
         <div className="relative z-10 flex h-[calc(100dvh-80px)] flex-col px-6 pt-6 md:px-12 md:pt-10">
           <div className="max-w-4xl">
             <p className="mb-4 text-sm font-medium text-white/90 drop-shadow [animation:fadeSlideUp_0.8s_ease_0.2s_both]">
-              Lista de espera abierta — Latinoamérica
+              Octapi — lista de espera abierta en Latinoamérica
             </p>
             <h1 className="text-5xl font-semibold leading-[1.05] tracking-tight drop-shadow-lg [animation:fadeSlideUp_0.8s_ease_0.4s_both] sm:text-7xl lg:text-8xl">
               Creadores
