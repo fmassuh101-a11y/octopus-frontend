@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import AcceptAndMessageModal from '@/components/messaging/AcceptAndMessageModal'
 import CreateContractModal from '@/components/contracts/CreateContractModal'
+import Avatar from '@/components/oct/Avatar'
 import { MessageTemplate } from '@/lib/utils/messageTemplates'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { SocialRow } from '@/components/oct/Socials'
@@ -172,17 +173,11 @@ const ApplicantCard = ({ app, updatingId, onViewProfile, onToggleBookmark, onSen
       {/* Profile Section - Clickable */}
       <button onClick={() => onViewProfile(app)} className="w-full text-left mb-4">
         <div className="flex items-center gap-3">
-          {tiktok?.avatarUrl || creator?.avatar_url ? (
-            <img
-              src={tiktok?.avatarUrl || creator?.avatar_url}
-              alt={getCreatorName(creator)}
-              className="w-12 h-12 rounded-full object-cover"
-            />
-          ) : (
-            <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-500 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-lg">{getCreatorName(creator).charAt(0).toUpperCase()}</span>
-            </div>
-          )}
+          <Avatar
+            src={tiktok?.avatarUrl || creator?.avatar_url}
+            name={getCreatorName(creator)}
+            size={48}
+          />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <h3 className="font-semibold text-white truncate">{getCreatorName(creator)}</h3>
@@ -757,19 +752,14 @@ export default function ApplicantsPage() {
             <div className="p-6">
               {/* Profile Header */}
               <div className="text-center mb-6">
-                {selectedCreator.creator?.tiktokAccounts?.[0]?.avatarUrl || selectedCreator.creator?.avatar_url ? (
-                  <img
+                <div className="mx-auto mb-4 w-fit">
+                  <Avatar
                     src={selectedCreator.creator?.tiktokAccounts?.[0]?.avatarUrl || selectedCreator.creator?.avatar_url}
-                    alt={getCreatorName(selectedCreator.creator)}
-                    className="w-24 h-24 rounded-full object-cover mx-auto mb-4 border-4 border-emerald-500/20"
+                    name={getCreatorName(selectedCreator.creator)}
+                    size={96}
+                    className="border-4 border-emerald-500/20"
                   />
-                ) : (
-                  <div className="w-24 h-24 bg-gradient-to-br from-emerald-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span className="text-white font-bold text-3xl">
-                      {getCreatorName(selectedCreator.creator).charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                )}
+                </div>
                 <h3 className="text-xl font-bold text-white">{getCreatorName(selectedCreator.creator)}</h3>
                 {selectedCreator.creator?.city && selectedCreator.creator?.country && (
                   <p className="text-neutral-500">{selectedCreator.creator.city}, {selectedCreator.creator.country}</p>

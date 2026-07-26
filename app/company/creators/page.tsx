@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 import { ClipboardList, Home, MessageCircle, Smartphone, Users, Wallet } from 'lucide-react'
 import { readCache, writeCache } from '@/lib/useCachedFetch'
+import Avatar from '@/components/oct/Avatar'
 
 interface Creator {
   id: string
@@ -317,10 +318,11 @@ export default function CreatorsPage() {
                 className="block bg-neutral-900 rounded-xl p-4 border border-neutral-800 hover:border-neutral-700 transition-all hover:bg-neutral-800/50 text-white placeholder-neutral-500"
               >
                 <div className="flex items-center gap-4">
-                  <img
+                  <Avatar
                     src={creator.avatar_url}
-                    alt={creator.full_name}
-                    className="w-14 h-14 rounded-full object-cover border-2 border-neutral-800"
+                    name={creator.full_name}
+                    size={56}
+                    className="border-2 border-neutral-800"
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
