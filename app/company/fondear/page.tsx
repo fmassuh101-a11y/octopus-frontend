@@ -46,6 +46,17 @@ export default function FondearPage() {
         body: JSON.stringify({ amount }),
       })
       const data = await res.json()
+
+      // Con tarjeta ya guardada el servidor cobra por Topup (sin comisión) y
+      // devuelve el pago YA hecho — no hay checkout que mostrar. Sin este
+      // caso, un cobro exitoso caía al else y decía "No se pudo crear el
+      // pago" aunque la plata ya estaba acreditada.
+      if (data.ok && data.method === 'topup' && data.paid) {
+        doneRef.current = true
+        router.push(`/company/fondear/exito?monto=${encodeURIComponent(String(data.base || amount))}`)
+        return
+      }
+
       if (data.ok && data.planId) {
         setCheckout(data)
         setStep('pay')
