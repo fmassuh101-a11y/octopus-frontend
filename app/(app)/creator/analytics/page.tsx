@@ -464,10 +464,12 @@ export default function CreatorAnalyticsPage() {
           </div>
         )}
 
-        {/* Analytics Pro — conectar la cuenta es gratis (hace falta para
-            verificar contratos), pero VER los números/recomendaciones es
-            solo para creadores Pro. */}
-        {tiktokAccounts.length > 0 && !profile?.is_pro && (
+        {/* Candado Pro DESACTIVADO a propósito (26 jul 2026) para poder
+            mostrar la app sin fricción en demos. Conectar la cuenta siempre
+            fue gratis; lo que estaba cerrado era VER los números. Para volver
+            a cerrarlo: cambiar el `false` de abajo por `!profile?.is_pro` y
+            agregar `&& profile?.is_pro` al bloque de Stats Dashboard. */}
+        {false && tiktokAccounts.length > 0 && (
           <div className="bg-gradient-to-br from-black via-gray-900 to-gray-800 rounded-3xl p-10 mb-6 text-center relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-emerald-500/20 to-transparent rounded-full blur-3xl"></div>
             <div className="relative">
@@ -491,7 +493,7 @@ export default function CreatorAnalyticsPage() {
         )}
 
         {/* Stats Dashboard */}
-        {tiktokAccounts.length > 0 && profile?.is_pro && (
+        {tiktokAccounts.length > 0 && (
           <>
             {/* Main Stats Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -856,7 +858,8 @@ export default function CreatorAnalyticsPage() {
           </div>
         )}
 
-        {youtubeAccounts.length > 0 && !profile?.is_pro && (
+        {/* mismo candado Pro desactivado que el de TikTok, ver comentario arriba */}
+        {false && youtubeAccounts.length > 0 && (
           <div className="bg-gradient-to-br from-black via-gray-900 to-gray-800 rounded-3xl p-10 mb-6 text-center relative overflow-hidden">
             <div className="relative">
               <div className="w-24 h-24 bg-white/10 rounded-3xl flex items-center justify-center mx-auto mb-6 backdrop-blur-sm">
@@ -878,7 +881,7 @@ export default function CreatorAnalyticsPage() {
           </div>
         )}
 
-        {youtubeAccounts.length > 0 && profile?.is_pro && (
+        {youtubeAccounts.length > 0 && (
           <>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               <div className="bg-white border border-neutral-100 rounded-2xl p-5 text-neutral-900">
