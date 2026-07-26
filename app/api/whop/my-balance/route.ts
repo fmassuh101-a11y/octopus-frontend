@@ -76,6 +76,12 @@ export async function GET(request: NextRequest) {
       // lo que tenga en vez de mostrar un 0 inventado.
       readable: !!ledger,
       reason: ledger ? undefined : ledgerError || "no se pudo leer la cuenta",
+      // Estado de la cuenta ante Whop: dice si ya puede recibir/mover plata o
+      // si le falta verificación. Sirve para avisarle al usuario ANTES de que
+      // intente cobrar y le rebote.
+      paymentsStatus: ledger?.payments_approval_status ?? null,
+      canPayout: !!ledger?.payout_account_details,
+      transferFee: ledger?.transfer_fee ?? null,
     });
   } catch (e: any) {
     console.error("[MyBalance] error:", e?.message || e);

@@ -91,7 +91,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No se pudo iniciar el depósito (¿corriste PAGOS_SETUP_2026-07-08.sql?)" }, { status: 500 });
     }
 
-    return NextResponse.json({ ok: true, planId, sessionId: cfg?.id || null, fundingId, base, fee: 0, total: base, environment: WHOP_ENVIRONMENT });
+    // `depositsTo` es a qué cuenta de Whop va a caer la plata. Se devuelve a
+    // propósito para poder confirmar de un vistazo que NO es la de Octapi.
+    return NextResponse.json({ ok: true, planId, sessionId: cfg?.id || null, fundingId, base, fee: 0, total: base, environment: WHOP_ENVIRONMENT, depositsTo: payerCompanyId });
   } catch (e: any) {
     console.error("[FundWallet] error:", e?.message || e);
     return NextResponse.json({ error: "No se pudo crear el checkout" }, { status: 500 });
