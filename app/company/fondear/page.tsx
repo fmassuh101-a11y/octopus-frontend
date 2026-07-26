@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { authHeaders } from '@/lib/auth/clientToken'
 import CheckoutFrame from '@/components/oct/CheckoutFrame'
+import SelectorTarjeta, { type Tarjeta } from '@/components/oct/SelectorTarjeta'
 import { ChevronLeft, CreditCard, Check, Loader2, ShieldCheck, Zap } from 'lucide-react'
 
 // Agregar fondos — la empresa deposita a SU cuenta y decide cómo usarlo.
@@ -29,24 +30,62 @@ export default function FondearPage() {
   const doneRef = useRef(false)
   const receiptRef = useRef<string>('')
 
-  // Tarjeta guardada: con ella el depósito va por Topup y Whop NO cobra
-  // comisión. Sin ella solo cabe el checkout, que cuesta 2,7% + $0,30. Por eso
-  // se consulta al entrar: define qué opciones se le ofrecen a la empresa.
-  const [hasCard, setHasCard] = useState<boolean | null>(null)
+  // Medios de pago guardados. Con uno de ellos el depósito va por Topup y Whop
+  // NO cobra comisión; sin ninguno solo cabe el checkout, que cuesta 2,7% + $0,30.
+  // La lista se le pide a Whop, no a nuestra base: Whop es quien las guarda.
+  const [tarjetas, setTarjetas] = useState<Tarjeta[] | null>(null)
+  const [elegida, setElegida] = useState<string | null>(null)
   const [cardSession, setCardSession] = useState<string | null>(null)
   const [savingCard, setSavingCard] = useState(false)
+  // Solo se llena si la CONSULTA a Whop falló — que es distinto de no tener
+  // tarjetas. Mezclar las dos cosas fue el error de la versión anterior.
+  const [fallaConsulta, setFallaConsulta] = useState<string | null>(null)
 
   useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current) }, [])
 
-  useEffect(() => {
-    ;(async () => {
-      try {
-        const res = await fetch('/api/whop/save-card', { headers: authHeaders() })
-        const d = await res.json()
-        setHasCard(!!d?.hasCard)
-      } catch { setHasCard(false) }
-    })()
-  }, [])
+  // Lee la lista de tarjetas. Devuelve cuántas encontró, para que quien la
+  // llame después de guardar una sepa si ya apareció.
+  const cargarTarjetas = async (): Promise<number> => {
+    try {
+      const res = await fetch('/api/whop/cards', { headers: authHeaders() })
+      const d = await res.json()
+      if (d?.ok) {
+        const lista: Tarjeta[] = d.cards || []
+        setTarjetas(lista)
+        setElegida(d.elegida || lista[0]?.id || null)
+        setFallaConsulta(lista.length ? null : d.problema || null)
+        return lista.length
+      }
+      setTarjetas([])
+      setFallaConsulta(d?.error || null)
+    } catch {
+      setTarjetas([])
+      setFallaConsulta('No pudimos leer tus medios de pago')
+    }
+    return 0
+  }
+
+  useEffect(() => { cargarTarjetas() }, [])
+
+  // Cambiar cuál se usa. Se refleja al toque en pantalla y se guarda detrás;
+  // si el guardado falla, se vuelve atrás para no mostrar una mentira.
+  const elegirTarjeta = async (id: string) => {
+    const previa = elegida
+    setElegida(id)
+    try {
+      const res = await fetch('/api/whop/cards', {
+        method: 'PUT',
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ paymentMethodId: id }),
+      })
+      if (!res.ok) throw new Error()
+    } catch {
+      setElegida(previa)
+      setError('No se pudo cambiar la tarjeta. Intenta de nuevo.')
+    }
+  }
+
+  const hasCard = tarjetas === null ? null : tarjetas.length > 0
 
   const amount = Math.round((parseFloat(amountStr) || 0) * 100) / 100
 
@@ -69,20 +108,18 @@ export default function FondearPage() {
     setSavingCard(false)
   }
 
-  // Tras guardar la tarjeta, Whop avisa por webhook y ahí queda registrada.
-  // Puede tardar un par de segundos, así que se reintenta antes de rendirse.
+  // Tras guardar la tarjeta se le pregunta a Whop si ya la tiene. Puede tardar
+  // unos segundos en aparecer, así que se reintenta con esperas crecientes
+  // antes de rendirse (hasta ~30s: la versión anterior esperaba 9s y por eso
+  // decía "no la vemos confirmada" con la tarjeta perfectamente guardada).
   const confirmCardSaved = async () => {
-    for (let i = 0; i < 6; i++) {
-      try {
-        const res = await fetch('/api/whop/save-card', { headers: authHeaders() })
-        const d = await res.json()
-        if (d?.hasCard) { setHasCard(true); setStep('amount'); return }
-      } catch {}
-      await new Promise((r) => setTimeout(r, 1500))
-    }
-    // aunque no la veamos aún, no se deja atrapada a la empresa
     setStep('amount')
-    setError('Guardamos tu tarjeta, pero todavía no la vemos confirmada. Puedes pagar con tarjeta mientras tanto.')
+    setError('')
+    for (let i = 0; i < 8; i++) {
+      if (await cargarTarjetas() > 0) return
+      await new Promise((r) => setTimeout(r, i < 3 ? 1500 : 5000))
+    }
+    setError('Tu tarjeta quedó guardada en Whop, pero todavía no aparece acá. Recarga la página en un minuto, o paga con tarjeta ahora.')
   }
 
   const createCheckout = async (metodo: 'saved' | 'checkout' | 'auto' = 'auto') => {
@@ -95,7 +132,12 @@ export default function FondearPage() {
       const res = await fetch('/api/whop/fund-wallet', {
         method: 'POST',
         headers: authHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify({ amount, method: metodo }),
+        // se manda cuál tarjeta para que cobre la que está marcada en pantalla
+        body: JSON.stringify({
+          amount,
+          method: metodo,
+          ...(metodo === 'saved' && elegida ? { paymentMethodId: elegida } : {}),
+        }),
       })
       const data = await res.json()
 
@@ -176,20 +218,37 @@ export default function FondearPage() {
             </div>
             {error && <p className="mt-2 text-sm font-semibold text-red-500">{error}</p>}
 
-            {/* Con tarjeta guardada el cobro va por Topup y Whop no cobra
-                comisión — por eso es la opción destacada. Sin ella, el checkout
-                es el único camino y cuesta 2,7% + $0,30. */}
-            {hasCard ? (
+            {/* Con una tarjeta guardada el cobro va por Topup y Whop no cobra
+                comisión — por eso es la opción destacada. Sin ninguna, el
+                checkout es el único camino y cuesta 2,7% + $0,30. */}
+            {hasCard === null ? (
+              <div className="mt-5 space-y-2.5">
+                <div className="h-[68px] animate-pulse rounded-2xl bg-neutral-100" />
+                <div className="h-[52px] animate-pulse rounded-2xl bg-neutral-100" />
+              </div>
+            ) : hasCard ? (
               <>
-                <button onClick={() => createCheckout('saved')} disabled={busy || amount < 1}
+                <p className="mt-6 text-sm font-bold text-neutral-900">Pagar con</p>
+                <div className="mt-2.5">
+                  <SelectorTarjeta
+                    tarjetas={tarjetas || []}
+                    elegida={elegida}
+                    onElegir={elegirTarjeta}
+                    onAgregar={openSaveCard}
+                    ocupado={busy || savingCard}
+                  />
+                </div>
+
+                <button onClick={() => createCheckout('saved')} disabled={busy || amount < 1 || !elegida}
                   className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-[#22D3EE] to-[#0891B2] py-4 text-lg font-bold text-white shadow-lg shadow-cyan-200 transition-transform active:scale-[0.98] disabled:from-neutral-200 disabled:to-neutral-300 disabled:text-neutral-400 disabled:shadow-none">
                   {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Zap className="h-5 w-5" />}
-                  Cobrar a mi tarjeta guardada
+                  {amount >= 1 ? `Agregar $${fmt(amount)}` : 'Agregar fondos'}
                 </button>
                 <p className="mt-2 text-center text-xs font-semibold text-emerald-600">Sin comisión</p>
+
                 <button onClick={() => createCheckout('checkout')} disabled={busy || amount < 1}
                   className="mt-3 flex w-full items-center justify-center gap-2 rounded-full border-2 border-neutral-200 py-3.5 font-bold text-neutral-700 transition-transform active:scale-[0.98] disabled:opacity-50">
-                  <CreditCard className="h-4 w-4" /> Usar otro medio de pago
+                  <CreditCard className="h-4 w-4" /> Pagar de otra forma
                 </button>
               </>
             ) : (
@@ -200,22 +259,28 @@ export default function FondearPage() {
                   Pagar con tarjeta
                 </button>
 
-                {hasCard === false && (
-                  <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-                    <p className="flex items-center gap-2 text-sm font-bold text-emerald-900">
-                      <Zap className="h-4 w-4" /> Guarda tu tarjeta y no pagues comisión
-                    </p>
-                    <p className="mt-1 text-xs leading-relaxed text-emerald-800/80">
-                      Pagando de esta forma se descuenta la comisión de procesamiento. Si guardas tu
-                      tarjeta una vez, las próximas recargas no tienen costo. Guardarla es gratis.
-                    </p>
-                    <button onClick={openSaveCard} disabled={savingCard}
-                      className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 py-3 text-sm font-bold text-white transition-transform active:scale-[0.98] disabled:opacity-60">
-                      {savingCard ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
-                      Guardar mi tarjeta
-                    </button>
-                  </div>
+                {/* Si la CONSULTA falló, se dice — no se hace pasar por
+                    "no tienes tarjetas", que es otra cosa. */}
+                {fallaConsulta && (
+                  <p className="mt-3 text-center text-xs font-semibold text-amber-600">
+                    No pudimos leer tus tarjetas guardadas. Puedes pagar igual acá abajo.
+                  </p>
                 )}
+
+                <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                  <p className="flex items-center gap-2 text-sm font-bold text-emerald-900">
+                    <Zap className="h-4 w-4" /> Guarda tu tarjeta y no pagues comisión
+                  </p>
+                  <p className="mt-1 text-xs leading-relaxed text-emerald-800/80">
+                    Pagando de esta forma se descuenta la comisión de procesamiento. Si guardas tu
+                    tarjeta una vez, las próximas recargas no tienen costo. Guardarla es gratis.
+                  </p>
+                  <button onClick={openSaveCard} disabled={savingCard}
+                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 py-3 text-sm font-bold text-white transition-transform active:scale-[0.98] disabled:opacity-60">
+                    {savingCard ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
+                    Guardar mi tarjeta
+                  </button>
+                </div>
               </>
             )}
 

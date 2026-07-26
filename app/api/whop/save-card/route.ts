@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { whopClient } from "@/lib/whop";
 import { whopAccountForMoney } from "@/lib/whopIdentity";
+import { listarTarjetas } from "@/lib/whopCards";
 import { SUPABASE_URL } from "@/lib/config/supabase";
 import { getAuthenticatedUser } from "@/lib/auth/apiAuth";
 import { shieldAsync } from "@/lib/shield";
@@ -66,8 +67,12 @@ export async function POST(request: NextRequest) {
 
 /**
  * GET /api/whop/save-card — ¿esta empresa ya tiene tarjeta guardada?
- * Se consulta a Whop directo (no a nuestra base) para no depender de que el
- * webhook haya llegado: si la tarjeta existe, existe.
+ *
+ * Se le pregunta a Whop, que es quien las guarda. Antes esta ruta se tragaba el
+ * error de la consulta y devolvía "no hay tarjeta", que es una respuesta
+ * distinta y mucho peor: la empresa veía "no la vemos confirmada" con la
+ * tarjeta perfectamente guardada del otro lado. Ahora, si la consulta falla,
+ * se dice que falló.
  */
 export async function GET(request: NextRequest) {
   const blocked = await shieldAsync(request as unknown as Request, { limit: 30 });
@@ -85,31 +90,37 @@ export async function GET(request: NextRequest) {
     const profile = (profRes.ok ? await profRes.json() : [])[0] || {};
 
     const companyId = await whopAccountForMoney({ id: user.id, email: profile.email || user.email });
-    if (!companyId) return NextResponse.json({ ok: true, hasCard: false, paymentMethodId: null });
-
-    // Preferimos lo que ya guardó el webhook; si no hay, se le pregunta a Whop.
-    let paymentMethodId: string | null = profile.whop_payment_method_id || null;
-    if (!paymentMethodId) {
-      try {
-        const list: any = await (whopClient as any).paymentMethods.list({ company_id: companyId });
-        const items: any[] = list?.data || list?.items || (Array.isArray(list) ? list : []);
-        paymentMethodId = items?.[0]?.id || null;
-        // guardarlo para no volver a preguntar
-        if (paymentMethodId && SERVICE_KEY) {
-          await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}`, {
-            method: "PATCH",
-            headers: { ...H, "Content-Type": "application/json", Prefer: "return=minimal" },
-            body: JSON.stringify({ whop_payment_method_id: paymentMethodId }),
-          }).catch(() => {});
-        }
-      } catch (e: any) {
-        console.error("[SaveCard] no se pudo listar tarjetas:", e?.message?.slice(0, 150));
-      }
+    if (!companyId) {
+      return NextResponse.json({ ok: true, hasCard: false, paymentMethodId: null, problema: null });
     }
 
-    return NextResponse.json({ ok: true, hasCard: !!paymentMethodId, paymentMethodId });
+    const { cards, problema, via } = await listarTarjetas(companyId);
+
+    // La elegida antes, si sigue existiendo; si no, la más nueva.
+    const guardada = profile.whop_payment_method_id || null;
+    const elegida = cards.some((c) => c.id === guardada) ? guardada : cards[0]?.id || null;
+
+    if (elegida && elegida !== guardada) {
+      await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}`, {
+        method: "PATCH",
+        headers: { ...H, "Content-Type": "application/json", Prefer: "return=minimal" },
+        body: JSON.stringify({ whop_payment_method_id: elegida }),
+      }).catch(() => {});
+    }
+
+    return NextResponse.json({
+      ok: true,
+      hasCard: !!elegida,
+      paymentMethodId: elegida,
+      cards,
+      problema, // null salvo que la consulta a Whop haya fallado de verdad
+      via,
+    });
   } catch (e: any) {
     console.error("[SaveCard][GET] error:", e?.message || e);
-    return NextResponse.json({ ok: true, hasCard: false, paymentMethodId: null });
+    return NextResponse.json(
+      { ok: true, hasCard: false, paymentMethodId: null, problema: "no pudimos consultar a Whop" },
+      { status: 200 }
+    );
   }
 }

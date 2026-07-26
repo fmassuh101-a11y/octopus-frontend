@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { whopClient, WHOP_ENVIRONMENT } from "@/lib/whop";
 import { whopAccountForMoney } from "@/lib/whopIdentity";
+import { listarTarjetas } from "@/lib/whopCards";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/config/supabase";
 import { getAuthenticatedUser } from "@/lib/auth/apiAuth";
 import { rateLimit } from "@/lib/rateLimit";
@@ -65,11 +66,34 @@ export async function POST(request: NextRequest) {
     // Whop no cobra por Topup ("Top-ups have no fees or taxes"), pero necesita
     // una tarjeta ya guardada. El checkout de más abajo cuesta 2,7% + $0,30 y
     // a cambio acepta tarjeta nueva, PayPal y lo demás que Whop ofrezca.
-    const pmRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=whop_payment_method_id`,
-      { headers: { Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, apikey: SUPABASE_SERVICE_KEY } }
-    );
-    const savedCard = ((pmRes.ok ? await pmRes.json() : [])[0] || {}).whop_payment_method_id;
+    //
+    // Cuál tarjeta: la empresa puede tener varias guardadas y mandar cuál
+    // quiere usar. Ese id NO se acepta a ciegas — se verifica contra la lista
+    // real de su cuenta en Whop, para que nadie pueda hacernos cobrar a un
+    // medio de pago ajeno mandando un id inventado.
+    const pedida = String(body?.paymentMethodId || "").trim();
+
+    let savedCard: string | null = null;
+    if (pedida) {
+      const { cards } = await listarTarjetas(payerCompanyId);
+      if (!cards.some((c) => c.id === pedida)) {
+        return NextResponse.json({ error: "Esa tarjeta no está en tu cuenta" }, { status: 400 });
+      }
+      savedCard = pedida;
+    } else {
+      const pmRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=whop_payment_method_id`,
+        { headers: { Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, apikey: SUPABASE_SERVICE_KEY } }
+      );
+      savedCard = ((pmRes.ok ? await pmRes.json() : [])[0] || {}).whop_payment_method_id || null;
+
+      // Nuestra base puede no haberse enterado todavía (el webhook es un atajo,
+      // no una garantía). Antes de rendirse, se le pregunta a Whop.
+      if (!savedCard && (method === "saved" || method === "auto")) {
+        const { cards } = await listarTarjetas(payerCompanyId);
+        savedCard = cards[0]?.id || null;
+      }
+    }
 
     if (method === "saved" && !savedCard) {
       return NextResponse.json(
