@@ -60,6 +60,21 @@ export default function CompanyWallet() {
     }
 
     try {
+      // SALDO REAL: se lee de la cuenta de Whop de la empresa, no de la tabla
+      // `wallets`. La plata está en SU cuenta — Octapi no la custodia, así que
+      // tampoco puede ser la que lleve la cuenta. Si Whop responde, ese número
+      // manda; la tabla queda solo para el historial de movimientos.
+      let whopBalance: number | null = null
+      try {
+        const bRes = await fetch('/api/whop/my-balance', {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (bRes.ok) {
+          const b = await bRes.json()
+          if (b?.ok && b?.readable) whopBalance = Number(b.balance) || 0
+        }
+      } catch {}
+
       // Load wallet
       const walletRes = await fetch(
         `${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${userId}&select=*`,
@@ -75,7 +90,7 @@ export default function CompanyWallet() {
       const wallets = await walletRes.json()
 
       if (wallets.length > 0) {
-        setWallet(wallets[0])
+        setWallet(whopBalance !== null ? { ...wallets[0], balance: whopBalance } : wallets[0])
 
         // Load transactions
         const txRes = await fetch(

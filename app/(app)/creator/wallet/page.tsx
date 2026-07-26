@@ -60,7 +60,19 @@ export default function CreatorWallet() {
         fetch(`${SUPABASE_URL}/rest/v1/wallet_movements?user_id=eq.${user.id}&select=id,amount,kind,description,seen,created_at&order=created_at.desc&limit=12`, { headers: sb }),
       ])
       const wallets = wRes.ok ? await wRes.json() : []
-      setBalance(Math.max(0, Number(wallets?.[0]?.balance) || 0))
+
+      // SALDO REAL: la plata del creador vive en SU cuenta de Whop desde el
+      // momento en que la empresa se la transfiere. La tabla `wallets` es solo
+      // un reflejo — si Whop responde, ese número manda.
+      let shown = Math.max(0, Number(wallets?.[0]?.balance) || 0)
+      try {
+        const bRes = await fetch('/api/whop/my-balance', { headers: { Authorization: `Bearer ${token}` } })
+        if (bRes.ok) {
+          const b = await bRes.json()
+          if (b?.ok && b?.readable) shown = Math.max(0, Number(b.balance) || 0)
+        }
+      } catch {}
+      setBalance(shown)
       const profs = pRes.ok ? await pRes.json() : []
       setIsPro(!!profs?.[0]?.is_pro)
       const mv = mRes.ok ? await mRes.json() : []
@@ -126,7 +138,11 @@ export default function CreatorWallet() {
           <ChevronLeft className="h-5 w-5" />
         </button>
 
-        {/* saldo grande (ledger interno — se ve completo, el fee es al retirar) */}
+        {/* Saldo REAL de la cuenta de Whop del creador (ver load()).
+            Ya no hay botón "Retirar" nuestro: ese pasaba por la cuenta de
+            Octapi, que no puede custodiar plata ajena. La plata ya está en la
+            cuenta del creador desde que la empresa se la transfirió, y el
+            retiro al banco se hace abajo, en el panel de Whop. */}
         <div className="mt-6 text-center">
           <p className="font-semibold text-neutral-700">Saldo disponible</p>
           {loading ? (
@@ -136,12 +152,9 @@ export default function CreatorWallet() {
               ${fmt(balance)}
             </p>
           )}
-          <button
-            onClick={() => setSheetOpen(true)}
-            disabled={loading}
-            className="mt-5 w-full rounded-full bg-gradient-to-b from-[#22D3EE] to-[#0891B2] py-4 text-lg font-bold text-white shadow-lg shadow-cyan-200 transition-transform active:scale-[0.98] disabled:from-neutral-200 disabled:to-neutral-300 disabled:text-neutral-400 disabled:shadow-none">
-            Retirar
-          </button>
+          <p className="mx-auto mt-3 max-w-xs text-sm text-neutral-500">
+            Tu plata está en tu cuenta, lista para retirar al banco desde acá abajo.
+          </p>
         </div>
 
         {/* Cuenta de cobros de Whop, EMBEBIDA e integrada (el estado de
