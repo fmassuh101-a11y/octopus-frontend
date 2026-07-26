@@ -21,10 +21,12 @@ export async function GET(request: NextRequest) {
   const blocked = await shieldAsync(request as unknown as Request, { limit: 10 });
   if (blocked) return blocked;
 
+  // Cualquiera puede diagnosticar SU PROPIA cuenta: son sus propios medios de
+  // pago y solo se devuelve marca y últimos 4, que ya ve en pantalla. Lo que
+  // toca la cuenta de Octapi queda reservado al admin.
   const user = await getAuthenticatedUser(request);
-  if (!user || !ADMIN_EMAILS.includes((user.email || "").toLowerCase())) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  if (!user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const esAdmin = ADMIN_EMAILS.includes((user.email || "").toLowerCase());
 
   const w = whopClient as any;
   const out: any = { miCuenta: null, octapi: OCTOPUS_COMPANY_ID, pasos: [] };
@@ -72,26 +74,30 @@ export async function GET(request: NextRequest) {
 
   // 2. lo mismo en la cuenta de Octapi — para ver si la tarjeta se fue a la
   //    cuenta madre en vez de a la de la empresa (sería un problema serio).
-  await paso(`paymentMethods.list(company_id=${OCTOPUS_COMPANY_ID}) [Octapi]`, async () =>
-    items(await w.paymentMethods.list({ company_id: OCTOPUS_COMPANY_ID, first: 20 })).map(resumirMedio)
-  );
-  await paso(`setupIntents.list(company_id=${OCTOPUS_COMPANY_ID}) [Octapi]`, async () =>
-    items(await w.setupIntents.list({ company_id: OCTOPUS_COMPANY_ID, first: 20 })).map((s: any) => ({
-      id: s?.id,
-      estado: s?.status,
-      error: s?.error_message,
-      empresa: s?.company?.id,
-      miembro: s?.member?.id,
-      metadata: s?.metadata,
-      medio: s?.payment_method ? resumirMedio(s.payment_method) : null,
-    }))
-  );
+  //    Solo admin: son datos de la cuenta de la plataforma, no del usuario.
+  if (esAdmin) {
+    await paso(`paymentMethods.list(company_id=${OCTOPUS_COMPANY_ID}) [Octapi]`, async () =>
+      items(await w.paymentMethods.list({ company_id: OCTOPUS_COMPANY_ID, first: 20 })).map(resumirMedio)
+    );
+    await paso(`setupIntents.list(company_id=${OCTOPUS_COMPANY_ID}) [Octapi]`, async () =>
+      items(await w.setupIntents.list({ company_id: OCTOPUS_COMPANY_ID, first: 20 })).map((s: any) => ({
+        id: s?.id,
+        estado: s?.status,
+        error: s?.error_message,
+        empresa: s?.company?.id,
+        miembro: s?.member?.id,
+        metadata: s?.metadata,
+        medio: s?.payment_method ? resumirMedio(s.payment_method) : null,
+      }))
+    );
+  }
 
   // 3. por MIEMBRO. Whop permite guardar un medio de pago contra un miembro y
   //    no contra la empresa; si es ese el caso, buscar por empresa nunca lo
   //    va a encontrar, por más que la tarjeta exista.
-  const miembros = await paso(`members.list(company_id=${mia || OCTOPUS_COMPANY_ID})`, async () =>
-    items(await w.members.list({ company_id: mia || OCTOPUS_COMPANY_ID, first: 10 })).map((m: any) => ({
+  const cuentaMiembros = mia || (esAdmin ? OCTOPUS_COMPANY_ID : null);
+  const miembros = !cuentaMiembros ? [] : await paso(`members.list(company_id=${cuentaMiembros})`, async () =>
+    items(await w.members.list({ company_id: cuentaMiembros, first: 10 })).map((m: any) => ({
       id: m?.id,
       email: m?.user?.email || m?.email || null,
     }))
