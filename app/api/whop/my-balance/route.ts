@@ -70,10 +70,12 @@ export async function GET(request: NextRequest) {
       pending,
       reserved,
       currency: "usd",
-      // si Whop no devolvió ledger, la app NO usa este número (mostraría $0
-      // falso). El motivo va en `reason` para poder diagnosticarlo sin logs.
-      readable: !!usd,
-      reason: usd ? undefined : ledgerError || (ledger ? "la cuenta no tiene saldos aún" : "no se pudo leer la cuenta"),
+      // readable = pudimos hablar con Whop. Una cuenta recién creada devuelve
+      // `balances` vacío, y eso NO es un fallo: significa saldo 0, y esa es la
+      // verdad. Solo es ilegible si la llamada falló — ahí la app se queda con
+      // lo que tenga en vez de mostrar un 0 inventado.
+      readable: !!ledger,
+      reason: ledger ? undefined : ledgerError || "no se pudo leer la cuenta",
     });
   } catch (e: any) {
     console.error("[MyBalance] error:", e?.message || e);
