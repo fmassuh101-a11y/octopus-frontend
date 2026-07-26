@@ -63,16 +63,11 @@ export async function POST(request: NextRequest) {
   // La plata sale de la cuenta de Whop DE LA EMPRESA, no de la de Octapi.
   // Si todavía no tiene cuenta (empresa vieja, de antes de este cambio), se
   // le crea acá sin que tenga que hacer nada.
-  const { ensureWhopCompanyId } = await import('@/lib/ensureWhopAccount')
-  const { companyId: payerCompanyId, error: acctError } = await ensureWhopCompanyId({
-    userId: user.id,
-    email: payer.email,
-    name: payer.company_name,
-    type: 'company',
-  })
+  const { whopAccountForMoney } = await import('@/lib/whopIdentity')
+  const payerCompanyId = await whopAccountForMoney({ id: user.id, email: payer.email })
   if (!payerCompanyId) {
-    console.error('[PayCreator] empresa sin cuenta de pagos:', user.id, acctError)
-    return NextResponse.json({ error: acctError || 'No se pudo preparar tu cuenta de pagos' }, { status: 502 })
+    console.error('[PayCreator] empresa sin cuenta de pagos:', user.id)
+    return NextResponse.json({ error: 'No se pudo preparar tu cuenta de pagos' }, { status: 502 })
   }
 
   // mover la plata (atómico, monto COMPLETO al creador — la comisión de Octopus

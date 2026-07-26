@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { whopClient, WHOP_ENVIRONMENT } from "@/lib/whop";
-import { ensureWhopCompanyId } from "@/lib/ensureWhopAccount";
+import { whopAccountForMoney } from "@/lib/whopIdentity";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/config/supabase";
 import { getAuthenticatedUser } from "@/lib/auth/apiAuth";
 import { rateLimit } from "@/lib/rateLimit";
@@ -47,13 +47,10 @@ export async function POST(request: NextRequest) {
     // Si es su primera vez, la cuenta se crea acá mismo sin que se entere.
     // (Antes esto apuntaba a OCTOPUS_COMPANY_ID: los fondos de terceros
     // quedaban en nuestra cuenta, que es justo lo que no podemos hacer.)
-    const { companyId: payerCompanyId, error: acctError } = await ensureWhopCompanyId({
-      userId: user.id,
-      type: "company",
-    });
+    const payerCompanyId = await whopAccountForMoney({ id: user.id, email: user.email });
     if (!payerCompanyId) {
-      console.error("[FundWallet] sin cuenta de pagos para", user.id, acctError);
-      return NextResponse.json({ error: acctError || "No se pudo preparar tu cuenta de pagos" }, { status: 502 });
+      console.error("[FundWallet] sin cuenta de pagos para", user.id);
+      return NextResponse.json({ error: "No se pudo preparar tu cuenta de pagos" }, { status: 502 });
     }
 
     const cfg: any = await whopClient.checkoutConfigurations.create({

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { whopClient } from "@/lib/whop";
-import { ensureWhopCompanyId } from "@/lib/ensureWhopAccount";
+import { whopAccountForMoney } from "@/lib/whopIdentity";
 import { SUPABASE_URL } from "@/lib/config/supabase";
 import { getAuthenticatedUser } from "@/lib/auth/apiAuth";
 import { shieldAsync } from "@/lib/shield";
@@ -30,21 +30,14 @@ export async function GET(request: NextRequest) {
   try {
     const H = { Authorization: `Bearer ${SERVICE_KEY}`, apikey: SERVICE_KEY };
     const profRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=user_type,email,company_name,full_name,whop_company_id`,
+      `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=email`,
       { headers: H }
     );
     const profile = (profRes.ok ? await profRes.json() : [])[0];
-    if (!profile) return NextResponse.json({ error: "Perfil no encontrado" }, { status: 404 });
 
-    const type = profile.user_type === "company" ? "company" : "creator";
-    const { companyId, error: acctError } = await ensureWhopCompanyId({
-      userId: user.id,
-      email: profile.email,
-      name: profile.company_name || profile.full_name,
-      type,
-    });
+    const companyId = await whopAccountForMoney({ id: user.id, email: profile?.email || user.email });
     if (!companyId) {
-      return NextResponse.json({ error: acctError || "No se pudo preparar tu cuenta de pagos" }, { status: 502 });
+      return NextResponse.json({ error: "No se pudo preparar tu cuenta de pagos" }, { status: 502 });
     }
 
     // El ledger de la cuenta: puede venir anidado en la company o pedirse aparte,

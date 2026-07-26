@@ -90,20 +90,15 @@ export async function POST(request: NextRequest) {
     // custodia de fondos de terceros). Si falla, queda en su saldo (fallback).
     try {
       const { autoPayoutToWhop } = await import('@/lib/autoPayout')
-      const { ensureWhopCompanyId } = await import('@/lib/ensureWhopAccount')
+      const { whopAccountForMoney } = await import('@/lib/whopIdentity')
       const [cRes, pRes] = await Promise.all([
         fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${delivery.creator_id}&select=email`, { headers: H }),
-        fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${delivery.company_id}&select=email,company_name`, { headers: H }),
+        fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${delivery.company_id}&select=email`, { headers: H }),
       ])
       const cEmail = ((cRes.ok ? await cRes.json() : [])[0])?.email
       const payerProfile = ((pRes.ok ? await pRes.json() : [])[0]) || {}
       // origen = cuenta Whop de la EMPRESA que aprueba, nunca la de Octapi
-      const { companyId: payerCompanyId } = await ensureWhopCompanyId({
-        userId: delivery.company_id,
-        email: payerProfile.email,
-        name: payerProfile.company_name,
-        type: 'company',
-      })
+      const payerCompanyId = await whopAccountForMoney({ id: delivery.company_id, email: payerProfile.email })
       if (payerCompanyId) {
         await autoPayoutToWhop({
           userId: delivery.creator_id,

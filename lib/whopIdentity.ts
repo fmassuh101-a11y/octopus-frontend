@@ -20,6 +20,32 @@ export interface WhopIdentity {
 }
 
 /**
+ * La cuenta de Whop del usuario, PARA MOVER PLATA.
+ *
+ * Es la misma identidad que usa el chat, pero con una diferencia que importa:
+ * ensureWhopIdentity tiene un "último recurso" que devuelve la cuenta de Octapi
+ * cuando no logra resolver al usuario. Para el chat eso está bien (mejor que
+ * el mensaje salga a que se caiga). Para la plata es inaceptable: significaría
+ * mandar el dinero de un creador a la cuenta de Octapi sin que nadie se entere.
+ *
+ * Esta función devuelve null en ese caso, para que quien la llame corte la
+ * operación en vez de mover plata al lugar equivocado.
+ */
+export async function whopAccountForMoney(user: { id: string; email?: string | null }): Promise<string | null> {
+  try {
+    const { companyId } = await ensureWhopIdentity(user);
+    if (!companyId || companyId === OCTOPUS_COMPANY_ID) {
+      console.error("[whopAccountForMoney] sin cuenta propia:", user.id);
+      return null;
+    }
+    return companyId;
+  } catch (e: any) {
+    console.error("[whopAccountForMoney] error:", e?.message?.slice(0, 200));
+    return null;
+  }
+}
+
+/**
  * Devuelve (creándola si hace falta) la identidad Whop del usuario:
  * su connected account (companyId) y su usuario de Whop (whopUserId).
  * Persiste ambos en profiles para no repetir llamadas.
