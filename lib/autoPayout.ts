@@ -6,6 +6,11 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/config/supabase";
 // a su cuenta de Whop (no custodiamos fondos de terceros — requisito legal CL).
 // 1) transferencia Whop→Whop (idempotente)  2) si salió, descuenta el ledger.
 // Si Whop falla, la plata queda en el ledger y puede retirarla manual (fallback).
+//
+// El ORIGEN es la cuenta de Whop de la EMPRESA que paga (originCompanyId), no
+// la de Octapi. Antes salía de OCTOPUS_COMPANY_ID: aunque la transferencia era
+// inmediata, el capital pasaba igual por nosotros. Ahora va directo de la
+// cuenta de la empresa a la del creador y Octapi nunca lo toca.
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
 export async function autoPayoutToWhop(opts: {
@@ -14,14 +19,34 @@ export async function autoPayoutToWhop(opts: {
   amount: number;
   idempotenceKey: string;
   notes?: string;
+  originCompanyId: string; // cuenta Whop de la empresa que paga
 }): Promise<{ sent: boolean; transferId?: string; error?: string }> {
   try {
+    if (!opts.originCompanyId) {
+      return { sent: false, error: "falta la cuenta de pagos de la empresa" };
+    }
     const { companyId } = await ensureWhopIdentity({ id: opts.userId, email: opts.email });
+
+    // SALVAGUARDA CRÍTICA — no borrar.
+    // ensureWhopIdentity tiene un "último recurso" que devuelve la cuenta de
+    // Octapi cuando no logra resolver al usuario. Ese respaldo existe para que
+    // el CHAT nunca falle, y está bien ahí. Pero acá el companyId es el DESTINO
+    // DE LA PLATA: si se colara, el pago del creador terminaría en la cuenta de
+    // Octapi sin que nadie se entere. Antes que eso, el pago falla y queda en el
+    // ledger como pendiente — el creador no pierde nada y se puede reintentar.
+    if (!companyId || companyId === OCTOPUS_COMPANY_ID) {
+      console.error("[AutoPayout] BLOQUEADO: el creador", opts.userId, "no tiene cuenta propia de Whop");
+      return { sent: false, error: "el creador todavía no tiene cuenta de pagos" };
+    }
+    if (companyId === opts.originCompanyId) {
+      console.error("[AutoPayout] BLOQUEADO: origen y destino son la misma cuenta");
+      return { sent: false, error: "origen y destino coinciden" };
+    }
 
     const transfer: any = await (whopClient as any).transfers.create({
       amount: Math.round(opts.amount * 100) / 100,
       currency: "usd",
-      origin_id: OCTOPUS_COMPANY_ID,
+      origin_id: opts.originCompanyId,
       destination_id: companyId,
       idempotence_key: opts.idempotenceKey,
       notes: opts.notes || "Pago Octopus",

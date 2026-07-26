@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { whopClient, OCTOPUS_COMPANY_ID, WHOP_ENVIRONMENT } from "@/lib/whop";
+import { whopClient, WHOP_ENVIRONMENT } from "@/lib/whop";
+import { ensureWhopCompanyId } from "@/lib/ensureWhopAccount";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/config/supabase";
 import { getAuthenticatedUser } from "@/lib/auth/apiAuth";
 import { rateLimit } from "@/lib/rateLimit";
@@ -42,9 +43,22 @@ export async function POST(request: NextRequest) {
 
     const fundingId = `fund_${user.id.slice(0, 8)}_${Date.now()}`;
 
+    // La plata entra a la cuenta de Whop DE LA EMPRESA, no a la de Octapi.
+    // Si es su primera vez, la cuenta se crea acá mismo sin que se entere.
+    // (Antes esto apuntaba a OCTOPUS_COMPANY_ID: los fondos de terceros
+    // quedaban en nuestra cuenta, que es justo lo que no podemos hacer.)
+    const { companyId: payerCompanyId, error: acctError } = await ensureWhopCompanyId({
+      userId: user.id,
+      type: "company",
+    });
+    if (!payerCompanyId) {
+      console.error("[FundWallet] sin cuenta de pagos para", user.id, acctError);
+      return NextResponse.json({ error: acctError || "No se pudo preparar tu cuenta de pagos" }, { status: 502 });
+    }
+
     const cfg: any = await whopClient.checkoutConfigurations.create({
       plan: {
-        company_id: OCTOPUS_COMPANY_ID,
+        company_id: payerCompanyId,
         plan_type: "one_time",
         currency: "usd",
         initial_price: base,
@@ -142,10 +156,18 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 2b) respaldo: buscar en la lista SOLO por funding_id de esta transacción
+    // 2b) respaldo: buscar en la lista SOLO por funding_id de esta transacción.
+    // Se busca en la cuenta de Whop DE LA EMPRESA — ahí es donde entra su plata
+    // ahora. (Antes se listaba sobre OCTOPUS_COMPANY_ID porque los depósitos
+    // caían en la cuenta de Octapi.)
     if (!payment) {
       try {
-        const payments: any = await whopClient.payments.list({ company_id: OCTOPUS_COMPANY_ID } as any);
+        const payerCompanyId = ((await fetch(
+          `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=whop_company_id`,
+          { headers: H }
+        ).then((r) => (r.ok ? r.json() : [])).catch(() => []))[0] || {}).whop_company_id;
+        if (!payerCompanyId) throw new Error("la empresa aún no tiene cuenta de pagos");
+        const payments: any = await whopClient.payments.list({ company_id: payerCompanyId } as any);
         const items: any[] = payments?.data || payments?.items || (Array.isArray(payments) ? payments : []);
         payment = items.find((p) => isPaid(p) && belongsHere(p)) || null;
       } catch (e) {

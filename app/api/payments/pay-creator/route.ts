@@ -52,13 +52,28 @@ export async function POST(request: NextRequest) {
 
   // el que paga debe ser empresa y el que cobra debe ser creador
   const [payerRes, creatorRes] = await Promise.all([
-    fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=user_type`, { headers: H }),
+    fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=user_type,whop_company_id,email,company_name`, { headers: H }),
     fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${creatorId}&select=user_type,full_name,email`, { headers: H }),
   ])
   const payer = ((payerRes.ok ? await payerRes.json() : [])[0]) || {}
   const creator = ((creatorRes.ok ? await creatorRes.json() : [])[0]) || null
   if (payer.user_type !== 'company') return NextResponse.json({ error: 'Solo las empresas pueden pagar' }, { status: 403 })
   if (!creator || creator.user_type !== 'creator') return NextResponse.json({ error: 'Creador no encontrado' }, { status: 404 })
+
+  // La plata sale de la cuenta de Whop DE LA EMPRESA, no de la de Octapi.
+  // Si todavía no tiene cuenta (empresa vieja, de antes de este cambio), se
+  // le crea acá sin que tenga que hacer nada.
+  const { ensureWhopCompanyId } = await import('@/lib/ensureWhopAccount')
+  const { companyId: payerCompanyId, error: acctError } = await ensureWhopCompanyId({
+    userId: user.id,
+    email: payer.email,
+    name: payer.company_name,
+    type: 'company',
+  })
+  if (!payerCompanyId) {
+    console.error('[PayCreator] empresa sin cuenta de pagos:', user.id, acctError)
+    return NextResponse.json({ error: acctError || 'No se pudo preparar tu cuenta de pagos' }, { status: 502 })
+  }
 
   // mover la plata (atómico, monto COMPLETO al creador — la comisión de Octopus
   // se cobra únicamente al RETIRAR, nunca en el pago). Registra los movimientos
@@ -95,6 +110,7 @@ export async function POST(request: NextRequest) {
     amount,
     idempotenceKey: `pay_${user.id}_${creatorId}_${Date.now()}`,
     notes: description || 'Pago de campaña Octopus',
+    originCompanyId: payerCompanyId,
   })
 
   return NextResponse.json({ ok: true, amount, creator: creator.full_name, sentToWhop: payout.sent })

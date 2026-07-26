@@ -40,11 +40,18 @@ console.log(`[Whop] Ambiente: ${WHOP_ENVIRONMENT}`);
 export const OCTOPUS_COMPANY_ID =
   (isSandbox && TEST_COMPANY_ID ? TEST_COMPANY_ID : process.env.WHOP_OCTOPUS_COMPANY_ID) || "";
 
-// Porcentaje de comisión de Octopus (4.7%)
-// Corte de Octopus: 3.7% para creadores NO-Pro, 0% para Pro (incentiva la suscripción).
-// Se aplica UNA sola vez, AL RETIRAR — el creador ve su saldo completo hasta el cashout.
-// Sin cargo fijo nuestro (Whop ya tiene el suyo); mínimo de retiro para proteger montos chicos.
-export const OCTOPUS_FEE_PERCENT = 0.037;
+// COMISIÓN EN CERO — decisión deliberada, no un olvido.
+//
+// Whop no permite que una plataforma se quede con un % de cada pago sin el
+// acceso "Whop for Platforms", que es por invitación y exige demostrar ventas
+// en una reunión con ellos. Esa reunión todavía no ocurre. Lo único disponible
+// hoy (createFeeMarkup) solo ajusta comisiones de RETIRO en empresas hijas, y
+// también requiere ese mismo acceso.
+//
+// Antes esto valía 0.037 y se restaba del monto en transferToCreator: al
+// creador le llegaba 3,7% menos sin que nadie lo hubiera acordado. Queda en 0
+// hasta que exista la reunión con Whop y se defina el mecanismo real.
+export const OCTOPUS_FEE_PERCENT = 0;
 export const MIN_WITHDRAW_USD = 5; // bajado de 20 → 5 para el test real de bajo riesgo
 export function octopusFeePercent(isPro: boolean): number {
   return isPro ? 0 : OCTOPUS_FEE_PERCENT;
@@ -180,23 +187,27 @@ export async function getPaymentMethods(companyId: string) {
 // ============================================
 
 /**
- * Transferir fondos de Octopus a un creador
- * Opción 1: Transferencia manual (calculamos el 7% nosotros)
+ * Transferir fondos DE LA EMPRESA a un creador.
+ *
+ * El origen es la cuenta de Whop de la empresa que paga — NUNCA la de Octapi.
+ * La plata va directo de una cuenta a la otra; nosotros solo damos la orden.
+ * (Antes salía de OCTOPUS_COMPANY_ID y se le restaba una comisión al creador.)
  */
 export async function transferToCreator(data: {
+  originCompanyId: string; // cuenta Whop de la EMPRESA que paga
   creatorCompanyId: string;
-  amount: number; // Monto ANTES de la comisión
+  amount: number;
   currency?: Currency;
   jobId: string;
   metadata?: Record<string, string>;
 }) {
-  const fee = data.amount * OCTOPUS_FEE_PERCENT;
+  const fee = data.amount * OCTOPUS_FEE_PERCENT; // 0 por ahora, ver nota arriba
   const creatorAmount = data.amount - fee;
 
   const transfer = await whopClient.transfers.create({
     amount: creatorAmount,
     currency: data.currency || DEFAULT_CURRENCY,
-    origin_id: OCTOPUS_COMPANY_ID,
+    origin_id: data.originCompanyId,
     destination_id: data.creatorCompanyId,
     idempotence_key: `payout_${data.jobId}_${Date.now()}`,
     metadata: {

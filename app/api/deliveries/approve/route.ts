@@ -90,15 +90,32 @@ export async function POST(request: NextRequest) {
     // custodia de fondos de terceros). Si falla, queda en su saldo (fallback).
     try {
       const { autoPayoutToWhop } = await import('@/lib/autoPayout')
-      const cRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${delivery.creator_id}&select=email`, { headers: H })
+      const { ensureWhopCompanyId } = await import('@/lib/ensureWhopAccount')
+      const [cRes, pRes] = await Promise.all([
+        fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${delivery.creator_id}&select=email`, { headers: H }),
+        fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${delivery.company_id}&select=email,company_name`, { headers: H }),
+      ])
       const cEmail = ((cRes.ok ? await cRes.json() : [])[0])?.email
-      await autoPayoutToWhop({
-        userId: delivery.creator_id,
-        email: cEmail,
-        amount,
-        idempotenceKey: `dlv_${deliveryId}`,
-        notes: `Contenido aprobado: ${delivery.title || 'entrega'}`,
+      const payerProfile = ((pRes.ok ? await pRes.json() : [])[0]) || {}
+      // origen = cuenta Whop de la EMPRESA que aprueba, nunca la de Octapi
+      const { companyId: payerCompanyId } = await ensureWhopCompanyId({
+        userId: delivery.company_id,
+        email: payerProfile.email,
+        name: payerProfile.company_name,
+        type: 'company',
       })
+      if (payerCompanyId) {
+        await autoPayoutToWhop({
+          userId: delivery.creator_id,
+          email: cEmail,
+          amount,
+          idempotenceKey: `dlv_${deliveryId}`,
+          notes: `Contenido aprobado: ${delivery.title || 'entrega'}`,
+          originCompanyId: payerCompanyId,
+        })
+      } else {
+        console.error('[ApproveDelivery] empresa sin cuenta de pagos:', delivery.company_id)
+      }
     } catch {}
   }
 

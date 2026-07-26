@@ -87,7 +87,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: msg }, { status: 400 });
     }
 
-    // transferir el NETO a la connected account del creador (el fee queda en la plataforma)
+    // ─────────────────────────────────────────────────────────────────────
+    // CAMINO HEREDADO — no es el flujo normal.
+    //
+    // Con el modelo nuevo la plata del creador YA está en su propia cuenta de
+    // Whop desde el momento del pago (la empresa se la transfiere directo), y
+    // el creador la retira a su banco desde el portal de Whop embebido en
+    // /creator/wallet. Octapi no participa.
+    //
+    // Esta ruta existe solo para vaciar el saldo que quedó registrado en
+    // Supabase bajo el modelo viejo, cuando la plata sí estaba físicamente en
+    // la cuenta de Octapi. Por eso acá el origen SIGUE siendo OCTOPUS_COMPANY_ID:
+    // es el único lugar donde ese dinero está. Cuando ya no queden saldos
+    // antiguos, esta ruta se puede borrar.
+    // ─────────────────────────────────────────────────────────────────────
     let transferId: string | null = null;
     let sent = false;
     try {
