@@ -160,7 +160,36 @@ export default function CreatorWallet() {
         {/* Cuenta de cobros de Whop, EMBEBIDA e integrada (el estado de
             verificación lo muestra Whop mismo — nunca más un aviso nuestro
             equivocado). Banco + balance + retiro + historial. */}
-        <div className="mt-7">
+        {/* Costos de retiro ANTES de que elija, no después.
+            Los cobra Whop, no Octapi — pero si el creador se entera recién
+            cuando le llega menos plata, la culpa se la lleva la app. Mejor
+            que elija informado. */}
+        <div className="mt-7 rounded-3xl border border-amber-200 bg-amber-50 p-5">
+          <p className="font-bold text-amber-900">Cuánto cuesta retirar</p>
+          <p className="mt-0.5 text-xs text-amber-800/70">
+            Lo cobra Whop, el procesador de pagos. Elige el método que más te convenga.
+          </p>
+          <div className="mt-3 flex flex-col gap-1.5 text-sm">
+            {[
+              ['Transferencia bancaria (1 día hábil)', '$2,50', true],
+              ['Transferencia instantánea', '4% + $1'],
+              ['Cripto', '5% + $1'],
+              ['Wire internacional', '$23'],
+            ].map(([metodo, costo, mejor]) => (
+              <div key={metodo as string} className="flex items-baseline justify-between gap-3">
+                <span className={mejor ? 'font-semibold text-amber-900' : 'text-amber-900/80'}>
+                  {metodo as string}{mejor ? ' · la más barata' : ''}
+                </span>
+                <span className="shrink-0 font-bold tabular-nums text-amber-900">{costo as string}</span>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-xs text-amber-800/70">
+            Los montos internacionales pueden variar según el país.
+          </p>
+        </div>
+
+        <div className="mt-4">
           <WhopPayouts />
         </div>
 
