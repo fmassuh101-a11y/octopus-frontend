@@ -41,6 +41,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Monto inválido (mínimo $1)" }, { status: 400 });
     }
 
+    // La empresa ELIGE cómo pagar — no se le impone:
+    //   "saved"    → cobra la tarjeta ya guardada (Topup, sin comisión)
+    //   "checkout" → abre el checkout de Whop (tarjeta nueva, PayPal, y los
+    //                demás medios que Whop tenga habilitados). Cobra comisión
+    //                de procesamiento, pero no depende de nada previo.
+    //   sin elegir → intenta la guardada y si no hay, abre el checkout.
+    const method = String(body?.method || "auto");
+
     const fundingId = `fund_${user.id.slice(0, 8)}_${Date.now()}`;
 
     // La plata entra a la cuenta de Whop DE LA EMPRESA, no a la de Octapi.
@@ -53,6 +61,56 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No se pudo preparar tu cuenta de pagos" }, { status: 502 });
     }
 
+    // ── TARJETA GUARDADA: TOPUP (sin comisión) ──────────────────────────
+    // Whop no cobra por Topup ("Top-ups have no fees or taxes"), pero necesita
+    // una tarjeta ya guardada. El checkout de más abajo cuesta 2,7% + $0,30 y
+    // a cambio acepta tarjeta nueva, PayPal y lo demás que Whop ofrezca.
+    const pmRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=whop_payment_method_id`,
+      { headers: { Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, apikey: SUPABASE_SERVICE_KEY } }
+    );
+    const savedCard = ((pmRes.ok ? await pmRes.json() : [])[0] || {}).whop_payment_method_id;
+
+    if (method === "saved" && !savedCard) {
+      return NextResponse.json(
+        { error: "No tienes una tarjeta guardada todavía", needsCard: true },
+        { status: 400 }
+      );
+    }
+
+    if (savedCard && (method === "saved" || method === "auto")) {
+      try {
+        const topup: any = await whopClient.topups.create({
+          amount: base,
+          company_id: payerCompanyId,
+          currency: "usd",
+          payment_method_id: savedCard,
+        } as any);
+        const paid = ["succeeded", "paid", "completed", "successful"].includes(
+          String(topup?.status || "").toLowerCase()
+        );
+        if (paid) {
+          return NextResponse.json({
+            ok: true,
+            method: "topup",
+            paid: true,
+            base,
+            fee: 0,
+            total: base,
+            topupId: topup?.id || null,
+            depositsTo: payerCompanyId,
+            environment: WHOP_ENVIRONMENT,
+          });
+        }
+        console.error("[FundWallet] topup no quedó pagado:", topup?.status, topup?.failure_message);
+        // si el topup no salió, cae al checkout de abajo en vez de dejar al usuario trabado
+      } catch (e: any) {
+        console.error("[FundWallet] topup falló, se usa checkout:", e?.message?.slice(0, 200));
+      }
+    }
+
+    // ── RESPALDO: CHECKOUT ──────────────────────────────────────────────
+    // Cobra comisión de procesamiento, pero funciona sin tarjeta guardada.
     const cfg: any = await whopClient.checkoutConfigurations.create({
       plan: {
         company_id: payerCompanyId,
@@ -93,7 +151,9 @@ export async function POST(request: NextRequest) {
 
     // `depositsTo` es a qué cuenta de Whop va a caer la plata. Se devuelve a
     // propósito para poder confirmar de un vistazo que NO es la de Octapi.
-    return NextResponse.json({ ok: true, planId, sessionId: cfg?.id || null, fundingId, base, fee: 0, total: base, environment: WHOP_ENVIRONMENT, depositsTo: payerCompanyId });
+    // `hasSavedCard` le dice a la interfaz si puede ofrecer también el pago
+    // sin comisión con la tarjeta guardada, o si solo cabe el checkout.
+    return NextResponse.json({ ok: true, method: "checkout", planId, sessionId: cfg?.id || null, fundingId, base, fee: 0, total: base, environment: WHOP_ENVIRONMENT, depositsTo: payerCompanyId, hasSavedCard: !!savedCard });
   } catch (e: any) {
     console.error("[FundWallet] error:", e?.message || e);
     return NextResponse.json({ error: "No se pudo crear el checkout" }, { status: 500 });

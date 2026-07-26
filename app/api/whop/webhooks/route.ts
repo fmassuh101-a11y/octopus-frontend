@@ -176,6 +176,50 @@ export async function POST(request: NextRequest) {
         break;
       }
 
+      // ============================================
+      // TARJETA GUARDADA (checkout en modo "setup")
+      // ============================================
+      // Acá llega el payment_method_id (payt_xxx) que hace falta para poder
+      // depositar por Topup, que no cobra comisión — a diferencia del checkout
+      // normal, que cuesta 2,7% + $0,30. Se guarda contra el usuario que abrió
+      // el formulario (viaja en la metadata que puso /api/whop/save-card).
+      case "setup_intent.succeeded": {
+        const d: any = payload.data || {};
+        const userId = d?.metadata?.octopus_user_id || d?.checkout_configuration?.metadata?.octopus_user_id;
+        const pmId =
+          d?.payment_method?.id || d?.payment_method_id || d?.payment_method || null;
+
+        if (!userId || !pmId) {
+          console.error("[Whop Webhook] setup_intent sin usuario o sin tarjeta:", JSON.stringify(d)?.slice(0, 300));
+          break;
+        }
+
+        const svc = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+        if (!svc) {
+          console.error("[Whop Webhook] sin service key, no se puede guardar la tarjeta");
+          break;
+        }
+        const upd = await fetch(
+          `${process.env.NEXT_PUBLIC_SUPABASE_URL || "https://cnsyrgurwtufbynwrxjt.supabase.co"}/rest/v1/profiles?user_id=eq.${userId}`,
+          {
+            method: "PATCH",
+            headers: {
+              Authorization: `Bearer ${svc}`,
+              apikey: svc,
+              "Content-Type": "application/json",
+              Prefer: "return=minimal",
+            },
+            body: JSON.stringify({ whop_payment_method_id: pmId }),
+          }
+        );
+        if (!upd.ok) {
+          console.error("[Whop Webhook] no se pudo guardar la tarjeta:", upd.status, await upd.text().catch(() => ""));
+        } else {
+          console.log("[Whop Webhook] tarjeta guardada para", userId);
+        }
+        break;
+      }
+
       default:
         console.log("[Whop Webhook] Evento no manejado:", payload.event);
     }

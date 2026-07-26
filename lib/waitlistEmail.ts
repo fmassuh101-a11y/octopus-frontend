@@ -44,7 +44,7 @@ function emailShell(bodyHtml: string): string {
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #1f2937; font-size: 16px; line-height: 1.65; letter-spacing: 0.1px;">
       ${bodyHtml}
       <p style="margin-top: 24px; font-size: 13px; color: #6b7280;">
-        Síguenos en <a href="https://www.tiktok.com/@app_desde_zero" style="color: #0891B2;">TikTok</a> e <a href="https://instagram.com/octapi.app" style="color: #0891B2;">Instagram</a>.
+        Síguenos en <a href="https://www.tiktok.com/@app_desde_zero" style="color: #0891B2;">TikTok</a> e <a href="https://instagram.com/octapi_app" style="color: #0891B2;">Instagram</a>.
       </p>
       <p style="margin-top: 8px; font-size: 12px; color: #9ca3af;">Estás recibiendo este email porque te anotaste en la lista de espera de Octapi.</p>
     </div>`;
