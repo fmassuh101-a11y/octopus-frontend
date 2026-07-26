@@ -40,34 +40,28 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "No se pudo preparar tu cuenta de pagos" }, { status: 502 });
     }
 
-    // El ledger de la cuenta: puede venir anidado en la company o pedirse aparte,
-    // según la versión del SDK. Se prueban las dos formas antes de rendirse.
+    // La cuenta de saldo (ledger) se pide con ledgerAccounts.retrieve(). Según
+    // la documentación de transferencias, los ids de empresa (biz_) sirven donde
+    // se espera una cuenta, así que se prueba con el companyId directo. El
+    // objeto Company NO trae el ledger anidado — verificado en los tipos del SDK.
     let ledger: any = null;
+    let ledgerError = "";
     try {
-      const company: any = await whopClient.companies.retrieve(companyId);
-      ledger = company?.ledger_account || company?.ledgerAccount || null;
-      if (!ledger?.id && (whopClient as any).ledgerAccounts?.retrieve) {
-        const ledgerId = company?.ledger_account_id || company?.ledgerAccountId;
-        if (ledgerId) ledger = await (whopClient as any).ledgerAccounts.retrieve(ledgerId);
-      }
+      ledger = await (whopClient as any).ledgerAccounts.retrieve(companyId);
     } catch (e: any) {
-      console.error("[MyBalance] no se pudo leer la cuenta:", e?.message?.slice(0, 200));
+      ledgerError = (e?.message || String(e)).slice(0, 200);
+      console.error("[MyBalance] ledgerAccounts.retrieve falló para", companyId, ledgerError);
     }
 
-    // Whop puede devolver los saldos como número suelto o como lista por moneda.
-    const pick = (v: any): number => {
-      if (typeof v === "number") return v;
-      if (Array.isArray(v)) {
-        const usd = v.find((b: any) => String(b?.currency).toLowerCase() === "usd");
-        return Number(usd?.amount ?? usd?.balance ?? 0) || 0;
-      }
-      if (v && typeof v === "object") return Number((v as any).usd ?? 0) || 0;
-      return 0;
-    };
+    // balances es un arreglo por moneda: { balance, currency, pending_balance,
+    // reserve_balance } — así lo declara el SDK.
+    const usd = Array.isArray(ledger?.balances)
+      ? ledger.balances.find((b: any) => String(b?.currency).toLowerCase() === "usd") || ledger.balances[0]
+      : null;
 
-    const balance = pick(ledger?.balance ?? ledger?.balances);
-    const pending = pick(ledger?.pending_balance ?? ledger?.pendingBalance);
-    const reserved = pick(ledger?.reserve_balance ?? ledger?.reserveBalance);
+    const balance = Number(usd?.balance) || 0;
+    const pending = Number(usd?.pending_balance) || 0;
+    const reserved = Number(usd?.reserve_balance) || 0;
 
     return NextResponse.json({
       ok: true,
@@ -76,8 +70,10 @@ export async function GET(request: NextRequest) {
       pending,
       reserved,
       currency: "usd",
-      // si Whop no devolvió ledger, la app puede avisar en vez de mostrar $0 falso
-      readable: !!ledger,
+      // si Whop no devolvió ledger, la app NO usa este número (mostraría $0
+      // falso). El motivo va en `reason` para poder diagnosticarlo sin logs.
+      readable: !!usd,
+      reason: usd ? undefined : ledgerError || (ledger ? "la cuenta no tiene saldos aún" : "no se pudo leer la cuenta"),
     });
   } catch (e: any) {
     console.error("[MyBalance] error:", e?.message || e);
