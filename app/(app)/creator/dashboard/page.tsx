@@ -146,7 +146,17 @@ export default function CreatorHome() {
         <PendingContracts />
         {/* chips superiores + campana de notificaciones */}
         <div className="flex items-center gap-2">
-          <div className="flex flex-1 items-center gap-2 overflow-x-auto no-scrollbar">
+          {/* El scroll horizontal cortaba el último chip a la mitad contra la
+              campana — se veía roto, no como "hay más". La máscara degrada el
+              borde derecho para que el corte se lea intencional, y el padding
+              evita que el chip quede pegado al ícono. */}
+          <div
+            className="flex flex-1 items-center gap-2 overflow-x-auto no-scrollbar pr-3"
+            style={{
+              maskImage: 'linear-gradient(to right, #000 calc(100% - 28px), transparent 100%)',
+              WebkitMaskImage: 'linear-gradient(to right, #000 calc(100% - 28px), transparent 100%)',
+            }}
+          >
             <Link href="/leaderboard" prefetch className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/60 bg-white px-3.5 py-2 text-sm font-bold shadow-sm active:scale-95 transition-transform">
               <span className={`flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br ${level.from} ${level.to}`}>
                 <Shield className="h-3 w-3 text-white" />
@@ -203,7 +213,7 @@ export default function CreatorHome() {
 
         {/* tareas de hoy — checks chicos y precisos, animados */}
         <h2 className="mt-9 text-[26px] font-extrabold tracking-tight">Primeros pasos</h2>
-        <p className="mt-0.5 text-sm text-neutral-500">Completalos una vez para arrancar con todo</p>
+        <p className="mt-0.5 text-sm text-neutral-500">Complétalos una vez para arrancar con todo</p>
         <div className="mt-4">
           {missions.map((m, i) => {
             const meta = MISSION_META[m.key] || MISSION_META.apply
