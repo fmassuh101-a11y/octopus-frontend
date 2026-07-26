@@ -29,11 +29,13 @@ export const metadata: Metadata = {
     siteName: 'Octapi',
     locale: 'es_CL',
     type: 'website',
+    images: [{ url: '/og.png', width: 1200, height: 630, alt: 'Octapi — Creadores que monetizan' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Octapi - Marketplace Digital Global',
     description: 'Conecta creadores con marcas para tareas de UGC, servicios digitales y más',
+    images: ['/og.png'],
   },
   robots: { index: true, follow: true },
 }

@@ -15,6 +15,16 @@ export const metadata: Metadata = {
     siteName: 'Octapi',
     locale: 'es_CL',
     type: 'website',
+    images: [{ url: '/og.png', width: 1200, height: 630, alt: 'Octapi — Creadores que monetizan' }],
+  },
+  // El layout raíz pone un twitter.title genérico ("Marketplace Digital
+  // Global") que pisaba a este; se repite acá para que la tarjeta al
+  // compartir diga lo mismo que el resto de la página.
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Octapi — Creadores que monetizan, marcas que crecen',
+    description: 'El marketplace que conecta creadores de contenido (UGC) con marcas de toda Latinoamérica.',
+    images: ['/og.png'],
   },
   alternates: { canonical: 'https://octapiapp.com/waitlist' },
 }
