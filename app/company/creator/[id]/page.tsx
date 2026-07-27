@@ -1,7 +1,7 @@
 'use client'
 import { safeExternalUrl } from '@/lib/safe'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import CreateContractModal from '@/components/contracts/CreateContractModal'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
@@ -80,6 +80,8 @@ export default function CreatorProfilePage() {
   const [payCpmStr, setPayCpmStr] = useState('1')
   const [payStep, setPayStep] = useState<'form' | 'confirm' | 'done'>('form')
   const [payBusy, setPayBusy] = useState(false)
+  // Clave de idempotencia del pago en curso (ver confirmPay).
+  const payKeyRef = useRef<string | null>(null)
   const [payError, setPayError] = useState('')
   const [payNewBalance, setPayNewBalance] = useState<number | null>(null)
 
@@ -232,13 +234,22 @@ export default function CreatorProfilePage() {
     setPayError('')
     try {
       const token = getToken()
+      // Clave del intento: se crea UNA vez por apertura del modal. Si el pago
+      // se reintenta (se cayó la red, el usuario aprieta de nuevo), viaja la
+      // MISMA clave y Whop reconoce que es el mismo pago en vez de mandar la
+      // plata dos veces. Un pago nuevo exige cerrar y reabrir, y ahí cambia.
+      let clave = payKeyRef.current
+      if (!clave) {
+        clave = (globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`)
+        payKeyRef.current = clave
+      }
       const res = await fetch('/api/payments/pay-creator', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(
           payMode === 'cpm'
-            ? { creatorId, views: payViews, cpm: payCpm }
-            : { creatorId, amount: payAmount }
+            ? { creatorId, views: payViews, cpm: payCpm, idempotencyKey: clave }
+            : { creatorId, amount: payAmount, idempotencyKey: clave }
         ),
       })
       const data = await res.json()
@@ -256,12 +267,18 @@ export default function CreatorProfilePage() {
     setPayBusy(false)
   }
 
+  // Cierra el modal de pago. NO hace nada mientras el cobro está en curso:
+  // antes, un clic en el fondo oscuro lo cerraba a mitad de la transacción, la
+  // empresa se quedaba sin saber si había pagado, y volvía a intentar. Con
+  // saldo suficiente eso significaba pagar dos veces de verdad.
   const resetPay = () => {
+    if (payBusy) return
     setPayOpen(false)
     setPayStep('form')
     setPayAmountStr('')
     setPayViewsStr('')
     setPayError('')
+    payKeyRef.current = null // el próximo pago es otro pago: clave nueva
   }
 
   const handleAccept = async (applicationId: string) => {

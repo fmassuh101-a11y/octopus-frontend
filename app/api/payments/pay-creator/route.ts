@@ -26,6 +26,14 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json().catch(() => ({}))
   const creatorId = String(body?.creatorId || '')
+
+  // Clave del intento de pago que manda la app. Se limpia a caracteres seguros
+  // y se acota, porque termina viajando a Whop. Si no viene (app vieja en caché,
+  // llamada desde otro lado), se cae a una por tiempo: no protege contra
+  // reintentos, pero no rompe el pago.
+  const clientKey =
+    String(body?.idempotencyKey || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 60) ||
+    `t${Date.now()}`;
   const note = String(body?.note || '').slice(0, 200)
   const views = Number(body?.views)
   const cpm = Number(body?.cpm)
@@ -103,7 +111,13 @@ export async function POST(request: NextRequest) {
     userId: creatorId,
     email: (creator as any).email,
     amount,
-    idempotenceKey: `pay_${user.id}_${creatorId}_${Date.now()}`,
+    // La clave la manda la app: nace UNA vez por apertura del modal de pago y
+    // se repite si el intento se reintenta. Antes acá iba Date.now(), o sea
+    // una clave distinta en cada llamada — que es lo mismo que no tener
+    // ninguna: si el pago se reintentaba, Whop mandaba la plata dos veces.
+    // Va prefijada con el id de quien paga para que dos empresas no puedan
+    // chocar mandando la misma clave.
+    idempotenceKey: `pay_${user.id}_${clientKey}`,
     notes: description || 'Pago de campaña Octopus',
     originCompanyId: payerCompanyId,
   })
