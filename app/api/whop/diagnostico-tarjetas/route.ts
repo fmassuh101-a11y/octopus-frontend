@@ -72,6 +72,29 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // 1.b MOVIMIENTOS RECIENTES de mi cuenta.
+  //     Es lo que responde la pregunta que de verdad importa cuando un
+  //     depósito se comporta raro: ¿me cobraron o no? Y si me cobraron, ¿en
+  //     qué estado quedó? (paid / pending / uncollectible / void…)
+  if (mia) {
+    await paso(`payments.list(company_id=${mia}) [movimientos recientes]`, async () =>
+      items(await w.payments.list({ company_id: mia, first: 15, direction: "desc" })).map((p: any) => ({
+        id: p?.id,
+        estado: p?.status,
+        subestado: p?.substatus,
+        total: p?.total,
+        moneda: p?.currency,
+        motivo_de_fallo: p?.failure_message,
+        creado: p?.created_at,
+        pagado: p?.paid_at,
+      }))
+    );
+    await paso(`ledgerAccounts.retrieve(${mia}) [saldo real]`, async () => {
+      const l: any = await w.ledgerAccounts.retrieve(mia);
+      return { saldos: l?.balances, estado_pagos: l?.payments_approval_status ?? null };
+    });
+  }
+
   // 2. lo mismo en la cuenta de Octapi — para ver si la tarjeta se fue a la
   //    cuenta madre en vez de a la de la empresa (sería un problema serio).
   //    Solo admin: son datos de la cuenta de la plataforma, no del usuario.
