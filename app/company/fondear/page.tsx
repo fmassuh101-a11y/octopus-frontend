@@ -40,6 +40,9 @@ export default function FondearPage() {
   // Solo se llena si la CONSULTA a Whop falló — que es distinto de no tener
   // tarjetas. Mezclar las dos cosas fue el error de la versión anterior.
   const [fallaConsulta, setFallaConsulta] = useState<string | null>(null)
+  // El cobro salió pero Whop todavía no lo confirma. Se muestra una pantalla
+  // propia: NO se puede ofrecer pagar de nuevo, o la empresa paga dos veces.
+  const [pendiente, setPendiente] = useState(false)
 
   useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current) }, [])
 
@@ -151,6 +154,22 @@ export default function FondearPage() {
         return
       }
 
+      // COBRO EN CURSO: la tarjeta YA se cobró y Whop lo está procesando.
+      // No se abre el checkout — si la empresa pagara ahí, quedaría cobrada
+      // dos veces por el mismo depósito.
+      if (data.ok && data.method === 'topup' && data.pending) {
+        doneRef.current = true
+        setError('')
+        setPendiente(true)
+        return
+      }
+
+      // Si venía con tarjeta guardada y aun así terminamos en el checkout, se
+      // dice POR QUÉ, en vez de cambiar de pantalla sin explicación.
+      if (data.motivoTopup) {
+        setError(`No se pudo usar tu tarjeta guardada: ${data.motivoTopup}. Puedes pagar acá abajo, pero esta forma sí tiene comisión.`)
+      }
+
       if (data.ok && data.planId) {
         setCheckout(data)
         setStep('pay')
@@ -203,7 +222,27 @@ export default function FondearPage() {
         <h1 className="mt-5 text-[28px] font-extrabold tracking-tight">Agregar fondos</h1>
         <p className="mt-1 text-neutral-500">El dinero queda en tu cuenta y tú decides cómo usarlo.</p>
 
-        {step === 'amount' && (
+        {/* Cobro en curso. Sin botón de pagar: la tarjeta ya se cobró y volver
+            a intentar sería un segundo cobro por el mismo depósito. */}
+        {pendiente && (
+          <div className="mt-6 rounded-3xl border border-amber-200 bg-amber-50 p-6 text-center">
+            <Loader2 className="mx-auto h-8 w-8 animate-spin text-amber-600" />
+            <p className="mt-4 text-lg font-bold text-amber-900">Tu pago se está procesando</p>
+            <p className="mt-2 text-sm leading-relaxed text-amber-800/90">
+              Ya cobramos ${fmt(amount)} a tu tarjeta y el banco lo está confirmando.
+              Puede tardar unos minutos. <strong>No vuelvas a pagar</strong> — el dinero
+              aparecerá solo en tu balance.
+            </p>
+            <button
+              onClick={() => router.push('/company/wallet')}
+              className="mt-5 w-full rounded-full bg-amber-600 py-3.5 font-bold text-white transition-transform active:scale-[0.98]"
+            >
+              Ir a mi billetera
+            </button>
+          </div>
+        )}
+
+        {step === 'amount' && !pendiente && (
           <div className="mt-6 rounded-3xl border border-neutral-100 bg-white p-6 shadow-sm">
             <p className="font-bold">Monto</p>
             <div className="mt-2 flex items-center gap-2 rounded-2xl border-2 border-neutral-200 px-4 py-3.5 focus-within:border-cyan-400">

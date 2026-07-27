@@ -102,6 +102,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Motivo real por el que no se pudo usar la tarjeta guardada. Viaja de
+    // vuelta a la app para que la empresa sepa por qué terminó en el checkout
+    // en vez de que la pantalla simplemente cambie sola sin explicación.
+    let motivoTopup: string | null = null;
+
     if (savedCard && (method === "saved" || method === "auto")) {
       try {
         const topup: any = await whopClient.topups.create({
@@ -110,10 +115,11 @@ export async function POST(request: NextRequest) {
           currency: "usd",
           payment_method_id: savedCard,
         } as any);
-        const paid = ["succeeded", "paid", "completed", "successful"].includes(
-          String(topup?.status || "").toLowerCase()
-        );
-        if (paid) {
+        // Estados que Whop puede devolver (ReceiptStatus):
+        //   draft · open · paid · pending · uncollectible · unresolved · void
+        const estado = String(topup?.status || "").toLowerCase();
+
+        if (["succeeded", "paid", "completed", "successful"].includes(estado)) {
           return NextResponse.json({
             ok: true,
             method: "topup",
@@ -126,10 +132,39 @@ export async function POST(request: NextRequest) {
             environment: WHOP_ENVIRONMENT,
           });
         }
-        console.error("[FundWallet] topup no quedó pagado:", topup?.status, topup?.failure_message);
-        // si el topup no salió, cae al checkout de abajo en vez de dejar al usuario trabado
+
+        // COBRO EN CURSO — NO caer al checkout.
+        //
+        // Acá estaba el error grave: "pending" y "open" significan que el cobro
+        // a la tarjeta YA SALIÓ y está procesándose. Antes eso se trataba como
+        // fallo y se abría el checkout, así que la empresa podía pagar de nuevo
+        // y quedar cobrada DOS VECES por el mismo depósito.
+        if (["pending", "open", "draft"].includes(estado)) {
+          console.error("[FundWallet] topup en curso:", estado, topup?.id);
+          return NextResponse.json({
+            ok: true,
+            method: "topup",
+            paid: false,
+            pending: true,
+            base,
+            fee: 0,
+            total: base,
+            topupId: topup?.id || null,
+            depositsTo: payerCompanyId,
+            environment: WHOP_ENVIRONMENT,
+          });
+        }
+
+        // Fallo de verdad (uncollectible, void, unresolved): se puede reintentar
+        // por checkout sin riesgo de cobro doble, y se dice POR QUÉ falló.
+        console.error("[FundWallet] topup no quedó pagado:", estado, topup?.failure_message);
+        motivoTopup = topup?.failure_message || `la tarjeta guardada no pudo cobrarse (${estado || "sin estado"})`;
       } catch (e: any) {
-        console.error("[FundWallet] topup falló, se usa checkout:", e?.message?.slice(0, 200));
+        // Un error de la API (permisos, tarjeta inválida) tampoco cobró nada,
+        // así que el checkout es un respaldo seguro. Pero se guarda el motivo:
+        // antes se perdía en los registros y desde la app era invisible.
+        console.error("[FundWallet] topup falló, se usa checkout:", e?.message?.slice(0, 300));
+        motivoTopup = String(e?.message || "no se pudo cobrar la tarjeta guardada").slice(0, 200);
       }
     }
 
@@ -177,7 +212,7 @@ export async function POST(request: NextRequest) {
     // propósito para poder confirmar de un vistazo que NO es la de Octapi.
     // `hasSavedCard` le dice a la interfaz si puede ofrecer también el pago
     // sin comisión con la tarjeta guardada, o si solo cabe el checkout.
-    return NextResponse.json({ ok: true, method: "checkout", planId, sessionId: cfg?.id || null, fundingId, base, fee: 0, total: base, environment: WHOP_ENVIRONMENT, depositsTo: payerCompanyId, hasSavedCard: !!savedCard });
+    return NextResponse.json({ ok: true, method: "checkout", planId, sessionId: cfg?.id || null, fundingId, base, fee: 0, total: base, environment: WHOP_ENVIRONMENT, depositsTo: payerCompanyId, hasSavedCard: !!savedCard, motivoTopup });
   } catch (e: any) {
     console.error("[FundWallet] error:", e?.message || e);
     return NextResponse.json({ error: "No se pudo crear el checkout" }, { status: 500 });
