@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import SlideMenu from '@/components/layout/SlideMenu'
+import { usePathname } from 'next/navigation'
+import CompanyNav from '@/components/layout/CompanyNav'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
 
 export default function CompanyLayout({
@@ -9,6 +10,7 @@ export default function CompanyLayout({
 }: {
   children: React.ReactNode
 }) {
+  const pathname = usePathname()
   const [userData, setUserData] = useState<{
     userName: string
     userEmail: string
@@ -60,17 +62,26 @@ export default function CompanyLayout({
   }, [])
 
   return (
-    <div className="min-h-screen bg-neutral-950 dark:bg-neutral-950">
-      {userData && (
-        <SlideMenu
-          userType="company"
-          userName={userData.userName}
-          userEmail={userData.userEmail}
-          avatarUrl={userData.avatarUrl}
-        />
-      )}
-      <main className="pl-0 lg:pl-0">
-        {children}
+    <div className="min-h-screen bg-neutral-950">
+      {/* El menú se monta acá, FUERA de <main>. Por eso al navegar solo se
+          vuelve a dibujar el contenido y el menú se queda quieto: ni parpadea
+          ni pierde la posición del scroll. */}
+      <CompanyNav
+        userName={userData?.userName}
+        userEmail={userData?.userEmail}
+        avatarUrl={userData?.avatarUrl}
+      />
+
+      {/* En computador el contenido se corre para dejarle su espacio al carril
+          (w-60 = 15rem). En teléfono ocupa todo, porque ahí el menú es un cajón
+          que va por encima. */}
+      <main className="lg:pl-60">
+        {/* La clave por ruta reinicia la aparición en cada navegación.
+            La animación se define en globals.css y se apaga sola si la persona
+            tiene el movimiento reducido en su sistema. */}
+        <div key={pathname} className="oct-entra">
+          {children}
+        </div>
       </main>
     </div>
   )

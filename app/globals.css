@@ -376,3 +376,25 @@
   from { opacity: 0; transform: translateY(24px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Entrada del contenido al cambiar de sección (panel de empresa).
+   El menú de la izquierda NO se toca: solo aparece el lado derecho. Es corta a
+   propósito — pasados los ~200ms deja de sentirse suave y empieza a sentirse
+   lenta. Se apaga sola si la persona pidió menos movimiento en su sistema. */
+@keyframes octEntra {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+.oct-entra { animation: octEntra 0.18s ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .oct-entra { animation: none; }
+}
+
+/* Menú de empresa: desvanecido en el borde inferior cuando la lista se
+   desplaza. Sin esto, en pantallas bajas el último rótulo de sección queda
+   cortado por la mitad y parece un error de dibujo en vez de un corte. */
+.oct-nav-fade {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent 100%);
+          mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent 100%);
+}

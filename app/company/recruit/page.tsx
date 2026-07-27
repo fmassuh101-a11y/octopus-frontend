@@ -502,7 +502,7 @@ export default function RecruitPage() {
       </div>
 
       {/* Bottom Nav */}
-      <div className="fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-800 px-6 py-3">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-800 px-6 py-3">
         <div className="max-w-4xl mx-auto flex justify-around">
           {[
             { icon: Home, label: 'Dashboard', href: '/company/dashboard' },

@@ -403,7 +403,7 @@ export default function TemplatesPage() {
       </div>
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-800">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-800">
         <div className="flex justify-around py-2">
           <Link href="/company/dashboard" className="flex flex-col items-center py-2 px-4 text-neutral-500 hover:text-neutral-400">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
