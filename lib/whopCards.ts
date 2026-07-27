@@ -30,6 +30,8 @@ export interface TarjetaGuardada {
   expAno: number | null;
   banco: string | null; // solo lo entrega Whop en cuentas bancarias, no en tarjetas
   creadaEn: string | null;
+  /** Si vino de la lista de un miembro, cuál. Solo para depurar. */
+  deMiembro?: string;
 }
 
 export interface ResultadoTarjetas {
@@ -38,7 +40,7 @@ export interface ResultadoTarjetas {
    *  (≠ "no tiene tarjetas"), y quien llame debe decirlo en vez de fingir cero. */
   problema: string | null;
   /** De dónde salieron, para depurar sin adivinar. */
-  via: "lista" | "setup_intents" | "ninguno";
+  via: "lista" | "setup_intents" | "miembro" | "ninguno";
 }
 
 // Whop devuelve varias formas según el tipo de medio de pago. Esto las aplana.
@@ -84,12 +86,24 @@ export async function listarTarjetas(companyId: string): Promise<ResultadoTarjet
     console.error("[whopCards] paymentMethods.list falló:", fallo);
   }
 
-  // 2) respaldo por setup intents — cubre el hueco justo después de guardar,
-  //    cuando la lista oficial todavía no muestra la tarjeta recién creada.
+  // 2) respaldo por setup intents.
+  //
+  //    Acá está la parte importante y no obvia: cuando alguien guarda su
+  //    tarjeta desde un checkout en modo "setup", Whop la deja colgando del
+  //    MIEMBRO que llenó el formulario, no de la empresa. Por eso
+  //    paymentMethods.list({company_id}) puede devolver CERO teniendo una
+  //    tarjeta perfectamente guardada — que es justo lo que pasaba.
+  //
+  //    El setup intent es el único lugar donde aparecen las dos cosas juntas:
+  //    la tarjeta y el miembro dueño. De ahí sacamos el miembro y volvemos a
+  //    preguntar, ahora por member_id, para quedarnos con el id que Whop
+  //    considera bueno para cobrar.
+  const miembros = new Set<string>();
   try {
     const res: any = await (whopClient as any).setupIntents.list({ company_id: companyId, first: 20 });
     for (const si of itemsDe(res)) {
       if (String(si?.status || "").toLowerCase() !== "succeeded") continue;
+      if (si?.member?.id) miembros.add(si.member.id);
       const t = normalizar(si?.payment_method);
       if (t && !porId.has(t.id)) {
         porId.set(t.id, t);
@@ -102,6 +116,25 @@ export async function listarTarjetas(companyId: string): Promise<ResultadoTarjet
     const msg = e?.message ? String(e.message).slice(0, 200) : "error consultando setup intents";
     console.error("[whopCards] setupIntents.list falló:", msg);
     if (!fallo) fallo = msg;
+  }
+
+  // 3) la lista del MIEMBRO. Es la que de verdad importa para cobrar: si Whop
+  //    guardó la tarjeta contra la persona, este es el id que reconoce.
+  for (const memberId of Array.from(miembros)) {
+    try {
+      const res: any = await (whopClient as any).paymentMethods.list({ member_id: memberId, first: 20 });
+      for (const m of itemsDe(res)) {
+        const t = normalizar(m);
+        if (!t) continue;
+        // Se sobrescribe a propósito: si el mismo medio aparece por los dos
+        // caminos, gana el del miembro, porque es el que Whop acepta cobrar.
+        porId.set(t.id, { ...t, deMiembro: memberId });
+        if (via === "ninguno" || via === "setup_intents") via = "miembro";
+      }
+      if (porId.size) fallo = null;
+    } catch (e: any) {
+      console.error("[whopCards] paymentMethods.list(member) falló:", String(e?.message).slice(0, 150));
+    }
   }
 
   // más nuevas primero: la recién guardada es la que la empresa quiere usar
