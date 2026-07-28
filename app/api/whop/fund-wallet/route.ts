@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { whopClient, whopComoEmpresa, WHOP_ENVIRONMENT } from "@/lib/whop";
+import { whopClient, WHOP_ENVIRONMENT } from "@/lib/whop";
 import { whopAccountForMoney } from "@/lib/whopIdentity";
 import { listarTarjetas } from "@/lib/whopCards";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/config/supabase";
@@ -109,12 +109,17 @@ export async function POST(request: NextRequest) {
 
     if (savedCard && (method === "saved" || method === "auto")) {
       try {
-        // El cobro se hace PARADO dentro de la sub-cuenta de la empresa.
-        // Con la llave de la cuenta madre, Whop no encuentra la tarjeta
-        // (404 "This PaymentToken was not found") porque la busca en el lugar
-        // equivocado. Ver whopComoEmpresa() en lib/whop.ts.
-        const comoEmpresa = await whopComoEmpresa(payerCompanyId);
-        const topup: any = await comoEmpresa.topups.create({
+        // Soporte de Whop confirmo por que este cobro falla, y NO era el
+        // alcance de la llave: hay dos "bolsas" distintas de medios de pago.
+        //   - Tarjeta del MIEMBRO: la guarda un comprador para pagarle a una
+        //     empresa. Sirve para payments.create.
+        //   - Tarjeta de la EMPRESA: la empresa la guarda para recargar SU
+        //     propio saldo. Es la unica que topups.create acepta.
+        // Nuestro checkout en modo "setup" crea la primera, no la segunda. Por
+        // eso paymentMethods.list({company_id}) viene vacio y el topup da 404.
+        // Se deja el intento porque no cuesta nada y el dia que la empresa
+        // tenga una tarjeta PROPIA guardada, empieza a funcionar solo.
+        const topup: any = await whopClient.topups.create({
           amount: base,
           company_id: payerCompanyId,
           currency: "usd",
