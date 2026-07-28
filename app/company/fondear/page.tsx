@@ -172,7 +172,7 @@ export default function FondearPage() {
       // pantalla no la ayuda en nada.
       if (data.motivoTopup) {
         console.error('[Fondear] topup no disponible:', data.motivoTopup)
-        setError('Completa los datos de tu tarjeta acá abajo para terminar el depósito.')
+        setError(`No pudimos cobrar tu tarjeta guardada. Puedes terminar acá abajo, pero por esta vía se cobra $${fmt(conComision(amount))} en vez de $${fmt(amount)}.`)
       }
 
       if (data.ok && data.planId) {
@@ -299,11 +299,7 @@ export default function FondearPage() {
                   {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Zap className="h-5 w-5" />}
                   {amount >= 1 ? `Agregar $${fmt(amount)}` : 'Agregar fondos'}
                 </button>
-                <p className="mt-2 text-center text-xs text-neutral-500">
-                  {amount >= 1
-                    ? <>Se cobra <strong className="text-neutral-700">${fmt(conComision(amount))}</strong> a tu tarjeta · llegan ${fmt(amount)} a tu balance</>
-                    : <>Incluye la comisión de procesamiento de Whop (2,7% + $0,30)</>}
-                </p>
+                <p className="mt-2 text-center text-xs font-semibold text-emerald-600">Sin comisión</p>
 
                 <button onClick={() => createCheckout('checkout')} disabled={busy || amount < 1}
                   className="mt-3 flex w-full items-center justify-center gap-2 rounded-full border-2 border-neutral-200 py-3.5 font-bold text-neutral-700 transition-transform active:scale-[0.98] disabled:opacity-50">

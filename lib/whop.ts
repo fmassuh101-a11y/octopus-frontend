@@ -36,6 +36,35 @@ export const whopClient = new Whop({
 
 console.log(`[Whop] Ambiente: ${WHOP_ENVIRONMENT}`);
 
+/**
+ * Cliente de Whop que actúa COMO la sub-cuenta de una empresa.
+ *
+ * POR QUÉ HACE FALTA
+ * Nuestra llave de API pertenece a la cuenta madre (Octapi). Las tarjetas que
+ * guarda cada empresa viven dentro de SU sub-cuenta. Cuando se intentaba cobrar
+ * una de esas tarjetas con la llave de la madre, Whop respondía:
+ *
+ *     404 { "type": "not_found", "message": "This PaymentToken was not found" }
+ *
+ * No es que el id estuviera mal: es que la llave miraba en el lugar equivocado.
+ *
+ * LA SOLUCIÓN
+ * Whop permite pedir un token de acceso apuntado a otra empresa, siempre que la
+ * llave tenga permiso sobre ella — y textualmente admite el caso de "a
+ * sub-merchant of it", que es exactamente el nuestro. Ese token es un "company
+ * scoped JWT", una de las formas de autenticación que el SDK acepta.
+ *
+ * Con él, la consulta se hace PARADA dentro de la sub-cuenta, y ahí la tarjeta
+ * sí existe. Dura una hora; no se guarda en ningún lado, se pide y se usa.
+ */
+export async function whopComoEmpresa(companyId: string) {
+  if (!companyId) throw new Error("falta la cuenta de la empresa");
+  const res: any = await (whopClient as any).accessTokens.create({ company_id: companyId });
+  const token = res?.token;
+  if (!token) throw new Error("Whop no entregó un token para la sub-cuenta");
+  return whopClient.withOptions({ apiKey: token });
+}
+
 // ID de la compañía de Octopus en Whop (sandbox usa la compañía de test)
 export const OCTOPUS_COMPANY_ID =
   (isSandbox && TEST_COMPANY_ID ? TEST_COMPANY_ID : process.env.WHOP_OCTOPUS_COMPANY_ID) || "";

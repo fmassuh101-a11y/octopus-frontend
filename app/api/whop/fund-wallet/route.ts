@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { whopClient, WHOP_ENVIRONMENT } from "@/lib/whop";
+import { whopClient, whopComoEmpresa, WHOP_ENVIRONMENT } from "@/lib/whop";
 import { whopAccountForMoney } from "@/lib/whopIdentity";
 import { listarTarjetas } from "@/lib/whopCards";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/config/supabase";
@@ -109,7 +109,12 @@ export async function POST(request: NextRequest) {
 
     if (savedCard && (method === "saved" || method === "auto")) {
       try {
-        const topup: any = await whopClient.topups.create({
+        // El cobro se hace PARADO dentro de la sub-cuenta de la empresa.
+        // Con la llave de la cuenta madre, Whop no encuentra la tarjeta
+        // (404 "This PaymentToken was not found") porque la busca en el lugar
+        // equivocado. Ver whopComoEmpresa() en lib/whop.ts.
+        const comoEmpresa = await whopComoEmpresa(payerCompanyId);
+        const topup: any = await comoEmpresa.topups.create({
           amount: base,
           company_id: payerCompanyId,
           currency: "usd",
