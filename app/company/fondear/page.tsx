@@ -30,9 +30,9 @@ export default function FondearPage() {
   const doneRef = useRef(false)
   const receiptRef = useRef<string>('')
 
-  // Medios de pago guardados. Con uno de ellos el depósito va por Topup y Whop
-  // NO cobra comisión; sin ninguno solo cabe el checkout, que cuesta 2,7% + $0,30.
-  // La lista se le pide a Whop, no a nuestra base: Whop es quien las guarda.
+  // Medios de pago guardados. La lista se le pide a Whop, no a nuestra base:
+  // Whop es quien las guarda. Ojo: tener la tarjeta guardada NO evita la
+  // comisión hoy — ver el comentario largo más abajo, junto a los botones.
   const [tarjetas, setTarjetas] = useState<Tarjeta[] | null>(null)
   const [elegida, setElegida] = useState<string | null>(null)
   const [cardSession, setCardSession] = useState<string | null>(null)
@@ -144,10 +144,11 @@ export default function FondearPage() {
       })
       const data = await res.json()
 
-      // Con tarjeta ya guardada el servidor cobra por Topup (sin comisión) y
-      // devuelve el pago YA hecho — no hay checkout que mostrar. Sin este
-      // caso, un cobro exitoso caía al else y decía "No se pudo crear el
-      // pago" aunque la plata ya estaba acreditada.
+      // Si el Topup llegara a funcionar (hoy no: Whop no encuentra la tarjeta
+      // de una sub-cuenta), el pago vuelve YA hecho y no hay checkout que
+      // mostrar. Se deja el caso porque el día que Whop lo habilite, funciona
+      // solo. Sin esto, un cobro exitoso caía al else y decía "No se pudo
+      // crear el pago" con la plata ya acreditada.
       if (data.ok && data.method === 'topup' && data.paid) {
         doneRef.current = true
         router.push(`/company/fondear/exito?monto=${encodeURIComponent(String(data.base || amount))}`)
@@ -166,8 +167,12 @@ export default function FondearPage() {
 
       // Si venía con tarjeta guardada y aun así terminamos en el checkout, se
       // dice POR QUÉ, en vez de cambiar de pantalla sin explicación.
+      // El motivo técnico va a la consola para nosotros; a la empresa se le
+      // dice algo que pueda entender y hacer. Mostrarle un 404 de Whop en
+      // pantalla no la ayuda en nada.
       if (data.motivoTopup) {
-        setError(`No se pudo usar tu tarjeta guardada: ${data.motivoTopup}. Puedes pagar acá abajo, pero esta forma sí tiene comisión.`)
+        console.error('[Fondear] topup no disponible:', data.motivoTopup)
+        setError('Completa los datos de tu tarjeta acá abajo para terminar el depósito.')
       }
 
       if (data.ok && data.planId) {
@@ -208,6 +213,11 @@ export default function FondearPage() {
     if (!ok) setError((prev) => prev || 'Todavía no vemos el pago. Si ya pagaste, espera unos segundos y prueba de nuevo.')
     setVerifying(false)
   }
+
+  // Lo que Whop le cobra a la tarjeta para que lleguen `n` limpios al balance.
+  // 2,7% + $0,30 es la tarifa de procesamiento del checkout. Se muestra ANTES
+  // de pagar: la empresa tiene que saber cuánto sale de su tarjeta.
+  const conComision = (n: number) => Math.round((n + n * 0.027 + 0.3) * 100) / 100
 
   const fmt = (n: number) => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
@@ -257,9 +267,15 @@ export default function FondearPage() {
             </div>
             {error && <p className="mt-2 text-sm font-semibold text-red-500">{error}</p>}
 
-            {/* Con una tarjeta guardada el cobro va por Topup y Whop no cobra
-                comisión — por eso es la opción destacada. Sin ninguna, el
-                checkout es el único camino y cuesta 2,7% + $0,30. */}
+            {/* HONESTIDAD SOBRE LA COMISIÓN — no borrar este comentario.
+                La idea original era cobrar por Topup, que Whop no cobra. No se
+                puede: el topup busca la tarjeta en la cuenta MADRE de Octapi y
+                la tarjeta vive en la sub-cuenta de la empresa, así que responde
+                404 "This PaymentToken was not found". Es un límite de Whop para
+                sub-cuentas, no algo que se arregle acá.
+                Mientras tanto la pantalla NO promete "sin comisión": muestra el
+                costo real por adelantado. Prometer gratis y cobrar 2,7% es peor
+                que cobrar 2,7% avisando. */}
             {hasCard === null ? (
               <div className="mt-5 space-y-2.5">
                 <div className="h-[68px] animate-pulse rounded-2xl bg-neutral-100" />
@@ -283,7 +299,11 @@ export default function FondearPage() {
                   {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Zap className="h-5 w-5" />}
                   {amount >= 1 ? `Agregar $${fmt(amount)}` : 'Agregar fondos'}
                 </button>
-                <p className="mt-2 text-center text-xs font-semibold text-emerald-600">Sin comisión</p>
+                <p className="mt-2 text-center text-xs text-neutral-500">
+                  {amount >= 1
+                    ? <>Se cobra <strong className="text-neutral-700">${fmt(conComision(amount))}</strong> a tu tarjeta · llegan ${fmt(amount)} a tu balance</>
+                    : <>Incluye la comisión de procesamiento de Whop (2,7% + $0,30)</>}
+                </p>
 
                 <button onClick={() => createCheckout('checkout')} disabled={busy || amount < 1}
                   className="mt-3 flex w-full items-center justify-center gap-2 rounded-full border-2 border-neutral-200 py-3.5 font-bold text-neutral-700 transition-transform active:scale-[0.98] disabled:opacity-50">
