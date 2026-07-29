@@ -144,7 +144,7 @@ export default function FondearPage() {
     setError('Tu tarjeta quedó guardada en Whop, pero todavía no aparece acá. Recarga la página en un minuto, o paga con tarjeta ahora.')
   }
 
-  const createCheckout = async (metodo: 'saved' | 'checkout' | 'auto' = 'auto') => {
+  const createCheckout = async (metodo: 'guardada' | 'saved' | 'checkout' | 'auto' = 'auto') => {
     if (amount < 1) { setError('El monto mínimo es $1'); return }
     setBusy(true); setError('')
     // reset de estado de un intento anterior (para no arrastrar receipt/done viejos)
@@ -158,7 +158,7 @@ export default function FondearPage() {
         body: JSON.stringify({
           amount,
           method: metodo,
-          ...(metodo === 'saved' && elegida ? { paymentMethodId: elegida } : {}),
+          ...((metodo === 'saved' || metodo === 'guardada') && elegida ? { paymentMethodId: elegida } : {}),
         }),
       })
       const data = await res.json()
@@ -168,7 +168,7 @@ export default function FondearPage() {
       // mostrar. Se deja el caso porque el día que Whop lo habilite, funciona
       // solo. Sin esto, un cobro exitoso caía al else y decía "No se pudo
       // crear el pago" con la plata ya acreditada.
-      if (data.ok && data.method === 'topup' && data.paid) {
+      if (data.ok && (data.method === 'topup' || data.method === 'guardada') && data.paid) {
         doneRef.current = true
         router.push(`/company/fondear/exito?monto=${encodeURIComponent(String(data.base || amount))}`)
         return
@@ -177,7 +177,7 @@ export default function FondearPage() {
       // COBRO EN CURSO: la tarjeta YA se cobró y Whop lo está procesando.
       // No se abre el checkout — si la empresa pagara ahí, quedaría cobrada
       // dos veces por el mismo depósito.
-      if (data.ok && data.method === 'topup' && data.pending) {
+      if (data.ok && (data.method === 'topup' || data.method === 'guardada') && data.pending) {
         doneRef.current = true
         setError('')
         setPendiente(true)
@@ -310,84 +310,77 @@ export default function FondearPage() {
                 Mientras tanto la pantalla NO promete "sin comisión": muestra el
                 costo real por adelantado. Prometer gratis y cobrar 2,7% es peor
                 que cobrar 2,7% avisando. */}
-            {/* CAMINO SIN COMISIÓN. Solo aparece si la empresa tiene una
-                tarjeta guardada a su propio nombre, que es la única que el
-                depósito directo acepta cobrar. */}
-            {tarjetasEmpresa && tarjetasEmpresa.length > 0 && (
+            {/* TARJETA GUARDADA — el camino de un clic.
+                La empresa nunca sale de Octapi ni sabe que existe Whop. La
+                tarjeta se guardó antes con nuestro propio formulario y se
+                cobra por detrás. NO evita la comisión (es un cobro de tarjeta
+                como cualquiera); lo que evita es tener que escribirla de nuevo
+                en cada depósito, que era la molestia de verdad. */}
+            {hasCard === null ? (
+              <div className="mt-5 space-y-2.5">
+                <div className="h-[68px] animate-pulse rounded-2xl bg-neutral-100" />
+                <div className="h-[52px] animate-pulse rounded-2xl bg-neutral-100" />
+              </div>
+            ) : hasCard ? (
               <>
                 <p className="mt-6 text-sm font-bold text-neutral-900">Pagar con</p>
                 <div className="mt-2.5">
                   <SelectorTarjeta
-                    tarjetas={tarjetasEmpresa}
+                    tarjetas={tarjetas || []}
                     elegida={elegida}
-                    onElegir={(id) => setElegida(id)}
-                    onAgregar={() => enlacePanel && window.open(enlacePanel, '_blank')}
-                    ocupado={busy}
+                    onElegir={elegirTarjeta}
+                    onAgregar={openSaveCard}
+                    ocupado={busy || savingCard}
                   />
                 </div>
+
                 <button
-                  onClick={() => createCheckout('saved')}
+                  onClick={() => createCheckout('guardada')}
                   disabled={busy || amount < 1 || !elegida}
                   className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-[#22D3EE] to-[#0891B2] py-4 text-lg font-bold text-white shadow-lg shadow-cyan-200 transition-transform active:scale-[0.98] disabled:from-neutral-200 disabled:to-neutral-300 disabled:text-neutral-400 disabled:shadow-none"
                 >
                   {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Zap className="h-5 w-5" />}
                   {amount >= 1 ? `Agregar $${fmt(amount)}` : 'Agregar fondos'}
                 </button>
-                <p className="mt-2 text-center text-xs font-semibold text-emerald-600">
-                  Sin comisión · llegan ${amount >= 1 ? fmt(amount) : '0.00'} completos
-                </p>
+
+                <button
+                  onClick={() => createCheckout('checkout')}
+                  disabled={busy || amount < 1}
+                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-full border-2 border-neutral-200 py-3.5 font-bold text-neutral-700 transition-transform active:scale-[0.98] disabled:opacity-50"
+                >
+                  <CreditCard className="h-4 w-4" /> Usar otra tarjeta
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => createCheckout('checkout')}
+                  disabled={busy || amount < 1}
+                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-[#22D3EE] to-[#0891B2] py-4 text-lg font-bold text-white shadow-lg shadow-cyan-200 transition-transform active:scale-[0.98] disabled:from-neutral-200 disabled:to-neutral-300 disabled:text-neutral-400 disabled:shadow-none"
+                >
+                  {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <CreditCard className="h-5 w-5" />}
+                  {amount >= 1 ? `Agregar $${fmt(amount)}` : 'Agregar fondos'}
+                </button>
+
+                <div className="mt-4 rounded-2xl border border-cyan-200 bg-cyan-50 p-4">
+                  <p className="flex items-center gap-2 text-sm font-bold text-cyan-900">
+                    <Zap className="h-4 w-4" /> Guarda tu tarjeta
+                  </p>
+                  <p className="mt-1 text-xs leading-relaxed text-cyan-900/80">
+                    Los próximos depósitos son de un clic: no vuelves a escribir el
+                    número. Guardarla no cuesta nada.
+                  </p>
+                  <button
+                    onClick={openSaveCard}
+                    disabled={savingCard}
+                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-cyan-600 py-3 text-sm font-bold text-white transition-transform active:scale-[0.98] disabled:opacity-60"
+                  >
+                    {savingCard ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
+                    Guardar mi tarjeta
+                  </button>
+                </div>
               </>
             )}
-
-            {/* CÓMO HABILITAR EL DEPÓSITO GRATIS. Se muestra cuando todavía no
-                hay tarjeta de empresa. Whop no permite guardarla desde acá, así
-                que se manda al lugar exacto en vez de explicar en abstracto. */}
-            {tarjetasEmpresa !== null && tarjetasEmpresa.length === 0 && enlacePanel && (
-              <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-                <p className="flex items-center gap-2 text-sm font-bold text-emerald-900">
-                  <Zap className="h-4 w-4" /> Deposita sin comisión
-                </p>
-                <p className="mt-1.5 text-xs leading-relaxed text-emerald-800/90">
-                  Guardando una tarjeta a nombre de tu empresa, tus depósitos dejan de
-                  pagar comisión de procesamiento. Se guarda una sola vez, en el panel
-                  de pagos de tu cuenta: entra a <strong>Cards</strong> y agrégala.
-                </p>
-                <a
-                  href={enlacePanel}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 py-3 text-sm font-bold text-white transition-transform active:scale-[0.98]"
-                >
-                  <CreditCard className="h-4 w-4" /> Guardar tarjeta de empresa
-                </a>
-                <button
-                  onClick={cargarTarjetasEmpresa}
-                  className="mt-2 w-full py-2 text-xs font-semibold text-emerald-700"
-                >
-                  Ya la guardé — revisar
-                </button>
-              </div>
-            )}
-
-            <button
-              onClick={() => createCheckout('checkout')}
-              disabled={busy || amount < 1}
-              className={`flex w-full items-center justify-center gap-2 rounded-full py-4 text-lg font-bold transition-transform active:scale-[0.98] disabled:opacity-50 ${
-                tarjetasEmpresa && tarjetasEmpresa.length > 0
-                  ? 'mt-3 border-2 border-neutral-200 text-neutral-700'
-                  : 'mt-5 bg-gradient-to-b from-[#22D3EE] to-[#0891B2] text-white shadow-lg shadow-cyan-200 disabled:from-neutral-200 disabled:to-neutral-300 disabled:text-neutral-400 disabled:shadow-none'
-              }`}
-            >
-              {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <CreditCard className="h-5 w-5" />}
-              {tarjetasEmpresa && tarjetasEmpresa.length > 0
-                ? 'Pagar de otra forma'
-                : amount >= 1 ? `Agregar $${fmt(amount)}` : 'Agregar fondos'}
-            </button>
-            <p className="mt-2 text-center text-xs text-neutral-500">
-              {amount >= 1
-                ? <>Se cobran <strong className="text-neutral-700">${fmt(amount)}</strong> a tu tarjeta. Whop descuenta su comisión de procesamiento antes de acreditar.</>
-                : <>Whop descuenta una comisión de procesamiento del depósito</>}
-            </p>
 
             <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-neutral-400">
               <ShieldCheck className="h-3.5 w-3.5" /> Pago seguro procesado por Whop

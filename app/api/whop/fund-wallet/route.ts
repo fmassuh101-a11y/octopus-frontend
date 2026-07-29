@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { whopClient, WHOP_ENVIRONMENT } from "@/lib/whop";
 import { whopAccountForMoney } from "@/lib/whopIdentity";
-import { listarTarjetasDeEmpresa } from "@/lib/whopCards";
+import { listarTarjetas, listarTarjetasDeEmpresa, miembroDeEmpresa } from "@/lib/whopCards";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/config/supabase";
 import { getAuthenticatedUser } from "@/lib/auth/apiAuth";
 import { rateLimit } from "@/lib/rateLimit";
@@ -79,6 +79,15 @@ export async function POST(request: NextRequest) {
     const pedida = String(body?.paymentMethodId || "").trim();
     const { cards: tarjetasEmpresa } = await listarTarjetasDeEmpresa(payerCompanyId);
 
+    // La tarjeta que la empresa guardó DESDE NUESTRA APP. Queda a nombre del
+    // miembro, no de la empresa: no sirve para el depósito directo, pero sí
+    // para cobrarle por factura sin que tenga que escribirla de nuevo.
+    const { cards: tarjetasMiembro } = await listarTarjetas(payerCompanyId);
+    const savedMemberCard: string | null =
+      (pedida && tarjetasMiembro.some((c) => c.id === pedida) ? pedida : null) ||
+      tarjetasMiembro[0]?.id ||
+      null;
+
     let savedCard: string | null = null;
     if (pedida) {
       if (!tarjetasEmpresa.some((c) => c.id === pedida)) {
@@ -103,6 +112,73 @@ export async function POST(request: NextRequest) {
     // vuelta a la app para que la empresa sepa por qué terminó en el checkout
     // en vez de que la pantalla simplemente cambie sola sin explicación.
     let motivoTopup: string | null = null;
+
+    // ── COBRO A LA TARJETA YA GUARDADA, SIN SALIR DE LA APP ─────────────
+    //
+    // POR QUÉ ESTE CAMINO EXISTE
+    // La empresa NUNCA tiene que saber que existe Whop ni entrar a su panel.
+    // El depósito directo (topup) exige una tarjeta guardada a nombre de la
+    // empresa, y esa solo se puede crear desde el panel de Whop — o sea, está
+    // descartado.
+    //
+    // Pero la tarjeta que SÍ podemos guardar desde nuestra app (la del
+    // miembro, con nuestro formulario) se puede cobrar automáticamente con una
+    // factura. La plata cae en la cuenta de la empresa igual, y la empresa
+    // solo ve un botón en Octapi.
+    //
+    // OJO: esto NO evita la comisión de procesamiento —es un cobro de tarjeta
+    // como cualquiera—. Lo que resuelve es no tener que escribir la tarjeta de
+    // nuevo en cada depósito, que era la molestia real.
+    if (savedMemberCard && (method === "guardada" || method === "auto")) {
+      try {
+        const miembro = await miembroDeEmpresa(payerCompanyId);
+        if (!miembro) throw new Error("no sabemos a qué miembro pertenece la tarjeta");
+
+        const vence = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        const factura: any = await (whopClient as any).invoices.create({
+          collection_method: "charge_automatically",
+          company_id: payerCompanyId,
+          member_id: miembro,
+          due_date: vence,
+          payment_token_id: savedMemberCard,
+          product: { title: "Recarga de saldo Octapi" },
+          plan: { plan_type: "one_time", initial_price: base },
+        });
+
+        const estado = String(factura?.status || "").toLowerCase();
+        console.log("[FundWallet] factura:", factura?.id, estado);
+
+        if (["paid", "succeeded", "completed"].includes(estado)) {
+          return NextResponse.json({
+            ok: true,
+            method: "guardada",
+            paid: true,
+            base,
+            invoiceId: factura?.id || null,
+            depositsTo: payerCompanyId,
+            environment: WHOP_ENVIRONMENT,
+          });
+        }
+        // Igual que con el topup: "en curso" NO se manda al checkout, o la
+        // empresa termina pagando dos veces el mismo depósito.
+        if (["pending", "open", "draft"].includes(estado)) {
+          return NextResponse.json({
+            ok: true,
+            method: "guardada",
+            paid: false,
+            pending: true,
+            base,
+            invoiceId: factura?.id || null,
+            depositsTo: payerCompanyId,
+            environment: WHOP_ENVIRONMENT,
+          });
+        }
+        motivoTopup = `el cobro a tu tarjeta guardada quedó en "${estado || "sin estado"}"`;
+      } catch (e: any) {
+        console.error("[FundWallet] cobro a tarjeta guardada falló:", e?.message?.slice(0, 300));
+        motivoTopup = String(e?.message || "no se pudo cobrar la tarjeta guardada").slice(0, 200);
+      }
+    }
 
     if (savedCard && (method === "saved" || method === "auto")) {
       try {

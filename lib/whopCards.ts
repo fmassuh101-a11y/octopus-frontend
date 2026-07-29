@@ -147,6 +147,30 @@ export async function listarTarjetas(companyId: string): Promise<ResultadoTarjet
 }
 
 /**
+ * A qué miembro pertenece la cuenta de una empresa.
+ *
+ * Hace falta para cobrarle a su tarjeta guardada: el cobro automático se hace
+ * contra un miembro, no contra una cuenta suelta. El dato solo aparece en los
+ * setup intents, que es donde quedó registrado quién llenó el formulario.
+ *
+ * Se devuelve el del setup intent MÁS NUEVO que haya terminado bien: si la
+ * empresa guardó la tarjeta varias veces, la última es la que vale.
+ */
+export async function miembroDeEmpresa(companyId: string): Promise<string | null> {
+  if (!companyId) return null;
+  try {
+    const res: any = await (whopClient as any).setupIntents.list({ company_id: companyId, first: 20 });
+    const buenos = itemsDe(res)
+      .filter((si: any) => String(si?.status || "").toLowerCase() === "succeeded" && si?.member?.id)
+      .sort((a: any, b: any) => String(b?.created_at || "").localeCompare(String(a?.created_at || "")));
+    return buenos[0]?.member?.id || null;
+  } catch (e: any) {
+    console.error("[whopCards] no se pudo saber el miembro:", String(e?.message).slice(0, 150));
+    return null;
+  }
+}
+
+/**
  * Tarjetas que la EMPRESA guardó a su propio nombre.
  *
  * Es una lista distinta de listarTarjetas() y la diferencia importa mucho:
