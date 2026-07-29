@@ -301,9 +301,11 @@ export default function CreatorsPage() {
                 </Link>
               </div>
             )}
-            {/* Diagnóstico visible — para mandar screenshot en vez de
-                "sigue sin funcionar" sin más info */}
-            {debugInfo && (
+            {/* El diagnóstico solo se ve en desarrollo. En producción mostraba
+                identificadores de creadores y códigos de error a la empresa, en
+                el estado vacío de la pantalla. Sirve para depurar, no para que
+                lo lea un cliente. */}
+            {debugInfo && process.env.NODE_ENV === 'development' && (
               <p className="mt-8 text-xs text-neutral-600 font-mono break-words max-w-lg mx-auto">
                 {debugInfo}
               </p>

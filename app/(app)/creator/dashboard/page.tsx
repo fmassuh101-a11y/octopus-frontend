@@ -164,13 +164,20 @@ export default function CreatorHome() {
               {level.name}
             </Link>
             <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/60 bg-white px-3.5 py-2 text-sm font-bold shadow-sm">
-              <Star className="h-4 w-4 fill-amber-400 text-amber-400" /> 5.0
+              {/* CALIFICACIÓN — se saca el "5.0" fijo.
+                  Estaba escrito a mano para todos, incluido quien nunca ha
+                  entregado nada. Hay reseñas reales guardándose en la tabla
+                  `reviews` al aprobar contenido; cuando esta pantalla las lea,
+                  el número vuelve. Mostrar 5.0 a todos no premia a nadie y le
+                  quita valor al que sí se lo ganó. */}
             </div>
             <Link href="/creator/racha" prefetch className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/60 bg-white px-3.5 py-2 text-sm font-bold shadow-sm active:scale-95 transition-transform">
               <Flame className="h-4 w-4 fill-orange-500 text-orange-500" /> {streak}
             </Link>
             <Link href="/creator/pro" prefetch className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/60 bg-white px-3.5 py-2 text-sm font-bold shadow-sm transition-transform active:scale-95">
-              <Crown className="h-4 w-4 fill-amber-400 text-amber-500" /> FREE
+              {/* PLAN — se saca el "FREE" fijo. Decía FREE incluso a quien pagó
+                  Pro. El dato real está en profiles.is_pro, que esta pantalla
+                  no consulta. */}
             </Link>
           </div>
           <div className="shrink-0"><Notifications /></div>

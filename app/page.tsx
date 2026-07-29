@@ -445,24 +445,14 @@ function HomeInner() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-20">
-          <div className="text-center p-6 bg-white/5 rounded-2xl border border-white/10">
-            <div className="text-3xl font-bold text-blue-400 mb-1">10K+</div>
-            <div className="text-white/60 text-sm">Creadores Activos</div>
-          </div>
-          <div className="text-center p-6 bg-white/5 rounded-2xl border border-white/10">
-            <div className="text-3xl font-bold text-emerald-400 mb-1">500+</div>
-            <div className="text-white/60 text-sm">Marcas Premium</div>
-          </div>
-          <div className="text-center p-6 bg-white/5 rounded-2xl border border-white/10">
-            <div className="text-3xl font-bold text-emerald-400 mb-1">$2M+</div>
-            <div className="text-white/60 text-sm">Pagado a Creadores</div>
-          </div>
-          <div className="text-center p-6 bg-white/5 rounded-2xl border border-white/10">
-            <div className="text-3xl font-bold text-emerald-400 mb-1">98%</div>
-            <div className="text-white/60 text-sm">Satisfaccion</div>
-          </div>
-        </div>
+        {/* CIFRAS DE TRACCIÓN — quitadas hasta que sean reales.
+            Decían "10K+ Creadores Activos", "500+ Marcas Premium", "$2M+
+            Pagado a Creadores" y "98% Satisfacción". Ninguna era verdad: la
+            plataforma todavía no ha lanzado. Estaban tapadas por el muro de la
+            lista de espera, así que nadie las vio — pero se destapaban solas el
+            día del lanzamiento, que es justo cuando más caro sale que a alguien
+            le conste que son falsas.
+            Vuelven, con los números de verdad, cuando los haya. */}
 
         {/* Categories */}
         <div className="mb-20">
