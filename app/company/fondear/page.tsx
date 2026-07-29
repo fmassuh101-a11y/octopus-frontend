@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic'
 import { authHeaders } from '@/lib/auth/clientToken'
 import CheckoutFrame from '@/components/oct/CheckoutFrame'
 import SelectorTarjeta, { type Tarjeta } from '@/components/oct/SelectorTarjeta'
+import ActivarSinComision from '@/components/oct/ActivarSinComision'
 import { ChevronLeft, CreditCard, Check, Loader2, ShieldCheck, Zap } from 'lucide-react'
 
 // Agregar fondos — la empresa deposita a SU cuenta y decide cómo usarlo.
@@ -47,6 +48,7 @@ export default function FondearPage() {
   // depositar sin comisión; las de una persona no sirven aunque se vean igual.
   const [tarjetasEmpresa, setTarjetasEmpresa] = useState<Tarjeta[] | null>(null)
   const [enlacePanel, setEnlacePanel] = useState<string | null>(null)
+  const [activando, setActivando] = useState(false)
 
   useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current) }, [])
 
@@ -274,6 +276,14 @@ export default function FondearPage() {
           </div>
         )}
 
+        {activando && enlacePanel && (
+          <ActivarSinComision
+            enlacePanel={enlacePanel}
+            onListo={() => { setActivando(false); cargarTarjetasEmpresa() }}
+            onCerrar={() => setActivando(false)}
+          />
+        )}
+
         {step === 'amount' && !pendiente && (
           <div className="mt-6 rounded-3xl border border-neutral-100 bg-white p-6 shadow-sm">
             <p className="font-bold">Monto</p>
@@ -310,6 +320,43 @@ export default function FondearPage() {
                 Mientras tanto la pantalla NO promete "sin comisión": muestra el
                 costo real por adelantado. Prometer gratis y cobrar 2,7% es peor
                 que cobrar 2,7% avisando. */}
+            {/* OFERTA DE 0% — solo si todavía no está activado. Una vez que la
+                empresa tiene tarjeta propia, esto desaparece para siempre. */}
+            {tarjetasEmpresa !== null && tarjetasEmpresa.length === 0 && enlacePanel && (
+              <button
+                onClick={() => setActivando(true)}
+                className="mt-5 flex w-full items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-left transition-transform active:scale-[0.99]"
+              >
+                <Zap className="h-5 w-5 shrink-0 text-emerald-600" />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-bold text-emerald-900">
+                    Deposita sin comisión
+                  </span>
+                  <span className="block text-xs leading-relaxed text-emerald-800/80">
+                    Actívalo una vez y tus recargas dejan de pagar comisión.
+                  </span>
+                </span>
+                <span className="shrink-0 text-lg font-bold text-emerald-600">›</span>
+              </button>
+            )}
+
+            {/* YA ACTIVADO: depósito directo, sin comisión de verdad. */}
+            {tarjetasEmpresa && tarjetasEmpresa.length > 0 && (
+              <>
+                <button
+                  onClick={() => createCheckout('saved')}
+                  disabled={busy || amount < 1}
+                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-[#10B981] to-[#059669] py-4 text-lg font-bold text-white shadow-lg shadow-emerald-200 transition-transform active:scale-[0.98] disabled:from-neutral-200 disabled:to-neutral-300 disabled:text-neutral-400 disabled:shadow-none"
+                >
+                  {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Zap className="h-5 w-5" />}
+                  {amount >= 1 ? `Agregar $${fmt(amount)} sin comisión` : 'Agregar fondos'}
+                </button>
+                <p className="mt-2 text-center text-xs font-semibold text-emerald-600">
+                  Llegan ${amount >= 1 ? fmt(amount) : '0.00'} completos a tu balance
+                </p>
+              </>
+            )}
+
             {/* TARJETA GUARDADA — el camino de un clic.
                 La empresa nunca sale de Octapi ni sabe que existe Whop. La
                 tarjeta se guardó antes con nuestro propio formulario y se
