@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { whopClient, WHOP_ENVIRONMENT } from "@/lib/whop";
 import { whopAccountForMoney } from "@/lib/whopIdentity";
-import { listarTarjetas } from "@/lib/whopCards";
+import { listarTarjetasDeEmpresa } from "@/lib/whopCards";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/config/supabase";
 import { getAuthenticatedUser } from "@/lib/auth/apiAuth";
 import { rateLimit } from "@/lib/rateLimit";
@@ -71,28 +71,25 @@ export async function POST(request: NextRequest) {
     // quiere usar. Ese id NO se acepta a ciegas — se verifica contra la lista
     // real de su cuenta en Whop, para que nadie pueda hacernos cobrar a un
     // medio de pago ajeno mandando un id inventado.
+    // SOLO tarjetas guardadas a nombre de la EMPRESA. Las que guardó una
+    // persona desde un formulario nuestro se ven idénticas (mismo prefijo
+    // `payt_`) pero el depósito directo las rechaza con
+    // 404 "This PaymentToken was not found". Usar la lista equivocada acá fue
+    // el error que hizo que Felipe pagara 7,24% de comisión en vez de 0%.
     const pedida = String(body?.paymentMethodId || "").trim();
+    const { cards: tarjetasEmpresa } = await listarTarjetasDeEmpresa(payerCompanyId);
 
     let savedCard: string | null = null;
     if (pedida) {
-      const { cards } = await listarTarjetas(payerCompanyId);
-      if (!cards.some((c) => c.id === pedida)) {
-        return NextResponse.json({ error: "Esa tarjeta no está en tu cuenta" }, { status: 400 });
+      if (!tarjetasEmpresa.some((c) => c.id === pedida)) {
+        return NextResponse.json(
+          { error: "Esa tarjeta no sirve para depositar. Guarda una tarjeta a nombre de tu empresa." },
+          { status: 400 }
+        );
       }
       savedCard = pedida;
     } else {
-      const pmRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=whop_payment_method_id`,
-        { headers: { Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, apikey: SUPABASE_SERVICE_KEY } }
-      );
-      savedCard = ((pmRes.ok ? await pmRes.json() : [])[0] || {}).whop_payment_method_id || null;
-
-      // Nuestra base puede no haberse enterado todavía (el webhook es un atajo,
-      // no una garantía). Antes de rendirse, se le pregunta a Whop.
-      if (!savedCard && (method === "saved" || method === "auto")) {
-        const { cards } = await listarTarjetas(payerCompanyId);
-        savedCard = cards[0]?.id || null;
-      }
+      savedCard = tarjetasEmpresa[0]?.id || null;
     }
 
     if (method === "saved" && !savedCard) {

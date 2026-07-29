@@ -17,8 +17,9 @@ import { Loader2, ShieldCheck } from 'lucide-react'
 // botón de retiro ni la cuenta bancaria. Solo la verificación.
 //
 // VerifyElement se monta solo si la cuenta REQUIERE verificación. Si ya está
-// verificada no dibuja nada, así que esta tarjeta desaparece sola y nunca
-// muestra un aviso equivocado.
+// verificada no dibuja nada. Por eso acá NO va ningún título ni texto propio:
+// si lo tuviera, una cuenta ya verificada vería un encabezado con una
+// explicación y ningún botón — que fue justo lo que pasó en la primera versión.
 
 export default function WhopVerifyCompany() {
   const [mod, setMod] = useState<any>(null)
@@ -80,20 +81,16 @@ export default function WhopVerifyCompany() {
   return (
     <Elements elements={elements}>
       <PayoutsSession token={traerToken} redirectUrl={redirectUrl} currency="usd">
-        <div className="overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-900">
-          <div className="flex items-center gap-2 border-b border-neutral-800 px-5 py-3.5">
-            <ShieldCheck className="h-4 w-4 text-cyan-400" />
-            <p className="text-sm font-bold text-white">Verificación de tu cuenta</p>
-          </div>
-          <div className="space-y-3 p-4">
-            <p className="text-xs leading-relaxed text-neutral-400">
-              Las cuentas sin verificar tienen sus depósitos retenidos mientras el
-              procesador confirma el cobro. Verificar una vez hace que la plata
-              quede disponible más rápido.
-            </p>
-            <StatusBannerElement />
-            <VerifyElement />
-          </div>
+        {/* SIN TÍTULO NI TEXTO PROPIOS.
+            Antes esta tarjeta tenía encabezado y una explicación fija, y los
+            elementos de Whop van adentro. Cuando la cuenta NO requiere hacer
+            nada, esos elementos no dibujan nada — y quedaba una tarjeta con
+            título y texto y ningún botón, que es peor que no mostrar nada.
+            Ahora se montan pelados: si Whop no tiene nada que pedir, acá no
+            aparece nada. */}
+        <div className="space-y-3 empty:hidden">
+          <StatusBannerElement />
+          <VerifyElement />
         </div>
       </PayoutsSession>
     </Elements>

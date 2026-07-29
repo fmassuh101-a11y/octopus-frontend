@@ -146,6 +146,40 @@ export async function listarTarjetas(companyId: string): Promise<ResultadoTarjet
   return { cards, problema: cards.length ? null : fallo, via };
 }
 
+/**
+ * Tarjetas que la EMPRESA guardó a su propio nombre.
+ *
+ * Es una lista distinta de listarTarjetas() y la diferencia importa mucho:
+ *
+ *   listarTarjetas()          → todo lo que exista, incluyendo lo que guardó
+ *                               una PERSONA. Sirve para mostrar en pantalla.
+ *   listarTarjetasDeEmpresa() → SOLO lo que la empresa guardó a su nombre.
+ *                               Es lo único que topups.create acepta cobrar.
+ *
+ * Whop devuelve las dos con el mismo formato de id (`payt_`), así que no se
+ * pueden distinguir mirando el id: hay que preguntar por el camino correcto.
+ * Cobrar con la lista equivocada da 404 "This PaymentToken was not found", que
+ * fue exactamente lo que nos pasó.
+ *
+ * Hoy esta lista solo se llena si alguien guardó la tarjeta desde el panel de
+ * Whop de esa cuenta (Cards → Add). Whop no expone una API para crearla.
+ */
+export async function listarTarjetasDeEmpresa(companyId: string): Promise<ResultadoTarjetas> {
+  if (!companyId) return { cards: [], problema: "falta la cuenta de pagos", via: "ninguno" };
+  try {
+    const res: any = await (whopClient as any).paymentMethods.list({ company_id: companyId, first: 20 });
+    const cards = itemsDe(res)
+      .map(normalizar)
+      .filter((t): t is TarjetaGuardada => !!t)
+      .sort((a, b) => String(b.creadaEn || "").localeCompare(String(a.creadaEn || "")));
+    return { cards, problema: null, via: cards.length ? "lista" : "ninguno" };
+  } catch (e: any) {
+    const msg = e?.message ? String(e.message).slice(0, 200) : "error consultando medios de pago";
+    console.error("[whopCards] lista de empresa falló:", msg);
+    return { cards: [], problema: msg, via: "ninguno" };
+  }
+}
+
 // ---- Presentación --------------------------------------------------------
 // El nombre lindo de cada marca. Whop entrega el identificador en minúscula.
 const NOMBRE_MARCA: Record<string, string> = {

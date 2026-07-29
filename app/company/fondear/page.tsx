@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { authHeaders } from '@/lib/auth/clientToken'
 import CheckoutFrame from '@/components/oct/CheckoutFrame'
-import { type Tarjeta } from '@/components/oct/SelectorTarjeta'
+import SelectorTarjeta, { type Tarjeta } from '@/components/oct/SelectorTarjeta'
 import { ChevronLeft, CreditCard, Check, Loader2, ShieldCheck, Zap } from 'lucide-react'
 
 // Agregar fondos — la empresa deposita a SU cuenta y decide cómo usarlo.
@@ -43,6 +43,10 @@ export default function FondearPage() {
   // El cobro salió pero Whop todavía no lo confirma. Se muestra una pantalla
   // propia: NO se puede ofrecer pagar de nuevo, o la empresa paga dos veces.
   const [pendiente, setPendiente] = useState(false)
+  // Tarjetas guardadas A NOMBRE DE LA EMPRESA. Son las únicas que permiten
+  // depositar sin comisión; las de una persona no sirven aunque se vean igual.
+  const [tarjetasEmpresa, setTarjetasEmpresa] = useState<Tarjeta[] | null>(null)
+  const [enlacePanel, setEnlacePanel] = useState<string | null>(null)
 
   useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current) }, [])
 
@@ -68,7 +72,22 @@ export default function FondearPage() {
     return 0
   }
 
-  useEffect(() => { cargarTarjetas() }, [])
+  // ¿Puede depositar gratis? Depende de si tiene tarjeta propia de empresa.
+  const cargarTarjetasEmpresa = async () => {
+    try {
+      const res = await fetch('/api/whop/company-cards', { headers: authHeaders() })
+      const d = await res.json()
+      if (d?.ok) {
+        setTarjetasEmpresa(d.cards || [])
+        setEnlacePanel(d.enlacePanel || null)
+        if ((d.cards || []).length && !elegida) setElegida(d.cards[0].id)
+        return
+      }
+    } catch {}
+    setTarjetasEmpresa([])
+  }
+
+  useEffect(() => { cargarTarjetas(); cargarTarjetasEmpresa() }, [])
 
   // Cambiar cuál se usa. Se refleja al toque en pantalla y se guarda detrás;
   // si el guardado falla, se vuelve atrás para no mostrar una mentira.
@@ -291,13 +310,78 @@ export default function FondearPage() {
                 Mientras tanto la pantalla NO promete "sin comisión": muestra el
                 costo real por adelantado. Prometer gratis y cobrar 2,7% es peor
                 que cobrar 2,7% avisando. */}
+            {/* CAMINO SIN COMISIÓN. Solo aparece si la empresa tiene una
+                tarjeta guardada a su propio nombre, que es la única que el
+                depósito directo acepta cobrar. */}
+            {tarjetasEmpresa && tarjetasEmpresa.length > 0 && (
+              <>
+                <p className="mt-6 text-sm font-bold text-neutral-900">Pagar con</p>
+                <div className="mt-2.5">
+                  <SelectorTarjeta
+                    tarjetas={tarjetasEmpresa}
+                    elegida={elegida}
+                    onElegir={(id) => setElegida(id)}
+                    onAgregar={() => enlacePanel && window.open(enlacePanel, '_blank')}
+                    ocupado={busy}
+                  />
+                </div>
+                <button
+                  onClick={() => createCheckout('saved')}
+                  disabled={busy || amount < 1 || !elegida}
+                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-[#22D3EE] to-[#0891B2] py-4 text-lg font-bold text-white shadow-lg shadow-cyan-200 transition-transform active:scale-[0.98] disabled:from-neutral-200 disabled:to-neutral-300 disabled:text-neutral-400 disabled:shadow-none"
+                >
+                  {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Zap className="h-5 w-5" />}
+                  {amount >= 1 ? `Agregar $${fmt(amount)}` : 'Agregar fondos'}
+                </button>
+                <p className="mt-2 text-center text-xs font-semibold text-emerald-600">
+                  Sin comisión · llegan ${amount >= 1 ? fmt(amount) : '0.00'} completos
+                </p>
+              </>
+            )}
+
+            {/* CÓMO HABILITAR EL DEPÓSITO GRATIS. Se muestra cuando todavía no
+                hay tarjeta de empresa. Whop no permite guardarla desde acá, así
+                que se manda al lugar exacto en vez de explicar en abstracto. */}
+            {tarjetasEmpresa !== null && tarjetasEmpresa.length === 0 && enlacePanel && (
+              <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                <p className="flex items-center gap-2 text-sm font-bold text-emerald-900">
+                  <Zap className="h-4 w-4" /> Deposita sin comisión
+                </p>
+                <p className="mt-1.5 text-xs leading-relaxed text-emerald-800/90">
+                  Guardando una tarjeta a nombre de tu empresa, tus depósitos dejan de
+                  pagar comisión de procesamiento. Se guarda una sola vez, en el panel
+                  de pagos de tu cuenta: entra a <strong>Cards</strong> y agrégala.
+                </p>
+                <a
+                  href={enlacePanel}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 py-3 text-sm font-bold text-white transition-transform active:scale-[0.98]"
+                >
+                  <CreditCard className="h-4 w-4" /> Guardar tarjeta de empresa
+                </a>
+                <button
+                  onClick={cargarTarjetasEmpresa}
+                  className="mt-2 w-full py-2 text-xs font-semibold text-emerald-700"
+                >
+                  Ya la guardé — revisar
+                </button>
+              </div>
+            )}
+
             <button
               onClick={() => createCheckout('checkout')}
               disabled={busy || amount < 1}
-              className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-[#22D3EE] to-[#0891B2] py-4 text-lg font-bold text-white shadow-lg shadow-cyan-200 transition-transform active:scale-[0.98] disabled:from-neutral-200 disabled:to-neutral-300 disabled:text-neutral-400 disabled:shadow-none"
+              className={`flex w-full items-center justify-center gap-2 rounded-full py-4 text-lg font-bold transition-transform active:scale-[0.98] disabled:opacity-50 ${
+                tarjetasEmpresa && tarjetasEmpresa.length > 0
+                  ? 'mt-3 border-2 border-neutral-200 text-neutral-700'
+                  : 'mt-5 bg-gradient-to-b from-[#22D3EE] to-[#0891B2] text-white shadow-lg shadow-cyan-200 disabled:from-neutral-200 disabled:to-neutral-300 disabled:text-neutral-400 disabled:shadow-none'
+              }`}
             >
               {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <CreditCard className="h-5 w-5" />}
-              {amount >= 1 ? `Agregar $${fmt(amount)}` : 'Agregar fondos'}
+              {tarjetasEmpresa && tarjetasEmpresa.length > 0
+                ? 'Pagar de otra forma'
+                : amount >= 1 ? `Agregar $${fmt(amount)}` : 'Agregar fondos'}
             </button>
             <p className="mt-2 text-center text-xs text-neutral-500">
               {amount >= 1
