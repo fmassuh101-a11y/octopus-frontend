@@ -1,5 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Fuera los console.log en producción: son 171, algunos con correos e ids de
+  // usuario, y corren en cada arranque. Los console.error se mantienen para
+  // poder diagnosticar.
+  compiler: { removeConsole: { exclude: ['error'] } },
+
   experimental: {
     optimizePackageImports: ['lucide-react', 'framer-motion', '@phosphor-icons/react', '@icons-pack/react-simple-icons'],
   },

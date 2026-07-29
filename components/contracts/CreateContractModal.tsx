@@ -51,13 +51,17 @@ const CONTENT_TYPES: Record<string, { id: string; name: string }[]> = {
   ],
 }
 
+// SOLO DÓLARES, a propósito.
+//
+// Antes se ofrecían MXN, BRL, COP, ARS y PEN — pero el motor de pago transfiere
+// SIEMPRE en dólares (lib/autoPayout.ts fija currency: "usd") y no hay ninguna
+// conversión en el medio. Un contrato de "5.000 MXN" intentaba transferir
+// 5.000 DÓLARES. No era un detalle cosmético: era un incidente de plata
+// esperando a ocurrir.
+//
+// Vuelven cuando exista conversión de moneda de verdad, hecha en el servidor.
 const CURRENCIES = [
   { id: 'USD', name: 'USD ($)', symbol: '$' },
-  { id: 'MXN', name: 'MXN (Peso Mexicano)', symbol: '$' },
-  { id: 'BRL', name: 'BRL (Real)', symbol: 'R$' },
-  { id: 'COP', name: 'COP (Peso Colombiano)', symbol: '$' },
-  { id: 'ARS', name: 'ARS (Peso Argentino)', symbol: '$' },
-  { id: 'PEN', name: 'PEN (Sol)', symbol: 'S/' },
 ]
 
 export default function CreateContractModal({
@@ -81,7 +85,15 @@ export default function CreateContractModal({
   const [deliverables, setDeliverables] = useState<Deliverable[]>([
     { platform: 'tiktok', content_type: 'video', quantity: 1 }
   ])
-  const [paymentMode, setPaymentMode] = useState<'fijo' | 'cpm'>('cpm') // CPM por defecto (metodología Octopus)
+  // MONTO FIJO POR DEFECTO — no CPM.
+  //
+  // El CPM nace con payment_amount: 0, y con 0 el pago automático no se ejecuta:
+  // la entrega se aprueba, al creador le dice "Pago acordado: $0" y nadie cobra
+  // hasta que alguien de la empresa entre a pagar a mano. O sea, el camino que
+  // la app recomendaba por defecto NO podía completarse solo.
+  //
+  // El CPM vuelve cuando exista la medición de views que le dé un monto real.
+  const [paymentMode, setPaymentMode] = useState<'fijo' | 'cpm'>('fijo')
   const [cpmRate, setCpmRate] = useState('')
   const [cpmMinViews, setCpmMinViews] = useState('1000')
   const [cpmMaxViews, setCpmMaxViews] = useState('')

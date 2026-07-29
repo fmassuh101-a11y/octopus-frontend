@@ -90,7 +90,11 @@ export function middleware(req: NextRequest) {
   const res = NextResponse.next()
   res.headers.set('X-Content-Type-Options', 'nosniff')
   res.headers.set('X-Frame-Options', 'SAMEORIGIN')
-  res.headers.set('X-DNS-Prefetch-Control', 'off')
+  // El prefetch de DNS queda ENCENDIDO a propósito. Estaba en 'off', lo que
+  // agrega 20-100ms a cada conexión fría con Supabase —y la app le habla en
+  // cada pantalla— sin aportar nada de seguridad en este caso: no hay dominios
+  // de terceros cuyo DNS convenga ocultar.
+  res.headers.set('X-DNS-Prefetch-Control', 'on')
   return res
 }
 

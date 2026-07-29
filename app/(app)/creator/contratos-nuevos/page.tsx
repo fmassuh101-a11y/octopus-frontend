@@ -35,7 +35,7 @@ export default function ContratosNuevosPage() {
         if (!token || !userStr) { router.push('/auth/login'); return }
         const user = JSON.parse(userStr)
         const headers = { Authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY }
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/contracts?creator_id=eq.${user.id}&status=eq.pending&select=*&order=created_at.desc`, { headers })
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/contracts?creator_id=eq.${user.id}&status=in.(sent,pending)&select=*&order=created_at.desc`, { headers })
         if (!res.ok) { setLoading(false); return }
         const data: Pending[] = await res.json()
         // nombres de empresas

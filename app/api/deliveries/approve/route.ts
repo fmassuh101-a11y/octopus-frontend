@@ -61,7 +61,62 @@ export async function POST(request: NextRequest) {
 
   // 3. Liberar el pago (escrow → creador) si hay monto
   let payment: any = null
+  // Si la transferencia real a Whop falla, se guarda el motivo: la respuesta
+  // tiene que decirlo en vez de dar el pago por hecho.
+  let pagoRealFallo: string | null = null
   if (amount > 0) {
+    // ── SALDO REAL DE WHOP ANTES DE MOVER NADA ────────────────────────────
+    //
+    // Sin este chequeo se producía un pago fantasma: la tabla `wallets` de
+    // nuestra base y la cuenta de Whop pueden decir cosas distintas —un
+    // depósito con tarjeta tarda 1 a 4 días hábiles en liquidar—, así que el
+    // RPC descontaba el saldo, le avisaba al creador "te pagaron", y la
+    // transferencia real fallaba por falta de fondos. El creador veía la
+    // notificación de cobro y $0 en su billetera.
+    //
+    // Es la misma salvaguarda que ya tenía /api/payments/pay-creator y que en
+    // este camino —que es el principal— faltaba.
+    try {
+      const { whopClient } = await import('@/lib/whop')
+      const { whopAccountForMoney } = await import('@/lib/whopIdentity')
+      const pagadorRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${delivery.company_id}&select=email`,
+        { headers: H }
+      )
+      const pagador = ((pagadorRes.ok ? await pagadorRes.json() : [])[0]) || {}
+      const cuentaPagador = await whopAccountForMoney({ id: delivery.company_id, email: pagador.email })
+
+      if (cuentaPagador) {
+        const ledger: any = await (whopClient as any).ledgerAccounts.retrieve(cuentaPagador)
+        const saldos = Array.isArray(ledger?.balances)
+          ? ledger.balances.find((b: any) => String(b?.currency).toLowerCase() === 'usd') || ledger.balances[0]
+          : null
+        const disponible = Number(saldos?.balance) || 0
+        const enCamino = Number(saldos?.pending_balance) || 0
+
+        if (disponible < amount) {
+          console.error('[Approve] saldo insuficiente en Whop:', { disponible, enCamino, amount })
+          return NextResponse.json({
+            error: enCamino > 0
+              ? `El contenido no se puede aprobar todavía: la empresa tiene $${disponible.toFixed(2)} disponibles y $${enCamino.toFixed(2)} en camino. El depósito se está confirmando con el banco.`
+              : `La empresa no tiene saldo suficiente para pagar este contenido ($${disponible.toFixed(2)} disponibles de $${amount.toFixed(2)}).`,
+            needsFunds: true,
+            disponible,
+            enCamino,
+            amount,
+          }, { status: 402 })
+        }
+      }
+    } catch (e: any) {
+      // Si no se puede leer el saldo real, NO se sigue a ciegas: aprobar y
+      // notificar un pago que quizá no ocurra es peor que hacer esperar.
+      console.error('[Approve] no se pudo leer el saldo de Whop:', e?.message)
+      return NextResponse.json(
+        { error: 'No pudimos verificar el saldo en este momento. Intenta de nuevo en un minuto.' },
+        { status: 503 }
+      )
+    }
+
     // monto COMPLETO al creador (la comision de Octopus es solo al retirar)
     const payRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/oct_pay_creator`, {
       method: 'POST',
@@ -100,18 +155,31 @@ export async function POST(request: NextRequest) {
       // origen = cuenta Whop de la EMPRESA que aprueba, nunca la de Octapi
       const payerCompanyId = await whopAccountForMoney({ id: delivery.company_id, email: payerProfile.email })
       if (payerCompanyId) {
-        await autoPayoutToWhop({
+        const envio = await autoPayoutToWhop({
           userId: delivery.creator_id,
           email: cEmail,
           amount,
           idempotenceKey: `dlv_${deliveryId}`,
-          notes: `Contenido aprobado: ${delivery.title || 'entrega'}`,
+          // El motivo lo corta a 50 igual, pero se acota acá también para que
+          // llegue algo legible y no un título truncado a la mitad.
+          notes: `Contenido aprobado`,
           originCompanyId: payerCompanyId,
         })
+        // El resultado NO se descarta. Antes todo esto vivía dentro de un
+        // catch vacío: si la transferencia fallaba, nadie se enteraba y al
+        // creador igual le llegaba "te pagaron".
+        if (!envio.sent) {
+          console.error('[ApproveDelivery] la transferencia NO salió:', envio.error, deliveryId)
+          pagoRealFallo = envio.error || 'no se pudo mover el dinero'
+        }
       } else {
         console.error('[ApproveDelivery] empresa sin cuenta de pagos:', delivery.company_id)
+        pagoRealFallo = 'la empresa no tiene cuenta de pagos'
       }
-    } catch {}
+    } catch (e: any) {
+      console.error('[ApproveDelivery] error moviendo el dinero:', e?.message)
+      pagoRealFallo = 'error al mover el dinero'
+    }
   }
 
   const now = new Date().toISOString()
@@ -167,8 +235,12 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({
     success: true,
-    paid: amount > 0,
+    // `paid` dice si el dinero SE MOVIÓ de verdad, no si el saldo bajó en
+    // nuestra base. Si la transferencia falló, la empresa tiene que enterarse
+    // acá y no descubrirlo cuando el creador reclame.
+    paid: amount > 0 && !pagoRealFallo,
     amount,
     creatorReceives: payment?.creator_receives ?? null,
+    ...(pagoRealFallo ? { avisoPago: `El contenido quedó aprobado, pero el pago no se pudo enviar: ${pagoRealFallo}. Escríbenos para resolverlo.` } : {}),
   })
 }

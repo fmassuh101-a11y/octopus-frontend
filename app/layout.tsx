@@ -45,7 +45,12 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
+  // NO se bloquea el zoom. Antes había maximumScale: 1 para evitar que iOS
+  // hiciera zoom al enfocar un campo, pero ese problema no existe acá: iOS solo
+  // hace zoom cuando el campo tiene menos de 16px, y ninguno de los nuestros lo
+  // tiene. Se estaba pagando una falla de accesibilidad por un problema que no
+  // estaba. Si alguna vez reaparece, se arregla poniendo el campo en 16px, no
+  // impidiendo que la gente haga zoom.
   viewportFit: 'cover',
   themeColor: '#0a0a0a',
 }

@@ -39,7 +39,7 @@ export default function Notifications() {
 
       const [pagosR, contratosR, appsR] = await Promise.all([
         fetch(`${SUPABASE_URL}/rest/v1/wallet_movements?user_id=eq.${user.id}&kind=eq.pago_recibido&select=id,amount,description,created_at&order=created_at.desc&limit=10`, { headers: H }),
-        fetch(`${SUPABASE_URL}/rest/v1/contracts?creator_id=eq.${user.id}&status=eq.pending&select=id,title,payment_amount,created_at&order=created_at.desc&limit=10`, { headers: H }),
+        fetch(`${SUPABASE_URL}/rest/v1/contracts?creator_id=eq.${user.id}&status=in.(sent,pending)&select=id,title,payment_amount,created_at&order=created_at.desc&limit=10`, { headers: H }),
         fetch(`${SUPABASE_URL}/rest/v1/applications?creator_id=eq.${user.id}&status=eq.accepted&select=id,created_at,gig:gigs(title)&order=created_at.desc&limit=10`, { headers: H }),
       ])
       const pagos = pagosR.ok ? await pagosR.json() : []

@@ -314,62 +314,19 @@ export default function CompanyReviewContentPage() {
     }
   }
 
-  const handleReleasePayment = async (delivery: Delivery) => {
-    if (!confirm(`¿Liberar pago de $${delivery.payment_amount} a ${delivery.creator_name}?`)) return
-
-    setProcessing(true)
-    try {
-      const token = localStorage.getItem('sb-access-token')
-
-      const response = await fetch(
-        `${SUPABASE_URL}/rest/v1/content_deliveries?id=eq.${delivery.id}`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-            'apikey': SUPABASE_ANON_KEY
-          },
-          body: JSON.stringify({
-            status: 'completed',
-            payment_released_at: new Date().toISOString(),
-            completed_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
-        }
-      )
-
-      if (!response.ok) throw new Error('Error al liberar pago')
-
-      await fetch(`${SUPABASE_URL}/rest/v1/delivery_notifications`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'apikey': SUPABASE_ANON_KEY
-        },
-        body: JSON.stringify({
-          delivery_id: delivery.id,
-          recipient_id: delivery.creator_id,
-          type: 'payment_released',
-          title: '¡Pago recibido!',
-          message: `Has recibido $${delivery.payment_amount} por tu contenido.`
-        })
-      })
-
-      setDeliveries(prev => prev.map(d =>
-        d.id === delivery.id ? { ...d, status: 'completed' } : d
-      ))
-
-      setSelectedDelivery(null)
-
-    } catch (err) {
-      console.error('Error:', err)
-      alert('Error al liberar el pago')
-    } finally {
-      setProcessing(false)
-    }
-  }
+  // ⚠️ "Liberar Pago" ELIMINADO — no borrar esta nota.
+  //
+  // Había un botón "Liberar Pago ($X)" que sólo hacía PATCH status:'completed'
+  // e insertaba una notificación diciéndole al creador "¡Pago recibido! Has
+  // recibido $X por tu contenido" — SIN llamar a ninguna API de pago. Le
+  // avisaba que había cobrado cuando no había cobrado nada.
+  //
+  // El pago real ya ocurre antes, al aprobar la entrega
+  // (app/api/deliveries/approve/route.ts), así que el botón además duplicaba
+  // conceptualmente un paso que ya estaba hecho.
+  //
+  // Si alguna vez hace falta un paso manual de liberación, tiene que llamar a
+  // /api/payments/pay-creator y notificar SOLO si esa llamada devuelve éxito.
 
   const formatDate = (date?: string) => {
     if (!date) return '-'
@@ -596,16 +553,6 @@ export default function CompanyReviewContentPage() {
                         >
                           Aprobar                         </button>
                       </div>
-                    )}
-
-                    {delivery.status === 'approved' && (
-                      <button
-                        onClick={() => handleReleasePayment(delivery)}
-                        disabled={processing}
-                        className="w-full py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white rounded-xl text-sm font-bold transition-all disabled:opacity-50 shadow-lg shadow-emerald-500/20"
-                      >
-                        Liberar Pago (${delivery.payment_amount})
-                      </button>
                     )}
 
                     {delivery.status === 'revision_needed' && delivery.feedback && (
@@ -884,16 +831,6 @@ export default function CompanyReviewContentPage() {
                   >
                     Aprobar                   </button>
                 </div>
-              )}
-
-              {selectedDelivery.status === 'approved' && (
-                <button
-                  onClick={() => handleReleasePayment(selectedDelivery)}
-                  disabled={processing}
-                  className="w-full py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white rounded-xl font-bold transition-all disabled:opacity-50 shadow-lg shadow-emerald-500/20"
-                >
-                  Liberar Pago (${selectedDelivery.payment_amount})
-                </button>
               )}
 
               {/* Message Creator */}
