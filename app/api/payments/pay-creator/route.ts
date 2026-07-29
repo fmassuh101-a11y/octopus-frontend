@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { whopClient } from '@/lib/whop'
 import { SUPABASE_URL } from '@/lib/config/supabase'
 import { getAuthenticatedUser } from '@/lib/auth/apiAuth'
 import { rateLimit } from '@/lib/rateLimit'
@@ -76,6 +77,48 @@ export async function POST(request: NextRequest) {
   if (!payerCompanyId) {
     console.error('[PayCreator] empresa sin cuenta de pagos:', user.id)
     return NextResponse.json({ error: 'No se pudo preparar tu cuenta de pagos' }, { status: 502 })
+  }
+
+  // ── SALDO REAL ANTES DE MOVER NADA ──────────────────────────────────────
+  //
+  // POR QUÉ ESTO EXISTE
+  // Nuestra tabla `wallets` y la cuenta de Whop pueden decir cosas distintas.
+  // Pasó en la primera prueba con plata real: la empresa depositó $17, nuestra
+  // base los acreditó al toque, y en Whop quedaron $0 disponibles y $15,77
+  // "pendientes" mientras el banco confirmaba el cobro.
+  //
+  // Si solo se mirara nuestra base, el pago se daría por hecho —descontando el
+  // saldo y avisándole al creador "te pagaron"— y la transferencia real en Whop
+  // fallaría por falta de fondos. Un pago fantasma. Por eso el saldo que manda
+  // es el de Whop, que es donde está la plata de verdad.
+  try {
+    const ledger: any = await (whopClient as any).ledgerAccounts.retrieve(payerCompanyId)
+    const saldos = Array.isArray(ledger?.balances)
+      ? ledger.balances.find((b: any) => String(b?.currency).toLowerCase() === 'usd') || ledger.balances[0]
+      : null
+    const disponible = Number(saldos?.balance) || 0
+    const enCamino = Number(saldos?.pending_balance) || 0
+
+    if (disponible < amount) {
+      console.error('[PayCreator] saldo insuficiente en Whop:', { disponible, enCamino, amount })
+      return NextResponse.json({
+        error: enCamino > 0
+          ? `Todavía no puedes pagar: tienes $${disponible.toFixed(2)} disponibles y $${enCamino.toFixed(2)} en camino. Tu depósito se está confirmando con el banco; cuando termine, este pago va a funcionar.`
+          : `No tienes saldo suficiente. Disponible: $${disponible.toFixed(2)}. Agrega fondos y vuelve a intentar.`,
+        needsFunds: true,
+        disponible,
+        enCamino,
+        amount,
+      }, { status: 402 })
+    }
+  } catch (e: any) {
+    // Si no se puede leer el saldo real, NO se sigue a ciegas: mover plata sin
+    // saber si existe es peor que hacer esperar a la empresa.
+    console.error('[PayCreator] no se pudo leer el saldo de Whop:', e?.message)
+    return NextResponse.json(
+      { error: 'No pudimos verificar tu saldo en este momento. Intenta de nuevo en un minuto.' },
+      { status: 503 }
+    )
   }
 
   // mover la plata (atómico, monto COMPLETO al creador — la comisión de Octopus

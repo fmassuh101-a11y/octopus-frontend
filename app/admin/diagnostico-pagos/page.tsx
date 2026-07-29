@@ -23,8 +23,13 @@ export default function DiagnosticoPagos() {
     try {
       const res = await fetch('/api/whop/diagnostico-tarjetas', { headers: authHeaders() })
       const d = await res.json()
-      if (!res.ok) setError(d?.error || 'No se pudo correr el diagnóstico')
-      else setDatos(d)
+      if (res.status === 401) {
+        // "No autorizado" a secas no le dice a nadie qué hacer. Casi siempre es
+        // la sesión vencida, no un problema de permisos.
+        setError('Tu sesión venció. Cierra sesión, vuelve a entrar y abre esta página de nuevo.')
+      } else if (!res.ok) {
+        setError(d?.error || 'No se pudo correr el diagnóstico')
+      } else setDatos(d)
     } catch { setError('No se pudo correr el diagnóstico') }
     setCargando(false)
   }
