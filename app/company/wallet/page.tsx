@@ -44,11 +44,15 @@ export default function CompanyWallet() {
 
   useEffect(() => {
     // FLUIDEZ: pinta al instante lo último visto; lo fresco llega por detrás
+    // Se pinta al instante lo último visto para que la pantalla no arranque
+    // vacía — PERO NO EL SALDO. El saldo guardado venía de nuestra base, y
+    // nuestra base puede no coincidir con Whop; mostrarlo y después
+    // reemplazarlo hacía que el número saltara de $17 a $0 en medio segundo,
+    // que es la peor forma posible de mostrar plata. El saldo se muestra solo
+    // cuando llega el de Whop, que es el único real.
     const cached = readCache<{ wallet: Wallet, transactions: Transaction[] }>('company-wallet')
     if (cached) {
-      setWallet(cached.wallet)
       setTransactions(cached.transactions)
-      setLoading(false)
     }
     loadWalletData()
   }, [])

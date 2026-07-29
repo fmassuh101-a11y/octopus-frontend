@@ -214,9 +214,12 @@ export default function FondearPage() {
     setVerifying(false)
   }
 
-  // Lo que Whop le cobra a la tarjeta para que lleguen `n` limpios al balance.
-  // 2,7% + $0,30 es la tarifa de procesamiento del checkout. Se muestra ANTES
-  // de pagar: la empresa tiene que saber cuánto sale de su tarjeta.
+  // OJO: la comisión real NO es 2,7% + $0,30. En la primera prueba con plata
+  // de verdad, un depósito de $17 acreditó $15,77 — o sea $1,23, un 7,2%.
+  // Whop cobra más por tarjetas internacionales (la de Felipe es chilena) y no
+  // publica la fórmula. Por eso la pantalla ya NO predice el monto acreditado:
+  // dice lo que se cobra a la tarjeta y avisa que Whop descuenta lo suyo.
+  // Se deja esta función solo para el mensaje de respaldo del checkout.
   const conComision = (n: number) => Math.round((n + n * 0.027 + 0.3) * 100) / 100
 
   const fmt = (n: number) => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -286,8 +289,8 @@ export default function FondearPage() {
             </button>
             <p className="mt-2 text-center text-xs text-neutral-500">
               {amount >= 1
-                ? <>Se cobran <strong className="text-neutral-700">${fmt(conComision(amount))}</strong> a tu tarjeta · llegan ${fmt(amount)} a tu balance</>
-                : <>Incluye la comisión de procesamiento (2,7% + $0,30)</>}
+                ? <>Se cobran <strong className="text-neutral-700">${fmt(amount)}</strong> a tu tarjeta. Whop descuenta su comisión de procesamiento antes de acreditar.</>
+                : <>Whop descuenta una comisión de procesamiento del depósito</>}
             </p>
 
             <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-neutral-400">
