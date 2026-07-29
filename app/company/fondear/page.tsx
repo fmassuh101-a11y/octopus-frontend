@@ -6,7 +6,6 @@ import dynamic from 'next/dynamic'
 import { authHeaders } from '@/lib/auth/clientToken'
 import CheckoutFrame from '@/components/oct/CheckoutFrame'
 import { type Tarjeta } from '@/components/oct/SelectorTarjeta'
-import WhopDeposit from '@/components/oct/WhopDeposit'
 import { ChevronLeft, CreditCard, Check, Loader2, ShieldCheck, Zap } from 'lucide-react'
 
 // Agregar fondos — la empresa deposita a SU cuenta y decide cómo usarlo.
@@ -44,9 +43,6 @@ export default function FondearPage() {
   // El cobro salió pero Whop todavía no lo confirma. Se muestra una pantalla
   // propia: NO se puede ofrecer pagar de nuevo, o la empresa paga dos veces.
   const [pendiente, setPendiente] = useState(false)
-  // Depósito embebido de Whop: es el ÚNICO camino sin comisión. Ver el
-  // comentario en components/oct/WhopDeposit.tsx.
-  const [deposito, setDeposito] = useState(false)
 
   useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current) }, [])
 
@@ -256,22 +252,7 @@ export default function FondearPage() {
           </div>
         )}
 
-        {/* DEPÓSITO SIN COMISIÓN — el widget de Whop. Adentro de él la
-            EMPRESA es la que compra, así que la tarjeta queda a su nombre y el
-            depósito no paga comisión de procesamiento. */}
-        {deposito && (
-          <div className="mt-6">
-            <WhopDeposit monto={amount >= 1 ? amount : undefined} onListo={() => router.push('/company/wallet')} />
-            <button
-              onClick={() => setDeposito(false)}
-              className="mt-4 w-full py-3 text-sm font-semibold text-neutral-500"
-            >
-              Volver
-            </button>
-          </div>
-        )}
-
-        {step === 'amount' && !pendiente && !deposito && (
+        {step === 'amount' && !pendiente && (
           <div className="mt-6 rounded-3xl border border-neutral-100 bg-white p-6 shadow-sm">
             <p className="font-bold">Monto</p>
             <div className="mt-2 flex items-center gap-2 rounded-2xl border-2 border-neutral-200 px-4 py-3.5 focus-within:border-cyan-400">
@@ -296,29 +277,17 @@ export default function FondearPage() {
                 costo real por adelantado. Prometer gratis y cobrar 2,7% es peor
                 que cobrar 2,7% avisando. */}
             <button
-              onClick={() => setDeposito(true)}
-              disabled={amount < 1}
-              className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-[#22D3EE] to-[#0891B2] py-4 text-lg font-bold text-white shadow-lg shadow-cyan-200 transition-transform active:scale-[0.98] disabled:from-neutral-200 disabled:to-neutral-300 disabled:text-neutral-400 disabled:shadow-none"
-            >
-              <Zap className="h-5 w-5" />
-              {amount >= 1 ? `Agregar $${fmt(amount)}` : 'Agregar fondos'}
-            </button>
-            <p className="mt-2 text-center text-xs font-semibold text-emerald-600">Sin comisión</p>
-
-            {/* Camino alternativo. Cuesta 2,7% + $0,30 y se dice cuánto es,
-                en plata, antes de que la empresa lo elija. */}
-            <button
               onClick={() => createCheckout('checkout')}
               disabled={busy || amount < 1}
-              className="mt-3 flex w-full items-center justify-center gap-2 rounded-full border-2 border-neutral-200 py-3.5 font-bold text-neutral-700 transition-transform active:scale-[0.98] disabled:opacity-50"
+              className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-[#22D3EE] to-[#0891B2] py-4 text-lg font-bold text-white shadow-lg shadow-cyan-200 transition-transform active:scale-[0.98] disabled:from-neutral-200 disabled:to-neutral-300 disabled:text-neutral-400 disabled:shadow-none"
             >
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
-              Pagar de otra forma
+              {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <CreditCard className="h-5 w-5" />}
+              {amount >= 1 ? `Agregar $${fmt(amount)}` : 'Agregar fondos'}
             </button>
-            <p className="mt-1.5 text-center text-xs text-neutral-400">
+            <p className="mt-2 text-center text-xs text-neutral-500">
               {amount >= 1
-                ? <>Tarjeta nueva, PayPal y más · se cobra ${fmt(conComision(amount))}</>
-                : <>Tarjeta nueva, PayPal y más · 2,7% + $0,30</>}
+                ? <>Se cobran <strong className="text-neutral-700">${fmt(conComision(amount))}</strong> a tu tarjeta · llegan ${fmt(amount)} a tu balance</>
+                : <>Incluye la comisión de procesamiento (2,7% + $0,30)</>}
             </p>
 
             <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-neutral-400">
