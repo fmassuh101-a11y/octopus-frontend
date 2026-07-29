@@ -21,8 +21,19 @@ export async function GET(request: NextRequest) {
     if (!user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
     // identidad Whop del usuario (se crea sola si no existe — cero pasos previos)
-    const { ensureWhopIdentity } = await import("@/lib/whopIdentity");
-    const { companyId } = await ensureWhopIdentity(user);
+    // ⚠️ SEGURIDAD: whopAccountForMoney, NO ensureWhopIdentity.
+    // ensureWhopIdentity puede devolver la cuenta de Octapi como respaldo, y
+    // este token abre el portal de cobros: saldo, agregar banco y RETIRAR. Con
+    // el respaldo, la persona operaría sobre nuestra cuenta.
+    const { whopAccountForMoney } = await import("@/lib/whopIdentity");
+    const companyId = await whopAccountForMoney(user);
+    if (!companyId) {
+      console.error("[PayoutToken] sin cuenta propia:", user.id);
+      return NextResponse.json(
+        { error: "Todavía estamos preparando tu cuenta de cobros. Intenta en un minuto." },
+        { status: 503 }
+      );
+    }
 
     // Token corto para los componentes embebidos (KYC + banco + balance + retiro).
     // SIN scoped_actions: el token hereda TODOS los permisos de la API key sobre esta

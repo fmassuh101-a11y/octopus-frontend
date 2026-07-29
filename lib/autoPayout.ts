@@ -49,7 +49,11 @@ export async function autoPayoutToWhop(opts: {
       origin_id: opts.originCompanyId,
       destination_id: companyId,
       idempotence_key: opts.idempotenceKey,
-      notes: opts.notes || "Pago Octopus",
+      // Whop rechaza notes de más de 50 caracteres. Si se pasa, transfers.create
+      // falla, pero el RPC de la base YA descontó el saldo y le avisó al creador
+      // "te pagaron": plata que nunca se movió. Se corta acá y no en quien llama,
+      // para que ninguna ruta futura pueda reintroducir el problema.
+      notes: (opts.notes || "Pago Octopus").slice(0, 50),
       metadata: { octopus_user_id: opts.userId, auto_payout: true },
     });
     if (!transfer?.id) return { sent: false, error: "transfer sin id" };

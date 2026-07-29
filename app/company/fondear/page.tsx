@@ -235,13 +235,29 @@ export default function FondearPage() {
     setVerifying(false)
   }
 
-  // OJO: la comisión real NO es 2,7% + $0,30. En la primera prueba con plata
-  // de verdad, un depósito de $17 acreditó $15,77 — o sea $1,23, un 7,2%.
-  // Whop cobra más por tarjetas internacionales (la de Felipe es chilena) y no
-  // publica la fórmula. Por eso la pantalla ya NO predice el monto acreditado:
-  // dice lo que se cobra a la tarjeta y avisa que Whop descuenta lo suyo.
-  // Se deja esta función solo para el mensaje de respaldo del checkout.
-  const conComision = (n: number) => Math.round((n + n * 0.027 + 0.3) * 100) / 100
+  // COMISIÓN REAL DEL CHECKOUT CON TARJETA CHILENA.
+  //
+  // Sale de la tabla oficial de Whop, y cuadra con lo medido: un depósito de
+  // $17 acreditó $15,77 ($1,23 = 7,24%). Desglose:
+  //     2,7 %  procesamiento base
+  //   + 1,5 %  recargo por tarjeta internacional (cross-border)
+  //   + 1,0 %  conversión de moneda (FX)
+  //   ────────
+  //     5,2 %  + $0,30 fijo + $0,03 de 3DS
+  //
+  // Los recargos son ACUMULATIVOS, no alternativos: la tasa real es 5,2%, no
+  // 2,7%. Y el fijo pesa mucho en montos chicos — sobre $10 son 3,3% por sí
+  // solo. Por eso un depósito de $10 sale a 8,5% y uno de $200 a 5,4%.
+  const COMISION_PORCENTAJE = 0.052
+  const COMISION_FIJA = 0.33
+
+  /** Lo que se le cobra a la tarjeta para que lleguen `n` limpios al balance. */
+  const conComision = (n: number) =>
+    Math.round((n + n * COMISION_PORCENTAJE + COMISION_FIJA) * 100) / 100
+
+  /** Cuánto pesa la comisión sobre el monto, en porcentaje. */
+  const porcentajeReal = (n: number) =>
+    n > 0 ? ((conComision(n) - n) / n) * 100 : 0
 
   const fmt = (n: number) => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 

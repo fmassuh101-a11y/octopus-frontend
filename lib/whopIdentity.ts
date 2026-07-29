@@ -31,6 +31,48 @@ export interface WhopIdentity {
  * Esta función devuelve null en ese caso, para que quien la llame corte la
  * operación en vez de mover plata al lugar equivocado.
  */
+// Nombre de país → código ISO de dos letras, que es lo que espera Whop.
+// Solo los de LATAM y los de habla hispana que nos importan; el resto cae a
+// null y Whop decide, que es mejor que adivinar mal.
+const PAISES: Record<string, string> = {
+  chile: "CL",
+  argentina: "AR",
+  mexico: "MX",
+  méxico: "MX",
+  colombia: "CO",
+  peru: "PE",
+  perú: "PE",
+  uruguay: "UY",
+  paraguay: "PY",
+  bolivia: "BO",
+  ecuador: "EC",
+  venezuela: "VE",
+  "costa rica": "CR",
+  panama: "PA",
+  panamá: "PA",
+  guatemala: "GT",
+  honduras: "HN",
+  "el salvador": "SV",
+  nicaragua: "NI",
+  "republica dominicana": "DO",
+  "república dominicana": "DO",
+  "puerto rico": "PR",
+  cuba: "CU",
+  espana: "ES",
+  españa: "ES",
+  "estados unidos": "US",
+  brasil: "BR",
+  brazil: "BR",
+};
+
+export function codigoDePais(nombre?: string | null): string | null {
+  const n = (nombre || "").trim().toLowerCase();
+  if (!n) return null;
+  // ya viene como código de dos letras
+  if (/^[a-z]{2}$/.test(n)) return n.toUpperCase();
+  return PAISES[n] || null;
+}
+
 export async function whopAccountForMoney(user: { id: string; email?: string | null }): Promise<string | null> {
   try {
     const { companyId } = await ensureWhopIdentity(user);
@@ -53,7 +95,7 @@ export async function whopAccountForMoney(user: { id: string; email?: string | n
 export async function ensureWhopIdentity(user: { id: string; email?: string | null }): Promise<WhopIdentity> {
   // 1) leer lo que ya tenemos en el perfil
   const pRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=whop_company_id,whop_user_id,full_name`,
+    `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=whop_company_id,whop_user_id,full_name,country`,
     { headers: sbHeaders() }
   );
   const profile = ((pRes.ok ? await pRes.json() : [])[0]) || {};
@@ -102,7 +144,9 @@ export async function ensureWhopIdentity(user: { id: string; email?: string | nu
     );
     const twin = ((twinRes.ok ? await twinRes.json() : [])[0]) || null;
     if (twin?.whop_user_id) {
-      companyId = twin.whop_company_id || OCTOPUS_COMPANY_ID;
+      // Si el gemelo tampoco tiene cuenta propia, se deja vacío: caer a la
+      // cuenta de Octapi acá tendría el mismo problema de arriba.
+      companyId = twin.whop_company_id || "";
       whopUserId = twin.whop_user_id;
     }
   }
@@ -111,8 +155,23 @@ export async function ensureWhopIdentity(user: { id: string; email?: string | nu
     // enrolar al usuario como connected account (crea su cuenta Whop mapeada)
     const email = emailForTwin;
     const title = (profile.full_name || (email.includes("@") ? email.split("@")[0] : "Usuario Octopus")).slice(0, 60);
+    // PAÍS — no es un detalle cosmético.
+    // Whop dice: "Defaults to the parent company's country for connected
+    // accounts". Nuestra cuenta madre es de EE.UU., así que sin este dato TODAS
+    // las cuentas de empresas y creadores chilenos nacían como estadounidenses:
+    // KYC equivocado, métodos de pago equivocados y moneda equivocada.
+    //
+    // El perfil guarda el país con su nombre ("Chile"), y Whop espera el código
+    // de dos letras. Si el país no está o no lo reconocemos, NO se manda nada y
+    // Whop hace lo suyo — mandar un código inventado sería peor.
+    const country = codigoDePais(profile.country);
     const create = (mail: string) =>
-      (whopClient as any).companies.create({ parent_company_id: OCTOPUS_COMPANY_ID, email: mail, title });
+      (whopClient as any).companies.create({
+        parent_company_id: OCTOPUS_COMPANY_ID,
+        email: mail,
+        title,
+        ...(country ? { country } : {}),
+      });
     try {
       if (!email.includes("@")) throw new Error("sin email");
       const created: any = await create(email);
@@ -133,14 +192,22 @@ export async function ensureWhopIdentity(user: { id: string; email?: string | nu
     }
   }
 
-  // ÚLTIMO RECURSO: identidad del dueño de la plataforma. La mensajería NUNCA
-  // debe fallar por identidad (esto solo pasa con cuentas de prueba con email
-  // quemado o vacío; los usuarios reales crean su cuenta sin problema).
+  // ÚLTIMO RECURSO: identidad del dueño de la plataforma, SOLO para que la
+  // mensajería no se caiga. Pasa con cuentas de prueba de email quemado o
+  // vacío; los usuarios reales crean su cuenta sin problema.
+  //
+  // ⚠️ SEGURIDAD — NO BORRAR ESTA MARCA.
+  // Este valor NO se persiste nunca (ver más abajo). Cuando se persistía, el
+  // perfil quedaba con el biz_ de Octapi grabado para siempre, y cualquier ruta
+  // que leyera whop_company_id crudo le entregaba a esa persona un token sobre
+  // NUESTRA cuenta: podía ver el saldo de Octapi, agregar su banco y retirarlo.
+  let esRespaldoDeOctapi = false;
   if (!companyId || !whopUserId) {
     try {
       const main: any = await whopClient.companies.retrieve(OCTOPUS_COMPANY_ID);
       companyId = OCTOPUS_COMPANY_ID;
       whopUserId = main?.owner_user?.id || "";
+      esRespaldoDeOctapi = true;
     } catch {}
   }
   if (!companyId || !whopUserId) throw new Error("no se pudo resolver la identidad de Whop");
@@ -148,11 +215,19 @@ export async function ensureWhopIdentity(user: { id: string; email?: string | nu
   // 2) persistir para la próxima — en DOS pasos para que el company_id quede
   //    guardado aunque la columna whop_user_id todavía no exista (sin esto,
   //    cada llamada crearía OTRA connected account duplicada).
-  await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}`, {
-    method: "PATCH",
-    headers: sbHeaders(),
-    body: JSON.stringify({ whop_company_id: companyId }),
-  }).catch(() => {});
+  //
+  //    El respaldo de Octapi NO se guarda: vive solo en memoria para esta
+  //    llamada. Así el perfil queda sin cuenta y el próximo intento vuelve a
+  //    tratar de crearle la suya, en vez de quedar apuntando a la nuestra.
+  if (!esRespaldoDeOctapi) {
+    await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}`, {
+      method: "PATCH",
+      headers: sbHeaders(),
+      body: JSON.stringify({ whop_company_id: companyId }),
+    }).catch(() => {});
+  } else {
+    console.error("[whopIdentity] SIN CUENTA PROPIA, usando respaldo de Octapi en memoria:", user.id);
+  }
   const uRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}`, {
     method: "PATCH",
     headers: sbHeaders(),
