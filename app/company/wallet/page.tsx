@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import WhopVerifyCompany from '@/components/oct/WhopVerifyCompany'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
@@ -259,6 +260,12 @@ export default function CompanyWallet() {
             className="block w-full rounded-2xl bg-white py-3.5 text-center font-bold text-sky-700 shadow-lg transition-transform active:scale-[0.98]">
             Agregar fondos
           </Link>
+        </div>
+
+        {/* Verificación de la cuenta. Si ya está verificada, este componente
+            no dibuja nada y desaparece solo. */}
+        <div className="mt-4">
+          <WhopVerifyCompany />
         </div>
 
         {/* How It Works */}
