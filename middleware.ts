@@ -74,6 +74,12 @@ export function middleware(req: NextRequest) {
       path === '/favicon.ico' ||
       path === '/robots.txt' ||
       path === '/sitemap.xml' ||
+      // El manifiesto y los íconos tienen que pasar el muro: sin ellos el
+      // navegador no ofrece "agregar a inicio" y la app no se puede instalar.
+      // No revelan nada — son el nombre, los colores y el ícono.
+      path === '/manifest.webmanifest' ||
+      path === '/icon.png' ||
+      path === '/apple-icon.png' ||
       path === '/privacy' || // Google/Meta la piden pública para verificar apps OAuth
       path === '/terms' ||
       isTikTokCallback
