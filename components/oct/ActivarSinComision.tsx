@@ -37,17 +37,46 @@ import { X, Zap, ExternalLink, Loader2, Check, PlayCircle } from 'lucide-react'
 // La cuenta a la que entra es SUYA: se crea con su email, así que le pertenece.
 
 export default function ActivarSinComision({
-  enlacePanel,
   onListo,
   onCerrar,
 }: {
-  enlacePanel: string
   /** Se llama cuando ya se detectó la tarjeta de empresa. */
   onListo: () => void
   onCerrar: () => void
 }) {
   const [revisando, setRevisando] = useState(false)
   const [noEncontrada, setNoEncontrada] = useState(false)
+  const [abriendo, setAbriendo] = useState(false)
+  const [errorEnlace, setErrorEnlace] = useState('')
+
+  // Se abre la cuenta por un enlace que VINCULA a la persona con ella.
+  //
+  // Antes esto era un href fijo al panel. No funcionaba: crear la cuenta por
+  // API no le da acceso a nadie, así que Whop pedía iniciar sesión, la persona
+  // entraba con un usuario suelto y terminaba sin ver su cuenta. El enlace de
+  // vinculación es lo que hace que el panel la reconozca.
+  const abrirCuenta = async () => {
+    setAbriendo(true)
+    setErrorEnlace('')
+    // La pestaña se abre ANTES de pedir el enlace: si se abriera después, el
+    // navegador la bloquea por no venir de un clic directo.
+    const pestana = window.open('', '_blank')
+    try {
+      const res = await fetch('/api/whop/onboarding-link', { headers: authHeaders() })
+      const d = await res.json()
+      if (d?.ok && d.url) {
+        if (pestana) pestana.location.href = d.url
+        else window.location.href = d.url
+      } else {
+        pestana?.close()
+        setErrorEnlace(d?.error || 'No se pudo abrir tu cuenta de pagos.')
+      }
+    } catch {
+      pestana?.close()
+      setErrorEnlace('No se pudo abrir tu cuenta de pagos.')
+    }
+    setAbriendo(false)
+  }
 
   const revisar = async () => {
     setRevisando(true)
@@ -69,8 +98,9 @@ export default function ActivarSinComision({
   // instrucción que no calza con lo que la persona ve es peor que ninguna.
   const pasos = [
     'Se abre tu cuenta de pagos en otra pestaña. Octapi se queda acá.',
-    'Arriba a la derecha, aprieta el botón "Deposit".',
-    'Elige "Card" como forma de pago y escribe tu tarjeta.',
+    'Completa los datos que te pida Whop. Es una sola vez.',
+    'Cuando llegues a tu balance, aprieta "Deposit" arriba a la derecha.',
+    'Elige "Card", escribe tu tarjeta y confirma.',
     'Vuelve a esta pestaña y aprieta "Ya la guardé".',
   ]
 
@@ -117,15 +147,17 @@ export default function ActivarSinComision({
             ))}
           </ol>
 
-          <a
-            href={enlacePanel}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 py-4 text-base font-bold text-white shadow-lg shadow-emerald-200 transition-transform active:scale-[0.98]"
+          <button
+            onClick={abrirCuenta}
+            disabled={abriendo}
+            className="flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 py-4 text-base font-bold text-white shadow-lg shadow-emerald-200 transition-transform active:scale-[0.98] disabled:opacity-60"
           >
-            <ExternalLink className="h-4.5 w-4.5" />
+            {abriendo ? <Loader2 className="h-4.5 w-4.5 animate-spin" /> : <ExternalLink className="h-4.5 w-4.5" />}
             Abrir mi cuenta de pagos
-          </a>
+          </button>
+          {errorEnlace && (
+            <p className="text-center text-sm font-semibold text-red-500">{errorEnlace}</p>
+          )}
 
           <button
             onClick={revisar}

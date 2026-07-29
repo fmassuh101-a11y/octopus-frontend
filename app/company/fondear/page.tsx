@@ -276,9 +276,8 @@ export default function FondearPage() {
           </div>
         )}
 
-        {activando && enlacePanel && (
+        {activando && (
           <ActivarSinComision
-            enlacePanel={enlacePanel}
             onListo={() => { setActivando(false); cargarTarjetasEmpresa() }}
             onCerrar={() => setActivando(false)}
           />
