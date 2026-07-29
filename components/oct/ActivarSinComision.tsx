@@ -6,12 +6,20 @@ import { X, Zap, ExternalLink, Loader2, Check, PlayCircle } from 'lucide-react'
 
 // "Paga menos comisión" — guía de un solo uso, por empresa.
 //
-// CUÁNTO SE AHORRA, MEDIDO EN PRODUCCIÓN (no lo que dice la documentación)
-//   Checkout de tarjeta ....... 7,24%  (probado con $17 reales de Chile)
-//   Depósito con tarjeta ...... 3%     (dice la propia pantalla de Whop)
-// La documentación de Whop dice que los depósitos "no tienen comisión". Es
-// falso para tarjeta: su modal muestra "Total $103.00 incl. 3% fee". Acá se
-// promete 3%, que es lo que se ve, no 0% que es lo que está escrito.
+// CUÁNTO SE AHORRA
+//   Checkout de tarjeta ....... 7,24%  ← MEDIDO por nosotros: $17 reales desde
+//                                        Chile acreditaron $15,77. Base 2,7% +
+//                                        $0,30, más cross-border y conversión
+//                                        por ser tarjeta extranjera.
+//   topups.create ............. 0%     ← lo afirma Whop dos veces: no genera
+//                                        payment_processing_fee, cross_border
+//                                        ni fx_fee. TODAVÍA NO LO MEDIMOS
+//                                        nosotros; confirmar en el primer
+//                                        depósito real por esta vía.
+//
+// NOTA para quien venga después: el modal "Top up balance" del panel de Whop
+// muestra "incl. 3% fee", pero eso es OTRA operación — mover plata desde el
+// saldo personal a la cuenta. No es un cobro a tarjeta y no aplica acá.
 //
 // POR QUÉ ESTA PANTALLA EXISTE Y POR QUÉ ES ASÍ
 // El depósito directo exige una tarjeta guardada A NOMBRE DE LA EMPRESA.
@@ -79,11 +87,12 @@ export default function ActivarSinComision({
             <X className="h-4.5 w-4.5" />
           </button>
           <Zap className="h-7 w-7" />
-          <h2 className="mt-3 text-2xl font-extrabold tracking-tight">Paga menos comisión</h2>
+          <h2 className="mt-3 text-2xl font-extrabold tracking-tight">Deposita sin comisión</h2>
           <p className="mt-1.5 text-sm leading-relaxed text-emerald-50">
-            Hoy cada depósito paga alrededor de <strong>7%</strong>. Guardando tu
-            tarjeta una sola vez, las próximas recargas bajan a <strong>3%</strong>.
-            En $100 son $40 de diferencia.
+            Hoy cada depósito paga alrededor de <strong>7%</strong> de comisión de
+            procesamiento. Guardando tu tarjeta una sola vez, las próximas recargas
+            entran <strong>completas</strong>. En $100 son $7 que dejas de perder
+            cada vez.
           </p>
         </div>
 
