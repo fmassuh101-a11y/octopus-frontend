@@ -118,10 +118,24 @@ export default function ActivarSinComision({
     'Vuelve a esta pestaña y aprieta "Ya me verifiqué".',
   ]
 
+  // PASOS REALES, sacados de la pantalla de Whop una por una.
+  //
+  // El camino no es obvio y por eso hay que decirlo completo: dentro de
+  // "Deposit" NO aparece la opción de tarjeta a la vista. Whop llega con
+  // "Personal balance" preseleccionado y la tarjeta está escondida detrás del
+  // botón "Change".
+  //
+  // Y hay algo que no se puede maquillar: Whop no tiene un "guardar tarjeta" a
+  // secas. La única forma de dejarla guardada es HACER un primer depósito con
+  // ella. Por eso se le pide un monto chico y se le dice para qué sirve, en vez
+  // de mandarlo a "conectar la tarjeta" y que se encuentre pagando sin aviso.
   const pasosTarjeta = [
     'Se abre tu cuenta en otra pestaña. Octapi se queda acá.',
     'Arriba a la derecha, aprieta "Deposit".',
-    'Elige "Card" y escribe los datos de tu tarjeta.',
+    'Escribe un monto chico, por ejemplo 5.',
+    'Abajo dice "Personal balance". Aprieta "Change" al lado.',
+    'Elige "Card", escribe tu tarjeta y aprieta "Select".',
+    'Aprieta "Pay" para confirmar ese primer depósito.',
     'Vuelve a esta pestaña y aprieta "Ya la guardé".',
   ]
 
@@ -215,7 +229,7 @@ export default function ActivarSinComision({
             <p className="text-sm leading-relaxed text-neutral-600">
               {enVerificar
                 ? 'Nuestro procesador de pagos necesita confirmar tu identidad antes de habilitar tu cuenta. Es el mismo trámite que pide cualquier banco, y se hace una sola vez.'
-                : 'Tu identidad ya está verificada. Ahora guarda una tarjeta para que tus depósitos entren completos.'}
+                : 'Tu identidad ya está verificada. Falta guardar tu tarjeta. Whop no tiene un botón de "solo guardar": la tarjeta queda registrada al hacer un primer depósito con ella. Con $5 basta — esa plata queda en tu balance, no se pierde.'}
             </p>
 
             <ol className="space-y-3">
