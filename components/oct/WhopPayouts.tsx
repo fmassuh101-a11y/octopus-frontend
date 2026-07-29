@@ -101,7 +101,7 @@ export default function WhopPayouts() {
           <div className="space-y-4 p-4">
             {slow && !portalReady && (
               <div className="rounded-xl bg-amber-50 px-4 py-2.5 text-xs font-semibold text-amber-700">
-                El procesador de pagos está tardando en responder. Esperá un momento o volvé a entrar en unos minutos.
+                El procesador de pagos está tardando en responder. Espera un momento o vuelve a entrar en unos minutos.
               </div>
             )}
             {/* VerifyElement solo aparece si la cuenta REQUIERE verificación

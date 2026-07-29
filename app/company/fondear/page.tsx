@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { authHeaders } from '@/lib/auth/clientToken'
 import CheckoutFrame from '@/components/oct/CheckoutFrame'
-import SelectorTarjeta, { type Tarjeta } from '@/components/oct/SelectorTarjeta'
+import { type Tarjeta } from '@/components/oct/SelectorTarjeta'
+import WhopDeposit from '@/components/oct/WhopDeposit'
 import { ChevronLeft, CreditCard, Check, Loader2, ShieldCheck, Zap } from 'lucide-react'
 
 // Agregar fondos — la empresa deposita a SU cuenta y decide cómo usarlo.
@@ -43,6 +44,9 @@ export default function FondearPage() {
   // El cobro salió pero Whop todavía no lo confirma. Se muestra una pantalla
   // propia: NO se puede ofrecer pagar de nuevo, o la empresa paga dos veces.
   const [pendiente, setPendiente] = useState(false)
+  // Depósito embebido de Whop: es el ÚNICO camino sin comisión. Ver el
+  // comentario en components/oct/WhopDeposit.tsx.
+  const [deposito, setDeposito] = useState(false)
 
   useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current) }, [])
 
@@ -252,7 +256,22 @@ export default function FondearPage() {
           </div>
         )}
 
-        {step === 'amount' && !pendiente && (
+        {/* DEPÓSITO SIN COMISIÓN — el widget de Whop. Adentro de él la
+            EMPRESA es la que compra, así que la tarjeta queda a su nombre y el
+            depósito no paga comisión de procesamiento. */}
+        {deposito && (
+          <div className="mt-6">
+            <WhopDeposit monto={amount >= 1 ? amount : undefined} onListo={() => router.push('/company/wallet')} />
+            <button
+              onClick={() => setDeposito(false)}
+              className="mt-4 w-full py-3 text-sm font-semibold text-neutral-500"
+            >
+              Volver
+            </button>
+          </div>
+        )}
+
+        {step === 'amount' && !pendiente && !deposito && (
           <div className="mt-6 rounded-3xl border border-neutral-100 bg-white p-6 shadow-sm">
             <p className="font-bold">Monto</p>
             <div className="mt-2 flex items-center gap-2 rounded-2xl border-2 border-neutral-200 px-4 py-3.5 focus-within:border-cyan-400">
@@ -276,68 +295,31 @@ export default function FondearPage() {
                 Mientras tanto la pantalla NO promete "sin comisión": muestra el
                 costo real por adelantado. Prometer gratis y cobrar 2,7% es peor
                 que cobrar 2,7% avisando. */}
-            {hasCard === null ? (
-              <div className="mt-5 space-y-2.5">
-                <div className="h-[68px] animate-pulse rounded-2xl bg-neutral-100" />
-                <div className="h-[52px] animate-pulse rounded-2xl bg-neutral-100" />
-              </div>
-            ) : hasCard ? (
-              <>
-                <p className="mt-6 text-sm font-bold text-neutral-900">Pagar con</p>
-                <div className="mt-2.5">
-                  <SelectorTarjeta
-                    tarjetas={tarjetas || []}
-                    elegida={elegida}
-                    onElegir={elegirTarjeta}
-                    onAgregar={openSaveCard}
-                    ocupado={busy || savingCard}
-                  />
-                </div>
+            <button
+              onClick={() => setDeposito(true)}
+              disabled={amount < 1}
+              className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-[#22D3EE] to-[#0891B2] py-4 text-lg font-bold text-white shadow-lg shadow-cyan-200 transition-transform active:scale-[0.98] disabled:from-neutral-200 disabled:to-neutral-300 disabled:text-neutral-400 disabled:shadow-none"
+            >
+              <Zap className="h-5 w-5" />
+              {amount >= 1 ? `Agregar $${fmt(amount)}` : 'Agregar fondos'}
+            </button>
+            <p className="mt-2 text-center text-xs font-semibold text-emerald-600">Sin comisión</p>
 
-                <button onClick={() => createCheckout('saved')} disabled={busy || amount < 1 || !elegida}
-                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-[#22D3EE] to-[#0891B2] py-4 text-lg font-bold text-white shadow-lg shadow-cyan-200 transition-transform active:scale-[0.98] disabled:from-neutral-200 disabled:to-neutral-300 disabled:text-neutral-400 disabled:shadow-none">
-                  {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Zap className="h-5 w-5" />}
-                  {amount >= 1 ? `Agregar $${fmt(amount)}` : 'Agregar fondos'}
-                </button>
-                <p className="mt-2 text-center text-xs font-semibold text-emerald-600">Sin comisión</p>
-
-                <button onClick={() => createCheckout('checkout')} disabled={busy || amount < 1}
-                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-full border-2 border-neutral-200 py-3.5 font-bold text-neutral-700 transition-transform active:scale-[0.98] disabled:opacity-50">
-                  <CreditCard className="h-4 w-4" /> Pagar de otra forma
-                </button>
-              </>
-            ) : (
-              <>
-                <button onClick={() => createCheckout('checkout')} disabled={busy || amount < 1}
-                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-[#22D3EE] to-[#0891B2] py-4 text-lg font-bold text-white shadow-lg shadow-cyan-200 transition-transform active:scale-[0.98] disabled:from-neutral-200 disabled:to-neutral-300 disabled:text-neutral-400 disabled:shadow-none">
-                  {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <CreditCard className="h-5 w-5" />}
-                  Pagar con tarjeta
-                </button>
-
-                {/* Si la CONSULTA falló, se dice — no se hace pasar por
-                    "no tienes tarjetas", que es otra cosa. */}
-                {fallaConsulta && (
-                  <p className="mt-3 text-center text-xs font-semibold text-amber-600">
-                    No pudimos leer tus tarjetas guardadas. Puedes pagar igual acá abajo.
-                  </p>
-                )}
-
-                <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-                  <p className="flex items-center gap-2 text-sm font-bold text-emerald-900">
-                    <Zap className="h-4 w-4" /> Guarda tu tarjeta y no pagues comisión
-                  </p>
-                  <p className="mt-1 text-xs leading-relaxed text-emerald-800/80">
-                    Pagando de esta forma se descuenta la comisión de procesamiento. Si guardas tu
-                    tarjeta una vez, las próximas recargas no tienen costo. Guardarla es gratis.
-                  </p>
-                  <button onClick={openSaveCard} disabled={savingCard}
-                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 py-3 text-sm font-bold text-white transition-transform active:scale-[0.98] disabled:opacity-60">
-                    {savingCard ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
-                    Guardar mi tarjeta
-                  </button>
-                </div>
-              </>
-            )}
+            {/* Camino alternativo. Cuesta 2,7% + $0,30 y se dice cuánto es,
+                en plata, antes de que la empresa lo elija. */}
+            <button
+              onClick={() => createCheckout('checkout')}
+              disabled={busy || amount < 1}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-full border-2 border-neutral-200 py-3.5 font-bold text-neutral-700 transition-transform active:scale-[0.98] disabled:opacity-50"
+            >
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
+              Pagar de otra forma
+            </button>
+            <p className="mt-1.5 text-center text-xs text-neutral-400">
+              {amount >= 1
+                ? <>Tarjeta nueva, PayPal y más · se cobra ${fmt(conComision(amount))}</>
+                : <>Tarjeta nueva, PayPal y más · 2,7% + $0,30</>}
+            </p>
 
             <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-neutral-400">
               <ShieldCheck className="h-3.5 w-3.5" /> Pago seguro procesado por Whop
