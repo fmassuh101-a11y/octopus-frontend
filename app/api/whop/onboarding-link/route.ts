@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
     if (destino === "balance") {
       return NextResponse.json({
         ok: true,
-        url: `https://whop.com/dashboard/${companyId}/balance`,
+        url: `https://whop.com/dashboard/${companyId}/balance/`,
         companyId,
         tipo: "balance",
       });

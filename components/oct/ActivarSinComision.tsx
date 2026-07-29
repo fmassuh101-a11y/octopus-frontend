@@ -120,6 +120,12 @@ export default function ActivarSinComision({
 
   // PASOS REALES, sacados de la pantalla de Whop una por una.
   //
+  // NO se describe dónde está el botón por su POSICIÓN. Whop lo pone arriba a
+  // la derecha en la página de Balance y abajo al centro en Home, y según por
+  // dónde entre la persona cae en una u otra. Decir "arriba a la derecha" la
+  // dejó buscando un botón que en su pantalla estaba abajo. Se describe por
+  // sus vecinos, que no cambian: va junto a "Accept" y "Send".
+  //
   // El camino no es obvio y por eso hay que decirlo completo: dentro de
   // "Deposit" NO aparece la opción de tarjeta a la vista. Whop llega con
   // "Personal balance" preseleccionado y la tarjeta está escondida detrás del
@@ -131,9 +137,9 @@ export default function ActivarSinComision({
   // de mandarlo a "conectar la tarjeta" y que se encuentre pagando sin aviso.
   const pasosTarjeta = [
     'Se abre tu cuenta en otra pestaña. Octapi se queda acá.',
-    'Arriba a la derecha, aprieta "Deposit".',
+    'Busca el botón "Deposit" — está junto a "Accept" y "Send".',
     'Escribe un monto chico, por ejemplo 5.',
-    'Abajo dice "Personal balance". Aprieta "Change" al lado.',
+    'Abajo aparece "Personal balance". Aprieta "Change" al lado.',
     'Elige "Card", escribe tu tarjeta y aprieta "Select".',
     'Aprieta "Pay" para confirmar ese primer depósito.',
     'Vuelve a esta pestaña y aprieta "Ya la guardé".',
