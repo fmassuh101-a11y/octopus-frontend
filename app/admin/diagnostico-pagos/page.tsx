@@ -18,8 +18,22 @@ export default function DiagnosticoPagos() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
 
+  const [deposito, setDeposito] = useState<any>(null)
+
+  // Métodos de depósito (transferencia y cripto). Es una consulta aparte y no
+  // cobra nada: solo pide las instrucciones para ver si están habilitados.
+  const verDeposito = async () => {
+    try {
+      const res = await fetch('/api/whop/metodos-deposito', { headers: authHeaders() })
+      setDeposito(await res.json())
+    } catch {
+      setDeposito({ ok: false, detalle: 'no se pudo consultar' })
+    }
+  }
+
   const correr = async () => {
     setCargando(true); setError('')
+    verDeposito()
     try {
       const res = await fetch('/api/whop/diagnostico-tarjetas', { headers: authHeaders() })
       const d = await res.json()
@@ -57,6 +71,39 @@ export default function DiagnosticoPagos() {
 
         {error && (
           <p className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</p>
+        )}
+
+        {deposito && (
+          <div className="mt-6 rounded-2xl border border-neutral-200 bg-white p-5">
+            <p className="text-sm font-extrabold text-neutral-900">Métodos de depósito de tu cuenta</p>
+            <p className="mt-1 text-xs text-neutral-500">
+              Whop no publica la comisión de estos métodos. Esto dice si están habilitados.
+            </p>
+            <div className="mt-3 space-y-2 text-sm">
+              <p>
+                <span className="font-semibold">Transferencia bancaria:</span>{' '}
+                {deposito?.transferencia?.habilitada
+                  ? <span className="font-bold text-emerald-600">habilitada</span>
+                  : <span className="text-neutral-400">no habilitada</span>}
+              </p>
+              <p>
+                <span className="font-semibold">Cripto:</span>{' '}
+                {deposito?.cripto?.habilitada
+                  ? <span className="font-bold text-emerald-600">{deposito.cripto.redes.length} red(es)</span>
+                  : <span className="text-neutral-400">no habilitada</span>}
+              </p>
+              {deposito?.paginaAlojada && (
+                <p className="break-all text-xs text-neutral-500">
+                  Página de depósito: {deposito.paginaAlojada}
+                </p>
+              )}
+            </div>
+            <div className="mt-3 overflow-x-auto rounded-xl bg-neutral-50 p-3">
+              <pre className="text-[11px] leading-relaxed text-neutral-700">
+                {JSON.stringify(deposito, null, 2)}
+              </pre>
+            </div>
+          </div>
         )}
 
         {datos && (
