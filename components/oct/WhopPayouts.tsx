@@ -84,6 +84,7 @@ export default function WhopPayouts() {
   const {
     Elements, PayoutsSession, VerifyElement, AddPayoutMethodElement,
     BalanceElement, WithdrawButtonElement, WithdrawalsElement,
+    ChangeAccountCountryElement,
   } = mod
 
   const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://octapiapp.com'}/creator/wallet?verify=done`
@@ -107,6 +108,22 @@ export default function WhopPayouts() {
             {/* VerifyElement solo aparece si la cuenta REQUIERE verificación
                 (verificado = no monta nada). Nunca más un aviso equivocado. */}
             <VerifyElement />
+
+            {/* CAMBIAR EL PAÍS DE LA CUENTA.
+                Hace falta porque las cuentas creadas antes de julio 2026 nacieron
+                con el país de la cuenta madre (Estados Unidos): Whop hereda el
+                país del padre si no se le pasa uno, y no se lo estábamos
+                pasando. Eso les da métodos de cobro equivocados —ACH, Venmo, RTP
+                son de EE.UU.— y un creador chileno no puede usar ninguno.
+                La API NO permite corregirlo: companies.update no acepta country
+                en ninguna versión del SDK. Este componente embebido es la única
+                forma, y la persona lo hace sin salir de Octapi.
+                Whop lo muestra solo si la cuenta puede cambiar de país; si ya
+                está correcta, no dibuja nada. */}
+            <div className="empty:hidden">
+              <ChangeAccountCountryElement />
+            </div>
+
             <BalanceElement options={{ onReady: () => setPortalReady(true) }} />
             <WithdrawButtonElement />
             <AddPayoutMethodElement />
