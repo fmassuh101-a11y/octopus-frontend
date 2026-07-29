@@ -356,6 +356,36 @@ export default function FondearPage() {
               </>
             )}
 
+            {/* GUARDAR LA TARJETA — sin cobrar nada.
+                Esto responde al problema concreto: hoy la empresa paga y su
+                tarjeta NO queda guardada, porque el checkout de pago de Whop no
+                tiene opción de guardarla (lo confirmamos: no existe el
+                parámetro). Así que cada depósito la obliga a escribirla de
+                nuevo.
+                El formulario de "setup" sí la guarda y NO cobra nada. Después
+                se le cobra por factura desde acá, en un clic.
+                OJO: esto no baja la comisión, la comisión sigue siendo la del
+                cobro con tarjeta. Lo que arregla es el volver a escribirla. */}
+            {hasCard === false && (
+              <div className="mt-4 rounded-2xl border border-cyan-200 bg-cyan-50 p-4">
+                <p className="flex items-center gap-2 text-sm font-bold text-cyan-900">
+                  <CreditCard className="h-4 w-4" /> Guarda tu tarjeta
+                </p>
+                <p className="mt-1 text-xs leading-relaxed text-cyan-900/80">
+                  Guardarla ahora <strong>no cuesta nada</strong> y no se te cobra.
+                  Después depositas de un clic, sin volver a escribir el número.
+                </p>
+                <button
+                  onClick={openSaveCard}
+                  disabled={savingCard}
+                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-cyan-600 py-3 text-sm font-bold text-white transition-transform active:scale-[0.98] disabled:opacity-60"
+                >
+                  {savingCard ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
+                  Guardar mi tarjeta
+                </button>
+              </div>
+            )}
+
             {/* TARJETA GUARDADA — el camino de un clic.
                 La empresa nunca sale de Octapi ni sabe que existe Whop. La
                 tarjeta se guardó antes con nuestro propio formulario y se
