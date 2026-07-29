@@ -330,10 +330,10 @@ export default function FondearPage() {
                 <Zap className="h-5 w-5 shrink-0 text-emerald-600" />
                 <span className="min-w-0 flex-1">
                   <span className="block text-sm font-bold text-emerald-900">
-                    Deposita sin comisión
+                    Paga menos comisión
                   </span>
                   <span className="block text-xs leading-relaxed text-emerald-800/80">
-                    Actívalo una vez y tus recargas dejan de pagar comisión.
+                    Guarda tu tarjeta una vez y tus recargas bajan de 7% a 3%.
                   </span>
                 </span>
                 <span className="shrink-0 text-lg font-bold text-emerald-600">›</span>
@@ -349,10 +349,10 @@ export default function FondearPage() {
                   className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-[#10B981] to-[#059669] py-4 text-lg font-bold text-white shadow-lg shadow-emerald-200 transition-transform active:scale-[0.98] disabled:from-neutral-200 disabled:to-neutral-300 disabled:text-neutral-400 disabled:shadow-none"
                 >
                   {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Zap className="h-5 w-5" />}
-                  {amount >= 1 ? `Agregar $${fmt(amount)} sin comisión` : 'Agregar fondos'}
+                  {amount >= 1 ? `Agregar $${fmt(amount)}` : 'Agregar fondos'}
                 </button>
                 <p className="mt-2 text-center text-xs font-semibold text-emerald-600">
-                  Llegan ${amount >= 1 ? fmt(amount) : '0.00'} completos a tu balance
+                  Comisión 3% · la más barata disponible
                 </p>
               </>
             )}

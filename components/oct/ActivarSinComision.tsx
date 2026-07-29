@@ -4,10 +4,17 @@ import { useState } from 'react'
 import { authHeaders } from '@/lib/auth/clientToken'
 import { X, Zap, ExternalLink, Loader2, Check, PlayCircle } from 'lucide-react'
 
-// "Activa el 0% de comisión" — guía de un solo uso, por empresa.
+// "Paga menos comisión" — guía de un solo uso, por empresa.
+//
+// CUÁNTO SE AHORRA, MEDIDO EN PRODUCCIÓN (no lo que dice la documentación)
+//   Checkout de tarjeta ....... 7,24%  (probado con $17 reales de Chile)
+//   Depósito con tarjeta ...... 3%     (dice la propia pantalla de Whop)
+// La documentación de Whop dice que los depósitos "no tienen comisión". Es
+// falso para tarjeta: su modal muestra "Total $103.00 incl. 3% fee". Acá se
+// promete 3%, que es lo que se ve, no 0% que es lo que está escrito.
 //
 // POR QUÉ ESTA PANTALLA EXISTE Y POR QUÉ ES ASÍ
-// Depositar sin comisión exige una tarjeta guardada A NOMBRE DE LA EMPRESA.
+// El depósito directo exige una tarjeta guardada A NOMBRE DE LA EMPRESA.
 // Whop no expone ninguna forma de crearla: ni API, ni componente embebido. Su
 // documentación lo dice sin rodeos: "Before using the API, you need to create
 // your first top up from the Dashboard."
@@ -48,10 +55,14 @@ export default function ActivarSinComision({
     setRevisando(false)
   }
 
+  // Los nombres son los REALES de la pantalla de Whop, comprobados uno por
+  // uno. La primera versión decía "Add Funds" y ese botón no existe: se llama
+  // "Deposit". Y decía "entra a Balance" cuando el enlace ya cae ahí. Una
+  // instrucción que no calza con lo que la persona ve es peor que ninguna.
   const pasos = [
     'Se abre tu cuenta de pagos en otra pestaña. Octapi se queda acá.',
-    'Entra a "Balance" y después a "Add Funds".',
-    'Guarda tu tarjeta. No se te cobra nada por guardarla.',
+    'Arriba a la derecha, aprieta el botón "Deposit".',
+    'Elige "Card" como forma de pago y escribe tu tarjeta.',
     'Vuelve a esta pestaña y aprieta "Ya la guardé".',
   ]
 
@@ -68,11 +79,11 @@ export default function ActivarSinComision({
             <X className="h-4.5 w-4.5" />
           </button>
           <Zap className="h-7 w-7" />
-          <h2 className="mt-3 text-2xl font-extrabold tracking-tight">Deposita sin comisión</h2>
+          <h2 className="mt-3 text-2xl font-extrabold tracking-tight">Paga menos comisión</h2>
           <p className="mt-1.5 text-sm leading-relaxed text-emerald-50">
-            Hoy cada depósito paga comisión de procesamiento. Activando esto una
-            sola vez, tus próximas recargas <strong>no pagan nada</strong> — el monto
-            completo llega a tu balance.
+            Hoy cada depósito paga alrededor de <strong>7%</strong>. Guardando tu
+            tarjeta una sola vez, las próximas recargas bajan a <strong>3%</strong>.
+            En $100 son $40 de diferencia.
           </p>
         </div>
 
@@ -118,8 +129,8 @@ export default function ActivarSinComision({
 
           {noEncontrada && (
             <p className="text-center text-sm font-semibold text-amber-600">
-              Todavía no vemos tu tarjeta. Revisa que la hayas guardado en
-              &quot;Add Funds&quot; y prueba de nuevo en unos segundos.
+              Todavía no vemos tu tarjeta. Revisa que hayas completado el
+              depósito con tarjeta y prueba de nuevo en unos segundos.
             </p>
           )}
 

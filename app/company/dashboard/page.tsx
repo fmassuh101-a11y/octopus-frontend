@@ -99,17 +99,23 @@ export default function CompanyDashboard() {
 
       // Perfil y wallet no dependen entre sí: se piden a la vez en vez de
       // esperar el perfil completo antes de recién ahí pedir la wallet.
-      fetch(`${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${userData.id}&select=balance,pending_balance`, {
-        headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY }
-      }).then(async walletRes => {
-        if (walletRes.ok) {
-          const wallets = await walletRes.json()
-          if (wallets.length > 0) {
-            setWallet(wallets[0])
-            writeCache('company-home', { ...(readCache<any>('company-home') || {}), wallet: wallets[0] })
-          }
-        }
-      }).catch(() => {})
+      // SALDO REAL, de la cuenta de Whop de la empresa.
+      //
+      // Antes esto leía la tabla `wallets` de nuestra base, y las dos NO
+      // coinciden: en la primera prueba con plata real, la base decía $17
+      // mientras Whop tenía $0 disponibles y $15,77 todavía liquidando. El
+      // dashboard mostraba $17 y la billetera $0 — dos pantallas de la misma
+      // app contradiciéndose sobre cuánta plata hay. Manda Whop siempre.
+      fetch('/api/whop/my-balance', { headers: { Authorization: `Bearer ${token}` } })
+        .then(async (r) => {
+          if (!r.ok) return
+          const b = await r.json()
+          if (!b?.ok || !b?.readable) return
+          const saldo = { balance: Number(b.balance) || 0, pending_balance: Number(b.pending) || 0 }
+          setWallet(saldo)
+          writeCache('company-home', { ...(readCache<any>('company-home') || {}), wallet: saldo })
+        })
+        .catch(() => {})
 
       // Fetch profile
       const response = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userData.id}&select=*`, {
@@ -376,6 +382,11 @@ export default function CompanyDashboard() {
             <Wallet className="w-5 h-5 text-emerald-400" strokeWidth={2} />
           </div>
           <p className="text-3xl font-bold">${wallet?.balance?.toFixed(2) || '0.00'}</p>
+          {!!wallet?.pending_balance && wallet.pending_balance > 0 && (
+            <p className="mt-1 text-xs text-white/80">
+              ${wallet.pending_balance.toFixed(2)} en camino · se liberan en 1 a 4 días hábiles
+            </p>
+          )}
           <p className="text-sm text-blue-200 mt-1">Para pagar a creadores</p>
         </Link>
 
