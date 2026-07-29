@@ -183,6 +183,56 @@ export async function POST(request: NextRequest) {
       // depositar por Topup, que no cobra comisión — a diferencia del checkout
       // normal, que cuesta 2,7% + $0,30. Se guarda contra el usuario que abrió
       // el formulario (viaja en la metadata que puso /api/whop/save-card).
+      // ── LA PLATA DEL DEPÓSITO YA QUEDÓ DISPONIBLE ──────────────────────
+      //
+      // Un depósito con tarjeta NO queda disponible al instante: Whop lo deja
+      // "pendiente" 1 a 4 días hábiles mientras liquida (confirmado por su
+      // soporte; es retraso de liquidación estándar, no un problema de
+      // verificación). Este aviso llega en el momento exacto en que el dinero
+      // pasa a estar disponible, así la empresa se entera sola en vez de
+      // entrar a mirar el saldo cada rato.
+      case "ledger_account.funds_available": {
+        const d: any = payload.data || {};
+        const companyId = d?.company?.id || d?.company_id || d?.ledger_account?.company_id || null;
+        const saldos = Array.isArray(d?.balances)
+          ? d.balances.find((b: any) => String(b?.currency).toLowerCase() === "usd") || d.balances[0]
+          : null;
+        const disponible = Number(saldos?.balance) || 0;
+
+        console.log("[Whop Webhook] fondos disponibles:", companyId, disponible);
+
+        const svc = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+        if (!svc || !companyId) break;
+        const SB = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://cnsyrgurwtufbynwrxjt.supabase.co";
+        const H = { Authorization: `Bearer ${svc}`, apikey: svc, "Content-Type": "application/json" };
+
+        // De la cuenta de Whop al dueño. Es la única forma de saber a quién
+        // avisarle: el aviso viene con la cuenta, no con el usuario.
+        const perfRes = await fetch(
+          `${SB}/rest/v1/profiles?whop_company_id=eq.${companyId}&select=user_id,user_type`,
+          { headers: H }
+        );
+        const perfil = (perfRes.ok ? await perfRes.json() : [])[0];
+        if (!perfil?.user_id) {
+          console.error("[Whop Webhook] no se encontró de quién es la cuenta:", companyId);
+          break;
+        }
+
+        await fetch(`${SB}/rest/v1/notifications`, {
+          method: "POST",
+          headers: { ...H, Prefer: "return=minimal" },
+          body: JSON.stringify({
+            user_id: perfil.user_id,
+            type: "funds_available",
+            title: "Tu dinero ya está disponible",
+            body: `Se liberaron $${disponible.toFixed(2)}. Ya puedes pagarle a tus creadores.`,
+            link: "/company/wallet",
+          }),
+        }).catch((e) => console.error("[Whop Webhook] no se pudo avisar:", e?.message));
+
+        break;
+      }
+
       case "setup_intent.succeeded": {
         const d: any = payload.data || {};
         const userId = d?.metadata?.octopus_user_id || d?.checkout_configuration?.metadata?.octopus_user_id;

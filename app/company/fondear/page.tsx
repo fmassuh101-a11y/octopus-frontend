@@ -270,6 +270,18 @@ export default function FondearPage() {
             </div>
             {error && <p className="mt-2 text-sm font-semibold text-red-500">{error}</p>}
 
+            {/* El plazo se dice ANTES de pagar. Que alguien deposite y recién
+                ahí descubra que su plata no está disponible por días es la
+                peor forma de enterarse. */}
+            <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+              <p className="text-xs leading-relaxed text-amber-900">
+                <strong>Antes de depositar:</strong> los pagos con tarjeta tardan
+                <strong> 1 a 4 días hábiles</strong> en quedar disponibles para pagar
+                creadores. Es el plazo de liquidación del procesador. Deposita con
+                anticipación si tienes una campaña por lanzar.
+              </p>
+            </div>
+
             {/* HONESTIDAD SOBRE LA COMISIÓN — no borrar este comentario.
                 La idea original era cobrar por Topup, que Whop no cobra. No se
                 puede: el topup busca la tarjeta en la cuenta MADRE de Octapi y

@@ -242,8 +242,9 @@ export default function CompanyWallet() {
                 ${pendiente.toFixed(2)} en camino
               </p>
               <p className="mt-0.5 text-xs text-sky-100">
-                Tu depósito está confirmándose con el banco. Aparece en tu balance
-                apenas Whop lo libera; no tienes que hacer nada.
+                Los depósitos con tarjeta tardan <strong>1 a 4 días hábiles</strong> en
+                liberarse. Es el plazo del procesador, no de Octapi. Te avisamos
+                apenas esté disponible; no tienes que hacer nada.
               </p>
             </div>
           )}
