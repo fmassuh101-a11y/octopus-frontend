@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { ShieldCheck } from 'lucide-react'
-import ActivarSinComision from '@/components/oct/ActivarSinComision'
+import VerificarEmpresa from '@/components/oct/VerificarEmpresa'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
@@ -279,7 +279,7 @@ export default function CompanyWallet() {
             empresa no esté verificada, Whop retiene sus depósitos y no la deja
             operar. Enterarse de eso después de haber pagado es la peor forma
             de enterarse. */}
-        {estadoCuenta && estadoCuenta !== 'listo' && (
+        {(estadoCuenta === 'verificar' || estadoCuenta === 'revisando') && (
           <button
             onClick={() => setActivando(true)}
             className="mt-4 flex w-full items-center gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-left transition-transform active:scale-[0.99]"
@@ -289,16 +289,12 @@ export default function CompanyWallet() {
               <span className="block text-sm font-bold text-amber-200">
                 {estadoCuenta === 'revisando'
                   ? 'Tu verificación está en revisión'
-                  : estadoCuenta === 'verificar'
-                    ? 'Verifica tu empresa para operar'
-                    : 'Activa los depósitos sin comisión'}
+                  : 'Verifica tu empresa para operar'}
               </span>
               <span className="block text-xs leading-relaxed text-amber-200/70">
                 {estadoCuenta === 'revisando'
                   ? 'Te avisamos apenas quede aprobada.'
-                  : estadoCuenta === 'verificar'
-                    ? 'Es un requisito del procesador de pagos. Se hace una sola vez.'
-                    : 'Guarda tu tarjeta y tus recargas dejan de pagar comisión.'}
+                  : 'Es un requisito del procesador de pagos. Se hace una sola vez.'}
               </span>
             </span>
             <span className="shrink-0 text-lg font-bold text-amber-400">›</span>
@@ -306,7 +302,7 @@ export default function CompanyWallet() {
         )}
 
         {activando && (
-          <ActivarSinComision
+          <VerificarEmpresa
             onListo={() => { setActivando(false); setEstadoCuenta('listo') }}
             onCerrar={() => setActivando(false)}
           />

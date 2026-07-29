@@ -6,7 +6,6 @@ import dynamic from 'next/dynamic'
 import { authHeaders } from '@/lib/auth/clientToken'
 import CheckoutFrame from '@/components/oct/CheckoutFrame'
 import SelectorTarjeta, { type Tarjeta } from '@/components/oct/SelectorTarjeta'
-import ActivarSinComision from '@/components/oct/ActivarSinComision'
 import { ChevronLeft, CreditCard, Check, Loader2, ShieldCheck, Zap } from 'lucide-react'
 
 // Agregar fondos — la empresa deposita a SU cuenta y decide cómo usarlo.
@@ -44,11 +43,6 @@ export default function FondearPage() {
   // El cobro salió pero Whop todavía no lo confirma. Se muestra una pantalla
   // propia: NO se puede ofrecer pagar de nuevo, o la empresa paga dos veces.
   const [pendiente, setPendiente] = useState(false)
-  // Tarjetas guardadas A NOMBRE DE LA EMPRESA. Son las únicas que permiten
-  // depositar sin comisión; las de una persona no sirven aunque se vean igual.
-  const [tarjetasEmpresa, setTarjetasEmpresa] = useState<Tarjeta[] | null>(null)
-  const [enlacePanel, setEnlacePanel] = useState<string | null>(null)
-  const [activando, setActivando] = useState(false)
 
   useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current) }, [])
 
@@ -74,22 +68,7 @@ export default function FondearPage() {
     return 0
   }
 
-  // ¿Puede depositar gratis? Depende de si tiene tarjeta propia de empresa.
-  const cargarTarjetasEmpresa = async () => {
-    try {
-      const res = await fetch('/api/whop/company-cards', { headers: authHeaders() })
-      const d = await res.json()
-      if (d?.ok) {
-        setTarjetasEmpresa(d.cards || [])
-        setEnlacePanel(d.enlacePanel || null)
-        if ((d.cards || []).length && !elegida) setElegida(d.cards[0].id)
-        return
-      }
-    } catch {}
-    setTarjetasEmpresa([])
-  }
-
-  useEffect(() => { cargarTarjetas(); cargarTarjetasEmpresa() }, [])
+  useEffect(() => { cargarTarjetas() }, [])
 
   // Cambiar cuál se usa. Se refleja al toque en pantalla y se guarda detrás;
   // si el guardado falla, se vuelve atrás para no mostrar una mentira.
@@ -292,13 +271,6 @@ export default function FondearPage() {
           </div>
         )}
 
-        {activando && (
-          <ActivarSinComision
-            onListo={() => { setActivando(false); cargarTarjetasEmpresa() }}
-            onCerrar={() => setActivando(false)}
-          />
-        )}
-
         {step === 'amount' && !pendiente && (
           <div className="mt-6 rounded-3xl border border-neutral-100 bg-white p-6 shadow-sm">
             <p className="font-bold">Monto</p>
@@ -335,73 +307,6 @@ export default function FondearPage() {
                 Mientras tanto la pantalla NO promete "sin comisión": muestra el
                 costo real por adelantado. Prometer gratis y cobrar 2,7% es peor
                 que cobrar 2,7% avisando. */}
-            {/* OFERTA DE 0% — solo si todavía no está activado. Una vez que la
-                empresa tiene tarjeta propia, esto desaparece para siempre. */}
-            {tarjetasEmpresa !== null && tarjetasEmpresa.length === 0 && enlacePanel && (
-              <button
-                onClick={() => setActivando(true)}
-                className="mt-5 flex w-full items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-left transition-transform active:scale-[0.99]"
-              >
-                <Zap className="h-5 w-5 shrink-0 text-emerald-600" />
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-bold text-emerald-900">
-                    Deposita sin comisión
-                  </span>
-                  <span className="block text-xs leading-relaxed text-emerald-800/80">
-                    Guarda tu tarjeta una vez y tus recargas dejan de pagar el 7%.
-                  </span>
-                </span>
-                <span className="shrink-0 text-lg font-bold text-emerald-600">›</span>
-              </button>
-            )}
-
-            {/* YA ACTIVADO: depósito directo, sin comisión de verdad. */}
-            {tarjetasEmpresa && tarjetasEmpresa.length > 0 && (
-              <>
-                <button
-                  onClick={() => createCheckout('saved')}
-                  disabled={busy || amount < 1}
-                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-[#10B981] to-[#059669] py-4 text-lg font-bold text-white shadow-lg shadow-emerald-200 transition-transform active:scale-[0.98] disabled:from-neutral-200 disabled:to-neutral-300 disabled:text-neutral-400 disabled:shadow-none"
-                >
-                  {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Zap className="h-5 w-5" />}
-                  {amount >= 1 ? `Agregar $${fmt(amount)} sin comisión` : 'Agregar fondos'}
-                </button>
-                <p className="mt-2 text-center text-xs font-semibold text-emerald-600">
-                  Sin comisión · llegan ${amount >= 1 ? fmt(amount) : '0.00'} completos
-                </p>
-              </>
-            )}
-
-            {/* GUARDAR LA TARJETA — sin cobrar nada.
-                Esto responde al problema concreto: hoy la empresa paga y su
-                tarjeta NO queda guardada, porque el checkout de pago de Whop no
-                tiene opción de guardarla (lo confirmamos: no existe el
-                parámetro). Así que cada depósito la obliga a escribirla de
-                nuevo.
-                El formulario de "setup" sí la guarda y NO cobra nada. Después
-                se le cobra por factura desde acá, en un clic.
-                OJO: esto no baja la comisión, la comisión sigue siendo la del
-                cobro con tarjeta. Lo que arregla es el volver a escribirla. */}
-            {hasCard === false && (
-              <div className="mt-4 rounded-2xl border border-cyan-200 bg-cyan-50 p-4">
-                <p className="flex items-center gap-2 text-sm font-bold text-cyan-900">
-                  <CreditCard className="h-4 w-4" /> Guarda tu tarjeta
-                </p>
-                <p className="mt-1 text-xs leading-relaxed text-cyan-900/80">
-                  Guardarla ahora <strong>no cuesta nada</strong> y no se te cobra.
-                  Después depositas de un clic, sin volver a escribir el número.
-                </p>
-                <button
-                  onClick={openSaveCard}
-                  disabled={savingCard}
-                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-cyan-600 py-3 text-sm font-bold text-white transition-transform active:scale-[0.98] disabled:opacity-60"
-                >
-                  {savingCard ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
-                  Guardar mi tarjeta
-                </button>
-              </div>
-            )}
-
             {/* TARJETA GUARDADA — el camino de un clic.
                 La empresa nunca sale de Octapi ni sabe que existe Whop. La
                 tarjeta se guardó antes con nuestro propio formulario y se
