@@ -29,6 +29,9 @@ interface Transaction {
 export default function CompanyWallet() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
+  // Saldo que Whop todavía está confirmando, y el que retiene como reserva.
+  const [pendiente, setPendiente] = useState(0)
+  const [retenido, setRetenido] = useState(0)
   const [wallet, setWallet] = useState<Wallet | null>(null)
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [activeTab, setActiveTab] = useState<'overview' | 'transactions'>('overview')
@@ -71,7 +74,15 @@ export default function CompanyWallet() {
         })
         if (bRes.ok) {
           const b = await bRes.json()
-          if (b?.ok && b?.readable) whopBalance = Number(b.balance) || 0
+          if (b?.ok && b?.readable) {
+            whopBalance = Number(b.balance) || 0
+            // PENDIENTE: la plata de un depósito con tarjeta no queda
+            // disponible al instante — Whop la retiene mientras confirma el
+            // cobro. Antes se leía solo el disponible, así que la empresa
+            // pagaba, veía $0 y no había NADA en pantalla que lo explicara.
+            setPendiente(Number(b.pending) || 0)
+            setRetenido(Number(b.reserved) || 0)
+          }
         }
       } catch {}
 
@@ -216,6 +227,28 @@ export default function CompanyWallet() {
               Usa este balance para pagar a creadores
             </p>
           </div>
+
+          {/* PLATA EN CAMINO. Un depósito con tarjeta no queda disponible al
+              instante: Whop lo retiene mientras confirma el cobro. Sin este
+              aviso, la empresa paga, ve $0 y cree que perdió la plata. */}
+          {pendiente > 0 && (
+            <div className="mb-4 rounded-2xl bg-white/15 px-4 py-3 text-center backdrop-blur">
+              <p className="text-sm font-bold">
+                ${pendiente.toFixed(2)} en camino
+              </p>
+              <p className="mt-0.5 text-xs text-sky-100">
+                Tu depósito está confirmándose con el banco. Aparece en tu balance
+                apenas Whop lo libera; no tienes que hacer nada.
+              </p>
+            </div>
+          )}
+          {retenido > 0 && (
+            <div className="mb-4 rounded-2xl bg-white/10 px-4 py-2.5 text-center">
+              <p className="text-xs text-sky-100">
+                ${retenido.toFixed(2)} retenidos por Whop como reserva
+              </p>
+            </div>
+          )}
 
           {/* Agregar fondos */}
           <Link href="/company/fondear"
