@@ -408,23 +408,6 @@ export default function FondearPage() {
                   {amount >= 1 ? `Agregar $${fmt(amount)}` : 'Agregar fondos'}
                 </button>
 
-                <div className="mt-4 rounded-2xl border border-cyan-200 bg-cyan-50 p-4">
-                  <p className="flex items-center gap-2 text-sm font-bold text-cyan-900">
-                    <Zap className="h-4 w-4" /> Guarda tu tarjeta
-                  </p>
-                  <p className="mt-1 text-xs leading-relaxed text-cyan-900/80">
-                    Los próximos depósitos son de un clic: no vuelves a escribir el
-                    número. Guardarla no cuesta nada.
-                  </p>
-                  <button
-                    onClick={openSaveCard}
-                    disabled={savingCard}
-                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-cyan-600 py-3 text-sm font-bold text-white transition-transform active:scale-[0.98] disabled:opacity-60"
-                  >
-                    {savingCard ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
-                    Guardar mi tarjeta
-                  </button>
-                </div>
               </>
             )}
 

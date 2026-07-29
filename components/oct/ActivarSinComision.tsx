@@ -37,7 +37,7 @@ import { X, Zap, ExternalLink, Loader2, Check, ShieldCheck, CreditCard } from 'l
 // Por eso se abre en otra pestaña, guiado, una sola vez por empresa. Octapi se
 // queda abierto atrás. La cuenta que se abre es SUYA: se creó con su correo.
 
-type Paso = 'cargando' | 'verificar' | 'tarjeta' | 'listo'
+type Paso = 'cargando' | 'verificar' | 'revisando' | 'tarjeta' | 'listo'
 
 export default function ActivarSinComision({
   onListo,
@@ -61,9 +61,11 @@ export default function ActivarSinComision({
         if (d.paso === 'listo') { onListo(); return }
         if (!silencioso) {
           setAviso(
-            d.paso === 'verificar'
-              ? 'Todavía no vemos tu cuenta verificada. Si acabas de terminar, espera unos segundos y prueba de nuevo — Whop puede tardar en confirmar.'
-              : 'Todavía no vemos tu tarjeta. Revisa que hayas completado el depósito con tarjeta y prueba de nuevo.'
+            d.paso === 'revisando'
+              ? 'Tu verificación sigue en revisión. Te avisamos apenas la aprueben.'
+              : d.paso === 'verificar'
+                ? 'Todavía no vemos tu cuenta verificada. Si acabas de terminar, espera unos segundos y prueba de nuevo.'
+                : 'Todavía no vemos tu tarjeta. Revisa que hayas completado el depósito con tarjeta y prueba de nuevo.'
           )
         }
       } else if (!silencioso) {
@@ -87,7 +89,13 @@ export default function ActivarSinComision({
     // navegador la bloquea por no venir de un clic directo.
     const pestana = window.open('', '_blank')
     try {
-      const res = await fetch('/api/whop/onboarding-link', { headers: authHeaders() })
+      // Para guardar la tarjeta hay que ir al saldo, no a la verificación: si
+      // la identidad ya se envió, el enlace de verificación devuelve de
+      // inmediato sin mostrar nada.
+      const ruta = paso === 'tarjeta'
+        ? '/api/whop/onboarding-link?destino=balance'
+        : '/api/whop/onboarding-link'
+      const res = await fetch(ruta, { headers: authHeaders() })
       const d = await res.json()
       if (d?.ok && d.url) {
         if (pestana) pestana.location.href = d.url
@@ -143,6 +151,35 @@ export default function ActivarSinComision({
         {paso === 'cargando' ? (
           <div className="flex items-center justify-center gap-2 py-16 text-neutral-400">
             <Loader2 className="h-5 w-5 animate-spin" /> Revisando tu cuenta…
+          </div>
+        ) : paso === 'revisando' ? (
+          /* EN REVISIÓN. Acá NO va ningún botón que abra Whop: la persona ya
+             hizo su parte y no hay nada que pueda apurar. Ofrecerle "abrir mi
+             cuenta" sería mandarla a una pantalla donde no puede hacer nada. */
+          <div className="space-y-5 p-6 text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-100">
+              <Loader2 className="h-6 w-6 animate-spin text-amber-600" />
+            </div>
+            <div>
+              <p className="text-lg font-extrabold text-neutral-900">Tu verificación está en revisión</p>
+              <p className="mt-2 text-sm leading-relaxed text-neutral-600">
+                Ya enviaste tus datos y el procesador los está revisando. Suele
+                tardar unos minutos, a veces algunas horas. No tienes que hacer
+                nada más: te avisamos apenas quede aprobada.
+              </p>
+            </div>
+            <button
+              onClick={() => leerEstado()}
+              disabled={revisando}
+              className="flex w-full items-center justify-center gap-2 rounded-full border-2 border-neutral-200 py-3.5 font-bold text-neutral-700 transition-transform active:scale-[0.98] disabled:opacity-60"
+            >
+              {revisando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+              Revisar de nuevo
+            </button>
+            {aviso && <p className="text-sm font-semibold text-amber-600">{aviso}</p>}
+            <button onClick={onCerrar} className="w-full py-2 text-sm font-semibold text-neutral-500">
+              Cerrar
+            </button>
           </div>
         ) : (
           <div className="space-y-5 p-6">

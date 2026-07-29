@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
 
     // Estado de la cuenta según Whop.
     let verificada = false;
+    let enRevision = false;
     let estadoPagos: string | null = null;
     let estadoVerificacion: string | null = null;
     try {
@@ -43,13 +44,23 @@ export async function GET(request: NextRequest) {
       estadoPagos = ledger?.payments_approval_status ?? null;
       estadoVerificacion = ledger?.payout_account_details?.latest_verification?.status ?? null;
 
-      // Se considera verificada cuando Whop aprobó los pagos, o cuando la
-      // verificación de identidad terminó bien. Los nombres varían según el
-      // camino que haya seguido la persona, así que se aceptan los dos.
+      // APROBADA de verdad. Solo estos estados cuentan.
       verificada =
         estadoPagos === "approved" ||
         estadoPagos === "monitoring" ||
         ["verified", "approved"].includes(String(estadoVerificacion));
+
+      // EN REVISIÓN — enviada pero todavía sin respuesta de Whop.
+      //
+      // Esto faltaba y causó un error feo: la empresa terminaba el formulario,
+      // Whop devolvía con status=submitted, y como no estaba "aprobada" pero
+      // tampoco se distinguía "en revisión", la pantalla la mandaba al paso
+      // siguiente como si ya estuviera lista. Pedirle guardar la tarjeta antes
+      // de que Whop apruebe no lleva a ninguna parte.
+      enRevision =
+        !verificada &&
+        (["pending", "processing"].includes(String(estadoPagos)) ||
+          ["processing", "submitted", "review", "started", "created"].includes(String(estadoVerificacion)));
     } catch (e: any) {
       console.error("[EstadoCuenta] no se pudo leer el ledger:", e?.message?.slice(0, 150));
     }
@@ -57,13 +68,20 @@ export async function GET(request: NextRequest) {
     const { cards } = await listarTarjetasDeEmpresa(companyId);
     const tieneTarjeta = cards.length > 0;
 
-    const paso = !verificada ? "verificar" : !tieneTarjeta ? "tarjeta" : "listo";
+    const paso = enRevision && !verificada
+      ? "revisando"
+      : !verificada
+        ? "verificar"
+        : !tieneTarjeta
+          ? "tarjeta"
+          : "listo";
 
     return NextResponse.json({
       ok: true,
       companyId,
       paso,
       verificada,
+      enRevision,
       tieneTarjeta,
       tarjetas: cards,
       estadoPagos,

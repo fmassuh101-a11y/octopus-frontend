@@ -37,6 +37,27 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "No se pudo preparar tu cuenta de pagos" }, { status: 502 });
     }
 
+    // DOS DESTINOS DISTINTOS, según para qué se pida el enlace.
+    //
+    // ?destino=balance → la pantalla de saldo, para guardar la tarjeta.
+    //   El enlace de verificación NO sirve acá: si la identidad ya se envió,
+    //   Whop lo da por cumplido y devuelve de inmediato a nuestra app sin
+    //   mostrar nada. Es exactamente lo que pasaba. Para el saldo hay que ir a
+    //   la dirección del panel, que funciona porque a esa altura la persona ya
+    //   quedó con sesión iniciada en Whop tras la verificación.
+    //
+    // por defecto → la verificación de identidad (accountLinks).
+    const destino = new URL(request.url).searchParams.get("destino");
+
+    if (destino === "balance") {
+      return NextResponse.json({
+        ok: true,
+        url: `https://whop.com/dashboard/${companyId}/balance`,
+        companyId,
+        tipo: "balance",
+      });
+    }
+
     const volver = `${APP_URL}/company/fondear?vinculada=1`;
     const link: any = await (whopClient as any).accountLinks.create({
       company_id: companyId,
@@ -52,7 +73,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "No se pudo crear el enlace" }, { status: 502 });
     }
 
-    return NextResponse.json({ ok: true, url: link.url, companyId, expiraEn: link.expires_at || null });
+    return NextResponse.json({ ok: true, url: link.url, companyId, tipo: "verificacion", expiraEn: link.expires_at || null });
   } catch (e: any) {
     const msg = e?.message || String(e);
     console.error("[OnboardingLink] error:", msg);

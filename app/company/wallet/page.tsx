@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import WhopVerifyCompany from '@/components/oct/WhopVerifyCompany'
+import { ShieldCheck } from 'lucide-react'
+import ActivarSinComision from '@/components/oct/ActivarSinComision'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
@@ -33,6 +34,10 @@ export default function CompanyWallet() {
   // Saldo que Whop todavía está confirmando, y el que retiene como reserva.
   const [pendiente, setPendiente] = useState(0)
   const [retenido, setRetenido] = useState(0)
+  // En qué paso va la cuenta con el procesador: verificar / revisando /
+  // tarjeta / listo. Manda lo que se le muestra a la empresa arriba de todo.
+  const [estadoCuenta, setEstadoCuenta] = useState<string | null>(null)
+  const [activando, setActivando] = useState(false)
   const [wallet, setWallet] = useState<Wallet | null>(null)
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [activeTab, setActiveTab] = useState<'overview' | 'transactions'>('overview')
@@ -90,6 +95,12 @@ export default function CompanyWallet() {
           }
         }
       } catch {}
+
+      // Estado de la cuenta con el procesador (verificación y medio de pago).
+      fetch('/api/whop/estado-cuenta', { headers: { Authorization: `Bearer ${token}` } })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => { if (d?.ok) setEstadoCuenta(d.paso) })
+        .catch(() => {})
 
       // Load wallet
       const walletRes = await fetch(
@@ -263,11 +274,43 @@ export default function CompanyWallet() {
           </Link>
         </div>
 
-        {/* Verificación de la cuenta. Si ya está verificada, este componente
-            no dibuja nada y desaparece solo. */}
-        <div className="mt-4">
-          <WhopVerifyCompany />
-        </div>
+        {/* VERIFICACIÓN ANTES DE FONDEAR.
+            Va acá arriba, no escondida en la pantalla de pago: hasta que la
+            empresa no esté verificada, Whop retiene sus depósitos y no la deja
+            operar. Enterarse de eso después de haber pagado es la peor forma
+            de enterarse. */}
+        {estadoCuenta && estadoCuenta !== 'listo' && (
+          <button
+            onClick={() => setActivando(true)}
+            className="mt-4 flex w-full items-center gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-left transition-transform active:scale-[0.99]"
+          >
+            <ShieldCheck className="h-5 w-5 shrink-0 text-amber-400" />
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-bold text-amber-200">
+                {estadoCuenta === 'revisando'
+                  ? 'Tu verificación está en revisión'
+                  : estadoCuenta === 'verificar'
+                    ? 'Verifica tu empresa para operar'
+                    : 'Activa los depósitos sin comisión'}
+              </span>
+              <span className="block text-xs leading-relaxed text-amber-200/70">
+                {estadoCuenta === 'revisando'
+                  ? 'Te avisamos apenas quede aprobada.'
+                  : estadoCuenta === 'verificar'
+                    ? 'Es un requisito del procesador de pagos. Se hace una sola vez.'
+                    : 'Guarda tu tarjeta y tus recargas dejan de pagar comisión.'}
+              </span>
+            </span>
+            <span className="shrink-0 text-lg font-bold text-amber-400">›</span>
+          </button>
+        )}
+
+        {activando && (
+          <ActivarSinComision
+            onListo={() => { setActivando(false); setEstadoCuenta('listo') }}
+            onCerrar={() => setActivando(false)}
+          />
+        )}
 
         {/* How It Works */}
         <div className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 text-white placeholder-neutral-500">
