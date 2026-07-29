@@ -2,14 +2,23 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Building2, Globe } from 'lucide-react'
+import { Building2, Globe, MapPin } from 'lucide-react'
+import { getCitiesFormatted } from '@/lib/data/countries'
 
 export default function CompanyBusinessPage() {
   const [companyName, setCompanyName] = useState('')
   const [website, setWebsite] = useState('')
   const [appStoreUrl, setAppStoreUrl] = useState('')
+  // Ciudad y país de la empresa. Se guarda junto porque de acá sale el país
+  // que se le manda a Whop al crear su cuenta de pagos: sin él, Whop hereda el
+  // de nuestra cuenta madre (Estados Unidos) y la empresa queda con métodos de
+  // cobro que no puede usar. El código de teléfono NO sirve para deducirlo —
+  // una empresa chilena puede tener un número +1.
+  const [ubicacion, setUbicacion] = useState('')
+  const [buscarCiudad, setBuscarCiudad] = useState('')
+  const [ciudadAbierta, setCiudadAbierta] = useState(false)
   const [user, setUser] = useState<any>(null)
-  const [errors, setErrors] = useState<{companyName?: string, website?: string, appStoreUrl?: string}>({})
+  const [errors, setErrors] = useState<{companyName?: string, website?: string, appStoreUrl?: string, ubicacion?: string}>({})
 
   useEffect(() => {
     const userStr = localStorage.getItem('sb-user')
@@ -24,6 +33,7 @@ export default function CompanyBusinessPage() {
     if (existing.companyName) setCompanyName(existing.companyName)
     if (existing.website) setWebsite(existing.website)
     if (existing.appStoreUrl) setAppStoreUrl(existing.appStoreUrl)
+    if (existing.location) { setUbicacion(existing.location); setBuscarCiudad(existing.location) }
   }, [])
 
   // Validate URL format
@@ -63,9 +73,24 @@ export default function CompanyBusinessPage() {
       newErrors.appStoreUrl = 'Ingresa una URL válida de App Store'
     }
 
+    // La ciudad se elige de la lista, no se escribe libre: así el país siempre
+    // sale de un valor conocido y no de lo que alguien haya tipeado.
+    if (!ubicacion) {
+      newErrors.ubicacion = 'Elige tu ciudad de la lista'
+    }
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
+
+  // Las ciudades vienen como "Santiago, Chile": la parte de después de la coma
+  // es el país, que es justo lo que necesita Whop.
+  const ciudadesFiltradas = (() => {
+    const q = buscarCiudad.trim().toLowerCase()
+    if (!q) return []
+    const norm = (t: string) => t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    return getCitiesFormatted().filter((c) => norm(c).includes(norm(q))).slice(0, 40)
+  })()
 
   const handleContinue = () => {
     if (!validateForm()) return
@@ -86,7 +111,8 @@ export default function CompanyBusinessPage() {
       ...data,
       companyName: companyName.trim(),
       website: formattedWebsite,
-      appStoreUrl: formattedAppStoreUrl
+      appStoreUrl: formattedAppStoreUrl,
+      location: ubicacion,
     }))
 
     window.location.href = '/onboarding/company/phone'
@@ -154,6 +180,52 @@ export default function CompanyBusinessPage() {
             />
             {errors.website && <p className="text-red-500 text-sm mt-1">{errors.website}</p>}
             <p className="text-neutral-500 text-xs mt-1">Ejemplo: www.miempresa.com o https://miempresa.com</p>
+          </div>
+
+          {/* UBICACIÓN — de acá sale el país que se le manda a Whop al crear la
+              cuenta de pagos de la empresa. Sin país, Whop hereda el de nuestra
+              cuenta madre (Estados Unidos) y la empresa termina con métodos de
+              cobro que no puede usar en su país. */}
+          <div className="relative">
+            <label className="block text-sm font-semibold text-neutral-200 mb-2">¿Dónde está tu empresa? *</label>
+            <div className="relative">
+              <MapPin className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
+              <input
+                type="text"
+                value={buscarCiudad}
+                onChange={(e) => {
+                  setBuscarCiudad(e.target.value)
+                  setUbicacion('')
+                  setCiudadAbierta(true)
+                  if (errors.ubicacion) setErrors({ ...errors, ubicacion: undefined })
+                }}
+                onFocus={() => setCiudadAbierta(true)}
+                placeholder="Busca tu ciudad"
+                className={`w-full rounded-xl border bg-neutral-900 py-3.5 pl-11 pr-4 text-white placeholder-neutral-500 shadow-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500 ${errors.ubicacion ? 'border-red-500' : 'border-neutral-800'}`}
+              />
+            </div>
+            {ciudadAbierta && buscarCiudad.trim().length > 0 && !ubicacion && (
+              <div className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-xl border border-neutral-800 bg-neutral-900 shadow-xl">
+                {ciudadesFiltradas.length === 0 ? (
+                  <p className="px-4 py-3 text-sm text-neutral-500">Sin resultados</p>
+                ) : (
+                  ciudadesFiltradas.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => { setUbicacion(c); setBuscarCiudad(c); setCiudadAbierta(false) }}
+                      className="block w-full px-4 py-2.5 text-left text-sm text-neutral-200 hover:bg-neutral-800"
+                    >
+                      {c}
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+            {errors.ubicacion && <p className="text-red-500 text-sm mt-1">{errors.ubicacion}</p>}
+            <p className="text-neutral-500 text-xs mt-1">
+              Lo usamos para configurar tus pagos en tu país y tu moneda.
+            </p>
           </div>
 
           <div>

@@ -121,6 +121,7 @@ export default function CompanyLogoPage() {
         appStoreUrl: formData.appStoreUrl || null,
         hiringRange: formData.hiringRange || null,
         marketingStrategy: formData.marketingStrategy || null,
+        location: formData.location || null,
         logo: logo || null
       }
 
@@ -128,6 +129,11 @@ export default function CompanyLogoPage() {
         user_id: user.id,
         user_type: 'company',
         full_name: formData.companyName || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Empresa',
+        // Ciudad y país, como columna propia y no solo dentro de bio: de acá
+        // sale el país que se le manda a Whop al crear la cuenta de pagos de la
+        // empresa. Guardarlo únicamente en el JSON de bio obligaría a parsearlo
+        // en el servidor cada vez.
+        location: formData.location || null,
         bio: JSON.stringify(allData),
         updated_at: new Date().toISOString()
       }

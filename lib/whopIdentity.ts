@@ -65,6 +65,12 @@ const PAISES: Record<string, string> = {
   brazil: "BR",
 };
 
+/** De "Santiago, Chile" saca "Chile". */
+export function paisDeCiudad(ciudad?: string | null): string | null {
+  const partes = (ciudad || "").split(",");
+  return partes.length > 1 ? partes[partes.length - 1].trim() : null;
+}
+
 export function codigoDePais(nombre?: string | null): string | null {
   const n = (nombre || "").trim().toLowerCase();
   if (!n) return null;
@@ -95,7 +101,7 @@ export async function whopAccountForMoney(user: { id: string; email?: string | n
 export async function ensureWhopIdentity(user: { id: string; email?: string | null }): Promise<WhopIdentity> {
   // 1) leer lo que ya tenemos en el perfil
   const pRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=whop_company_id,whop_user_id,full_name,country`,
+    `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=whop_company_id,whop_user_id,full_name,country,location`,
     { headers: sbHeaders() }
   );
   const profile = ((pRes.ok ? await pRes.json() : [])[0]) || {};
@@ -164,7 +170,13 @@ export async function ensureWhopIdentity(user: { id: string; email?: string | nu
     // El perfil guarda el país con su nombre ("Chile"), y Whop espera el código
     // de dos letras. Si el país no está o no lo reconocemos, NO se manda nada y
     // Whop hace lo suyo — mandar un código inventado sería peor.
-    const country = codigoDePais(profile.country);
+    // El país sale del perfil, y si no está, de la ciudad — que se guarda como
+    // "Santiago, Chile", así que lo de después de la coma es el país.
+    //
+    // NO se deduce del código telefónico a propósito: una empresa chilena puede
+    // tener un número +1, y equivocarse acá le deja métodos de cobro que no
+    // puede usar.
+    const country = codigoDePais(profile.country) || codigoDePais(paisDeCiudad(profile.location));
     const create = (mail: string) =>
       (whopClient as any).companies.create({
         parent_company_id: OCTOPUS_COMPANY_ID,
