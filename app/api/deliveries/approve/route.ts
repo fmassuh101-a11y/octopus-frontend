@@ -221,17 +221,46 @@ export async function POST(request: NextRequest) {
     }).catch(() => {})
   }
 
-  // 7. Notificar al creador
+  // 7. Notificar al creador — dentro de la app Y por correo.
+  //
+  // El aviso dice "te pagaron" SOLO si la plata se movió de verdad
+  // (pagoRealFallo vacío). Antes decía que había cobrado aunque la
+  // transferencia hubiera fallado, y el creador veía el aviso y $0 en su
+  // billetera.
+  const sePago = amount > 0 && !pagoRealFallo
   await fetch(`${SUPABASE_URL}/rest/v1/delivery_notifications`, {
     method: 'POST', headers: H,
     body: JSON.stringify({
       delivery_id: deliveryId, recipient_id: delivery.creator_id, type: 'content_approved',
       title: 'Tu contenido fue aprobado',
-      message: amount > 0
-        ? `Tu contenido fue aprobado y se liberó tu pago de $${(payment?.creator_receives ?? amount).toFixed ? (payment?.creator_receives ?? amount) : amount}.`
+      message: sePago
+        ? `Tu contenido fue aprobado y se liberó tu pago de $${amount.toFixed(2)}.`
         : 'Tu contenido fue aprobado.',
     }),
   }).catch(() => {})
+
+  // Correo. Sin esto, el creador solo se entera si entra a la app por
+  // casualidad — y es justamente el momento en que hay que darle la buena
+  // noticia. No se espera la respuesta: que un correo falle no puede afectar
+  // una aprobación que ya ocurrió.
+  try {
+    const [{ avisarPagoRecibido, avisarContenidoAprobado }, correoRes, empresaRes] = await Promise.all([
+      import('@/lib/avisosEmail'),
+      fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${delivery.creator_id}&select=email`, { headers: H }),
+      fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${delivery.company_id}&select=company_name,full_name`, { headers: H }),
+    ])
+    const correoCreador = ((correoRes.ok ? await correoRes.json() : [])[0])?.email
+    const empresa = ((empresaRes.ok ? await empresaRes.json() : [])[0]) || {}
+    const nombreEmpresa = empresa.company_name || empresa.full_name || null
+
+    if (sePago) {
+      void avisarPagoRecibido({ email: correoCreador, monto: amount, nombreEmpresa })
+    } else {
+      void avisarContenidoAprobado({ email: correoCreador, titulo: delivery.title, nombreEmpresa })
+    }
+  } catch (e: any) {
+    console.error('[ApproveDelivery] no se pudo avisar por correo:', e?.message)
+  }
 
   return NextResponse.json({
     success: true,

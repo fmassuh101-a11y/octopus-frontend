@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { avisar } from '@/lib/avisar'
 import { Camera, Clapperboard, Music2, Youtube } from 'lucide-react'
 
 interface Deliverable {
@@ -212,7 +213,13 @@ export default function CreateContractModal({
       }
 
       const [contract] = await response.json()
-      console.log('Contract created successfully:', contract)
+
+      // Aviso por correo al creador. Sin esto solo se enteraba si entraba a la
+      // app por casualidad — y un contrato que nadie ve es un trabajo que no
+      // empieza. No se espera la respuesta: el contrato ya está creado.
+      avisar('contrato_nuevo', creatorId, {
+        monto: paymentMode === 'cpm' ? null : parseFloat(paymentAmount) || null,
+      })
 
       // El contrato aparece EN EL CHAT (mensaje por Whop, con cita del gig).
       // Si el envío falla, SE AVISA (nunca en silencio).

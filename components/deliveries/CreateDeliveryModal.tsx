@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/config/supabase'
+import { avisar } from '@/lib/avisar'
 import { Camera, Clapperboard, Music2, Youtube } from 'lucide-react'
 
 interface Contract {
@@ -102,6 +103,10 @@ export default function CreateDeliveryModal({ contract, onClose, onCreated }: Cr
           message: `Has recibido contenido para "${form.title}". Revisalo y aprueba o pide cambios.`
         })
       })
+
+      // Aviso por correo a la empresa. Es el eslabón que más se cortaba: el
+      // creador entregaba y la empresa no se enteraba hasta entrar a la app.
+      avisar('contenido_entregado', contract.company_id, { titulo: form.title })
 
       onCreated(delivery)
       onClose()
