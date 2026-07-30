@@ -19,8 +19,14 @@ export async function POST(request: NextRequest) {
   const limited = rateLimit(request, { limit: 20, name: 'delivery-approve' })
   if (limited) return limited
 
-  const user = await getAuthenticatedUser(request)
-  if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  // Dos formas de llegar acá: la empresa aprobando a mano, o la aprobación
+  // automática por vencimiento (7 días sin revisar). La automática viene con el
+  // secreto del servidor, no con sesión de usuario, porque no la dispara nadie.
+  const cronSecret = process.env.CRON_SECRET
+  const esAutomatica = !!cronSecret && request.headers.get('x-cron-secret') === cronSecret
+
+  const user = esAutomatica ? null : await getAuthenticatedUser(request)
+  if (!esAutomatica && !user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   if (!SERVICE_KEY) return NextResponse.json({ error: 'Config del servidor incompleta' }, { status: 500 })
 
   const { deliveryId, feedback, rating } = await request.json()
@@ -33,7 +39,11 @@ export async function POST(request: NextRequest) {
   const deliveries = dRes.ok ? await dRes.json() : []
   const delivery = deliveries[0]
   if (!delivery) return NextResponse.json({ error: 'Entrega no encontrada' }, { status: 404 })
-  if (delivery.company_id !== user.id) return NextResponse.json({ error: 'No autorizado' }, { status: 403 })
+  // En la automática no hay empresa que verificar: la dispara el vencimiento,
+  // no una persona. En la manual sigue exigiéndose que sea la dueña.
+  if (!esAutomatica && delivery.company_id !== user!.id) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 403 })
+  }
   if (delivery.status === 'approved' || delivery.status === 'completed' || delivery.status === 'processing') {
     return NextResponse.json({ error: 'Esta entrega ya fue aprobada' }, { status: 409 })
   }
@@ -215,7 +225,7 @@ export async function POST(request: NextRequest) {
     await fetch(`${SUPABASE_URL}/rest/v1/reviews`, {
       method: 'POST', headers: H,
       body: JSON.stringify({
-        delivery_id: deliveryId, reviewer_id: user.id, reviewee_id: delivery.creator_id,
+        delivery_id: deliveryId, reviewer_id: user?.id ?? delivery.company_id, reviewee_id: delivery.creator_id,
         rating, comment: feedback || null,
       }),
     }).catch(() => {})

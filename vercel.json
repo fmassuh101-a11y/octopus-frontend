@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/deliveries/auto-aprobar",
+      "schedule": "0 9 * * *"
+    }
+  ]
+}

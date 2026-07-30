@@ -52,6 +52,23 @@ export default function CreatorDeliveriesPage() {
   const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
+    // Destraba entregas vencidas antes de mostrar la lista.
+    //
+    // Si la empresa nunca revisa, el creador NO cobra nunca. Esto revisa si
+    // alguna entrega ya cumplió los 7 días y la aprueba —pagando— sin que nadie
+    // tenga que pedirlo. Hay un horario diario en Vercel que hace lo mismo;
+    // esto es el respaldo, para que funcione desde el primer día aunque el
+    // horario no esté configurado.
+    //
+    // No se espera la respuesta ni se muestra error: si falla, la lista se
+    // carga igual y el horario lo reintenta.
+    try {
+      void fetch('/api/deliveries/auto-aprobar', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${localStorage.getItem('sb-access-token') || ''}` },
+      }).catch(() => {})
+    } catch {}
+
     checkAuth()
   }, [])
 
