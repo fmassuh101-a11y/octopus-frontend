@@ -90,7 +90,11 @@ BEGIN
           'likes',       item -> 'likes',
           'videoCount',  item -> 'videoCount',
           'isVerified',  item -> 'isVerified',
-          'bio',         item -> 'bio'
+          'bio',         item -> 'bio',
+          -- Los últimos videos: son contenido PÚBLICO de TikTok (portada,
+          -- título, views). La empresa los necesita para decidir a quién
+          -- contratar, y no exponen nada privado.
+          'recentVideos', item -> 'recentVideos'
         ))
       );
     END LOOP;
