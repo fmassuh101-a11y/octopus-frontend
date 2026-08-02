@@ -165,6 +165,48 @@ function WaitlistInner() {
 
   return (
     <div className="min-h-[100dvh] bg-[#03141f] font-sans text-white">
+      {/* ═══ AVISO — VOLVEMOS PRONTO ═══
+          Va ARRIBA DEL HERO, no dentro: el hero mide 100dvh completo, así que
+          cualquier cosa metida adentro se empuja fuera de la pantalla en
+          celulares. Acá es lo primero que ve todo el mundo, sin scroll.
+
+          La lista NO se toca: el formulario, el contador y los correos siguen
+          funcionando igual. Esto solo avisa que la apertura se corre. */}
+      <section className="relative overflow-hidden border-b border-cyan-400/15 bg-[#03141f] px-5 py-14 sm:py-20">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-full bg-[radial-gradient(60%_120%_at_50%_0%,rgba(34,211,238,0.16),transparent)]" />
+        <div className="relative mx-auto max-w-3xl text-center">
+          <p className="inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-cyan-200 backdrop-blur">
+            🐙 Aviso
+          </p>
+
+          <h2 className="mt-6 text-4xl font-semibold leading-[1.08] tracking-tight drop-shadow-lg sm:text-6xl">
+            Volvemos pronto.
+          </h2>
+
+          <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-white/85 sm:text-lg">
+            Estamos afinando cosas importantes antes de abrir. Preferimos
+            demorarnos un poco más y que el día que entres funcione todo bien
+            —los contratos, las entregas y sobre todo tu plata— antes que abrir
+            a medias.
+          </p>
+
+          <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-white/85 sm:text-lg">
+            <strong className="font-semibold text-white">
+              La lista sigue abierta y tu lugar está guardado.
+            </strong>{' '}
+            No tienes que hacer nada más: te escribimos apenas abramos las
+            puertas.
+          </p>
+
+          <p className="mx-auto mt-8 max-w-2xl text-sm leading-relaxed text-cyan-200/90 sm:text-base">
+            Gracias por la paciencia y por estar acá desde el principio. En
+            serio: significa mucho.
+          </p>
+
+          <p className="mt-8 text-sm text-white/45">— El equipo de Octapi</p>
+        </div>
+      </section>
+
       {/* ═══ HERO INMERSIVO (océano profundo) ═══ */}
       <section className="relative h-[100dvh] w-full overflow-hidden">
         {/* SEGURIDAD/CALIDAD (20 jul): el video de fondo mostraba un botón de
@@ -229,7 +271,10 @@ function WaitlistInner() {
                   style={{ width: `${Math.min(100, Math.round(((stats?.creators || 0) / (stats?.goalCreators || 500)) * 100))}%` }}
                 />
               </div>
-              <p className="mt-2 text-xs text-white/60">Cuando lleguemos a la meta, abrimos las puertas.</p>
+              {/* Antes decía "cuando lleguemos a la meta, abrimos las puertas".
+                  Con la apertura corrida eso pasa a ser una promesa que no
+                  depende del contador, así que se saca la fecha implícita. */}
+              <p className="mt-2 text-xs text-white/60">Cada persona que se anota nos acerca a abrir.</p>
             </div>
 
             <button
